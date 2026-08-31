@@ -1,0 +1,76 @@
+# Normalizacao de fim de linha
+# Godot grava tudo em LF; forcar aqui evita churn se alguem clonar no Windows.
+* text=auto eol=lf
+
+# --- Formatos do Godot que SAO texto -------------------------------
+# Ficam fora do LFS de proposito: dao diff legivel e merge de verdade.
+# E metade do motivo de Git servir bem pra um projeto Godot.
+*.gd        text
+*.tscn      text
+*.tres      text
+*.godot     text
+*.import    text
+*.cfg       text
+*.svg       text
+*.md        text
+
+# --- Binarios: vao pro LFS -----------------------------------------
+# Nada disso faz merge. O LFS guarda um ponteiro no repo e o arquivo
+# de verdade no servidor, pro historico nao inchar.
+
+# Imagens
+*.png       filter=lfs diff=lfs merge=lfs -text
+*.jpg       filter=lfs diff=lfs merge=lfs -text
+*.jpeg      filter=lfs diff=lfs merge=lfs -text
+*.webp      filter=lfs diff=lfs merge=lfs -text
+*.tga       filter=lfs diff=lfs merge=lfs -text
+*.bmp       filter=lfs diff=lfs merge=lfs -text
+*.psd       filter=lfs diff=lfs merge=lfs -text
+*.exr       filter=lfs diff=lfs merge=lfs -text
+*.hdr       filter=lfs diff=lfs merge=lfs -text
+*.dds       filter=lfs diff=lfs merge=lfs -text
+*.ktx       filter=lfs diff=lfs merge=lfs -text
+
+# Audio
+*.wav       filter=lfs diff=lfs merge=lfs -text
+*.ogg       filter=lfs diff=lfs merge=lfs -text
+*.mp3       filter=lfs diff=lfs merge=lfs -text
+*.flac      filter=lfs diff=lfs merge=lfs -text
+
+# Modelos 3D
+# (.gltf, .obj e .dae sao texto e ficam de fora; so o .glb e binario)
+*.blend     filter=lfs diff=lfs merge=lfs -text
+*.blend1    filter=lfs diff=lfs merge=lfs -text
+*.fbx       filter=lfs diff=lfs merge=lfs -text
+*.glb       filter=lfs diff=lfs merge=lfs -text
+
+# Video
+*.ogv       filter=lfs diff=lfs merge=lfs -text
+*.webm      filter=lfs diff=lfs merge=lfs -text
+*.mp4       filter=lfs diff=lfs merge=lfs -text
+
+# Fontes
+*.ttf       filter=lfs diff=lfs merge=lfs -text
+*.otf       filter=lfs diff=lfs merge=lfs -text
+*.woff      filter=lfs diff=lfs merge=lfs -text
+*.woff2     filter=lfs diff=lfs merge=lfs -text
+
+# Recursos binarios do Godot e bibliotecas nativas (GDExtension)
+*.res       filter=lfs diff=lfs merge=lfs -text
+*.scn       filter=lfs diff=lfs merge=lfs -text
+*.pck       filter=lfs diff=lfs merge=lfs -text
+*.dylib     filter=lfs diff=lfs merge=lfs -text
+*.dll       filter=lfs diff=lfs merge=lfs -text
+*.so        filter=lfs diff=lfs merge=lfs -text
+
+# --- Lock de arquivo: ligar quando entrar a segunda pessoa ----------
+# Enquanto o projeto for solo, `lockable` so atrapalha: o LFS deixa o
+# arquivo somente-leitura ate voce rodar `git lfs lock`, e voce ia
+# esbarrar nisso sozinho sem ganhar nada.
+#
+# Com mais de uma pessoa mexendo em arte, ligar assim (exemplo):
+#   *.psd   filter=lfs diff=lfs merge=lfs -text lockable
+#   *.blend filter=lfs diff=lfs merge=lfs -text lockable
+#
+# Uso: git lfs lock arte/moto.blend / git lfs unlock arte/moto.blend
+#      git lfs locks   (lista o que esta trancado e por quem)
