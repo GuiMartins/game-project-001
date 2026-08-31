@@ -1,0 +1,5 @@
+# Cache de importacao do Godot
+.godot/
+# Builds
+export/
+*.tmp
