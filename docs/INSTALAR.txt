@@ -1,0 +1,49 @@
+RushFood - prototipo greybox
+============================
+
+Nao precisa instalar nada. Descompacte e rode.
+
+  Windows   RushFood.exe
+  Linux     ./RushFood.x86_64      (se preciso: chmod +x RushFood.x86_64)
+  macOS     RushFood - Prototipo.app
+
+AVISO DE SEGURANCA NA PRIMEIRA ABERTURA
+---------------------------------------
+Nenhum binario e assinado digitalmente, entao os dois sistemas reclamam:
+
+  Windows  tela azul "O Windows protegeu o seu PC" (SmartScreen).
+           Clique em "Mais informacoes" > "Executar assim mesmo".
+
+  macOS    "nao foi possivel verificar o desenvolvedor".
+           Clique com o botao direito no .app > Abrir > Abrir.
+           Se ainda assim recusar, rode no Terminal:
+             xattr -dr com.apple.quarantine "RushFood - Prototipo.app"
+
+CONTROLES
+---------
+  W / seta cima      acelerar
+  S / seta baixo     frear
+  A D / setas        inclinar  <- e a inclinacao que faz a moto virar
+  Shift              boost (gasta adrenalina)
+  Q / E              soco pra esquerda / direita
+  R                  reiniciar a corrida
+  F1                 liga/desliga o pixel de 320x180
+  F2                 troca a camera (perseguicao / capacete / diagnostico)
+  F3                 painel de tuning (abre em janela separada)
+
+Controle de videogame tambem funciona: stick esquerdo inclina,
+A/B aceleram e freiam, X/Y socam.
+
+DA PRA ANDAR NA CALCADA
+-----------------------
+So que devagar, tipo a grama do Mario Kart. E a saida quando o transito
+fecha: custa tempo, nao a corrida.
+
+Carro parado encostado no meio-fio as vezes abre a porta - de qualquer
+um dos dois lados, sem aviso.
+
+O QUE OLHAR
+-----------
+Este prototipo existe pra responder UMA pergunta: acelerar, inclinar,
+se enfiar no corredor e bater esta gostoso? Nao tem arte, audio nem
+menu de proposito. Se algo parecer feio, e porque ainda nao e o assunto.

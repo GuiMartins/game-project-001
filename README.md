@@ -54,6 +54,35 @@ python3 tools/promote_tuning.py --apply --clear-user
 `--clear-user` apaga o override depois de promover, então o jogo passa a rodar
 nos defaults novos de verdade em vez de continuar vendo o seu por cima.
 
+## Release
+
+Todo merge na `master` dispara [uma pipeline](.github/workflows/release.yml) que
+roda o banco de provas, exporta as três plataformas e publica uma release no
+GitHub:
+
+| Arquivo | Plataforma |
+| --- | --- |
+| `RushFood-windows.zip` | Windows x86_64 |
+| `RushFood-linux.zip` | Linux x86_64 |
+| `RushFood-macos.zip` | macOS universal (Intel e Apple Silicon) |
+
+A tag sai de `config/version` no `project.godot` — único lugar pra mexer, a
+pipeline injeta essa versão no bundle do macOS na hora do export. **Bump antes
+de merjar**; sem bump, a release existente é substituída em vez de nascer uma
+nova.
+
+Se o banco de provas falhar, nada é publicado — binário quebrado no ar é pior
+que release atrasada.
+
+Nenhum binário é assinado, então Windows e macOS reclamam na primeira abertura.
+O [docs/INSTALAR.txt](docs/INSTALAR.txt) vai dentro de cada zip explicando como
+passar. Assinar de verdade exige certificado pago (e conta de desenvolvedor
+Apple), que não se justifica num protótipo.
+
+Pushes em qualquer outra branch rodam só o banco de provas
+([ci.yml](.github/workflows/ci.yml)), pra a `develop` não chegar quebrada no dia
+da release.
+
 ## Banco de provas
 
 ```sh

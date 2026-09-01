@@ -7,6 +7,9 @@ config_version=5
 [application]
 
 config/name="RushFood - Prototipo"
+; A pipeline le esta versao pra nomear a tag e a release. Bump aqui
+; antes de merjar pra master; sem bump, a release e substituida.
+config/version="0.0.1"
 config/description="Prototipo greybox para validar os pilares: feel da moto, o corredor, combate lateral e o loop de entrega."
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.4", "Forward Plus")
@@ -47,4 +50,8 @@ textures/canvas_textures/default_texture_filter=0
 anti_aliasing/quality/msaa_3d=0
 anti_aliasing/quality/screen_space_aa=0
 scaling_3d/fsr_sharpness=0.0
+; Exigido pra exportar macOS universal/arm64. Sem isto o export falha
+; com "nao e possivel exportar para universal ou arm64". O custo e
+; importar texturas tambem em ASTC - irrelevante num greybox.
+textures/vram_compression/import_etc2_astc=true
 environment/defaults/default_clear_color=Color(0.13, 0.14, 0.2, 1)
