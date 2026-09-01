@@ -69,6 +69,9 @@ func _ready() -> void:
 
 	tuning_panel = TuningPanel.new()
 	tuning_panel.name = "TuningPanel"
+	# Window nasce visivel. Esconder ANTES de entrar na arvore evita a janela
+	# do painel piscar na tela no startup.
+	tuning_panel.visible = false
 	add_child(tuning_panel)
 	tuning_panel.setup(tuning, world_tuning)
 
