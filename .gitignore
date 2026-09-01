@@ -2,4 +2,5 @@
 .godot/
 # Builds
 export/
+dist/
 *.tmp
