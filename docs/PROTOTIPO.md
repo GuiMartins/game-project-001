@@ -12,7 +12,7 @@ Os quatro pilares e onde cada um vive no código:
 | Pilar | Arquivo | Estado |
 | --- | --- | --- |
 | Feel da moto | `scripts/player_bike.gd` | jogável e medido |
-| O corredor | `scripts/world.gd` (`_score_corridor`) | jogável e medido |
+| O corredor | `scripts/world.gd` (`_score_corridor`), `world_tuning.gd` | jogável, medido e ajustável ao vivo |
 | Combate lateral | `player_bike.gd` + `rival_bike.gd` | jogável, não medido |
 | Loop de entrega | `scripts/delivery_run.gd` | jogável, números provisórios |
 
@@ -62,7 +62,13 @@ Em cima disso:
 ## Números medidos
 
 `godot --headless --path . -- --selftest` roda o jogo de verdade contra entradas
-sintéticas (via `Input.action_press`, mesmo caminho do jogador) e mede:
+sintéticas (via `Input.action_press`, mesmo caminho do jogador) e mede.
+
+Ele roda nos **defaults do repositório**, ignorando o `user://` de propósito: a
+semente já era fixa pra o número ser comparável entre rodadas, mas enquanto o
+tuning salvo entrava, bastava alguém clicar em Salvar pra "regrediu" e "você
+mexeu num slider ontem" virarem a mesma coisa. Pra medir os seus ajustes,
+`-- --selftest --selftest-user`. O relatório diz qual dos dois usou.
 
 ```
 0-100 km/h          2.75 s
@@ -71,7 +77,7 @@ freada 183 km/h -> 0   1.48 s / 37 m
 inclinacao 0->90%    0.35 s
 a 175 km/h: 35.8 graus/s, raio 78 m
 hitbox do soco       0.133 s aberta (tuning pede 0.130)
-corrida solta 45s    887 m percorridos, 22 raspadas, 7 quedas
+corrida solta 45s    1012 m percorridos, 16 raspadas, 7 quedas
 ```
 
 O número que amarra tudo: a curva mais fechada que o gerador de pista produz é
@@ -131,9 +137,33 @@ Deliberadamente fora do escopo até o feel fechar:
 1. **Sentar e jogar com o F3 aberto.** Os números do banco dizem que a moto é
    sã, não que ela é gostosa. Só o polegar decide isso, e o painel existe pra
    essa sessão.
-2. **Densidade do trânsito.** `TRAFFIC_COUNT` e o espaçamento em
-   `scatter_traffic_ahead` decidem sozinhos se o corredor é tenso ou uma parede.
-   É o segundo maior risco depois do feel.
+2. **Densidade do trânsito.** Agora vive em `scripts/world_tuning.gd` e sai
+   nos sliders do F3, com a frota se ajustando com a moto andando. A densidade
+   real é `traffic_count / (traffic_ahead + traffic_behind)` — os carros são
+   reciclados pra viver sempre nessa janela em volta do jogador, então o
+   espaçamento da largada só decide os primeiros segundos.
+
+   O padrão saiu de 54 carros para 20. A série medida, sempre 45 s e mesma
+   semente:
+
+   | carros | `traffic_behind` | distância | raspadas | quedas |
+   | --- | --- | --- | --- | --- |
+   | 54 | 70 m | 887 m | 22 | 7 |
+   | 36 | 70 m | 874 m | 13 | 6 |
+   | 20 | 30 m | 1012 m | 16 | 7 |
+
+   A terceira linha desmente a leitura óbvia. Menos carros deveria dar menos
+   raspadas, e de 54 para 36 deu — mas de 36 para 20 elas **subiram**, porque
+   junto veio `traffic_behind` de 70 para 30 m. O carro é reciclado 40 m mais
+   cedo depois que você passa, e `recycle()` zera a flag `near_missed`: os
+   mesmos 20 carros voltam pra frente com mais frequência e podem ser raspados
+   de novo.
+
+   **`traffic_behind` não é faxina, é taxa de reciclagem.** Não dá pra ler
+   densidade só pelo `traffic_count`. Como a raspada é a métrica que mede se o
+   corredor está puxando o jogador pra dentro do trânsito, é o número pra
+   vigiar em qualquer mexida aqui. Continua sendo o segundo maior risco depois
+   do feel.
 3. **Fechar o combate.** Derrubar rival no poste já funciona, mas não tem
    medida nenhuma. Falta o feedback de impacto (hit stop, shake, som).
 4. **Calibrar as estrelas.** `SECONDS_PER_METER = 0.055` exige ~65 km/h de

@@ -16,12 +16,27 @@ var world: World
 var hud: Hud
 var tuning_panel: TuningPanel
 var tuning: BikeTuning
+var world_tuning: WorldTuning
+## De onde os valores vieram, pro relatorio do banco de provas dizer.
+var tuning_source: String = ""
 
 var _pixel_mode: bool = true
 
 
 func _ready() -> void:
-	tuning = BikeTuning.load_or_default()
+	var args := OS.get_cmdline_user_args()
+	var selftest_mode := args.has("--selftest") or OS.has_environment("RUSHFOOD_SELFTEST")
+
+	## O banco de provas roda nos defaults do repositorio, nao no user://.
+	##
+	## A semente ja era fixa pra o numero ser comparavel entre rodadas, mas o
+	## tuning tinha ficado de fora: bastava alguem clicar em Salvar pra
+	## "regrediu" e "voce mexeu num slider ontem" virarem a mesma coisa. Com
+	## --selftest-user voce mede os seus ajustes, quando e isso que quer.
+	var use_saved := not selftest_mode or args.has("--selftest-user")
+	tuning = BikeTuning.load_or_default() if use_saved else BikeTuning.new()
+	world_tuning = WorldTuning.load_or_default() if use_saved else WorldTuning.new()
+	tuning_source = "user:// (ajustes salvos)" if use_saved else "defaults do repositorio"
 
 	container = SubViewportContainer.new()
 	container.name = "PixelPipeline"
@@ -42,7 +57,7 @@ func _ready() -> void:
 	world = World.new()
 	world.name = "World"
 	sub_viewport.add_child(world)
-	world.setup(tuning)
+	world.setup(tuning, world_tuning)
 
 	hud = Hud.new()
 	hud.name = "Hud"
@@ -55,9 +70,9 @@ func _ready() -> void:
 	tuning_panel = TuningPanel.new()
 	tuning_panel.name = "TuningPanel"
 	add_child(tuning_panel)
-	tuning_panel.setup(tuning)
+	tuning_panel.setup(tuning, world_tuning)
 
-	if OS.get_cmdline_user_args().has("--selftest") or OS.has_environment("RUSHFOOD_SELFTEST"):
+	if selftest_mode:
 		var selftest: Node = load("res://scripts/selftest.gd").new()
 		add_child(selftest)
 		selftest.call("setup", self)
