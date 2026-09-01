@@ -151,6 +151,31 @@ nenhuma fora das faixas da ponta, os dois lados usados. `parked_chance` (0.3)
 controla quantos carros encostam — é ele que decide se as faixas da ponta são
 uma aposta ou uma parede.
 
+## A calçada
+
+Dá pra subir na calçada e continuar andando, com teto de velocidade — grama do
+Mario Kart. É a válvula de escape quando o trânsito fecha: você foge por ali,
+mas paga em tempo.
+
+O limite andável passou de `half_width + SHOULDER*0.6` (7,92 m) para
+`half_width + SHOULDER` (8,80 m). O número antigo caía no **meio** da faixa de
+acostamento, que o mesh já desenha numa cor distinta — parede invisível no meio
+de uma coisa com cara de andável. Agora o limite coincide com onde o terreno
+cai 0,35 m, que o jogador vê.
+
+Medido: 42,7 m/s no asfalto contra 18,6 m/s encostado na calçada, e a parede
+segurou exatamente em 8,80 sem vazar.
+
+Duas ressalvas honestas:
+
+- **A faixa é estreita.** 2,2 m de calçada para uma moto de 0,76 m deixa ~1,4 m
+  de jogo antes de raspar o guard-rail. Funciona, mas exige linha. Alargar é
+  mexer em `SHOULDER` no `road_track.gd`, e o mesh acompanha sozinho.
+- **O banco de provas não cobre isto.** O piloto automático nunca sobe na
+  calçada, porque `free_lateral` só considera centros de faixa e de corredor.
+  Os números da corrida solta ficaram idênticos depois da mudança — regressão
+  aqui não é pega por lá, só pelo polegar.
+
 ## Próximos passos, em ordem de risco
 
 1. **Sentar e jogar com o F3 aberto.** Os números do banco dizem que a moto é

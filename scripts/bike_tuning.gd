@@ -107,6 +107,22 @@ class_name BikeTuning
 ## Quanto da inclinacao da moto a camera copia (0 = fixa, 1 = acompanha tudo).
 @export_range(0.0, 1.0, 0.02) var cam_lean_follow: float = 0.3
 
+## --- Calcada ---------------------------------------------------------------
+@export_group("Calcada")
+
+## Teto de velocidade na calcada, como fracao da maxima.
+##
+## A calcada e valvula de escape quando o transito fecha: da pra fugir por ali,
+## mas custa tempo. Se o preco for baixo demais ela vira a linha otima e o
+## jogador nunca mais entra no transito - que e o jogo. Alto demais e ela vira
+## a parede que ja era antes, so que mais longe.
+@export_range(0.2, 1.0, 0.01) var sidewalk_speed_factor: float = 0.55
+
+## Quao rapido a moto e puxada pro teto ao subir na calcada, em m/s^2.
+## Alto demais vira freada de parede; baixo demais e de graca.
+@export_range(1.0, 60.0, 0.5) var sidewalk_drag: float = 22.0
+
+
 const SAVE_PATH: String = "user://tuning.tres"
 
 

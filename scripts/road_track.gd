@@ -161,6 +161,16 @@ static func half_width() -> float:
 	return float(LANE_COUNT) * LANE_WIDTH * 0.5
 
 
+## Ate onde da pra andar, contando a calcada.
+##
+## O acostamento ja e uma faixa visualmente distinta no mesh e o terreno cai
+## 0.35 m logo depois dele - entao o limite cai num lugar que o jogador ve.
+## Antes o guard-rail ficava em half_width + SHOULDER*0.6, no MEIO do
+## acostamento: parede invisivel no meio de uma coisa com cara de andavel.
+static func sidewalk_limit() -> float:
+	return half_width() + SHOULDER
+
+
 ## --- Mesh -----------------------------------------------------------------
 
 func _build_mesh() -> void:
