@@ -39,6 +39,12 @@ var world_tuning: WorldTuning
 var _resources: Array[Resource] = []
 var _rows: Array[Dictionary] = []
 var _status: Label
+## O painel chegou a aparecer nesta sessao?
+##
+## Sem isto, abrir o jogo e nunca tocar no F3 gravava a posicao automatica por
+## cima da que voce escolheu - o layout se perdia justo nas sessoes em que voce
+## nao mexeu nele, que sao as que menos justificam perder.
+var _was_shown: bool = false
 
 
 func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning) -> void:
@@ -100,6 +106,10 @@ func _exit_tree() -> void:
 
 
 func _save_layout() -> void:
+	# Nunca apareceu, entao nao ha nada que voce tenha escolhido pra gravar -
+	# so a posicao automatica, que o proximo boot recalcula sozinho.
+	if not _was_shown:
+		return
 	var cfg := ConfigFile.new()
 	cfg.set_value("panel", "position", position)
 	cfg.set_value("panel", "size", size)
@@ -276,6 +286,7 @@ func toggle() -> void:
 		_save_layout()
 	visible = not visible
 	if visible:
+		_was_shown = true
 		refresh()
 		# Sem isto ela pode abrir atras da janela do jogo e parecer que o F3
 		# nao fez nada. (move_to_foreground() esta depreciado no 4.7.)
