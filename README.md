@@ -66,8 +66,10 @@ GitHub:
 | `RushFood-linux.zip` | Linux x86_64 |
 | `RushFood-macos.zip` | macOS universal (Intel e Apple Silicon) |
 
-A tag sai de `config/version` no `project.godot`. **Bump essa versão antes de
-merjar**; sem bump, a release existente é substituída em vez de nascer uma nova.
+A tag sai de `config/version` no `project.godot` — único lugar pra mexer, a
+pipeline injeta essa versão no bundle do macOS na hora do export. **Bump antes
+de merjar**; sem bump, a release existente é substituída em vez de nascer uma
+nova.
 
 Se o banco de provas falhar, nada é publicado — binário quebrado no ar é pior
 que release atrasada.

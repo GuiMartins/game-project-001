@@ -34,6 +34,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p export/windows export/linux export/macos dist
+
+          # O bundle do macOS carrega a versão dentro dele, e o preset é o
+          # único lugar onde ela cabe. Injetar aqui evita a única fonte de
+          # divergência possível: bumpar o project.godot e esquecer o preset.
+          VERSION="$(grep -m1 '^config/version=' project.godot | cut -d'"' -f2)"
+          sed -i \
+            -e "s|^application/short_version=.*|application/short_version=\"$VERSION\"|" \
+            -e "s|^application/version=.*|application/version=\"$VERSION\"|" \
+            export_presets.cfg
+          grep -E '^application/(short_)?version=' export_presets.cfg
+
           godot --headless --path . --export-release "Windows Desktop"
           godot --headless --path . --export-release "Linux"
           godot --headless --path . --export-release "macOS"
