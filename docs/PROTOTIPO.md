@@ -77,7 +77,7 @@ freada 183 km/h -> 0   1.48 s / 37 m
 inclinacao 0->90%    0.35 s
 a 175 km/h: 35.8 graus/s, raio 78 m
 hitbox do soco       0.133 s aberta (tuning pede 0.130)
-corrida solta 45s    1012 m percorridos, 16 raspadas, 7 quedas
+corrida solta 45s    1147 m percorridos, 13 raspadas, 4 quedas
 ```
 
 O número que amarra tudo: a curva mais fechada que o gerador de pista produz é
@@ -132,6 +132,25 @@ Deliberadamente fora do escopo até o feel fechar:
 - Shader de mundo curvo ("SEGA curved world").
 - Chuva, noite com neon no asfalto molhado.
 
+## A porta do carro
+
+Porta só abre em **carro encostado**: parado de verdade (velocidade zero) e
+numa das duas faixas da ponta. Carro no fluxo nunca abre — porta abrindo a
+25 km/h no meio da pista é bug com cara de recurso.
+
+Duas coisas são sorteadas de propósito:
+
+- **Nem todo encostado abre** (`door_chance`, 0.6). Se encostar fosse sinônimo
+  de porta, a faixa da ponta viraria regra decorada e o jogador aprenderia a
+  nunca chegar perto, em vez de calcular o risco.
+- **O lado é sorteado**, pista ou calçada. Porta previsível deixa de ser susto
+  e vira pedágio.
+
+Medido em 120 s de simulação, 19 aberturas: nenhuma em carro em movimento,
+nenhuma fora das faixas da ponta, os dois lados usados. `parked_chance` (0.3)
+controla quantos carros encostam — é ele que decide se as faixas da ponta são
+uma aposta ou uma parede.
+
 ## Próximos passos, em ordem de risco
 
 1. **Sentar e jogar com o F3 aberto.** Os números do banco dizem que a moto é
@@ -151,6 +170,7 @@ Deliberadamente fora do escopo até o feel fechar:
    | 54 | 70 m | 887 m | 22 | 7 |
    | 36 | 70 m | 874 m | 13 | 6 |
    | 20 | 30 m | 1012 m | 16 | 7 |
+   | 20 | 30 m | 1147 m | 13 | 4 | (com porta só em carro encostado) |
 
    A terceira linha desmente a leitura óbvia. Menos carros deveria dar menos
    raspadas, e de 54 para 36 deu — mas de 36 para 20 elas **subiram**, porque

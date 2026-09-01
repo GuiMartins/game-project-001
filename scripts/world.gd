@@ -165,7 +165,7 @@ func _spawn_traffic() -> void:
 func scatter_traffic_ahead(from_offset: float) -> void:
 	_spawn_cursor = from_offset + 60.0
 	for car in traffic:
-		car.recycle(_spawn_cursor, _pick_lane())
+		_place_car(car, _spawn_cursor)
 		_spawn_cursor += _rng.randf_range(
 			world_tuning.traffic_gap_min,
 			maxf(world_tuning.traffic_gap_min, world_tuning.traffic_gap_max))
@@ -173,6 +173,20 @@ func scatter_traffic_ahead(from_offset: float) -> void:
 
 func _pick_lane() -> float:
 	return RoadTrack.lane_center(_rng.randi_range(0, RoadTrack.LANE_COUNT - 1))
+
+
+## Sorteia como o carro entra: encostado no meio-fio ou no fluxo.
+##
+## So encostado abre porta - e nem todo encostado abre. Se encostar fosse
+## sinonimo de porta, a faixa da ponta viraria regra decorada em vez de aposta,
+## e o jogador aprenderia a nunca chegar perto em vez de calcular o risco.
+func _place_car(car: TrafficCar, at_offset: float) -> void:
+	if _rng.randf() < world_tuning.parked_chance:
+		var curb := 0 if _rng.randf() < 0.5 else RoadTrack.LANE_COUNT - 1
+		car.recycle(at_offset, RoadTrack.lane_center(curb), true,
+			_rng.randf() < world_tuning.door_chance)
+	else:
+		car.recycle(at_offset, _pick_lane(), false, false)
 
 
 func _spawn_rivals() -> void:
@@ -221,13 +235,10 @@ func _sync_traffic_pool() -> void:
 	while traffic.size() < want:
 		var arriving := TrafficCar.new()
 		add_child(arriving)
+		arriving.setup(track, 0.0, 0.0, _rng.randi())
 		# Entra pela frente, fora de vista - carro que aparece do nada no meio
 		# da tela e carro que o jogador nao teve chance de desviar.
-		arriving.setup(
-			track,
-			player.track_offset + world_tuning.traffic_ahead,
-			_pick_lane(),
-			_rng.randi())
+		_place_car(arriving, player.track_offset + world_tuning.traffic_ahead)
 		traffic.append(arriving)
 
 
@@ -235,7 +246,7 @@ func _recycle_traffic() -> void:
 	var front := player.track_offset + world_tuning.traffic_ahead
 	for car in traffic:
 		if car.offset < player.track_offset - world_tuning.traffic_behind:
-			car.recycle(front + _rng.randf_range(0.0, 14.0), _pick_lane())
+			_place_car(car, front + _rng.randf_range(0.0, 14.0))
 
 
 ## Raspada no corredor: passar rente a um carro parado, rapido.

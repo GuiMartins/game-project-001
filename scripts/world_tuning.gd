@@ -34,6 +34,24 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## Quantos metros atras do jogador o carro e recolhido pra reciclagem.
 @export_range(20.0, 200.0, 5.0) var traffic_behind: float = 30.0
 
+## Fracao dos carros que entra encostada no meio-fio, parada.
+##
+## Encostado quer dizer parado numa das faixas da ponta - a da esquerda ou a
+## da direita, sorteada. So carro encostado pode abrir porta: carro andando no
+## meio da pista abrindo porta e bug com cara de recurso.
+##
+## Tambem e o numero que decide se as faixas da ponta valem a pena. Alto
+## demais e elas viram parede, e o jogo perde duas das quatro faixas.
+@export_range(0.0, 1.0, 0.05) var parked_chance: float = 0.3
+
+## Fracao dos carros encostados que chega a abrir a porta em algum momento.
+##
+## Abaixo de 1.0 encostar nao e sinonimo de perigo, e ai a faixa da ponta vira
+## uma aposta em vez de uma regra decorada. O lado que a porta abre tambem e
+## sorteado - pra pista ou pra calcada.
+@export_range(0.0, 1.0, 0.05) var door_chance: float = 0.6
+
+
 @export_group("Rivais")
 
 ## Quantos rivais correm junto. Muda na proxima corrida (R), nao ao vivo:
