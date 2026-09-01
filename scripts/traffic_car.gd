@@ -1,10 +1,11 @@
 extends AnimatableBody3D
 class_name TrafficCar
-## Carro do transito parado. Parametrico na curva: sabe seu proprio offset e
-## nunca precisa se projetar na pista.
+## Carro do transito. Parametrico na curva: sabe seu proprio offset e nunca
+## precisa se projetar na pista.
 ##
-## E o carro que cria o corredor. Ele anda devagar, muda de faixa sem olhar e
-## abre a porta na sua cara - as tres coisas que fazem o corredor valer a pena.
+## E o carro que cria o corredor. Ele anda devagar, muda de faixa sem olhar,
+## abre a porta na sua cara, para no sinal e empaca no engarrafamento - e cada
+## uma dessas coisas e um jeito diferente de fechar a pista e deixar so o vao.
 
 const SIZE := Vector3(1.9, 1.5, 4.4)
 const DOOR_SIZE := Vector3(1.1, 1.0, 1.6)
@@ -16,15 +17,41 @@ const CAR_COLORS: Array[Color] = [
 	Color(0.75, 0.72, 0.55), Color(0.45, 0.60, 0.52), Color(0.55, 0.50, 0.62),
 ]
 
+## Valores de fallback, usados so pelo carro que nao pertence a frota - o que
+## fica largado dentro de um atalho. Esse nunca dirige, entao ele nunca leu
+## slider nenhum. Quem esta na avenida usa o WorldTuning, que sai no F3.
+const ACCEL: float = 2.2
+const BRAKE: float = 4.5
+const FOLLOW_GAP: float = 6.2
+## A partir de quantos metros o carro comeca a se preocupar com o semaforo.
+## Nao e slider: e o alcance da consulta, nao um numero de feel.
+const LIGHT_LOOKAHEAD: float = 90.0
+
 var track: RoadTrack
 var offset: float = 0.0
 var lateral: float = 0.0
 var speed: float = 0.0
+## Velocidade que este carro busca quando a pista esta livre.
+var cruise_speed: float = 0.0
 ## Encostado no meio-fio: parado, numa das faixas da ponta. So quem esta
 ## encostado pode abrir porta.
 var parked: bool = false
+## Preso num engarrafamento: no meio da pista, andando a passo, sem trocar de
+## faixa. Diferente de `parked`, que e carro estacionado no meio-fio.
+var jammed: bool = false
 ## Marcado quando o jogador ja pontuou a raspada neste carro, pra nao contar duas vezes.
 var near_missed: bool = false
+## Este carro esta comprometido com uma parada no vermelho.
+var waiting: bool = false
+
+## Quem sabe onde estao os outros carros e os semaforos.
+##
+## Untyped de proposito: o World ja conhece o TrafficCar, e tipar a volta
+## fecharia um ciclo entre os dois class_name.
+var world: Node
+## Sliders do F3. Null no carro largado num atalho, que e obstaculo fixo e
+## nunca dirige - por isso todo uso aqui cai nos const acima quando falta.
+var world_tuning: WorldTuning
 
 var _target_lateral: float = 0.0
 var _lane_change_timer: float = 0.0
@@ -71,7 +98,7 @@ func setup(a_track: RoadTrack, a_offset: float, a_lateral: float, seed_value: in
 	track = a_track
 	_rng.seed = seed_value
 	_lane_change_timer = _rng.randf_range(3.0, 14.0)
-	_reset_at(a_offset, a_lateral, a_parked, a_opens_door)
+	_reset_at(a_offset, a_lateral, a_parked, a_opens_door, false)
 
 
 ## Poe a porta de um dos lados do carro.
@@ -88,11 +115,23 @@ func _physics_process(delta: float) -> void:
 	if track == null:
 		return
 
+	if parked:
+		speed = 0.0
+		waiting = false
+	else:
+		waiting = _drive(delta)
+
 	offset += speed * delta
 	lateral = move_toward(lateral, _target_lateral, 1.6 * delta)
 
-	# Encostado nao muda de faixa: esta estacionado, nao no fluxo.
-	if not parked:
+	# Encostado nao muda de faixa: esta estacionado, nao no fluxo. Preso no
+	# engarrafamento tambem nao: ali ninguem sai do lugar, e um carro deslizando
+	# de lado numa fila parada denuncia que a fila e cenario.
+	#
+	# E quem esta parando no sinal ja tem faixa escolhida - trocar no meio da
+	# freada abriria e fecharia o corredor bem na hora em que o jogador esta
+	# comprometido com ele.
+	if not parked and not jammed and not waiting:
 		_lane_change_timer -= delta
 		if _lane_change_timer <= 0.0:
 			_lane_change_timer = _rng.randf_range(4.0, 16.0)
@@ -118,6 +157,61 @@ func _physics_process(delta: float) -> void:
 	_apply_transform()
 
 
+## Ajusta a velocidade ao que a pista permite. Devolve se ha uma parada
+## comprometida a frente (semaforo), que e o que trava a troca de faixa.
+func _drive(delta: float) -> bool:
+	var want := cruise_speed
+	var committed := false
+
+	var light := _light_ahead()
+	if light != null:
+		var to_line: float = light.stop_offset() - offset
+		if to_line > 0.0:
+			committed = true
+			want = minf(want, _approach_speed(to_line))
+			# Quem esta na faixa livre do ciclo sai dela antes de parar. E o
+			# que mantem a promessa do semaforo: sempre sobra uma faixa vazia,
+			# e ela some do mapa se o proprio transito parar dentro dela.
+			if to_line < LIGHT_LOOKAHEAD and not light.holds(_target_lateral):
+				_target_lateral = light.held_lateral_near(_target_lateral)
+
+	var gap: float = world_tuning.traffic_follow_gap if world_tuning != null else FOLLOW_GAP
+	want = minf(want, _approach_speed(_gap_ahead(gap) - gap))
+
+	var accel: float = world_tuning.traffic_accel if world_tuning != null else ACCEL
+	var rate := accel if want > speed else _brake()
+	speed = move_toward(speed, maxf(want, 0.0), rate * delta)
+	return committed
+
+
+func _brake() -> float:
+	return world_tuning.traffic_brake if world_tuning != null else BRAKE
+
+
+## Velocidade maxima pra ainda parar em `distance` metros freando no talo.
+func _approach_speed(distance: float) -> float:
+	return sqrt(2.0 * _brake() * maxf(distance, 0.0))
+
+
+## Semaforo relevante: o proximo a frente, e so enquanto ele estiver segurando.
+func _light_ahead() -> TrafficLight:
+	if world == null or not world.has_method("light_ahead"):
+		return null
+	var light: TrafficLight = world.light_ahead(offset)
+	if light == null or not light.stopping():
+		return null
+	if light.stop_offset() - offset > LIGHT_LOOKAHEAD:
+		return null
+	return light
+
+
+## Pista livre a frente na faixa deste carro.
+func _gap_ahead(follow_gap: float) -> float:
+	if world == null or not world.has_method("path_clearance"):
+		return INF
+	return world.path_clearance(offset, follow_gap + 24.0, lateral, self)
+
+
 func _apply_transform() -> void:
 	var t := track.transform_at(offset, lateral)
 	t.origin += t.basis.y * (SIZE.y * 0.5)
@@ -135,19 +229,39 @@ func _set_door(open: bool) -> void:
 ## Reposiciona o carro mais a frente em vez de instanciar outro.
 func recycle(a_offset: float, a_lateral: float, a_parked: bool = false,
 		a_opens_door: bool = false) -> void:
-	_reset_at(a_offset, a_lateral, a_parked, a_opens_door)
+	_reset_at(a_offset, a_lateral, a_parked, a_opens_door, false)
+
+
+## Poe o carro dentro de um engarrafamento.
+##
+## Sem porta e sem troca de faixa: aqui o carro nao e um evento, e tijolo. O
+## perigo do engarrafamento e o proprio engarrafamento - somar porta abrindo
+## dentro do vao tiraria do jogador a unica saida que ele tem.
+func jam_at(a_offset: float, a_lateral: float) -> void:
+	_reset_at(a_offset, a_lateral, false, false, true)
 
 
 ## Estado comum entre nascer e ser reciclado.
 func _reset_at(a_offset: float, a_lateral: float, a_parked: bool,
-		a_opens_door: bool) -> void:
+		a_opens_door: bool, a_jammed: bool) -> void:
 	offset = a_offset
 	lateral = a_lateral
 	_target_lateral = a_lateral
 	parked = a_parked
+	jammed = a_jammed
 	# Transito de marginal em hora de pico: quase parado, e ai que ta a graca.
-	# Encostado e parado de verdade - zero, nao "quase".
-	speed = 0.0 if parked else _rng.randf_range(0.0, 7.0)
+	# Encostado e parado de verdade - zero, nao "quase". Engarrafado anda a
+	# passo: fila 100% imovel vira cenario, e um metro por segundo ja e o
+	# bastante pro vao respirar enquanto o jogador entra nele.
+	if a_parked:
+		cruise_speed = 0.0
+	elif a_jammed:
+		cruise_speed = _rng.randf_range(0.0,
+			world_tuning.jam_creep if world_tuning != null else 1.4)
+	else:
+		cruise_speed = _rng.randf_range(0.0,
+			world_tuning.traffic_speed if world_tuning != null else 7.0)
+	speed = cruise_speed
 	_opens_door = a_parked and a_opens_door
 	near_missed = false
 	_set_door(false)
