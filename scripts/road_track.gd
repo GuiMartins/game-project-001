@@ -129,12 +129,53 @@ func build_shortcut(main: RoadTrack, from_offset: float, to_offset: float) -> vo
 	var p2 := p3 - f1 * pull
 
 	var steps := maxi(int(p0.distance_to(p3) / 10.0), 8)
+	var points: Array[Vector3] = []
 	for i in range(steps + 1):
-		curve.add_point(_bezier(p0, p1, p2, p3, float(i) / float(steps)))
+		points.append(_bezier(p0, p1, p2, p3, float(i) / float(steps)))
+
+	_follow_terrain(points, main, from_offset, to_offset)
+	for point_at: Vector3 in points:
+		curve.add_point(point_at)
 
 	_smooth_tangents()
 	length = curve.get_baked_length()
 	_build_mesh()
+
+
+## Cola a altura do atalho no terreno da avenida.
+##
+## Sem isto o atalho e uma ponte: o Bezier interpola a altura entre as duas
+## pontas em linha reta, enquanto o terreno em volta sobe e desce com a
+## avenida. Medido, dava 1,7 m de diferenca - e como o carpete de chao da
+## avenida tem 43 m de cada lado do eixo, ele passava POR CIMA do atalho. O
+## jogador via a moto afundar no chao no meio da rua.
+##
+## A altura vem do ponto da avenida mais proximo de cada ponto do atalho, e nao
+## do progresso ao longo dele: numa corda cortando uma curva fechada, o pedaco
+## de avenida mais perto nao e o que esta na mesma fracao do caminho.
+func _follow_terrain(points: Array[Vector3], main: RoadTrack,
+		from_offset: float, to_offset: float) -> void:
+	for i in range(points.size()):
+		var best := INF
+		var at := from_offset - 60.0
+		while at < to_offset + 60.0:
+			var candidate := main.sample_position(at)
+			var flat := Vector2(candidate.x - points[i].x, candidate.z - points[i].z)
+			if flat.length_squared() < best:
+				best = flat.length_squared()
+				points[i].y = candidate.y
+			at += 3.0
+
+	# O ponto mais proximo pula quando a corda passa perto de dois pedacos da
+	# mesma curva, e pulo na altura vira degrau na pista. Tres passadas de
+	# media movel resolvem, com as pontas presas: elas TEM que encostar na
+	# avenida, senao a boca e a reentrada ganham degrau.
+	for pass_index in range(3):
+		var smoothed := points.duplicate()
+		for i in range(1, points.size() - 1):
+			smoothed[i].y = points[i - 1].y * 0.25 + points[i].y * 0.5 + points[i + 1].y * 0.25
+		for i in range(1, points.size() - 1):
+			points[i] = smoothed[i]
 
 
 static func _bezier(p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, t: float) -> Vector3:
@@ -286,6 +327,10 @@ func _build_mesh() -> void:
 	# 35 cm abaixo, entao some sozinho debaixo da avenida.
 	var lift := 0.04 if is_shortcut else 0.0
 	var edge := road_w if is_shortcut else road_w + SHOULDER
+	# Carpete curto no atalho. O da avenida tem 34 m de cada lado e ja cobre o
+	# terreno em volta; o do atalho existe so pra ele nao flutuar no vazio
+	# quando corta longe demais. Largo, ele e que passaria por cima da avenida.
+	var carpet := 12.0 if is_shortcut else GROUND
 
 	var steps := int(length / MESH_STEP)
 	for i in range(steps):
@@ -295,8 +340,8 @@ func _build_mesh() -> void:
 		if not is_shortcut:
 			_quad(shoulder, o0, o1, -road_w - SHOULDER, -road_w)
 			_quad(shoulder, o0, o1, road_w, road_w + SHOULDER)
-		_quad(ground, o0, o1, -edge - GROUND, -edge, lift - 0.35)
-		_quad(ground, o0, o1, edge, edge + GROUND, lift - 0.35)
+		_quad(ground, o0, o1, -edge - carpet, -edge, lift - 0.35)
+		_quad(ground, o0, o1, edge, edge + carpet, lift - 0.35)
 
 		# Faixas divisorias tracejadas: alem de ler a pista, elas sao a
 		# referencia visual do corredor entre as filas de carro.
