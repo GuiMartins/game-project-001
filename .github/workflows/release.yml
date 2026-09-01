@@ -1,0 +1,106 @@
+name: Release
+
+# Toda entrada na master vira release. A master só recebe merge da develop
+# quando uma versão está pronta pra alguém testar, então "chegou na master" e
+# "é pra distribuir" são a mesma coisa por construção.
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ./.github/actions/setup-godot
+        with:
+          version: ${{ env.GODOT_VERSION }}
+
+      # Release só existe se o banco de provas passar. Binário quebrado
+      # publicado é pior que release atrasada.
+      - name: Banco de provas
+        run: godot --headless --path . -- --selftest
+
+      - name: Exportar as três plataformas
+        run: |
+          set -euo pipefail
+          mkdir -p export/windows export/linux export/macos dist
+
+          # O bundle do macOS carrega a versão dentro dele, e o preset é o
+          # único lugar onde ela cabe. Injetar aqui evita a única fonte de
+          # divergência possível: bumpar o project.godot e esquecer o preset.
+          VERSION="$(grep -m1 '^config/version=' project.godot | cut -d'"' -f2)"
+          sed -i \
+            -e "s|^application/short_version=.*|application/short_version=\"$VERSION\"|" \
+            -e "s|^application/version=.*|application/version=\"$VERSION\"|" \
+            export_presets.cfg
+          grep -E '^application/(short_)?version=' export_presets.cfg
+
+          godot --headless --path . --export-release "Windows Desktop"
+          godot --headless --path . --export-release "Linux"
+          godot --headless --path . --export-release "macOS"
+
+          # O export do Godot nem sempre devolve código de erro numa falha;
+          # arquivo ausente ou vazio aqui é a checagem de verdade.
+          test -s export/windows/RushFood.exe
+          test -s export/linux/RushFood.x86_64
+          test -s export/macos/RushFood.zip
+
+          cp docs/INSTALAR.txt /tmp/LEIA-ME.txt
+
+          (cd export/windows && zip -q -j ../../dist/RushFood-windows.zip \
+            RushFood.exe /tmp/LEIA-ME.txt)
+          (cd export/linux && zip -q -j ../../dist/RushFood-linux.zip \
+            RushFood.x86_64 /tmp/LEIA-ME.txt)
+          # O zip do macOS já vem pronto do Godot com o .app dentro; só
+          # acrescenta o LEIA-ME em vez de reempacotar.
+          cp export/macos/RushFood.zip dist/RushFood-macos.zip
+          zip -q -j dist/RushFood-macos.zip /tmp/LEIA-ME.txt
+
+          ls -lh dist/
+
+      - name: Publicar a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="$(grep -m1 '^config/version=' project.godot | cut -d'"' -f2)"
+          TAG="v${VERSION}"
+          echo "versão do project.godot: $VERSION"
+
+          NOTES="$(cat <<NOTAS
+          Protótipo greybox do RushFood, build automático de \`${GITHUB_SHA:0:7}\`.
+
+          | Arquivo | Plataforma |
+          | --- | --- |
+          | \`RushFood-windows.zip\` | Windows x86_64 |
+          | \`RushFood-linux.zip\` | Linux x86_64 |
+          | \`RushFood-macos.zip\` | macOS universal (Intel e Apple Silicon) |
+
+          Nenhum binário é assinado: o Windows mostra o aviso do SmartScreen e o
+          macOS bloqueia na primeira abertura. O \`LEIA-ME.txt\` dentro de cada
+          zip explica como passar, e traz os controles.
+          NOTAS
+          )"
+
+          # Merjar de novo sem bump de versão atualiza a release existente em
+          # vez de falhar. Bump em project.godot cria uma nova.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "release $TAG já existe - substituindo os binários"
+            gh release upload "$TAG" dist/* --clobber
+            gh release edit "$TAG" --notes "$NOTES"
+          else
+            gh release create "$TAG" dist/* \
+              --title "RushFood $TAG" \
+              --notes "$NOTES" \
+              --prerelease
+          fi

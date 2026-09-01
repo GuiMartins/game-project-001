@@ -1,0 +1,24 @@
+name: CI
+
+# O banco de provas roda o jogo de verdade contra entradas sintéticas e sai
+# com código 1 se algum número cair fora da faixa jogável. Rodar isso a cada
+# push é o que impede a develop de chegar quebrada no dia da release.
+on:
+  push:
+    branches-ignore: [master]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  banco-de-provas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-godot
+        with:
+          version: ${{ env.GODOT_VERSION }}
+      - name: Banco de provas
+        run: godot --headless --path . -- --selftest

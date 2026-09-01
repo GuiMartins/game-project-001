@@ -7,6 +7,7 @@ class_name BikeTuning
 ## uma sessao de ajuste sobrevive ao fechar o jogo.
 
 ## --- Velocidade -----------------------------------------------------------
+@export_group("Velocidade")
 
 ## Velocidade maxima sem boost, em m/s. 55 m/s ~ 198 km/h.
 @export_range(20.0, 90.0, 0.5) var max_speed: float = 52.0
@@ -26,6 +27,7 @@ class_name BikeTuning
 @export_range(0.0, 0.02, 0.0005) var drag: float = 0.0015
 
 ## --- Boost / adrenalina ---------------------------------------------------
+@export_group("Boost / adrenalina")
 
 ## Multiplicador de velocidade maxima com boost ativo.
 @export_range(1.0, 1.8, 0.01) var boost_speed_mult: float = 1.28
@@ -37,6 +39,7 @@ class_name BikeTuning
 @export_range(1.0, 30.0, 0.5) var boost_gain_near_miss: float = 7.0
 
 ## --- Inclinacao e curva ---------------------------------------------------
+@export_group("Inclinacao e curva")
 
 ## Inclinacao maxima da moto, em graus.
 @export_range(10.0, 60.0, 1.0) var max_lean: float = 38.0
@@ -59,6 +62,7 @@ class_name BikeTuning
 @export_range(0.0, 6.0, 0.05) var align_assist: float = 1.15
 
 ## --- Impacto --------------------------------------------------------------
+@export_group("Impacto")
 
 ## Acima deste angulo (graus) entre a moto e a superficie batida, e capotagem.
 @export_range(10.0, 80.0, 1.0) var crash_angle: float = 38.0
@@ -72,6 +76,7 @@ class_name BikeTuning
 @export_range(0.5, 5.0, 0.1) var crash_recover_time: float = 1.9
 
 ## --- Combate --------------------------------------------------------------
+@export_group("Combate")
 
 ## Alcance lateral do soco, em metros.
 @export_range(0.8, 4.0, 0.05) var punch_range: float = 1.9
@@ -87,6 +92,7 @@ class_name BikeTuning
 @export_range(0.1, 2.0, 0.05) var punch_stagger: float = 0.7
 
 ## --- Camera ---------------------------------------------------------------
+@export_group("Camera")
 
 ## Distancia da camera atras da moto, em metros.
 @export_range(2.0, 14.0, 0.1) var cam_distance: float = 6.4
@@ -100,6 +106,22 @@ class_name BikeTuning
 @export_range(0.0, 40.0, 0.5) var cam_fov_speed_gain: float = 16.0
 ## Quanto da inclinacao da moto a camera copia (0 = fixa, 1 = acompanha tudo).
 @export_range(0.0, 1.0, 0.02) var cam_lean_follow: float = 0.3
+
+## --- Calcada ---------------------------------------------------------------
+@export_group("Calcada")
+
+## Teto de velocidade na calcada, como fracao da maxima.
+##
+## A calcada e valvula de escape quando o transito fecha: da pra fugir por ali,
+## mas custa tempo. Se o preco for baixo demais ela vira a linha otima e o
+## jogador nunca mais entra no transito - que e o jogo. Alto demais e ela vira
+## a parede que ja era antes, so que mais longe.
+@export_range(0.2, 1.0, 0.01) var sidewalk_speed_factor: float = 0.55
+
+## Quao rapido a moto e puxada pro teto ao subir na calcada, em m/s^2.
+## Alto demais vira freada de parede; baixo demais e de graca.
+@export_range(1.0, 60.0, 0.5) var sidewalk_drag: float = 22.0
+
 
 const SAVE_PATH: String = "user://tuning.tres"
 
