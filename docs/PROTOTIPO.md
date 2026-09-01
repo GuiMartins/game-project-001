@@ -12,7 +12,7 @@ Os quatro pilares e onde cada um vive no código:
 | Pilar | Arquivo | Estado |
 | --- | --- | --- |
 | Feel da moto | `scripts/player_bike.gd` | jogável e medido |
-| O corredor | `scripts/world.gd` (`_score_corridor`) | jogável e medido |
+| O corredor | `scripts/world.gd` (`_score_corridor`), `world_tuning.gd` | jogável, medido e ajustável ao vivo |
 | Combate lateral | `player_bike.gd` + `rival_bike.gd` | jogável, não medido |
 | Loop de entrega | `scripts/delivery_run.gd` | jogável, números provisórios |
 
@@ -62,7 +62,13 @@ Em cima disso:
 ## Números medidos
 
 `godot --headless --path . -- --selftest` roda o jogo de verdade contra entradas
-sintéticas (via `Input.action_press`, mesmo caminho do jogador) e mede:
+sintéticas (via `Input.action_press`, mesmo caminho do jogador) e mede.
+
+Ele roda nos **defaults do repositório**, ignorando o `user://` de propósito: a
+semente já era fixa pra o número ser comparável entre rodadas, mas enquanto o
+tuning salvo entrava, bastava alguém clicar em Salvar pra "regrediu" e "você
+mexeu num slider ontem" virarem a mesma coisa. Pra medir os seus ajustes,
+`-- --selftest --selftest-user`. O relatório diz qual dos dois usou.
 
 ```
 0-100 km/h          2.75 s
@@ -71,7 +77,7 @@ freada 183 km/h -> 0   1.48 s / 37 m
 inclinacao 0->90%    0.35 s
 a 175 km/h: 35.8 graus/s, raio 78 m
 hitbox do soco       0.133 s aberta (tuning pede 0.130)
-corrida solta 45s    887 m percorridos, 22 raspadas, 7 quedas
+corrida solta 45s    1147 m percorridos, 13 raspadas, 4 quedas
 ```
 
 O número que amarra tudo: a curva mais fechada que o gerador de pista produz é
@@ -126,14 +132,83 @@ Deliberadamente fora do escopo até o feel fechar:
 - Shader de mundo curvo ("SEGA curved world").
 - Chuva, noite com neon no asfalto molhado.
 
+## A porta do carro
+
+Porta só abre em **carro encostado**: parado de verdade (velocidade zero) e
+numa das duas faixas da ponta. Carro no fluxo nunca abre — porta abrindo a
+25 km/h no meio da pista é bug com cara de recurso.
+
+Duas coisas são sorteadas de propósito:
+
+- **Nem todo encostado abre** (`door_chance`, 0.6). Se encostar fosse sinônimo
+  de porta, a faixa da ponta viraria regra decorada e o jogador aprenderia a
+  nunca chegar perto, em vez de calcular o risco.
+- **O lado é sorteado**, pista ou calçada. Porta previsível deixa de ser susto
+  e vira pedágio.
+
+Medido em 120 s de simulação, 19 aberturas: nenhuma em carro em movimento,
+nenhuma fora das faixas da ponta, os dois lados usados. `parked_chance` (0.3)
+controla quantos carros encostam — é ele que decide se as faixas da ponta são
+uma aposta ou uma parede.
+
+## A calçada
+
+Dá pra subir na calçada e continuar andando, com teto de velocidade — grama do
+Mario Kart. É a válvula de escape quando o trânsito fecha: você foge por ali,
+mas paga em tempo.
+
+O limite andável passou de `half_width + SHOULDER*0.6` (7,92 m) para
+`half_width + SHOULDER` (8,80 m). O número antigo caía no **meio** da faixa de
+acostamento, que o mesh já desenha numa cor distinta — parede invisível no meio
+de uma coisa com cara de andável. Agora o limite coincide com onde o terreno
+cai 0,35 m, que o jogador vê.
+
+Medido: 42,7 m/s no asfalto contra 18,6 m/s encostado na calçada, e a parede
+segurou exatamente em 8,80 sem vazar.
+
+Duas ressalvas honestas:
+
+- **A faixa é estreita.** 2,2 m de calçada para uma moto de 0,76 m deixa ~1,4 m
+  de jogo antes de raspar o guard-rail. Funciona, mas exige linha. Alargar é
+  mexer em `SHOULDER` no `road_track.gd`, e o mesh acompanha sozinho.
+- **O banco de provas não cobre isto.** O piloto automático nunca sobe na
+  calçada, porque `free_lateral` só considera centros de faixa e de corredor.
+  Os números da corrida solta ficaram idênticos depois da mudança — regressão
+  aqui não é pega por lá, só pelo polegar.
+
 ## Próximos passos, em ordem de risco
 
 1. **Sentar e jogar com o F3 aberto.** Os números do banco dizem que a moto é
    sã, não que ela é gostosa. Só o polegar decide isso, e o painel existe pra
    essa sessão.
-2. **Densidade do trânsito.** `TRAFFIC_COUNT` e o espaçamento em
-   `scatter_traffic_ahead` decidem sozinhos se o corredor é tenso ou uma parede.
-   É o segundo maior risco depois do feel.
+2. **Densidade do trânsito.** Agora vive em `scripts/world_tuning.gd` e sai
+   nos sliders do F3, com a frota se ajustando com a moto andando. A densidade
+   real é `traffic_count / (traffic_ahead + traffic_behind)` — os carros são
+   reciclados pra viver sempre nessa janela em volta do jogador, então o
+   espaçamento da largada só decide os primeiros segundos.
+
+   O padrão saiu de 54 carros para 20. A série medida, sempre 45 s e mesma
+   semente:
+
+   | carros | `traffic_behind` | distância | raspadas | quedas |
+   | --- | --- | --- | --- | --- |
+   | 54 | 70 m | 887 m | 22 | 7 |
+   | 36 | 70 m | 874 m | 13 | 6 |
+   | 20 | 30 m | 1012 m | 16 | 7 |
+   | 20 | 30 m | 1147 m | 13 | 4 | (com porta só em carro encostado) |
+
+   A terceira linha desmente a leitura óbvia. Menos carros deveria dar menos
+   raspadas, e de 54 para 36 deu — mas de 36 para 20 elas **subiram**, porque
+   junto veio `traffic_behind` de 70 para 30 m. O carro é reciclado 40 m mais
+   cedo depois que você passa, e `recycle()` zera a flag `near_missed`: os
+   mesmos 20 carros voltam pra frente com mais frequência e podem ser raspados
+   de novo.
+
+   **`traffic_behind` não é faxina, é taxa de reciclagem.** Não dá pra ler
+   densidade só pelo `traffic_count`. Como a raspada é a métrica que mede se o
+   corredor está puxando o jogador pra dentro do trânsito, é o número pra
+   vigiar em qualquer mexida aqui. Continua sendo o segundo maior risco depois
+   do feel.
 3. **Fechar o combate.** Derrubar rival no poste já funciona, mas não tem
    medida nenhuma. Falta o feedback de impacto (hit stop, shake, som).
 4. **Calibrar as estrelas.** `SECONDS_PER_METER = 0.055` exige ~65 km/h de

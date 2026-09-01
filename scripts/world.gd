@@ -4,10 +4,6 @@ class_name World
 ## tempo: raspada no corredor, socos que acertaram, reciclagem do transito.
 
 const ROUTE_LENGTH: float = 3200.0
-const TRAFFIC_COUNT: int = 54
-const RIVAL_COUNT: int = 4
-const TRAFFIC_AHEAD: float = 420.0
-const TRAFFIC_BEHIND: float = 70.0
 
 ## Distancia lateral (centro a centro) que ainda conta como raspada.
 const NEAR_MISS_LATERAL: float = 2.6
@@ -18,6 +14,7 @@ const NEAR_MISS_MIN_LATERAL: float = 1.35
 const NEAR_MISS_MIN_SPEED: float = 17.0
 
 var tuning: BikeTuning
+var world_tuning: WorldTuning
 var track: RoadTrack
 var player: PlayerBike
 var camera: ChaseCamera
@@ -33,8 +30,9 @@ signal run_finished
 signal event_logged(text: String, color: Color)
 
 
-func setup(a_tuning: BikeTuning, world_seed: int = 20260831) -> void:
+func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 20260831) -> void:
 	tuning = a_tuning
+	world_tuning = a_world_tuning
 	_rng.seed = world_seed
 
 	_build_environment()
@@ -153,7 +151,7 @@ func _build_scenery() -> void:
 
 
 func _spawn_traffic() -> void:
-	for i in range(TRAFFIC_COUNT):
+	for i in range(world_tuning.traffic_count):
 		var car := TrafficCar.new()
 		add_child(car)
 		car.setup(track, 0.0, 0.0, _rng.randi())
@@ -167,12 +165,28 @@ func _spawn_traffic() -> void:
 func scatter_traffic_ahead(from_offset: float) -> void:
 	_spawn_cursor = from_offset + 60.0
 	for car in traffic:
-		car.recycle(_spawn_cursor, _pick_lane())
-		_spawn_cursor += _rng.randf_range(5.0, 16.0)
+		_place_car(car, _spawn_cursor)
+		_spawn_cursor += _rng.randf_range(
+			world_tuning.traffic_gap_min,
+			maxf(world_tuning.traffic_gap_min, world_tuning.traffic_gap_max))
 
 
 func _pick_lane() -> float:
 	return RoadTrack.lane_center(_rng.randi_range(0, RoadTrack.LANE_COUNT - 1))
+
+
+## Sorteia como o carro entra: encostado no meio-fio ou no fluxo.
+##
+## So encostado abre porta - e nem todo encostado abre. Se encostar fosse
+## sinonimo de porta, a faixa da ponta viraria regra decorada em vez de aposta,
+## e o jogador aprenderia a nunca chegar perto em vez de calcular o risco.
+func _place_car(car: TrafficCar, at_offset: float) -> void:
+	if _rng.randf() < world_tuning.parked_chance:
+		var curb := 0 if _rng.randf() < 0.5 else RoadTrack.LANE_COUNT - 1
+		car.recycle(at_offset, RoadTrack.lane_center(curb), true,
+			_rng.randf() < world_tuning.door_chance)
+	else:
+		car.recycle(at_offset, _pick_lane(), false, false)
 
 
 func _spawn_rivals() -> void:
@@ -182,7 +196,7 @@ func _spawn_rivals() -> void:
 		Color(0.6, 0.35, 0.95),
 		Color(0.2, 0.75, 0.95),
 	]
-	for i in range(RIVAL_COUNT):
+	for i in range(world_tuning.rival_count):
 		var rival := RivalBike.new()
 		add_child(rival)
 		rival.setup(track, tuning, self, player, 20.0 + float(i) * 9.0, COLORS[i % COLORS.size()], _rng.randi())
@@ -197,6 +211,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	run.tick(delta, player.track_offset)
+	_sync_traffic_pool()
 	_recycle_traffic()
 	_score_corridor()
 
@@ -205,11 +220,33 @@ func _physics_process(delta: float) -> void:
 		run_finished.emit()
 
 
+## Reconcilia o tamanho da frota com o tuning.
+##
+## Sem isto o slider de traffic_count so valeria no R, e ajustar densidade e
+## exatamente o tipo de coisa que voce precisa sentir com a moto andando -
+## que e a razao do painel F3 existir.
+func _sync_traffic_pool() -> void:
+	var want: int = world_tuning.traffic_count
+	if traffic.size() == want:
+		return
+	while traffic.size() > want:
+		var leaving: TrafficCar = traffic.pop_back()
+		leaving.queue_free()
+	while traffic.size() < want:
+		var arriving := TrafficCar.new()
+		add_child(arriving)
+		arriving.setup(track, 0.0, 0.0, _rng.randi())
+		# Entra pela frente, fora de vista - carro que aparece do nada no meio
+		# da tela e carro que o jogador nao teve chance de desviar.
+		_place_car(arriving, player.track_offset + world_tuning.traffic_ahead)
+		traffic.append(arriving)
+
+
 func _recycle_traffic() -> void:
-	var front := player.track_offset + TRAFFIC_AHEAD
+	var front := player.track_offset + world_tuning.traffic_ahead
 	for car in traffic:
-		if car.offset < player.track_offset - TRAFFIC_BEHIND:
-			car.recycle(front + _rng.randf_range(0.0, 14.0), _pick_lane())
+		if car.offset < player.track_offset - world_tuning.traffic_behind:
+			_place_car(car, front + _rng.randf_range(0.0, 14.0))
 
 
 ## Raspada no corredor: passar rente a um carro parado, rapido.

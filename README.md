@@ -27,16 +27,32 @@ godot --path .
 | `R` | reiniciar a corrida |
 | `F1` | liga/desliga o pixel de 320×180 |
 | `F2` | alterna câmera (perseguição / capacete / diagnóstico) |
-| `F3` | painel de tuning ao vivo |
+| `F3` | painel de tuning (abre em janela separada) |
 
 Controle de videogame também funciona: stick esquerdo inclina, `A`/`B`
 aceleram e freiam, `X`/`Y` socam.
 
 ## Ajustar o feel
 
-`F3` abre um painel com todas as constantes da moto (`scripts/bike_tuning.gd`)
-em sliders, editáveis com a moto andando. **Salvar** grava em
-`user://tuning.tres` e a próxima sessão já abre com seus valores.
+`F3` abre um painel com dois blocos de sliders, editáveis com a moto andando:
+**MOTO** (`scripts/bike_tuning.gd`, o feel) e **MUNDO**
+(`scripts/world_tuning.gd`, densidade do trânsito e rivais).
+
+Ele abre em **janela separada do sistema**, não por cima do jogo — arraste pro
+lado ou pro segundo monitor e ajuste vendo o efeito. A posição e o tamanho onde
+você largar ficam guardados pra próxima sessão. Fecha no `F3` ou no X.
+
+**Salvar** grava em `user://`, que é um override *local*: sobrevive a fechar o
+jogo, mas não vai pro git nem pro executável. Quando os valores estiverem bons,
+promova para os defaults do repositório:
+
+```sh
+python3 tools/promote_tuning.py          # mostra o que mudaria
+python3 tools/promote_tuning.py --apply --clear-user
+```
+
+`--clear-user` apaga o override depois de promover, então o jogo passa a rodar
+nos defaults novos de verdade em vez de continuar vendo o seu por cima.
 
 ## Banco de provas
 
@@ -46,7 +62,11 @@ godot --headless --path . -- --selftest
 
 Roda a moto de verdade contra entradas sintéticas e mede 0–100, freada, tempo
 de inclinação, raio de curva e a janela do soco; falha com código de saída 1 se
-algum número sair da faixa jogável. Detalhes e números atuais em
+algum número sair da faixa jogável.
+
+Roda sempre nos **defaults do repositório**, ignorando o que você salvou no F3 —
+senão o número deixa de ser comparável entre rodadas. Para medir os seus
+ajustes, acrescente `--selftest-user`. Detalhes e números atuais em
 [docs/PROTOTIPO.md](docs/PROTOTIPO.md).
 
 Variáveis de ambiente úteis: `RUSHFOOD_SELFTEST_TRACE=1` imprime a telemetria

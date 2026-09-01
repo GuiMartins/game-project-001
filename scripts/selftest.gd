@@ -58,6 +58,7 @@ func setup(main: Node) -> void:
 		# Modo foto: pula o banco de provas e vai direto pra corrida.
 		_phase = 5
 	print("\n=== RUSHFOOD SELFTEST ===")
+	print("tuning: %s" % _main.get("tuning_source"))
 	print("pista: %.0f m | transito: %d | rivais: %d" % [
 		_world.track.length, _world.traffic.size(), _world.rivals.size()])
 

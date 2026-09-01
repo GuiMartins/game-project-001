@@ -282,7 +282,16 @@ func _resolve_collisions() -> void:
 func _clamp_to_road() -> void:
 	if not road_bounds_enabled:
 		return
-	var limit := RoadTrack.half_width() + RoadTrack.SHOULDER * 0.6
+	# Calcada: andavel, mas com teto de velocidade. E a valvula de escape
+	# quando o transito fecha - custa tempo, nao a corrida.
+	if absf(track_lateral) > RoadTrack.half_width():
+		var cap := tuning.max_speed * tuning.sidewalk_speed_factor
+		if speed > cap:
+			speed = maxf(
+				speed - tuning.sidewalk_drag * get_physics_process_delta_time(),
+				cap)
+
+	var limit := RoadTrack.sidewalk_limit()
 	if absf(track_lateral) <= limit:
 		_off_road = false
 		return
