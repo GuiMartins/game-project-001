@@ -21,6 +21,14 @@ const MAX_GRADE: float = 0.14
 ## no ar. Alto demais e a pista vira serra e a moto passa a corrida voando.
 const GRADE_BLEND: float = 0.3
 
+## Quantos graus o atalho sai torto em relacao a avenida, nas duas pontas.
+##
+## E o que faz a bifurcacao PARECER uma bifurcacao: a 22 graus as duas pistas
+## se separam uns 0,4 m por metro andado, entao em 50 m ja ha rua no meio
+## delas. Muito acima disso a boca vira esquina, e esquina a 180 km/h nao e
+## escolha, e acidente.
+const DEPART_ANGLE: float = 22.0
+
 const LANE_WIDTH: float = 3.3
 const LANE_COUNT: int = 4
 const SHOULDER: float = 2.2
@@ -112,7 +120,13 @@ func build(total_length: float, rng: RandomNumberGenerator) -> void:
 ## reentrada sao continuas: o atalho nasce apontando pra onde a avenida estava
 ## indo e chega apontando pra onde ela vai. E o que permite trocar a moto de
 ## pista sem teleporte nenhum.
-func build_shortcut(main: RoadTrack, from_offset: float, to_offset: float) -> void:
+## Traca a curva do atalho, SEM malha.
+##
+## Separado de `build_surface` porque a maior parte dos candidatos e recusada -
+## por nao encurtar o bastante, ou por passar colada na avenida. Construir a
+## malha de cada um pra jogar fora em seguida fazia o boot rastejar: e um
+## SurfaceTool completo por candidato.
+func plan_shortcut(main: RoadTrack, from_offset: float, to_offset: float) -> void:
 	is_shortcut = true
 	curve = Curve3D.new()
 	curve.bake_interval = 1.0
@@ -121,12 +135,33 @@ func build_shortcut(main: RoadTrack, from_offset: float, to_offset: float) -> vo
 	var p3 := main.sample_position(to_offset)
 	var f0 := -main.sample_basis(from_offset).z
 	var f1 := -main.sample_basis(to_offset).z
+
+	# De que lado a corda cai em relacao a avenida.
+	var mid_main := main.sample_position((from_offset + to_offset) * 0.5)
+	var mid_chord := (p0 + p3) * 0.5
+	var side := signf((mid_chord - mid_main).dot(
+		main.sample_basis((from_offset + to_offset) * 0.5).x))
+	if is_zero_approx(side):
+		side = 1.0
+
 	# 0.34 da distancia entre as pontas: menos que isso faz a corda sair de
 	# lado da avenida como se fosse uma esquina; mais que isso e a corda
 	# abracar a curva que ela deveria estar cortando.
 	var pull := p0.distance_to(p3) * 0.34
-	var p1 := p0 + f0 * pull
-	var p2 := p3 - f1 * pull
+
+	# A saida e a volta sao ANGULADAS, e nao paralelas a avenida.
+	#
+	# Com as tangentes da propria avenida nas duas pontas, o atalho saia
+	# grudado nela e voltava grudado: media 8,6 m de distancia no miolo, com as
+	# duas pistas tendo 13 m de largura. Na tela isso nao le como bifurcacao,
+	# le como uma avenida de 30 m com duas pinturas de faixa sobrepostas - e os
+	# predios que moram entre as duas viram predio no meio do caminho.
+	#
+	# Angulo positivo em torno de UP gira pra ESQUERDA, entao o sinal e
+	# invertido pra "girar pro lado em que o atalho vai".
+	var flare := deg_to_rad(DEPART_ANGLE)
+	var p1 := p0 + f0.rotated(Vector3.UP, -flare * side) * pull
+	var p2 := p3 - f1.rotated(Vector3.UP, flare * side) * pull
 
 	var steps := maxi(int(p0.distance_to(p3) / 10.0), 8)
 	var points: Array[Vector3] = []
@@ -139,6 +174,10 @@ func build_shortcut(main: RoadTrack, from_offset: float, to_offset: float) -> vo
 
 	_smooth_tangents()
 	length = curve.get_baked_length()
+
+
+## Constroi a malha do atalho ja aprovado.
+func build_surface() -> void:
 	_build_mesh()
 
 
@@ -155,6 +194,8 @@ func build_shortcut(main: RoadTrack, from_offset: float, to_offset: float) -> vo
 ## de avenida mais perto nao e o que esta na mesma fracao do caminho.
 func _follow_terrain(points: Array[Vector3], main: RoadTrack,
 		from_offset: float, to_offset: float) -> void:
+	var terrain := PackedFloat32Array()
+	terrain.resize(points.size())
 	for i in range(points.size()):
 		var best := INF
 		var at := from_offset - 60.0
@@ -165,6 +206,7 @@ func _follow_terrain(points: Array[Vector3], main: RoadTrack,
 				best = flat.length_squared()
 				points[i].y = candidate.y
 			at += 3.0
+		terrain[i] = points[i].y
 
 	# O ponto mais proximo pula quando a corda passa perto de dois pedacos da
 	# mesma curva, e pulo na altura vira degrau na pista. Tres passadas de
@@ -176,6 +218,14 @@ func _follow_terrain(points: Array[Vector3], main: RoadTrack,
 			smoothed[i].y = points[i - 1].y * 0.25 + points[i].y * 0.5 + points[i + 1].y * 0.25
 		for i in range(1, points.size() - 1):
 			points[i] = smoothed[i]
+
+	# E por ultimo o piso: a media movel corta os picos, e cortar pra baixo era
+	# meio metro de asfalto por baixo do carpete de chao da avenida - o mesmo
+	# afundamento que a correcao veio consertar, so que menor. O carpete fica
+	# 0,35 m abaixo da pista dela, entao 0,25 abaixo do terreno ainda esta por
+	# cima da terra. As pontas ficam de fora: elas encostam na avenida.
+	for i in range(1, points.size() - 1):
+		points[i].y = maxf(points[i].y, terrain[i] - 0.25)
 
 
 static func _bezier(p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, t: float) -> Vector3:
@@ -330,7 +380,7 @@ func _build_mesh() -> void:
 	# Carpete curto no atalho. O da avenida tem 34 m de cada lado e ja cobre o
 	# terreno em volta; o do atalho existe so pra ele nao flutuar no vazio
 	# quando corta longe demais. Largo, ele e que passaria por cima da avenida.
-	var carpet := 12.0 if is_shortcut else GROUND
+	var carpet := 20.0 if is_shortcut else GROUND
 
 	var steps := int(length / MESH_STEP)
 	for i in range(steps):

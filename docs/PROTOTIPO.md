@@ -246,12 +246,27 @@ as da própria avenida. É isso que permite **trocar a moto de pista sem
 teleporte**: na boca e na reentrada as duas curvas se encostam apontando pro
 mesmo lado, e o que muda é só em qual delas o offset passa a ser medido.
 
+O atalho sai e volta **em ângulo** (22°), e não pelas tangentes da própria
+avenida. Com as tangentes dela o atalho nascia grudado e voltava grudado —
+medido, 8,6 m entre os dois eixos no miolo, com as duas pistas tendo 13 m de
+largura. Na tela isso não lia como bifurcação: lia como uma avenida de 30 m com
+duas pinturas de faixa sobrepostas, e todo prédio que mora entre as duas
+aparecia no meio do caminho. Agora o miolo precisa se afastar no mínimo 26 m do
+eixo da avenida (`BRANCH_MIN_APART`) ou o atalho não nasce, e o banco falha se
+algum nascer colado.
+
+A curva do atalho é traçada antes da malha (`plan_shortcut` / `build_surface`):
+a maioria dos candidatos é recusada, e construir um `SurfaceTool` completo pra
+cada um fazia o boot passar de dez minutos.
+
 O atalho **segue o relevo da avenida**: a altura de cada ponto vem do pedaço de
 avenida mais próximo, e não da fração do caminho. Sem isso ele era uma ponte
 reta sobre um terreno que sobe e desce, e como o carpete de chão da avenida tem
 43 m de cada lado do eixo, era ele que passava por cima do atalho — medido,
 1,7 m de asfalto enterrado. Em jogo isso aparecia como a moto afundando no chão
-no meio da rua.
+no meio da rua. A média móvel que tira os degraus da altura também corta pra
+baixo, então o último passo trava o piso em 0,25 m abaixo do terreno — ainda
+acima da terra, que fica 0,35 m abaixo da pista. Medido depois: 3 cm.
 
 E o cenário é construído **depois** dos atalhos, pulando prédio ou poste que
 caia dentro deles. Prédio e poste são plantados em função da avenida, e o

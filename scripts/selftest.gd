@@ -305,6 +305,9 @@ func _phase_fork(delta: float) -> void:
 		_fork_time = _t
 
 	if _fork_time > 0.0 or _t > 25.0:
+		_check(_world._branch_separation(branch.road, branch.from_offset, branch.to_offset)
+			>= World.BRANCH_MIN_APART,
+			"o atalho passa colado na avenida - na tela isso vira uma pista so, larga demais")
 		_report.append("bifurcacao           atalho de %.0f m no lugar de %.0f m (-%.0f m)" % [
 			branch.road.length, branch.to_offset - branch.from_offset, branch.saving()])
 		_check(_fork_entered,

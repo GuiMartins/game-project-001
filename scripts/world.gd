@@ -13,6 +13,14 @@ const NEAR_MISS_MIN_LATERAL: float = 1.30
 ## Abaixo desta velocidade passar entre carros nao e coragem, e manobra.
 const NEAR_MISS_MIN_SPEED: float = 17.0
 
+## O quanto o miolo do atalho precisa se afastar do eixo da avenida, em metros.
+##
+## 26 m poe as duas pistas a uns 13 m de asfalto a asfalto: quarteirao no meio,
+## nao costura. O teto existe pro atalho continuar sobre o carpete de chao da
+## avenida, que vai ate 43 m - alem disso ele sairia voando sobre o vazio.
+const BRANCH_MIN_APART: float = 26.0
+const BRANCH_MAX_APART: float = 52.0
+
 var tuning: BikeTuning
 var world_tuning: WorldTuning
 var track: RoadTrack
@@ -196,7 +204,9 @@ func _build_scenery() -> void:
 			var h := _rng.randf_range(6.0, 26.0)
 			var w := _rng.randf_range(6.0, 14.0)
 			var at := track.point(o, (edge + 6.0 + w * 0.5) * side) + Vector3.UP * (h * 0.5 - 1.0)
-			if _blocks_branch(at, w * 0.5):
+			# 0,707*w e o canto da caixa, e e o canto que aparece dentro da
+			# pista. Com w*0.5 sobrava ate 2,8 m de predio pra dentro.
+			if _blocks_branch(at, w * 0.7071):
 				continue
 			var shade := _rng.randf_range(0.2, 0.42)
 			var building := Greybox.box(Vector3(w, h, w), Color(shade, shade * 0.97, shade * 1.15))
@@ -299,13 +309,27 @@ func _make_branch(from_offset: float, to_offset: float) -> RouteBranch:
 	var road := RoadTrack.new()
 	road.name = "Shortcut%d" % branches.size()
 	add_child(road)
-	road.build_shortcut(track, from_offset, to_offset)
+	road.plan_shortcut(track, from_offset, to_offset)
 
 	# A corda pode sair mais longa que a promessa depois de virar curva de
 	# verdade. Atalho que nao encurta e armadilha, entao ele nao nasce.
 	if road.length > (to_offset - from_offset) * 0.93:
 		road.queue_free()
 		return null
+
+	# E precisa ser uma rua OUTRA, nao uma segunda pintura em cima da avenida.
+	#
+	# Sem esta checagem nascia atalho passando a 8,6 m do eixo da avenida: com
+	# as duas pistas tendo 13 m de largura, os asfaltos se sobrepunham e a tela
+	# mostrava uma avenida de 30 m com duas pinturas de faixa. De quebra, todo
+	# predio que mora entre as duas aparecia no meio do caminho.
+	var apart := _branch_separation(road, from_offset, to_offset)
+	if apart < BRANCH_MIN_APART or apart > BRANCH_MAX_APART:
+		road.queue_free()
+		return null
+
+	# Aprovado: agora sim vale gastar a malha.
+	road.build_surface()
 
 	var branch := RouteBranch.new()
 	branch.road = road
@@ -323,6 +347,25 @@ func _make_branch(from_offset: float, to_offset: float) -> RouteBranch:
 	_build_fork_marks(branch)
 	_litter_branch(branch)
 	return branch
+
+
+## Quao longe do eixo da avenida o miolo do atalho chega a passar.
+##
+## Mede so o miolo (20% a 80%): as pontas encostam na avenida por definicao, e
+## incluir elas faria toda bifurcacao parecer colada.
+func _branch_separation(road: RoadTrack, from_offset: float, to_offset: float) -> float:
+	var closest := INF
+	var at := road.length * 0.2
+	while at < road.length * 0.8:
+		var point_at := road.sample_position(at)
+		var along := from_offset - 60.0
+		while along < to_offset + 60.0:
+			var on_main := track.sample_position(along)
+			closest = minf(closest, Vector2(on_main.x - point_at.x,
+				on_main.z - point_at.z).length())
+			along += 4.0
+		at += 6.0
+	return closest
 
 
 ## Aviso na pista antes da boca: placa no lado que o atalho sai e chevrons
