@@ -27,9 +27,9 @@ CONTROLES
   Shift              boost (gasta adrenalina)
   Q / E              soco pra esquerda / direita
   R                  reiniciar a corrida
-  F1                 liga/desliga o pixel de 320x180
-  F2                 troca a camera (perseguicao / capacete / diagnostico)
-  F3                 painel de tuning (abre em janela separada)
+  1 ou F1            liga/desliga o pixel de 320x180
+  2 ou F2            troca a camera (perseguicao / capacete / diagnostico)
+  3 ou F3            painel de tuning (abre em janela separada)
 
 Controle de videogame tambem funciona: stick esquerdo inclina,
 A/B aceleram e freiam, X/Y socam.
