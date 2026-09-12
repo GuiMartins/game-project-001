@@ -26,6 +26,18 @@ class_name BikeTuning
 ## outro. Slider que mente e slider que ninguem consegue ajustar.
 @export_range(0.0, 0.02, 0.0005) var drag: float = 0.0015
 
+## Quanto a ladeira puxa, em m/s^2 por 100% de inclinacao.
+##
+## Sem isto a elevacao e so desenho: a moto sobe uma rampa de 12% no mesmo
+## ritmo que anda na reta, e a unica coisa que a ladeira faz e mexer a camera.
+## Com isto a subida cobra o gas que voce nao tinha e a descida devolve
+## velocidade de graca - que e o que faz escolher a rota de baixo significar
+## alguma coisa.
+##
+## Em 16, uma rampa de 10% tira 1,6 m/s^2 - um decimo da aceleracao da moto,
+## sensivel sem transformar ladeira em parede.
+@export_range(0.0, 60.0, 0.5) var slope_pull: float = 16.0
+
 ## --- Boost / adrenalina ---------------------------------------------------
 @export_group("Boost / adrenalina")
 

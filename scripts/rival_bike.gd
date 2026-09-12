@@ -126,7 +126,13 @@ func _physics_process(delta: float) -> void:
 
 
 func _drive(delta: float) -> void:
-	var gap := player.track_offset - offset
+	# Progresso do jogador na AVENIDA, e nao o offset cru dele: quando ele
+	# corta por um atalho, o offset passa a ser medido numa curva que o rival
+	# nem conhece, e o rubber band perseguiria um numero sem sentido.
+	var duel: bool = world.player_on_route() if world.has_method("player_on_route") else true
+	var player_at: float = world.player_progress() if world.has_method("player_progress") \
+		else player.track_offset
+	var gap := player_at - offset
 
 	# Rubber band: o rival persegue o jogador em vez de correr sozinho. Num
 	# prototipo de combate, o rival tem que estar do lado - nao 200m na frente.
@@ -137,7 +143,9 @@ func _drive(delta: float) -> void:
 	# Escolhe um corredor livre, preferindo o do jogador quando esta perto o
 	# bastante pra brigar.
 	var want := _target_lateral
-	if absf(gap) < 14.0:
+	# Emparelhar so faz sentido com os dois na mesma pista. Fora disso o rival
+	# corre a corrida dele.
+	if duel and absf(gap) < 14.0:
 		want = player.track_lateral + signf(lateral - player.track_lateral) * 1.7 * (1.0 - _aggression)
 	if world.has_method("free_lateral"):
 		want = world.free_lateral(offset, want, 20.0 + speed * 0.6, self)
@@ -149,7 +157,7 @@ func _drive(delta: float) -> void:
 	_lean = lerpf(_lean, clampf(-lateral_speed / 9.0, -1.0, 1.0) * deg_to_rad(tuning.max_lean), 1.0 - exp(-8.0 * delta))
 
 	# Ataca quando esta emparelhado.
-	if _punch_cooldown <= 0.0 and absf(gap) < 2.2:
+	if duel and _punch_cooldown <= 0.0 and absf(gap) < 2.2:
 		var side_gap := player.track_lateral - lateral
 		if absf(side_gap) < tuning.punch_range + 1.0 and _rng.randf() < _aggression:
 			_punch_side = int(signf(side_gap))

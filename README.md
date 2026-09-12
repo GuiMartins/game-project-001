@@ -3,6 +3,11 @@
 Protótipo *greybox* de um jogo estilo Road Rash com entregadores de app.
 Godot 4.4, mundo 3D real renderizado num `SubViewport` de 320×180.
 
+A cidade fecha a pista de quatro jeitos: **semáforo** (fila que sempre deixa
+uma faixa livre), **engarrafamento** (as quatro faixas ocupadas, só o vão entre
+as filas passa), **bifurcações** com atalho mais curto e mais sujo, e
+**ladeira** de até 14%, que cobra gás na subida e devolve na descida.
+
 Ele existe para responder uma pergunta e só uma: **acelerar, inclinar, se
 enfiar no corredor e bater está gostoso?** Nada de arte, áudio ou menu até
 essa resposta ser sim.
@@ -36,7 +41,16 @@ aceleram e freiam, `X`/`Y` socam.
 
 `F3` abre um painel com dois blocos de sliders, editáveis com a moto andando:
 **MOTO** (`scripts/bike_tuning.gd`, o feel) e **MUNDO**
-(`scripts/world_tuning.gd`, densidade do trânsito e rivais).
+(`scripts/world_tuning.gd`, trânsito, semáforo, engarrafamento, atalhos e
+rivais).
+
+Espaçamento de semáforo e quantidade de atalhos são geometria da rota: mudam no
+`R`. O resto vale com a moto andando.
+
+O que **não** tem slider, de propósito: a forma da pista em si — curvatura
+máxima, rampa máxima (`MAX_GRADE`) e a busca por cordas que vira atalho. A
+pista é gerada uma vez no boot e o `R` não a refaz, então slider ali mentiria.
+São constantes documentadas em `road_track.gd` e `world.gd`.
 
 Ele abre em **janela separada do sistema**, não por cima do jogo — arraste pro
 lado ou pro segundo monitor e ajuste vendo o efeito. A posição e o tamanho onde

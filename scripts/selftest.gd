@@ -40,6 +40,11 @@ var _trace_next: float = 0.0
 var _shots_dir: String = OS.get_environment("RUSHFOOD_SELFTEST_SHOTS")
 var _shots_next: float = 0.0
 var _shots_taken: int = 0
+var _max_waiting: int = 0
+var _fork_entered: bool = false
+var _fork_time: float = -1.0
+var _fork_backstep: float = 0.0
+var _last_progress: float = 0.0
 var _heading_at_mark: float = 0.0
 var _lateral_at_mark: float = 0.0
 var _speed_at_mark: float = 0.0
@@ -56,11 +61,36 @@ func setup(main: Node) -> void:
 	_bench_begin()
 	if not _shots_dir.is_empty():
 		# Modo foto: pula o banco de provas e vai direto pra corrida.
-		_phase = 5
+		_phase = 6
 	print("\n=== RUSHFOOD SELFTEST ===")
 	print("tuning: %s" % _main.get("tuning_source"))
-	print("pista: %.0f m | transito: %d | rivais: %d" % [
-		_world.track.length, _world.traffic.size(), _world.rivals.size()])
+	print("pista: %.0f m | transito: %d | rivais: %d | semaforos: %d | atalhos: %d" % [
+		_world.track.length, _world.traffic.size(), _world.rivals.size(),
+		_world.lights.size(), _world.branches.size()])
+	_measure_relief()
+
+
+## Perfil da pista: a rampa mais forte e o desnivel entre o ponto mais alto e
+## o mais baixo. Pista que "amanheceu plana" e regressao silenciosa - o jogo
+## continua rodando, so fica sem uma das coisas que o torna uma cidade.
+func _measure_relief() -> void:
+	var steepest := 0.0
+	var lowest := INF
+	var highest := -INF
+	var o := 0.0
+	while o < _world.track.length:
+		steepest = maxf(steepest, absf(_world.track.grade_at(o)))
+		var y := _world.track.sample_position(o).y
+		lowest = minf(lowest, y)
+		highest = maxf(highest, y)
+		o += 5.0
+	_report.append("relevo               rampa max %.0f%%, desnivel %.0f m" % [
+		steepest * 100.0, highest - lowest])
+	_check(steepest > 0.05, "a pista saiu plana: sem ladeira nao ha subida nem descida pra sentir")
+	# Margem sobre o teto: as tangentes suavizadas passam um pouco por cima do
+	# valor sorteado, e isso e esperado.
+	_check(steepest < RoadTrack.MAX_GRADE * 1.4,
+		"rampa de %.0f%% - acima disso a moto sobe empinada e desce voando" % (steepest * 100.0))
 
 
 func _physics_process(delta: float) -> void:
@@ -71,7 +101,8 @@ func _physics_process(delta: float) -> void:
 		2: _phase_lean(delta)
 		3: _phase_turn(delta)
 		4: _phase_punch(delta)
-		5: _phase_freerun(delta)
+		5: _phase_fork(delta)
+		6: _phase_freerun(delta)
 
 
 func _next_phase() -> void:
@@ -84,6 +115,9 @@ func _next_phase() -> void:
 ## guard-rail contamina a medida de 0-100 e o numero deixa de significar algo.
 func _bench_begin() -> void:
 	_player.road_bounds_enabled = false
+	# 0-100 medido numa ladeira mede a ladeira. A elevacao entra de volta na
+	# corrida solta, que e onde a pergunta e "da pra jogar isto?".
+	_player.slope_enabled = false
 	_player.collision_mask = 0
 	for car in _world.traffic:
 		car.offset += 9000.0
@@ -94,6 +128,7 @@ func _bench_begin() -> void:
 
 func _bench_end() -> void:
 	_player.road_bounds_enabled = true
+	_player.slope_enabled = true
 	_player.collision_mask = Layers.WORLD | Layers.RIVAL
 	_player.place_on_track(40.0, RoadTrack.corridor_center(1), 20.0)
 	_world.scatter_traffic_ahead(_player.track_offset)
@@ -222,7 +257,65 @@ func _phase_punch(_delta: float) -> void:
 		_next_phase()
 
 
-## Fase 5 - corrida solta: le a pista de verdade ---------------------------
+## Fase 5 - bifurcacao: entra no atalho e volta pra avenida ----------------
+##
+## Esta e a fase que existe por medo. Trocar a pista de referencia embaixo da
+## moto e a coisa mais fragil que o mundo faz: erra o palpite do offset e a
+## moto reprojeta a 200 m dali, erra a volta e a entrega nunca completa. Nada
+## disso aparece jogando cinco minutos - so na vez em que voce pega o atalho.
+func _phase_fork(delta: float) -> void:
+	if _world.branches.is_empty():
+		_report.append("bifurcacao           a rota nao abriu nenhuma")
+		_check(false, "nenhum atalho nasceu na rota - a busca pela corda parou de achar")
+		_next_phase()
+		return
+
+	var branch: RouteBranch = _world.branches[0]
+	if _t < 0.02:
+		# Limites e ladeira de volta: sem os limites o mundo nem avalia a boca,
+		# e e justamente isso que esta sendo medido. A colisao continua
+		# desligada e o transito continua estacionado a 9 km daqui, pra a
+		# medida ser sobre a bifurcacao e nao sobre o transito do dia.
+		_player.road_bounds_enabled = true
+		_player.slope_enabled = true
+		_player.place_on_track(branch.from_offset - 70.0,
+			RoadTrack.lane_center(RoadTrack.LANE_COUNT - 1 if branch.side > 0.0 else 0),
+			30.0)
+		_last_progress = _world.player_progress()
+
+	# Piloto: segue o sentido da pista e se encosta no lado da boca ate entrar.
+	var basis := _player.track.sample_basis(_player.track_offset)
+	var road_heading := atan2((-basis.z).x, (-basis.z).z)
+	var want := branch.side * 4.6 if _world.player_on_route() else 0.0
+	var steer := -wrapf(road_heading - _player.heading, -PI, PI)
+	steer += clampf((want - _player.track_lateral) * 0.09, -0.35, 0.35)
+	_set_action("ride_throttle", true)
+	_set_action("ride_right", steer > 0.02)
+	_set_action("ride_left", steer < -0.02)
+
+	# Progresso e a unica coisa que nao pode andar pra tras: o cronometro e a
+	# reciclagem do transito leem dele.
+	var progress: float = _world.player_progress()
+	_fork_backstep = minf(_fork_backstep, progress - _last_progress)
+	_last_progress = progress
+
+	if not _world.player_on_route():
+		_fork_entered = true
+	elif _fork_entered and _fork_time < 0.0:
+		_fork_time = _t
+
+	if _fork_time > 0.0 or _t > 25.0:
+		_report.append("bifurcacao           atalho de %.0f m no lugar de %.0f m (-%.0f m)" % [
+			branch.road.length, branch.to_offset - branch.from_offset, branch.saving()])
+		_check(_fork_entered,
+			"passou pela boca do atalho pelo lado certo e seguiu reto na avenida")
+		_check(_fork_time > 0.0, "entrou no atalho e nao voltou pra avenida em 25s")
+		_check(_fork_backstep > -2.0,
+			"o progresso andou %.1f m pra TRAS na troca de pista" % -_fork_backstep)
+		_next_phase()
+
+
+## Fase 6 - corrida solta: le a pista de verdade ---------------------------
 func _phase_freerun(_delta: float) -> void:
 	if _t < 0.02:
 		_bench_end()
@@ -249,6 +342,12 @@ func _phase_freerun(_delta: float) -> void:
 	_set_action("ride_right", steer > 0.02)
 	_set_action("ride_left", steer < -0.02)
 
+	var waiting := 0
+	for car in _world.traffic:
+		if car.waiting:
+			waiting += 1
+	_max_waiting = maxi(_max_waiting, waiting)
+
 	if not _shots_dir.is_empty() and _t >= _shots_next:
 		_shots_next += 2.5
 		_capture("%s/rushfood_%02d.png" % [_shots_dir, _shots_taken])
@@ -270,6 +369,10 @@ func _phase_freerun(_delta: float) -> void:
 	if _t >= 45.0 or _world.run.phase != DeliveryRun.Phase.RIDING:
 		_report.append("corrida solta 45s    %.0f m percorridos, %d raspadas, %d quedas" % [
 			_world.run.distance_done, _world.run.near_misses, _world.run.crashes])
+		_report.append("transito parando     %d carros no vermelho de uma vez, %d engarrafamentos" % [
+			_max_waiting, _world.jams_formed])
+		_check(_max_waiting > 0, "nenhum carro chegou a parar num semaforo em 45s")
+		_check(_world.jams_formed > 0, "nenhum engarrafamento se formou em 45s")
 		_check(_world.run.distance_done > 700.0,
 			"so andou %.0fm em 45s - o piloto automatico nao consegue atravessar o transito"
 			% _world.run.distance_done)

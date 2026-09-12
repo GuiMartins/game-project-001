@@ -34,6 +34,8 @@ var wrong_way: bool = false
 ## Desligado pelo banco de provas pra medir aceleracao e curva sem o guard-rail
 ## no meio. Em jogo isso e sempre true.
 var road_bounds_enabled: bool = true
+## Idem: o banco mede a MOTO, e 0-100 medido numa ladeira mede a ladeira.
+var slope_enabled: bool = true
 ## Preenchido pelo World: dado um offset e uma preferencia, devolve uma lateral
 ## sem carro parado. O jogador sozinho nao ve o transito inteiro.
 var find_clear_lateral: Callable = Callable()
@@ -114,6 +116,21 @@ func setup(a_tuning: BikeTuning, a_track: RoadTrack, start_offset: float) -> voi
 	_crash_recover_offset = start_offset
 
 
+## Troca a pista de referencia sem mexer na moto.
+##
+## Bifurcacao nao teleporta ninguem: as duas curvas se encostam na boca e na
+## reentrada, entao o que muda e so em qual delas o offset e a lateral passam a
+## ser medidos. O palpite de offset e obrigatorio - project() e busca local, e
+## sem ele a moto reprojetaria no pedaco errado da curva nova.
+func switch_track(new_track: RoadTrack, offset_hint: float) -> void:
+	track = new_track
+	var projected := new_track.project(global_position, offset_hint)
+	track_offset = projected.x
+	track_lateral = projected.y
+	_crash_recover_offset = maxf(track_offset - 6.0, 0.0)
+	_last_road_y = track.point(track_offset, track_lateral).y + SIZE.y * 0.5
+
+
 func _physics_process(delta: float) -> void:
 	if track == null:
 		return
@@ -179,6 +196,13 @@ func _update_speed(delta: float, throttle: float, brake: float) -> void:
 
 	if brake > 0.0:
 		speed -= tuning.brake * brake * delta
+
+	# A ladeira entra como aceleracao, nao como teto: subir come o gas que voce
+	# nao tinha sobrando e descer devolve. Mexer no teto em vez disso faria
+	# `max_speed` deixar de ser a velocidade maxima, e slider que mente e
+	# slider que ninguem consegue ajustar.
+	if slope_enabled:
+		speed -= tuning.slope_pull * track.grade_at(track_offset) * delta
 
 	speed = maxf(speed, 0.0)
 	if speed > top:

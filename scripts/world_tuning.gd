@@ -34,6 +34,29 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## Quantos metros atras do jogador o carro e recolhido pra reciclagem.
 @export_range(20.0, 200.0, 5.0) var traffic_behind: float = 30.0
 
+## Velocidade de cruzeiro mais alta que um carro do fluxo assume, em m/s.
+##
+## 7 m/s e 25 km/h: transito de marginal em hora de pico. E o numero que decide
+## se o corredor e um tunel que anda ou uma parede que voce ultrapassa - alto
+## demais e os carros somem no retrovisor, zero e a avenida vira
+## estacionamento permanente.
+@export_range(0.0, 25.0, 0.5) var traffic_speed: float = 7.0
+
+## Aceleracao do carro do transito, em m/s^2.
+@export_range(0.5, 12.0, 0.1) var traffic_accel: float = 2.2
+## Frenagem do carro do transito, em m/s^2.
+##
+## Maior que a aceleracao de proposito: carro que reage devagar a fila entra
+## dentro do carro da frente, e duas caixas se atravessando a 320x180 le como
+## bug, nao como transito.
+@export_range(1.0, 25.0, 0.1) var traffic_brake: float = 4.5
+## Distancia centro a centro que o carro guarda do carro da frente, em metros.
+##
+## O carro tem 4,4 m, entao abaixo de 5 eles se encavalam. E este numero que
+## decide o comprimento da fila do semaforo.
+@export_range(5.0, 24.0, 0.1) var traffic_follow_gap: float = 6.2
+
+
 ## Fracao dos carros que entra encostada no meio-fio, parada.
 ##
 ## Encostado quer dizer parado numa das faixas da ponta - a da esquerda ou a
@@ -50,6 +73,86 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## uma aposta em vez de uma regra decorada. O lado que a porta abre tambem e
 ## sorteado - pra pista ou pra calcada.
 @export_range(0.0, 1.0, 0.05) var door_chance: float = 0.6
+
+
+@export_group("Semaforo")
+
+## Espacamento minimo entre semaforos na pista, em metros.
+##
+## Vale na construcao da pista: muda no R, nao ao vivo. Semaforo e geometria
+## fixa da rota, e trocar de lugar com a moto andando faria a fila que voce ja
+## estava lendo mudar de sentido no meio da freada.
+@export_range(80.0, 1200.0, 10.0) var light_gap_min: float = 260.0
+## Espacamento maximo entre semaforos na pista, em metros.
+@export_range(120.0, 2000.0, 10.0) var light_gap_max: float = 520.0
+
+## Quanto tempo o sinal fica verde, em segundos.
+@export_range(2.0, 60.0, 0.5) var light_green_time: float = 14.0
+## Quanto tempo o sinal fica amarelo, em segundos.
+@export_range(0.5, 8.0, 0.5) var light_yellow_time: float = 2.5
+## Quanto tempo o sinal fica vermelho, em segundos.
+##
+## E este numero que decide o tamanho da fila: cada segundo de vermelho e mais
+## um carro parado. Alto demais e o cruzamento vira estacionamento.
+@export_range(1.0, 40.0, 0.5) var light_red_time: float = 9.0
+
+
+@export_group("Engarrafamento")
+
+## Distancia minima de pista entre um engarrafamento e o proximo, em metros.
+@export_range(100.0, 3000.0, 20.0) var jam_gap_min: float = 480.0
+## Distancia maxima de pista entre um engarrafamento e o proximo, em metros.
+##
+## Junto com o minimo, define o ritmo: engarrafamento e o momento em que a
+## pista some e so o corredor sobra. Frequente demais e o corredor deixa de ser
+## a excecao e vira o jogo inteiro.
+@export_range(200.0, 6000.0, 20.0) var jam_gap_max: float = 1300.0
+
+## Fracao da frota que um engarrafamento consome.
+##
+## Diferente do semaforo, aqui as quatro faixas SAO ocupadas de proposito - o
+## engarrafamento e a parede completa, e o unico caminho e o vao entre as
+## filas. Por isso ele come tantos carros: parede pela metade nao para
+## ninguem. Em 0 nao ha engarrafamento nenhum.
+@export_range(0.0, 1.0, 0.05) var jam_share: float = 0.5
+
+## Velocidade em que a fila presa rasteja, em m/s.
+##
+## Fila 100% imovel vira cenario. Um metro por segundo ja e o bastante pro vao
+## respirar - abrir e fechar - enquanto o jogador se decide a entrar nele.
+@export_range(0.0, 4.0, 0.1) var jam_creep: float = 1.4
+
+## Distancia entre as fileiras do engarrafamento, em metros.
+##
+## Comprimento do carro (4,4) mais o vao de para-choque. E o outro lado do
+## corredor: este numero e o vao longitudinal, `traffic_follow_gap` e o da
+## fila que ainda anda.
+@export_range(5.0, 14.0, 0.1) var jam_row_gap: float = 6.4
+
+
+@export_group("Bifurcacao")
+
+## Quantos atalhos a rota tenta abrir. Vale no R, junto com a pista.
+##
+## Atalho e a corda de uma curva grande: sai da avenida, corta reto e devolve
+## voce la na frente. Nao ha lugar garantido pra todos - a rota so aceita a
+## corda onde ela economiza pista de verdade, entao pedir 6 pode entregar 3.
+@export_range(0, 6, 1) var branch_count: int = 2
+
+## Carros parados largados dentro de cada atalho.
+##
+## E o preco do atalho. Sem eles a escolha nao existe: pista mais curta e
+## vazia seria sempre a resposta certa, e escolha com resposta certa nao e
+## escolha. Com eles o atalho e mais curto E mais apertado.
+@export_range(0, 12, 1) var branch_obstacles: int = 4
+
+## Quanto o jogador precisa estar pro lado da boca pra entrar no atalho, em
+## metros do eixo da pista.
+##
+## Nao e o meio da pista: quem passa a 20 cm do eixo nao escolheu nada, e uma
+## bifurcacao que voce toma sem querer e uma bifurcacao que voce xinga. Dois
+## metros e meia faixa - da pra ver na tela de que lado voce esta.
+@export_range(0.0, 6.0, 0.1) var fork_commit: float = 2.0
 
 
 @export_group("Rivais")

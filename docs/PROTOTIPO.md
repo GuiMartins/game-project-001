@@ -71,14 +71,28 @@ mexeu num slider ontem" virarem a mesma coisa. Pra medir os seus ajustes,
 `-- --selftest --selftest-user`. O relatório diz qual dos dois usou.
 
 ```
+relevo               rampa max 14%, desnivel 40 m
 0-100 km/h          2.75 s
 velocidade em 22s   183.6 km/h  (teto do tuning 187.2)
 freada 183 km/h -> 0   1.48 s / 37 m
 inclinacao 0->90%    0.35 s
 a 175 km/h: 35.8 graus/s, raio 78 m
 hitbox do soco       0.133 s aberta (tuning pede 0.130)
-corrida solta 45s    1147 m percorridos, 13 raspadas, 4 quedas
+bifurcacao           atalho de 280 m no lugar de 328 m (-48 m)
+corrida solta 45s    1262 m percorridos, 19 raspadas, 4 quedas
+transito parando     6 carros no vermelho de uma vez, 1 engarrafamentos
 ```
+
+As três últimas linhas não medem a moto, medem o **mundo**: elas existem porque
+"o engarrafamento parou de nascer" e "o atalho virou um caminho mais longo" são
+regressões que não travam nada — o jogo continua rodando lindamente sem elas, e
+ninguém percebe até jogar a fase inteira. A fase da bifurcação é a mais
+paranoica do banco: ela entra no atalho, volta pra avenida e confere que o
+progresso não andou pra trás na troca de pista.
+
+O 0-100 e a freada são medidos com a **ladeira desligada** (`slope_enabled`).
+Medir aceleração numa subida mede a subida. A elevação volta a valer na corrida
+solta, que é onde a pergunta é "dá pra jogar isto?".
 
 O número que amarra tudo: a curva mais fechada que o gerador de pista produz é
 **0,6 grau/m**, o que a 48,6 m/s exige 29 graus/s de guinada. A moto entrega
@@ -175,6 +189,90 @@ Duas ressalvas honestas:
   calçada, porque `free_lateral` só considera centros de faixa e de corredor.
   Os números da corrida solta ficaram idênticos depois da mudança — regressão
   aqui não é pega por lá, só pelo polegar.
+
+## O trânsito para: semáforo e engarrafamento
+
+Duas maneiras de fechar a pista, opostas de propósito.
+
+**Semáforo** (`traffic_light.gd`) é geometria fixa da rota, a cada 260–520 m.
+O carro que se aproxima do vermelho freia na faixa de retenção e fila atrás de
+quem já parou — o mesmo car-following que impede dois carros de ocuparem o
+mesmo metro de asfalto.
+
+A cada ciclo vermelho ele **sorteia uma faixa que não segura ninguém**, e quem
+estava nela sai antes de parar. Sem essa faixa vazia a fila fecha as quatro
+pistas e o semáforo vira um muro: a 50 m/s a única resposta possível seria
+parar, e parar não é o jogo. Como a faixa livre muda de ciclo pra ciclo,
+ninguém decora "é sempre a da direita".
+
+**Engarrafamento** é o contrário, e é por isso que ele existe: ali as quatro
+faixas **são** ocupadas, em fileiras de para-choque a para-choque. A pista
+acaba de verdade e a única passagem é o vão entre as filas — é a hora em que o
+jogo cobra o pilar do corredor em vez de oferecê-lo.
+
+Ele não cria carros: recruta os que já estavam mais longe à frente, onde a
+neblina esconde, e os monta em grade. Assim o engarrafamento nasce pronto, fora
+de vista, em vez de aparecer fileira por fileira na cara do jogador. O
+`jam_share` (0.5) decide quanto da frota ele come — parede pela metade não para
+ninguém.
+
+O vão entre duas colunas de carro é de 1,4 m para uma moto de 0,76 m. É
+apertado de propósito: passar ali pontua raspada nos dois lados ao mesmo tempo.
+
+## Bifurcações
+
+A rota abre atalhos onde a avenida faz volta grande. Não há level design nisto:
+o `World` varre a pista atrás de trechos em que a **corda** entre duas pontas é
+pelo menos 14% mais curta que a pista entre elas — que é a definição geométrica
+de "aqui daria pra cortar". Onde a avenida já é reta, atalho nenhum nasce.
+
+O atalho é outra `RoadTrack`, uma Bézier cúbica cujas tangentes nas pontas são
+as da própria avenida. É isso que permite **trocar a moto de pista sem
+teleporte**: na boca e na reentrada as duas curvas se encostam apontando pro
+mesmo lado, e o que muda é só em qual delas o offset passa a ser medido.
+
+Três decisões que não são óbvias:
+
+- **Entra quem estava do lado da boca** (2 m do eixo pra fora). Bifurcação que
+  você toma sem querer é bifurcação que você xinga.
+- **A corrida continua sendo medida na avenida.** Dentro do atalho o offset da
+  moto é de outra curva; `player_progress()` traduz de volta. Sem isso, cortar
+  caminho zeraria o cronômetro — e como o atalho é mais curto que o trecho que
+  substitui, cada metro rodado nele avança mais de um metro de rota. Esse é o
+  prêmio, e o jogador vê ele no "faltam X m" caindo mais rápido.
+- **Tem carro parado largado dentro.** Sem eles a escolha não existe: pista
+  mais curta e vazia seria sempre a resposta certa, e escolha com resposta
+  certa não é escolha.
+
+O que o banco **não** cobre: a raspada no corredor não pontua dentro do atalho,
+porque a frota vive na avenida e os offsets das duas curvas se parecem sem
+querer dizer a mesma coisa. Também é dentro do atalho que os rivais deixam de
+tentar emparelhar — eles continuam na avenida, correndo a corrida deles.
+
+## Ladeira
+
+A pista sempre teve inclinação; ela era de ±5,5% e servia só pra mexer a
+câmera. Agora o relevo tem **trecho próprio**, mais curto que o da curva (70 a
+200 m contra 90 a 260 m), e chega a 14%.
+
+Ter trecho próprio é o detalhe que importa: antes a subida era sorteada junto
+com a curvatura, então toda ladeira começava exatamente onde começava uma
+curva e a rota inteira tinha o mesmo ritmo. Separados, sobe no meio do curvão e
+empina na reta.
+
+Duas coisas caem de graça da arquitetura:
+
+- **O salto na crista.** A moto herda a subida da pista ao chegar no topo
+  (`_integrate`), então rampa que troca de sinal em poucos metros cospe a moto
+  no ar. Não há código de rampa nenhum — quem controla isso é o `GRADE_BLEND`.
+- **O sorteio se corrige.** Sem puxar os sinais de volta pro nível do mar, a
+  sequência é um passeio aleatório e a rota de 3 km termina 200 m acima de onde
+  começou. Com a correção, o desnível total ficou em 40 m.
+
+O que a ladeira cobra da moto é o `slope_pull` (16 m/s² por 100% de rampa, no
+F3): subida come o gás que você não tinha sobrando, descida devolve. Ele entra
+como aceleração e **não** como teto — mexer no teto faria `max_speed` deixar de
+ser a velocidade máxima, e slider que mente é slider que ninguém ajusta.
 
 ## Próximos passos, em ordem de risco
 
