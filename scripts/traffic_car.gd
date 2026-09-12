@@ -7,7 +7,10 @@ class_name TrafficCar
 ## abre a porta na sua cara, para no sinal e empaca no engarrafamento - e cada
 ## uma dessas coisas e um jeito diferente de fechar a pista e deixar so o vao.
 
-const SIZE := Vector3(1.9, 1.5, 4.4)
+## 1,80 de largura, e nao 1,90: com faixa de 3,30 isso e a diferenca entre
+## 1,40 e 1,50 de vao entre duas colunas de carro. Parece pouco e nao e - a
+## moto tem 0,75, entao o vao util por lado passou de 32 pra 37 cm.
+const SIZE := Vector3(1.8, 1.5, 4.4)
 const DOOR_SIZE := Vector3(1.1, 1.0, 1.6)
 
 ## Greybox com cor, nao greybox cinza. A 320x180 duas caixas cinzas coladas nao
@@ -26,6 +29,18 @@ const FOLLOW_GAP: float = 6.2
 ## A partir de quantos metros o carro comeca a se preocupar com o semaforo.
 ## Nao e slider: e o alcance da consulta, nao um numero de feel.
 const LIGHT_LOOKAHEAD: float = 90.0
+
+## De quantos em quantos frames o carro reconsulta a pista a frente.
+##
+## A consulta varre a frota inteira, entao ela custa N por carro por frame - N
+## ao quadrado no mundo. Medido, com uma fila de 90 m em cena isso dava 4,7 ms
+## por frame, mais de um quarto do orcamento a 60 Hz, so pra carro nao entrar
+## em carro.
+##
+## Entre uma consulta e outra o vao e descontado pelo que o proprio carro
+## andou. E a hipotese conservadora - supoe o carro da frente parado -, entao
+## errar pra menos aqui freia cedo demais, nunca tarde demais.
+const PROBE_EVERY: int = 4
 
 var track: RoadTrack
 var offset: float = 0.0
@@ -53,6 +68,8 @@ var world: Node
 ## nunca dirige - por isso todo uso aqui cai nos const acima quando falta.
 var world_tuning: WorldTuning
 
+var _gap_cache: float = INF
+var _probe_in: int = 0
 var _target_lateral: float = 0.0
 var _lane_change_timer: float = 0.0
 var _door_timer: float = 0.0
@@ -98,6 +115,9 @@ func setup(a_track: RoadTrack, a_offset: float, a_lateral: float, seed_value: in
 	track = a_track
 	_rng.seed = seed_value
 	_lane_change_timer = _rng.randf_range(3.0, 14.0)
+	# Consulta desencontrada: se todos perguntassem no mesmo frame, economizar
+	# tres frames em quatro so faria o pico ser quatro vezes maior.
+	_probe_in = _rng.randi_range(1, PROBE_EVERY)
 	_reset_at(a_offset, a_lateral, a_parked, a_opens_door, false)
 
 
@@ -176,7 +196,13 @@ func _drive(delta: float) -> bool:
 				_target_lateral = light.held_lateral_near(_target_lateral)
 
 	var gap: float = world_tuning.traffic_follow_gap if world_tuning != null else FOLLOW_GAP
-	want = minf(want, _approach_speed(_gap_ahead(gap) - gap))
+	_probe_in -= 1
+	if _probe_in <= 0:
+		_probe_in = PROBE_EVERY
+		_gap_cache = _gap_ahead(gap)
+	else:
+		_gap_cache -= speed * delta
+	want = minf(want, _approach_speed(_gap_cache - gap))
 
 	var accel: float = world_tuning.traffic_accel if world_tuning != null else ACCEL
 	var rate := accel if want > speed else _brake()
@@ -262,6 +288,7 @@ func _reset_at(a_offset: float, a_lateral: float, a_parked: bool,
 		cruise_speed = _rng.randf_range(0.0,
 			world_tuning.traffic_speed if world_tuning != null else 7.0)
 	speed = cruise_speed
+	_gap_cache = INF
 	_opens_door = a_parked and a_opens_door
 	near_missed = false
 	_set_door(false)

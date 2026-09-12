@@ -30,9 +30,12 @@ godot --path .
 | `Shift` | boost (gasta adrenalina) |
 | `Q` / `E` | soco pra esquerda / direita |
 | `R` | reiniciar a corrida |
-| `F1` | liga/desliga o pixel de 320×180 |
-| `F2` | alterna câmera (perseguição / capacete / diagnóstico) |
-| `F3` | painel de tuning (abre em janela separada) |
+| `1` ou `F1` | liga/desliga o pixel de 320×180 |
+| `2` ou `F2` | alterna câmera (perseguição / capacete / diagnóstico) |
+| `3` ou `F3` | painel de tuning (abre em janela separada) |
+
+No macOS as teclas de função são do sistema (brilho, Mission Control), então
+`F1`–`F3` só chegam no jogo com `Fn` segurado. Use `1`, `2` e `3`.
 
 Controle de videogame também funciona: stick esquerdo inclina, `A`/`B`
 aceleram e freiam, `X`/`Y` socam.

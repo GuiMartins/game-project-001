@@ -7,11 +7,19 @@ const ROUTE_LENGTH: float = 3200.0
 
 ## Distancia lateral (centro a centro) que ainda conta como raspada.
 const NEAR_MISS_LATERAL: float = 2.6
-## Piso da janela: meia largura do carro (0.95) + meia largura da moto (0.38).
+## Piso da janela: meia largura do carro (0.90) + meia largura da moto (0.38).
 ## Abaixo disso nao foi raspada, foi batida - e batida ja tem o proprio efeito.
-const NEAR_MISS_MIN_LATERAL: float = 1.35
+const NEAR_MISS_MIN_LATERAL: float = 1.30
 ## Abaixo desta velocidade passar entre carros nao e coragem, e manobra.
 const NEAR_MISS_MIN_SPEED: float = 17.0
+
+## O quanto o miolo do atalho precisa se afastar do eixo da avenida, em metros.
+##
+## 26 m poe as duas pistas a uns 13 m de asfalto a asfalto: quarteirao no meio,
+## nao costura. O teto existe pro atalho continuar sobre o carpete de chao da
+## avenida, que vai ate 43 m - alem disso ele sairia voando sobre o vazio.
+const BRANCH_MIN_APART: float = 26.0
+const BRANCH_MAX_APART: float = 52.0
 
 var tuning: BikeTuning
 var world_tuning: WorldTuning
@@ -41,6 +49,15 @@ var _jam_due: float = 0.0
 ## dentro dele.
 var _jam_from: float = 0.0
 var _jam_to: float = 0.0
+## Fileiras do engarrafamento que ainda faltam montar, e a proxima da fila.
+##
+## Montar as 14 fileiras de uma vez custava 9,8 ms num frame so - mais da
+## metade do orcamento a 60 Hz, num jogo em que o engasgo aparece justamente
+## quando voce esta a 180 km/h. Espalhado, sao 1,4 ms por frame durante um
+## decimo de segundo, e a fila fica pronta muito antes de entrar em cena.
+var _jam_rows_left: int = 0
+var _jam_next_row: int = 0
+
 ## Atalho em que o jogador esta agora, ou null se ele esta na avenida.
 var _on_branch: RouteBranch = null
 ## Progresso do frame passado, pra saber quando a boca de um atalho ficou pra
@@ -64,6 +81,9 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	add_child(track)
 	track.build(ROUTE_LENGTH, _rng)
 
+	# Atalho antes do cenario, e nao depois: o cenario precisa saber por onde o
+	# atalho passa pra nao plantar predio no meio dele.
+	_build_branches()
 	_build_scenery()
 
 	player = PlayerBike.new()
@@ -87,7 +107,6 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	camera.current = true
 
 	_build_lights()
-	_build_branches()
 	_spawn_traffic()
 	_spawn_rivals()
 	_arm_jam()
@@ -162,6 +181,12 @@ func _build_scenery() -> void:
 	var o := 30.0
 	while o < track.length - 10.0:
 		var side := 1.0 if _rng.randf() < 0.5 else -1.0
+		var at := track.point(o, edge * side + 0.8 * side) + Vector3.UP * 3.0
+		o += _rng.randf_range(18.0, 34.0)
+		# Poste dentro do atalho e poste no meio da pista. O atalho corta o
+		# terreno ao lado da avenida, que e exatamente onde o cenario mora.
+		if _blocks_branch(at, 1.0):
+			continue
 		var pole := StaticBody3D.new()
 		pole.collision_layer = Layers.WORLD
 		pole.collision_mask = 0
@@ -169,8 +194,7 @@ func _build_scenery() -> void:
 		pole.add_child(Greybox.box(pole_size, Color(0.62, 0.6, 0.55)))
 		pole.add_child(Greybox.box_shape(pole_size))
 		props.add_child(pole)
-		pole.global_position = track.point(o, edge * side + 0.8 * side) + Vector3.UP * 3.0
-		o += _rng.randf_range(18.0, 34.0)
+		pole.global_position = at
 
 	o = 12.0
 	while o < track.length:
@@ -179,11 +203,30 @@ func _build_scenery() -> void:
 				continue
 			var h := _rng.randf_range(6.0, 26.0)
 			var w := _rng.randf_range(6.0, 14.0)
+			var at := track.point(o, (edge + 6.0 + w * 0.5) * side) + Vector3.UP * (h * 0.5 - 1.0)
+			# 0,707*w e o canto da caixa, e e o canto que aparece dentro da
+			# pista. Com w*0.5 sobrava ate 2,8 m de predio pra dentro.
+			if _blocks_branch(at, w * 0.7071):
+				continue
 			var shade := _rng.randf_range(0.2, 0.42)
 			var building := Greybox.box(Vector3(w, h, w), Color(shade, shade * 0.97, shade * 1.15))
 			props.add_child(building)
-			building.global_position = track.point(o, (edge + 6.0 + w * 0.5) * side) + Vector3.UP * (h * 0.5 - 1.0)
+			building.global_position = at
 		o += _rng.randf_range(16.0, 30.0)
+
+
+## Um prop deste tamanho, aqui, cairia em cima de algum atalho?
+##
+## A conta e a distancia horizontal ao TRACADO do atalho, e nao ao eixo da
+## avenida: o atalho sai por fora e vai parar justamente na faixa de terreno em
+## que a avenida planta predio.
+func _blocks_branch(at: Vector3, radius: float) -> bool:
+	var keep_out := RoadTrack.sidewalk_limit() + radius
+	for branch in branches:
+		for point_at: Vector3 in branch.outline:
+			if Vector2(point_at.x - at.x, point_at.z - at.z).length() < keep_out:
+				return true
+	return false
 
 
 ## Espalha semaforos pela rota inteira.
@@ -232,31 +275,41 @@ func _build_branches() -> void:
 
 	var cursor := 220.0
 	while branches.size() < world_tuning.branch_count and cursor < track.length - 460.0:
-		var span := _rng.randf_range(170.0, 340.0)
-		var from_offset := cursor
-		var to_offset := from_offset + span
-		var chord := track.sample_position(from_offset).distance_to(
-			track.sample_position(to_offset))
-		# 14% de economia e o piso do que o jogador SENTE. Abaixo disso o
-		# atalho e so uma rua diferente com o mesmo custo, e a escolha vira
-		# decoracao.
-		if chord > span * 0.86:
+		# Testa varios comprimentos a partir do mesmo ponto e fica com o que
+		# mais economiza. Sortear um so e desistir era o que fazia uma rota de
+		# 3 km entregar um atalho: a boca boa quase nunca cai na largura
+		# sorteada, ela cai numa vizinha.
+		var best_span := 0.0
+		var best_ratio := 0.86
+		var span := 160.0
+		while span <= 360.0:
+			var chord := track.sample_position(cursor).distance_to(
+				track.sample_position(cursor + span))
+			# 14% de economia e o piso do que o jogador SENTE. Abaixo disso o
+			# atalho e so uma rua diferente com o mesmo custo, e a escolha vira
+			# decoracao.
+			if chord / span < best_ratio:
+				best_ratio = chord / span
+				best_span = span
+			span += 20.0
+
+		if best_span <= 0.0:
 			cursor += 40.0
 			continue
 
-		var branch := _make_branch(from_offset, to_offset)
+		var branch := _make_branch(cursor, cursor + best_span)
 		if branch == null:
 			cursor += 40.0
 			continue
 		branches.append(branch)
-		cursor = to_offset + _rng.randf_range(240.0, 520.0)
+		cursor += best_span + _rng.randf_range(240.0, 520.0)
 
 
 func _make_branch(from_offset: float, to_offset: float) -> RouteBranch:
 	var road := RoadTrack.new()
 	road.name = "Shortcut%d" % branches.size()
 	add_child(road)
-	road.build_shortcut(track, from_offset, to_offset)
+	road.plan_shortcut(track, from_offset, to_offset)
 
 	# A corda pode sair mais longa que a promessa depois de virar curva de
 	# verdade. Atalho que nao encurta e armadilha, entao ele nao nasce.
@@ -264,10 +317,25 @@ func _make_branch(from_offset: float, to_offset: float) -> RouteBranch:
 		road.queue_free()
 		return null
 
+	# E precisa ser uma rua OUTRA, nao uma segunda pintura em cima da avenida.
+	#
+	# Sem esta checagem nascia atalho passando a 8,6 m do eixo da avenida: com
+	# as duas pistas tendo 13 m de largura, os asfaltos se sobrepunham e a tela
+	# mostrava uma avenida de 30 m com duas pinturas de faixa. De quebra, todo
+	# predio que mora entre as duas aparecia no meio do caminho.
+	var apart := _branch_separation(road, from_offset, to_offset)
+	if apart < BRANCH_MIN_APART or apart > BRANCH_MAX_APART:
+		road.queue_free()
+		return null
+
+	# Aprovado: agora sim vale gastar a malha.
+	road.build_surface()
+
 	var branch := RouteBranch.new()
 	branch.road = road
 	branch.from_offset = from_offset
 	branch.to_offset = to_offset
+	branch.trace()
 	# De que lado a boca abre: onde o meio do atalho cai em relacao ao eixo da
 	# avenida. E o lado que o jogador precisa estar pra entrar.
 	var middle := road.sample_position(road.length * 0.5)
@@ -279,6 +347,25 @@ func _make_branch(from_offset: float, to_offset: float) -> RouteBranch:
 	_build_fork_marks(branch)
 	_litter_branch(branch)
 	return branch
+
+
+## Quao longe do eixo da avenida o miolo do atalho chega a passar.
+##
+## Mede so o miolo (20% a 80%): as pontas encostam na avenida por definicao, e
+## incluir elas faria toda bifurcacao parecer colada.
+func _branch_separation(road: RoadTrack, from_offset: float, to_offset: float) -> float:
+	var closest := INF
+	var at := road.length * 0.2
+	while at < road.length * 0.8:
+		var point_at := road.sample_position(at)
+		var along := from_offset - 60.0
+		while along < to_offset + 60.0:
+			var on_main := track.sample_position(along)
+			closest = minf(closest, Vector2(on_main.x - point_at.x,
+				on_main.z - point_at.z).length())
+			along += 4.0
+		at += 6.0
+	return closest
 
 
 ## Aviso na pista antes da boca: placa no lado que o atalho sai e chevrons
@@ -443,6 +530,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_update_route()
+	_advance_jam_build()
 	run.tick(delta, player_progress())
 	_sync_traffic_pool()
 	_maybe_jam()
@@ -461,12 +549,20 @@ func _physics_process(delta: float) -> void:
 ## que e a razao do painel F3 existir.
 func _sync_traffic_pool() -> void:
 	var want: int = world_tuning.traffic_count
-	if traffic.size() == want:
+	# So o fluxo conta. Os carros da fila sao um bando a parte, com nascimento
+	# e morte proprios - misturar os dois faria o slider de densidade apagar
+	# metade do engarrafamento no meio dele.
+	var flow: Array[TrafficCar] = []
+	for car in traffic:
+		if not car.jammed:
+			flow.append(car)
+	if flow.size() == want:
 		return
-	while traffic.size() > want:
-		var leaving: TrafficCar = traffic.pop_back()
+	while flow.size() > want:
+		var leaving: TrafficCar = flow.pop_back()
+		traffic.erase(leaving)
 		leaving.queue_free()
-	while traffic.size() < want:
+	while flow.size() < want:
 		var arriving := TrafficCar.new()
 		arriving.world = self
 		arriving.world_tuning = world_tuning
@@ -476,14 +572,20 @@ func _sync_traffic_pool() -> void:
 		# da tela e carro que o jogador nao teve chance de desviar.
 		_place_car(arriving, player_progress() + world_tuning.traffic_ahead)
 		traffic.append(arriving)
+		flow.append(arriving)
 
 
 func _recycle_traffic() -> void:
 	var progress := player_progress()
 	var front := progress + world_tuning.traffic_ahead
 	for car in traffic:
+		# Carro da fila nao volta pro fluxo: a fila e recolhida inteira, de uma
+		# vez, quando o jogador acaba de passar por ela.
+		if car.jammed:
+			continue
 		if car.offset < progress - world_tuning.traffic_behind:
 			_place_car(car, _clear_of_jam(front + _rng.randf_range(0.0, 14.0)))
+	_clear_jam_behind(progress)
 
 
 ## --- Engarrafamento -------------------------------------------------------
@@ -492,6 +594,7 @@ func _recycle_traffic() -> void:
 func _arm_jam() -> void:
 	_jam_from = 0.0
 	_jam_to = 0.0
+	_jam_rows_left = 0
 	jams_formed = 0
 	_jam_due = player_progress() + _rng.randf_range(
 		world_tuning.jam_gap_min,
@@ -511,45 +614,80 @@ func _maybe_jam() -> void:
 ##
 ## O engarrafamento e o oposto do semaforo. La sobra sempre uma faixa vazia,
 ## porque a fila e temporaria e o jogador nao escolheu estar nela; aqui a pista
-## acaba de verdade e a unica passagem e o vao entre as filas. E a hora em que
-## o jogo cobra o pilar: ou voce entra no corredor, ou voce anda a 5 km/h atras
-## de um Corolla.
+## acaba de verdade e a unica passagem e o vao entre as colunas. E a hora em
+## que o jogo cobra o pilar do corredor em vez de oferecer.
 ##
-## Os carros nao sao criados: sao os que ja estavam mais longe a frente, que a
-## neblina esconde. Assim o engarrafamento nasce montado, fora de vista, em vez
-## de aparecer fileira por fileira na cara do jogador.
+## Os carros sao criados so pra fila, e nao emprestados da frota. Emprestar
+## limitava o engarrafamento ao tamanho da frota - com 20 carros dava duas
+## fileiras, 13 m, que o jogador atravessa antes de perceber que era pra ser
+## uma parede - e ainda esvaziava a avenida em volta.
+##
+## Quando da, a fila nasce ATRAS DE UM SINAL VERMELHO, que fica segurado
+## enquanto ela existe. Fila de 90 m num cruzamento aberto e uma fila sem
+## motivo; atras do vermelho ela vira consequencia, e quando o sinal abre, ela
+## anda.
 func _form_jam() -> void:
-	var rows := int(float(traffic.size()) * world_tuning.jam_share) / RoadTrack.LANE_COUNT
+	var rows := int(world_tuning.jam_length / maxf(world_tuning.jam_row_gap, 1.0))
 	if rows < 1:
 		return
 
 	var progress := player_progress()
-	var pool: Array[TrafficCar] = []
-	for car in traffic:
-		# So carro que ja esta na janela do jogador. O banco de provas estaciona
-		# a frota inteira a 9 km daqui pra medir a moto isolada, e arrastar ela
-		# de volta faria um engarrafamento nascer no meio da medicao.
-		if car.offset <= progress + world_tuning.traffic_ahead * 1.5:
-			pool.append(car)
-	pool.sort_custom(func(a: TrafficCar, b: TrafficCar) -> bool: return a.offset > b.offset)
-
+	var length := float(rows - 1) * world_tuning.jam_row_gap
 	_jam_from = progress + world_tuning.traffic_ahead
-	_jam_to = _jam_from + float(rows - 1) * world_tuning.jam_row_gap
 
+	# Procura um cruzamento em que a fila caiba inteira sem nascer em cima do
+	# jogador. O 120 e a margem pra ele nao ver a fila aparecer.
+	var light := light_ahead(_jam_from - length)
+	if light != null and light.stop_offset() - length > progress + 120.0:
+		_jam_from = light.stop_offset() - length
+		# Tempo pro jogador chegar (420 m) e atravessar a fila inteira. Sinal
+		# que abre antes disso desmancha o engarrafamento na cara dele.
+		light.hold_red(20.0 + world_tuning.light_red_time)
+
+	_jam_to = _jam_from + length
+	_jam_rows_left = rows
+	_jam_next_row = 0
 	jams_formed += 1
-	var i := 0
-	for row in range(rows):
+
+
+## Monta um pedaco da fila por frame. Ver `_jam_rows_left`.
+func _advance_jam_build() -> void:
+	if _jam_rows_left <= 0:
+		return
+	for i in range(mini(2, _jam_rows_left)):
 		for lane in range(RoadTrack.LANE_COUNT):
-			if i >= pool.size():
-				return
-			var car: TrafficCar = pool[i]
-			i += 1
-			# Fileira nao e regua: o desalinho e o que faz a fila parecer
-			# transito em vez de estacionamento pintado no chao. Lateral mexe
-			# pouco de proposito - e ela que decide se o vao ainda cabe a moto.
-			car.jam_at(
-				_jam_from + float(row) * world_tuning.jam_row_gap + _rng.randf_range(-1.1, 1.1),
-				RoadTrack.lane_center(lane) + _rng.randf_range(-0.25, 0.25))
+			var car := TrafficCar.new()
+			car.world = self
+			car.world_tuning = world_tuning
+			add_child(car)
+			car.setup(track, 0.0, 0.0, _rng.randi())
+			# As colunas se abrem em direcao ao meio-fio: e o `jam_spread` que
+			# decide se o vao entre elas cabe uma moto com folga ou no susto.
+			car.jam_at(_jam_from + float(_jam_next_row) * world_tuning.jam_row_gap,
+				RoadTrack.lane_center(lane) * (1.0 + world_tuning.jam_spread))
+			traffic.append(car)
+		_jam_next_row += 1
+		_jam_rows_left -= 1
+
+
+## Recolhe a fila quando ela fica pra tras.
+##
+## De uma vez, e nao carro a carro: eles nasceram juntos e nao pertencem a
+## frota reciclada. Deixar cada um virar carro de fluxo dobraria a densidade da
+## avenida toda vez que o jogador passasse por um engarrafamento.
+func _clear_jam_behind(progress: float) -> void:
+	if _jam_to <= 0.0 or _jam_to > progress - world_tuning.traffic_behind:
+		return
+	var survivors: Array[TrafficCar] = []
+	for car in traffic:
+		if car.jammed:
+			car.queue_free()
+		else:
+			survivors.append(car)
+	traffic = survivors
+	_jam_from = 0.0
+	_jam_to = 0.0
+	_jam_rows_left = 0
 
 
 ## Empurra um carro reciclado pra fora do engarrafamento ativo.

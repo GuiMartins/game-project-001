@@ -305,6 +305,9 @@ func _phase_fork(delta: float) -> void:
 		_fork_time = _t
 
 	if _fork_time > 0.0 or _t > 25.0:
+		_check(_world._branch_separation(branch.road, branch.from_offset, branch.to_offset)
+			>= World.BRANCH_MIN_APART,
+			"o atalho passa colado na avenida - na tela isso vira uma pista so, larga demais")
 		_report.append("bifurcacao           atalho de %.0f m no lugar de %.0f m (-%.0f m)" % [
 			branch.road.length, branch.to_offset - branch.from_offset, branch.saving()])
 		_check(_fork_entered,
@@ -369,10 +372,22 @@ func _phase_freerun(_delta: float) -> void:
 	if _t >= 45.0 or _world.run.phase != DeliveryRun.Phase.RIDING:
 		_report.append("corrida solta 45s    %.0f m percorridos, %d raspadas, %d quedas" % [
 			_world.run.distance_done, _world.run.near_misses, _world.run.crashes])
+		var rows := int(_world.world_tuning.jam_length / _world.world_tuning.jam_row_gap)
+		var jam_length := float(rows) * _world.world_tuning.jam_row_gap
+		var corridor := RoadTrack.LANE_WIDTH * (1.0 + _world.world_tuning.jam_spread) \
+			- TrafficCar.SIZE.x
 		_report.append("transito parando     %d carros no vermelho de uma vez, %d engarrafamentos" % [
 			_max_waiting, _world.jams_formed])
+		_report.append("fila parada          %.0f m de fila, vao de %.2f m entre as colunas" % [
+			jam_length, corridor])
 		_check(_max_waiting > 0, "nenhum carro chegou a parar num semaforo em 45s")
 		_check(_world.jams_formed > 0, "nenhum engarrafamento se formou em 45s")
+		_check(jam_length >= 40.0,
+			"fila de %.0f m: o jogador atravessa antes de perceber que era parede" % jam_length)
+		# A moto tem 0,75 m. Com menos de 1,60 de vao sobram menos de 40 cm de
+		# cada lado, e o corredor deixa de ser linha pra virar sorte.
+		_check(corridor >= 1.6,
+			"vao de %.2f m entre as colunas do engarrafamento: apertado demais" % corridor)
 		_check(_world.run.distance_done > 700.0,
 			"so andou %.0fm em 45s - o piloto automatico nao consegue atravessar o transito"
 			% _world.run.distance_done)
