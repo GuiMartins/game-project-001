@@ -79,8 +79,8 @@ inclinacao 0->90%    0.35 s
 a 175 km/h: 35.8 graus/s, raio 78 m
 hitbox do soco       0.133 s aberta (tuning pede 0.130)
 calcada              33.3 m/s no asfalto, 13.8 m/s na calcada, parede em 8.80 m
-combate              rival empurrado 4.80 m, cambaleou
-corrida solta 45s    960 m percorridos, 13 raspadas, 4 quedas
+combate              soco acertou, rival empurrado 3.34 m, cambaleou
+corrida solta 45s    1229 m percorridos, 10 raspadas, 5 quedas
 ```
 
 As três últimas linhas não medem a moto, medem o **mundo**: elas existem porque

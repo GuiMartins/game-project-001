@@ -15,9 +15,15 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ##
 ## Os carros nao sao criados e destruidos: sao reciclados pra viver sempre na
 ## janela [-traffic_behind, +traffic_ahead] em volta do jogador. Entao a
-## densidade real e count / (ahead + behind). Com 36 carros numa janela de
-## 490 m da um carro a cada 13,6 m de pista, espalhados nas 4 faixas.
-@export_range(0, 120, 1) var traffic_count: int = 20
+## densidade real e count / (ahead + behind).
+##
+## Caiu de 20 pra 10 quando o engarrafamento foi removido, e o motivo importa:
+## o `jam_share` recrutava metade da frota pra montar a fila, entao METADE
+## destes carros nunca estava no fluxo. Tirar o engarrafamento sem mexer aqui
+## dobrou a densidade efetiva sem ninguem ter mexido no slider da densidade -
+## o piloto do banco de provas passou a bater de frente em sequencia e a
+## corrida caiu de 1345 m pra 960 m em 45 s.
+@export_range(0, 120, 1) var traffic_count: int = 10
 
 ## Espacamento minimo entre carros na largada, em metros.
 @export_range(3.0, 60.0, 0.5) var traffic_gap_min: float = 5.0
