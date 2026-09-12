@@ -1,10 +1,12 @@
-extends Resource
 class_name BikeTuning
+extends Resource
 ## Todas as constantes de "feel" da moto num lugar so.
 ##
 ## O objetivo do prototipo e descobrir os valores certos aqui. O painel de
 ## tuning (F3) edita este recurso ao vivo e salva em user://tuning.tres, entao
 ## uma sessao de ajuste sobrevive ao fechar o jogo.
+
+const SAVE_PATH: String = "user://tuning.tres"
 
 ## --- Velocidade -----------------------------------------------------------
 @export_group("Velocidade")
@@ -133,9 +135,6 @@ class_name BikeTuning
 ## Quao rapido a moto e puxada pro teto ao subir na calcada, em m/s^2.
 ## Alto demais vira freada de parede; baixo demais e de graca.
 @export_range(1.0, 60.0, 0.5) var sidewalk_drag: float = 22.0
-
-
-const SAVE_PATH: String = "user://tuning.tres"
 
 
 static func load_or_default() -> BikeTuning:

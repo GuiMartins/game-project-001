@@ -1,5 +1,5 @@
-extends RefCounted
 class_name DeliveryRun
+extends RefCounted
 ## O loop de entrega: cronometro, integridade da bag, estilo, estrelas.
 ##
 ## Pilar de validacao: a corrida precisa ter uma pergunta a cada segundo -
@@ -12,22 +12,22 @@ const BAG_LOSS_CRASH: float = 14.0
 const BAG_LOSS_SCRAPE: float = 3.0
 const BAG_LOSS_HIT: float = 6.0
 
+## Segundos por metro que o prazo concede. 0.055 s/m ~ 65 km/h de media exigida:
+## da pra entregar dirigindo limpo, mas 5 estrelas exige o corredor.
+const SECONDS_PER_METER: float = 0.055
+
 var phase: int = Phase.RIDING
 var distance_total: float = 0.0
 var distance_done: float = 0.0
 var time_left: float = 0.0
 var time_total: float = 0.0
-var bag: float = 100.0        ## Integridade da comida, 0..100.
-var style: float = 0.0        ## Pontos de estilo (corredor, rival derrubado).
+var bag: float = 100.0  ## Integridade da comida, 0..100.
+var style: float = 0.0  ## Pontos de estilo (corredor, rival derrubado).
 var near_misses: int = 0
 var crashes: int = 0
 var rivals_downed: int = 0
 var combo: int = 0
 var combo_timer: float = 0.0
-
-## Segundos por metro que o prazo concede. 0.055 s/m ~ 65 km/h de media exigida:
-## da pra entregar dirigindo limpo, mas 5 estrelas exige o corredor.
-const SECONDS_PER_METER: float = 0.055
 
 
 func start(total_distance: float) -> void:

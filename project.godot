@@ -21,7 +21,10 @@ Controls="*res://scripts/controls.gd"
 
 [debug]
 
-gdscript/warnings/untyped_declaration=1
+; 2 = ERRO, nao aviso. Todo o codigo ja e tipado, e aviso que ninguem le
+; deixa de segurar nada: uma IA gera GDScript rapido e sem tipo, e o
+; projeto perde o padrao sem ninguem notar. Aqui o build quebra na hora.
+gdscript/warnings/untyped_declaration=2
 
 [display]
 

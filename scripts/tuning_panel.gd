@@ -1,5 +1,5 @@
-extends Window
 class_name TuningPanel
+extends Window
 ## Painel de ajuste ao vivo (F3), em JANELA PROPRIA.
 ##
 ## O prototipo tem uma semana pra responder "acelerar, inclinar e bater esta
@@ -126,7 +126,8 @@ func _load_layout() -> bool:
 	# que nao existe mais, e ela abriria fora da tela - parecendo F3 quebrado.
 	# Testa a barra de titulo: e por ela que voce arrasta de volta.
 	var usable := DisplayServer.screen_get_usable_rect(
-		DisplayServer.window_get_current_screen(DisplayServer.MAIN_WINDOW_ID))
+		DisplayServer.window_get_current_screen(DisplayServer.MAIN_WINDOW_ID)
+	)
 	if not usable.has_point(saved_pos + Vector2i(saved_size.x / 2, 8)):
 		return false
 	position = saved_pos
@@ -235,14 +236,16 @@ func _add_row(parent: Control, res: Resource, prop: Dictionary) -> void:
 	row.add_child(slider)
 
 	value_label.text = fmt % slider.value
-	slider.value_changed.connect(func(v: float) -> void:
-		res.set(prop_name, v)
-		value_label.text = fmt % v
-		_status.text = "editando em memoria (nao salvo)"
+	slider.value_changed.connect(
+		func(v: float) -> void:
+			res.set(prop_name, v)
+			value_label.text = fmt % v
+			_status.text = "editando em memoria (nao salvo)"
 	)
 
-	_rows.append({"name": prop_name, "res": res, "slider": slider,
-		"value": value_label, "fmt": fmt})
+	_rows.append(
+		{"name": prop_name, "res": res, "slider": slider, "value": value_label, "fmt": fmt}
+	)
 
 
 ## Casas decimais que o passo do slider realmente distingue.

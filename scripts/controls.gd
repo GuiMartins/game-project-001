@@ -13,9 +13,14 @@ const ACTIONS: Dictionary = {
 	"ride_boost": [KEY_SHIFT],
 	"hit_left": [KEY_Q],
 	"hit_right": [KEY_E],
-	"debug_pixel_toggle": [KEY_F1],
-	"debug_camera_cycle": [KEY_F2],
-	"debug_tuning_panel": [KEY_F3],
+	# 1/2/3 ao lado de F1/F2/F3 por causa do macOS: la as teclas de funcao sao
+	# do sistema (brilho, Mission Control) e o jogo so as recebe se o usuario
+	# segurar Fn ou tiver mudado a preferencia. Na pratica isso significava um
+	# painel de tuning que nao abria - e ninguem descobre sozinho que o
+	# problema e do teclado, e nao do jogo.
+	"debug_pixel_toggle": [KEY_F1, KEY_1],
+	"debug_camera_cycle": [KEY_F2, KEY_2],
+	"debug_tuning_panel": [KEY_F3, KEY_3],
 	"debug_restart": [KEY_R],
 }
 

@@ -13,7 +13,7 @@ Os quatro pilares e onde cada um vive no código:
 | --- | --- | --- |
 | Feel da moto | `scripts/player_bike.gd` | jogável e medido |
 | O corredor | `scripts/world.gd` (`_score_corridor`), `world_tuning.gd` | jogável, medido e ajustável ao vivo |
-| Combate lateral | `player_bike.gd` + `rival_bike.gd` | jogável, não medido |
+| Combate lateral | `player_bike.gd` + `rival_bike.gd` | jogável e medido |
 | Loop de entrega | `scripts/delivery_run.gd` | jogável, números provisórios |
 
 ## As decisões de arquitetura, e por que elas se seguram
@@ -61,14 +61,14 @@ Em cima disso:
 
 ## Números medidos
 
-`godot --headless --path . -- --selftest` roda o jogo de verdade contra entradas
+`python tools/dev.py selftest` roda o jogo de verdade contra entradas
 sintéticas (via `Input.action_press`, mesmo caminho do jogador) e mede.
 
 Ele roda nos **defaults do repositório**, ignorando o `user://` de propósito: a
 semente já era fixa pra o número ser comparável entre rodadas, mas enquanto o
 tuning salvo entrava, bastava alguém clicar em Salvar pra "regrediu" e "você
 mexeu num slider ontem" virarem a mesma coisa. Pra medir os seus ajustes,
-`-- --selftest --selftest-user`. O relatório diz qual dos dois usou.
+`--user-tuning`. O relatório diz qual dos dois usou.
 
 ```
 relevo               rampa max 14%, desnivel 40 m
@@ -78,17 +78,15 @@ freada 183 km/h -> 0   1.48 s / 37 m
 inclinacao 0->90%    0.35 s
 a 175 km/h: 35.8 graus/s, raio 78 m
 hitbox do soco       0.133 s aberta (tuning pede 0.130)
-bifurcacao           atalho de 280 m no lugar de 328 m (-48 m)
-corrida solta 45s    1262 m percorridos, 19 raspadas, 4 quedas
-transito parando     6 carros no vermelho de uma vez, 1 engarrafamentos
+calcada              33.3 m/s no asfalto, 13.8 m/s na calcada, parede em 8.80 m
+combate              soco acertou, rival empurrado 3.34 m, cambaleou
+corrida solta 45s    1229 m percorridos, 10 raspadas, 5 quedas
 ```
 
 As três últimas linhas não medem a moto, medem o **mundo**: elas existem porque
-"o engarrafamento parou de nascer" e "o atalho virou um caminho mais longo" são
+"a calçada virou a linha rápida" e "o soco parou de empurrar o rival" são
 regressões que não travam nada — o jogo continua rodando lindamente sem elas, e
-ninguém percebe até jogar a fase inteira. A fase da bifurcação é a mais
-paranoica do banco: ela entra no atalho, volta pra avenida e confere que o
-progresso não andou pra trás na troca de pista.
+ninguém percebe até jogar a fase inteira.
 
 O 0-100 e a freada são medidos com a **ladeira desligada** (`slope_enabled`).
 Medir aceleração numa subida mede a subida. A elevação volta a valer na corrida
@@ -99,6 +97,11 @@ O número que amarra tudo: a curva mais fechada que o gerador de pista produz é
 35,8. **Curvão passa raspando sem frear, e qualquer coisa mais fechada que isso
 seria injusta** — por isso o teto de curvatura em `road_track.gd` é um número
 de design, não estético.
+
+Estes números vivem agora em [`tests/baseline.json`](../tests/baseline.json),
+e o banco de provas compara cada rodada com eles. A lista acima é para leitura
+humana; quando as duas discordarem, o baseline é que está certo — este bloco
+nasceu desatualizado uma vez, e foi o baseline que percebeu.
 
 "Está gostoso?" é subjetivo. "0-100 em 9 segundos" não é — e o banco pega uma
 regressão de tuning sem ninguém abrir o jogo.
@@ -142,6 +145,11 @@ Deliberadamente fora do escopo até o feel fechar:
   **`alpha_cut = Discard` em todos** — sem isso o depth sorting quebra e o
   entregador some atrás do carro errado. O ponto de troca é o nó `Visual` de
   `player_bike.gd` / `rival_bike.gd`.
+- **Semáforo, engarrafamento e bifurcação.** Existiram e foram removidos:
+  estavam custando complexidade no `world.gd` antes de o feel da moto estar
+  fechado, que é a única pergunta que este protótipo existe pra responder.
+  O código está no histórico — `git log --diff-filter=D -- scripts/traffic_light.gd`
+  acha o commit que os tirou, e com ele o estado completo de cada um.
 - Áudio, menu, progressão, upgrade de moto.
 - Shader de mundo curvo ("SEGA curved world").
 - Chuva, noite com neon no asfalto molhado.
@@ -185,69 +193,12 @@ Duas ressalvas honestas:
 - **A faixa é estreita.** 2,2 m de calçada para uma moto de 0,76 m deixa ~1,4 m
   de jogo antes de raspar o guard-rail. Funciona, mas exige linha. Alargar é
   mexer em `SHOULDER` no `road_track.gd`, e o mesh acompanha sozinho.
-- **O banco de provas não cobre isto.** O piloto automático nunca sobe na
-  calçada, porque `free_lateral` só considera centros de faixa e de corredor.
-  Os números da corrida solta ficaram idênticos depois da mudança — regressão
-  aqui não é pega por lá, só pelo polegar.
-
-## O trânsito para: semáforo e engarrafamento
-
-Duas maneiras de fechar a pista, opostas de propósito.
-
-**Semáforo** (`traffic_light.gd`) é geometria fixa da rota, a cada 260–520 m.
-O carro que se aproxima do vermelho freia na faixa de retenção e fila atrás de
-quem já parou — o mesmo car-following que impede dois carros de ocuparem o
-mesmo metro de asfalto.
-
-A cada ciclo vermelho ele **sorteia uma faixa que não segura ninguém**, e quem
-estava nela sai antes de parar. Sem essa faixa vazia a fila fecha as quatro
-pistas e o semáforo vira um muro: a 50 m/s a única resposta possível seria
-parar, e parar não é o jogo. Como a faixa livre muda de ciclo pra ciclo,
-ninguém decora "é sempre a da direita".
-
-**Engarrafamento** é o contrário, e é por isso que ele existe: ali as quatro
-faixas **são** ocupadas, em fileiras de para-choque a para-choque. A pista
-acaba de verdade e a única passagem é o vão entre as filas — é a hora em que o
-jogo cobra o pilar do corredor em vez de oferecê-lo.
-
-Ele não cria carros: recruta os que já estavam mais longe à frente, onde a
-neblina esconde, e os monta em grade. Assim o engarrafamento nasce pronto, fora
-de vista, em vez de aparecer fileira por fileira na cara do jogador. O
-`jam_share` (0.5) decide quanto da frota ele come — parede pela metade não para
-ninguém.
-
-O vão entre duas colunas de carro é de 1,4 m para uma moto de 0,76 m. É
-apertado de propósito: passar ali pontua raspada nos dois lados ao mesmo tempo.
-
-## Bifurcações
-
-A rota abre atalhos onde a avenida faz volta grande. Não há level design nisto:
-o `World` varre a pista atrás de trechos em que a **corda** entre duas pontas é
-pelo menos 14% mais curta que a pista entre elas — que é a definição geométrica
-de "aqui daria pra cortar". Onde a avenida já é reta, atalho nenhum nasce.
-
-O atalho é outra `RoadTrack`, uma Bézier cúbica cujas tangentes nas pontas são
-as da própria avenida. É isso que permite **trocar a moto de pista sem
-teleporte**: na boca e na reentrada as duas curvas se encostam apontando pro
-mesmo lado, e o que muda é só em qual delas o offset passa a ser medido.
-
-Três decisões que não são óbvias:
-
-- **Entra quem estava do lado da boca** (2 m do eixo pra fora). Bifurcação que
-  você toma sem querer é bifurcação que você xinga.
-- **A corrida continua sendo medida na avenida.** Dentro do atalho o offset da
-  moto é de outra curva; `player_progress()` traduz de volta. Sem isso, cortar
-  caminho zeraria o cronômetro — e como o atalho é mais curto que o trecho que
-  substitui, cada metro rodado nele avança mais de um metro de rota. Esse é o
-  prêmio, e o jogador vê ele no "faltam X m" caindo mais rápido.
-- **Tem carro parado largado dentro.** Sem eles a escolha não existe: pista
-  mais curta e vazia seria sempre a resposta certa, e escolha com resposta
-  certa não é escolha.
-
-O que o banco **não** cobre: a raspada no corredor não pontua dentro do atalho,
-porque a frota vive na avenida e os offsets das duas curvas se parecem sem
-querer dizer a mesma coisa. Também é dentro do atalho que os rivais deixam de
-tentar emparelhar — eles continuam na avenida, correndo a corrida deles.
+- **Hoje o banco de provas cobre isto**, numa fase própria. Ela sobe na
+  calçada de propósito, porque o piloto automático da corrida solta nunca
+  sobe: `free_lateral` só considera centros de faixa e de corredor, e por isso
+  os números da corrida ficaram idênticos quando o limite andável mudou. A
+  fase mede a velocidade estabilizada contra o teto que o `sidewalk_speed_factor`
+  declara, e confere que a parede segura exatamente no `sidewalk_limit()`.
 
 ## Ladeira
 

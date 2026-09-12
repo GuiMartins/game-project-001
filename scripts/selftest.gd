@@ -11,15 +11,28 @@ extends Node
 
 const KMH: float = 3.6
 
+## Nome de cada fase, na ordem em que rodam. Serve pro `--fase <nome>`:
+## quem esta iterando em curva nao precisa esperar os 45 s da corrida
+## solta, e ciclo curto e o que decide se o teste e rodado ou pulado.
+const PHASE_NAMES: PackedStringArray = [
+	"aceleracao", "freada", "inclinacao", "curva", "soco", "calcada", "combate", "corrida"
+]
+
 var _main: Node
 var _player: PlayerBike
 var _world: World
 var _tuning: BikeTuning
 
+## Ultima fase a rodar. Por padrao, todas.
+var _stop_after: int = PHASE_NAMES.size() - 1
 var _phase: int = 0
 var _t: float = 0.0
 var _report: Array[String] = []
 var _failures: Array[String] = []
+## As mesmas medidas do relatorio, em forma de maquina. O baseline
+## versionado compara contra isto - prosa em markdown nao diz se o numero
+## andou, so diz qual ele era no dia em que alguem escreveu o markdown.
+var _metrics: Dictionary = {}
 
 # Medidas coletadas.
 var _t_to_100: float = -1.0
@@ -40,10 +53,18 @@ var _trace_next: float = 0.0
 var _shots_dir: String = OS.get_environment("RUSHFOOD_SELFTEST_SHOTS")
 var _shots_next: float = 0.0
 var _shots_taken: int = 0
-var _max_waiting: int = 0
-var _fork_entered: bool = false
-var _fork_time: float = -1.0
-var _fork_backstep: float = 0.0
+## Soma das medidas de cada frame capturado, para tirar a media no fim.
+var _frame_sky: float = 0.0
+var _frame_luma: float = 0.0
+var _frame_colors: float = 0.0
+var _asphalt_speed: float = 0.0
+var _sidewalk_speed: float = 0.0
+var _max_lateral: float = 0.0
+var _rival_lateral_before: float = 0.0
+var _rival_shove: float = 0.0
+var _rival_staggered: bool = false
+var _punch_thrown: bool = false
+var _punch_connected: bool = false
 var _last_progress: float = 0.0
 var _heading_at_mark: float = 0.0
 var _lateral_at_mark: float = 0.0
@@ -59,14 +80,15 @@ func setup(main: Node) -> void:
 	# senao "regrediu" e "deu azar" viram a mesma coisa.
 	_rng.seed = 4242
 	_bench_begin()
-	if not _shots_dir.is_empty():
-		# Modo foto: pula o banco de provas e vai direto pra corrida.
-		_phase = 6
+	_read_phase_arg()
 	print("\n=== RUSHFOOD SELFTEST ===")
 	print("tuning: %s" % _main.get("tuning_source"))
-	print("pista: %.0f m | transito: %d | rivais: %d | semaforos: %d | atalhos: %d" % [
-		_world.track.length, _world.traffic.size(), _world.rivals.size(),
-		_world.lights.size(), _world.branches.size()])
+	print(
+		(
+			"pista: %.0f m | transito: %d | rivais: %d"
+			% [_world.track.length, _world.traffic.size(), _world.rivals.size()]
+		)
+	)
 	_measure_relief()
 
 
@@ -84,31 +106,50 @@ func _measure_relief() -> void:
 		lowest = minf(lowest, y)
 		highest = maxf(highest, y)
 		o += 5.0
-	_report.append("relevo               rampa max %.0f%%, desnivel %.0f m" % [
-		steepest * 100.0, highest - lowest])
+	_metric("relevo_rampa_max_pct", steepest * 100.0)
+	_metric("relevo_desnivel_m", highest - lowest)
+	_report.append(
+		(
+			"relevo               rampa max %.0f%%, desnivel %.0f m"
+			% [steepest * 100.0, highest - lowest]
+		)
+	)
 	_check(steepest > 0.05, "a pista saiu plana: sem ladeira nao ha subida nem descida pra sentir")
 	# Margem sobre o teto: as tangentes suavizadas passam um pouco por cima do
 	# valor sorteado, e isso e esperado.
-	_check(steepest < RoadTrack.MAX_GRADE * 1.4,
-		"rampa de %.0f%% - acima disso a moto sobe empinada e desce voando" % (steepest * 100.0))
+	_check(
+		steepest < RoadTrack.MAX_GRADE * 1.4,
+		"rampa de %.0f%% - acima disso a moto sobe empinada e desce voando" % (steepest * 100.0)
+	)
 
 
 func _physics_process(delta: float) -> void:
 	_t += delta
 	match _phase:
-		0: _phase_accel(delta)
-		1: _phase_brake(delta)
-		2: _phase_lean(delta)
-		3: _phase_turn(delta)
-		4: _phase_punch(delta)
-		5: _phase_fork(delta)
-		6: _phase_freerun(delta)
+		0:
+			_phase_accel(delta)
+		1:
+			_phase_brake(delta)
+		2:
+			_phase_lean(delta)
+		3:
+			_phase_turn(delta)
+		4:
+			_phase_punch(delta)
+		5:
+			_phase_sidewalk(delta)
+		6:
+			_phase_combat(delta)
+		7:
+			_phase_freerun(delta)
 
 
 func _next_phase() -> void:
 	_phase += 1
 	_t = 0.0
 	_release_all()
+	if _phase > _stop_after:
+		_finish()
 
 
 ## O banco mede a MOTO, nao a pista. Sem isolar, a primeira raspada em
@@ -137,8 +178,15 @@ func _bench_end() -> void:
 
 
 func _release_all() -> void:
-	for a: String in ["ride_throttle", "ride_brake", "ride_left", "ride_right", "ride_boost",
-			"hit_left", "hit_right"]:
+	for a: String in [
+		"ride_throttle",
+		"ride_brake",
+		"ride_left",
+		"ride_right",
+		"ride_boost",
+		"hit_left",
+		"hit_right"
+	]:
 		if Input.is_action_pressed(a):
 			Input.action_release(a)
 
@@ -150,14 +198,26 @@ func _phase_accel(_delta: float) -> void:
 		_t_to_100 = _t
 	_top_speed = maxf(_top_speed, _player.speed)
 	if _t >= 22.0:
+		_metric("aceleracao_0_100_s", _t_to_100)
 		_report.append("0-100 km/h          %.2f s" % _t_to_100)
-		_report.append("velocidade em 22s   %.1f km/h  (teto do tuning %.1f)" % [
-			_top_speed * KMH, _tuning.max_speed * KMH])
-		_check(_t_to_100 > 0.0 and _t_to_100 < 9.0,
-			"0-100 em %.2fs: acima de 9s a moto nao parece uma moto" % _t_to_100)
-		_check(_top_speed >= _tuning.max_speed * 0.86,
-			"so chegou a %.0f%% do teto em 22s - a cauda da curva de aceleracao esta morta" % (
-				100.0 * _top_speed / _tuning.max_speed))
+		_metric("velocidade_22s_kmh", _top_speed * KMH)
+		_report.append(
+			(
+				"velocidade em 22s   %.1f km/h  (teto do tuning %.1f)"
+				% [_top_speed * KMH, _tuning.max_speed * KMH]
+			)
+		)
+		_check(
+			_t_to_100 > 0.0 and _t_to_100 < 9.0,
+			"0-100 em %.2fs: acima de 9s a moto nao parece uma moto" % _t_to_100
+		)
+		_check(
+			_top_speed >= _tuning.max_speed * 0.86,
+			(
+				"so chegou a %.0f%% do teto em 22s - a cauda da curva de aceleracao esta morta"
+				% (100.0 * _top_speed / _tuning.max_speed)
+			)
+		)
 		_brake_from = _player.speed
 		_next_phase()
 
@@ -170,9 +230,17 @@ func _phase_brake(delta: float) -> void:
 	_brake_distance += _player.speed * delta
 	_brake_time = _t
 	if _player.speed < 1.0 or _t > 12.0:
-		_report.append("freada %.0f km/h -> 0   %.2f s / %.0f m" % [
-			_brake_from * KMH, _brake_time, _brake_distance])
-		_check(_brake_time < 6.0, "freada de %.2fs e longa demais pro ritmo do corredor" % _brake_time)
+		_metric("freada_tempo_s", _brake_time)
+		_metric("freada_distancia_m", _brake_distance)
+		_report.append(
+			(
+				"freada %.0f km/h -> 0   %.2f s / %.0f m"
+				% [_brake_from * KMH, _brake_time, _brake_distance]
+			)
+		)
+		_check(
+			_brake_time < 6.0, "freada de %.2fs e longa demais pro ritmo do corredor" % _brake_time
+		)
 		_next_phase()
 
 
@@ -190,11 +258,16 @@ func _phase_lean(_delta: float) -> void:
 	if _lean_rise_time < 0.0 and _player.lean >= target * 0.9:
 		_lean_rise_time = _t - 1.5
 	if _t >= 4.0:
+		_metric("inclinacao_0_90_s", _lean_rise_time)
 		_report.append("inclinacao 0->90%%    %.2f s" % _lean_rise_time)
-		_check(_lean_rise_time > 0.05,
-			"a moto assume a inclinacao maxima instantaneamente - nao tem peso nenhum")
-		_check(_lean_rise_time > 0.0 and _lean_rise_time < 1.2,
-			"demora %.2fs pra inclinar: nesse tempo o corredor ja fechou" % _lean_rise_time)
+		_check(
+			_lean_rise_time > 0.05,
+			"a moto assume a inclinacao maxima instantaneamente - nao tem peso nenhum"
+		)
+		_check(
+			_lean_rise_time > 0.0 and _lean_rise_time < 1.2,
+			"demora %.2fs pra inclinar: nesse tempo o corredor ja fechou" % _lean_rise_time
+		)
 		_next_phase()
 
 
@@ -217,19 +290,28 @@ func _phase_turn(_delta: float) -> void:
 		_yaw_rate = rad_to_deg(absf(wrapf(_player.heading - _heading_at_mark, -PI, PI))) / 2.0
 		var mean_speed := (_speed_at_mark + _player.speed) * 0.5
 		_turn_radius = mean_speed / maxf(deg_to_rad(_yaw_rate), 0.0001)
-		_report.append("a %.0f km/h: %.1f graus/s, raio %.0f m" % [
-			mean_speed * KMH, _yaw_rate, _turn_radius])
+		_metric("guinada_graus_s", _yaw_rate)
+		_metric("raio_curva_m", _turn_radius)
+		_report.append(
+			"a %.0f km/h: %.1f graus/s, raio %.0f m" % [mean_speed * KMH, _yaw_rate, _turn_radius]
+		)
 		# Inclinar pra DIREITA tem que mover a moto pra direita na pista. Parece
 		# obvio e nao e: em Godot guinada positiva gira pra esquerda, e o erro
 		# de sinal passa despercebido porque a assistencia de alinhamento
 		# disfarca ate a moto encostar no guard-rail.
 		var drift := _player.track_lateral - _lateral_at_mark
-		_check(drift > 1.0,
-			"inclinou pra direita e a moto foi %.1f m pra ESQUERDA - sinal da guinada invertido"
-			% -drift)
+		_check(
+			drift > 1.0,
+			(
+				"inclinou pra direita e a moto foi %.1f m pra ESQUERDA - sinal da guinada invertido"
+				% -drift
+			)
+		)
 		_check(_yaw_rate > 1.0, "a moto praticamente nao vira no talo")
-		_check(_turn_radius < 260.0,
-			"raio de %.0fm no talo: a moto nao consegue seguir a propria pista" % _turn_radius)
+		_check(
+			_turn_radius < 260.0,
+			"raio de %.0fm no talo: a moto nao consegue seguir a propria pista" % _turn_radius
+		)
 		_tuning.align_assist = _saved_assist
 		_next_phase()
 
@@ -249,73 +331,195 @@ func _phase_punch(_delta: float) -> void:
 		_punch_frames += 1
 	if _t >= _tuning.punch_cooldown + 0.2:
 		var window := float(_punch_frames) / 60.0
-		_report.append("hitbox do soco       %.3f s aberta (tuning pede %.3f)" % [
-			window, _tuning.punch_active])
+		_metric("soco_janela_s", _punch_frames / 60.0)
+		_report.append(
+			"hitbox do soco       %.3f s aberta (tuning pede %.3f)" % [window, _tuning.punch_active]
+		)
 		_check(_punch_frames > 0, "a hitbox do soco nunca abriu")
-		_check(absf(window - _tuning.punch_active) < 0.05,
-			"janela medida (%.3fs) nao bate com o tuning (%.3fs)" % [window, _tuning.punch_active])
+		_check(
+			absf(window - _tuning.punch_active) < 0.05,
+			"janela medida (%.3fs) nao bate com o tuning (%.3fs)" % [window, _tuning.punch_active]
+		)
 		_next_phase()
 
 
-## Fase 5 - bifurcacao: entra no atalho e volta pra avenida ----------------
+## Fase 5 - calcada: a valvula de escape quando o transito fecha ----------
 ##
-## Esta e a fase que existe por medo. Trocar a pista de referencia embaixo da
-## moto e a coisa mais fragil que o mundo faz: erra o palpite do offset e a
-## moto reprojeta a 200 m dali, erra a volta e a entrega nunca completa. Nada
-## disso aparece jogando cinco minutos - so na vez em que voce pega o atalho.
-func _phase_fork(delta: float) -> void:
-	if _world.branches.is_empty():
-		_report.append("bifurcacao           a rota nao abriu nenhuma")
-		_check(false, "nenhum atalho nasceu na rota - a busca pela corda parou de achar")
+## Existia um buraco de cobertura aqui, e ele estava escrito no PROTOTIPO.md:
+## o piloto automatico da corrida solta nunca sobe na calcada, porque
+## `free_lateral` so considera centros de faixa e de corredor. Entao "a parede
+## invisivel voltou pro meio do acostamento" e "o teto de velocidade sumiu"
+## eram regressoes que nenhum numero pegava - so o polegar, jogando.
+func _phase_sidewalk(_delta: float) -> void:
+	if _t < 0.02:
+		# Limites ligados: e justamente a parede que esta sendo medida. A ladeira
+		# fica de fora - medir velocidade numa subida mede a subida.
+		_player.road_bounds_enabled = true
+		_player.slope_enabled = false
+		_player.place_on_track(200.0, RoadTrack.lane_center(RoadTrack.LANE_COUNT - 1), 20.0)
+
+	Input.action_press("ride_throttle")
+
+	if _t < 6.0:
+		# Primeiro trecho: no asfalto, pra ter com o que comparar depois.
+		_set_action("ride_right", false)
+		_asphalt_speed = maxf(_asphalt_speed, _player.speed)
+		return
+
+	# Segundo trecho: encosta pra fora ate subir na calcada e achar a parede.
+	_set_action("ride_right", true)
+	# Velocidade ESTABILIZADA, nao o pico: ao subir, a moto ainda esta sendo
+	# puxada pro teto pelo sidewalk_drag, e medir o transiente mediria a
+	# descida da curva em vez do patamar em que ela para.
+	if absf(_player.track_lateral) > RoadTrack.half_width() and _t > 12.0:
+		_sidewalk_speed = _player.speed
+	_max_lateral = maxf(_max_lateral, absf(_player.track_lateral))
+
+	if _t >= 16.0:
+		_metric("calcada_velocidade_asfalto_ms", _asphalt_speed)
+		_metric("calcada_velocidade_calcada_ms", _sidewalk_speed)
+		_metric("calcada_lateral_max_m", _max_lateral)
+		_report.append(
+			(
+				"calcada              %.1f m/s no asfalto, %.1f m/s na calcada, parede em %.2f m"
+				% [_asphalt_speed, _sidewalk_speed, _max_lateral]
+			)
+		)
+		_check(
+			_sidewalk_speed > 1.0,
+			"a moto nao chegou a andar na calcada - ou nao subiu, ou parou de andar la"
+		)
+		# A calcada e grama do Mario Kart: da pra fugir por ela, mas custa tempo.
+		# Se nao custar, ela vira a linha rapida e o corredor morre - e o
+		# corredor e o jogo. O teto e uma regra declarada no tuning, entao e
+		# contra ela que se mede, nao contra um numero escolhido aqui.
+		var cap := _tuning.max_speed * _tuning.sidewalk_speed_factor
+		_check(
+			_sidewalk_speed <= cap + 1.5,
+			(
+				"calcada a %.1f m/s com teto de %.1f: o sidewalk_speed_factor parou de valer"
+				% [_sidewalk_speed, cap]
+			)
+		)
+		_check(
+			_sidewalk_speed < _asphalt_speed,
+			(
+				"calcada a %.1f m/s contra %.1f no asfalto: fugir por ela nao custa nada"
+				% [_sidewalk_speed, _asphalt_speed]
+			)
+		)
+		# A parede nao pode vazar nem ficar aquem: aquem e parede invisivel no
+		# meio de uma coisa com cara de andavel.
+		_check(
+			absf(_max_lateral - RoadTrack.sidewalk_limit()) < 0.2,
+			(
+				"a moto parou em %.2f m e o limite andavel e %.2f m"
+				% [_max_lateral, RoadTrack.sidewalk_limit()]
+			)
+		)
+		_next_phase()
+
+
+## Fase 6 - combate: o soco que derruba rival ----------------------------
+##
+## O pilar do combate lateral era o unico "jogavel" do PROTOTIPO.md sem uma
+## medida sequer. Isto mede a cadeia inteira, do jeito que o jogador a usa:
+## hitbox do soco -> punch_landed -> World -> receive_hit -> empurrao lateral.
+func _phase_combat(_delta: float) -> void:
+	var rival: RivalBike = _world.rivals[0] if not _world.rivals.is_empty() else null
+	if rival == null:
+		_report.append("combate              nenhum rival na rota")
+		_check(false, "nenhum rival existe - o pilar do combate nao tem como ser medido")
 		_next_phase()
 		return
 
-	var branch: RouteBranch = _world.branches[0]
 	if _t < 0.02:
-		# Limites e ladeira de volta: sem os limites o mundo nem avalia a boca,
-		# e e justamente isso que esta sendo medido. A colisao continua
-		# desligada e o transito continua estacionado a 9 km daqui, pra a
-		# medida ser sobre a bifurcacao e nao sobre o transito do dia.
-		_player.road_bounds_enabled = true
-		_player.slope_enabled = true
-		_player.place_on_track(branch.from_offset - 70.0,
-			RoadTrack.lane_center(RoadTrack.LANE_COUNT - 1 if branch.side > 0.0 else 0),
-			30.0)
-		_last_progress = _world.player_progress()
+		_player.road_bounds_enabled = false
+		_player.collision_mask = Layers.WORLD | Layers.RIVAL
+		_player.place_on_track(400.0, RoadTrack.lane_center(1), 26.0)
+		# De pe, explicitamente. `place_on_track` recoloca a moto mas nao mexe
+		# no estado, e a fase anterior termina com ela batendo na parede da
+		# calcada - ou seja, chegando aqui capotada. `_try_punch` so roda em
+		# RIDING, entao o soco nunca saia e o teste media um rival que nunca
+		# foi socado.
+		_player.state = PlayerBike.State.RIDING
+		# Emparelhado a um alcance de soco de distancia - nao a uma faixa
+		# inteira. Duas motos lado a lado no corredor ficam a pouco mais de um
+		# metro; 3,3 m e o centro da faixa vizinha, e la o soco nao alcanca
+		# ninguem. Sai do tuning pra o teste acompanhar quem mexer no alcance.
+		rival.offset = _player.track_offset + 0.6
+		rival.lateral = _player.track_lateral + _tuning.punch_range
+		rival.speed = _player.speed
+		if not rival.went_down.is_connected(_on_rival_down):
+			rival.went_down.connect(_on_rival_down)
+		if not _player.punch_landed.is_connected(_on_punch_landed):
+			_player.punch_landed.connect(_on_punch_landed)
 
-	# Piloto: segue o sentido da pista e se encosta no lado da boca ate entrar.
-	var basis := _player.track.sample_basis(_player.track_offset)
-	var road_heading := atan2((-basis.z).x, (-basis.z).z)
-	var want := branch.side * 4.6 if _world.player_on_route() else 0.0
-	var steer := -wrapf(road_heading - _player.heading, -PI, PI)
-	steer += clampf((want - _player.track_lateral) * 0.09, -0.35, 0.35)
+	# Segura o rival emparelhado ATE o soco sair - inclusive na lateral.
+	#
+	# Sem prender a lateral, a IA dele desvia sozinha e sai do alcance do soco,
+	# e o teste passa a depender do humor do frame. Pior: o deslocamento que a
+	# perseguicao dele produz parecia empurrao, entao a medida passava sem o
+	# soco ter acertado. Foi o que aconteceu ao baixar a densidade do transito
+	# - a medida era de correlacao, nao de causa.
+	rival.offset = _player.track_offset + 0.6
+	rival.speed = _player.speed
+	if not _punch_connected:
+		rival.lateral = _player.track_lateral + _tuning.punch_range
+		_rival_lateral_before = rival.lateral
 	_set_action("ride_throttle", true)
-	_set_action("ride_right", steer > 0.02)
-	_set_action("ride_left", steer < -0.02)
 
-	# Progresso e a unica coisa que nao pode andar pra tras: o cronometro e a
-	# reciclagem do transito leem dele.
-	var progress: float = _world.player_progress()
-	_fork_backstep = minf(_fork_backstep, progress - _last_progress)
-	_last_progress = progress
+	# Soca assim que o rival esta posicionado, e nao depois de meio segundo.
+	#
+	# A IA do rival entra em duelo com gap abaixo de 2,2 m, e o rival esta
+	# emparelhado a um alcance de soco - ou seja, dentro dela. Esperando, ele
+	# socava primeiro, o jogador ficava STAGGERED, e `_try_punch` so roda em
+	# RIDING: o soco do jogador nunca saia e o teste media um rival que nunca
+	# foi socado.
+	#
+	# Segura o botao por alguns frames antes de soltar, porque `_try_punch` le
+	# `is_action_just_pressed` - so verdadeiro no processamento seguinte ao
+	# press, entao soltar no frame de depois perde o soco.
+	if _t > 0.06 and not _punch_thrown:
+		_punch_thrown = true
+		Input.action_press("hit_right")
+	elif _punch_thrown and _t > 0.16:
+		_set_action("hit_right", false)
 
-	if not _world.player_on_route():
-		_fork_entered = true
-	elif _fork_entered and _fork_time < 0.0:
-		_fork_time = _t
+	# Só conta depois de o soco ter ACERTADO, avisado pelo proprio sinal do
+	# jogador. Antes disso, qualquer estado ou deslocamento do rival e coisa
+	# dele, nao efeito do soco.
+	if _punch_connected:
+		if rival.state == RivalBike.State.STAGGERED or rival.state == RivalBike.State.DOWN:
+			_rival_staggered = true
+		_rival_shove = maxf(_rival_shove, absf(rival.lateral - _rival_lateral_before))
 
-	if _fork_time > 0.0 or _t > 25.0:
-		_report.append("bifurcacao           atalho de %.0f m no lugar de %.0f m (-%.0f m)" % [
-			branch.road.length, branch.to_offset - branch.from_offset, branch.saving()])
-		_check(_fork_entered,
-			"passou pela boca do atalho pelo lado certo e seguiu reto na avenida")
-		_check(_fork_time > 0.0, "entrou no atalho e nao voltou pra avenida em 25s")
-		_check(_fork_backstep > -2.0,
-			"o progresso andou %.1f m pra TRAS na troca de pista" % -_fork_backstep)
+	if _t >= 3.0:
+		_metric("combate_empurrao_m", _rival_shove)
+		_report.append(
+			(
+				"combate              soco %s, rival empurrado %.2f m, %s"
+				% [
+					"acertou" if _punch_connected else "ERROU",
+					_rival_shove,
+					"cambaleou" if _rival_staggered else "NAO reagiu"
+				]
+			)
+		)
+		_check(_punch_connected, "o soco passou pelo rival emparelhado sem acertar")
+		_check(
+			_rival_staggered, "o soco acertou e o rival nao cambaleou - a cadeia do combate quebrou"
+		)
+		# O empurrao e o combate: sem deslocamento lateral nao da pra jogar o
+		# rival dentro de um carro parado, que e o golpe do Road Rash.
+		_check(
+			_rival_shove > 0.1,
+			"o rival mal saiu do lugar (%.2f m): o soco vira cosmetico" % _rival_shove
+		)
 		_next_phase()
 
 
-## Fase 6 - corrida solta: le a pista de verdade ---------------------------
+## Fase 7 - corrida solta: le a pista de verdade ---------------------------
 func _phase_freerun(_delta: float) -> void:
 	if _t < 0.02:
 		_bench_end()
@@ -342,24 +546,27 @@ func _phase_freerun(_delta: float) -> void:
 	_set_action("ride_right", steer > 0.02)
 	_set_action("ride_left", steer < -0.02)
 
-	var waiting := 0
-	for car in _world.traffic:
-		if car.waiting:
-			waiting += 1
-	_max_waiting = maxi(_max_waiting, waiting)
-
 	if not _shots_dir.is_empty() and _t >= _shots_next:
 		_shots_next += 2.5
 		_capture("%s/rushfood_%02d.png" % [_shots_dir, _shots_taken])
 		_shots_taken += 1
-		# Alterna perseguicao / capacete / camera alta de diagnostico.
-		_world.camera.cycle_mode()
 
 	if _trace and _t >= _trace_next:
 		_trace_next += 1.0
-		print("  t=%4.1f  off=%7.1f  lat=%6.2f  v=%6.1f km/h  y=%6.2f  estado=%d  quedas=%d" % [
-			_t, _player.track_offset, _player.track_lateral, _player.speed * KMH,
-			_player.global_position.y, _player.state, _world.run.crashes])
+		print(
+			(
+				"  t=%4.1f  off=%7.1f  lat=%6.2f  v=%6.1f km/h  y=%6.2f  estado=%d  quedas=%d"
+				% [
+					_t,
+					_player.track_offset,
+					_player.track_lateral,
+					_player.speed * KMH,
+					_player.global_position.y,
+					_player.state,
+					_world.run.crashes
+				]
+			)
+		)
 
 	if not is_finite(_player.global_position.x) or not is_finite(_player.speed):
 		_check(false, "posicao ou velocidade viraram NaN")
@@ -367,17 +574,61 @@ func _phase_freerun(_delta: float) -> void:
 		return
 
 	if _t >= 45.0 or _world.run.phase != DeliveryRun.Phase.RIDING:
-		_report.append("corrida solta 45s    %.0f m percorridos, %d raspadas, %d quedas" % [
-			_world.run.distance_done, _world.run.near_misses, _world.run.crashes])
-		_report.append("transito parando     %d carros no vermelho de uma vez, %d engarrafamentos" % [
-			_max_waiting, _world.jams_formed])
-		_check(_max_waiting > 0, "nenhum carro chegou a parar num semaforo em 45s")
-		_check(_world.jams_formed > 0, "nenhum engarrafamento se formou em 45s")
-		_check(_world.run.distance_done > 700.0,
-			"so andou %.0fm em 45s - o piloto automatico nao consegue atravessar o transito"
-			% _world.run.distance_done)
+		_metric("corrida_distancia_m", _world.run.distance_done)
+		_metric("corrida_raspadas", _world.run.near_misses)
+		_metric("corrida_quedas", _world.run.crashes)
+		_report.append(
+			(
+				"corrida solta 45s    %.0f m percorridos, %d raspadas, %d quedas"
+				% [_world.run.distance_done, _world.run.near_misses, _world.run.crashes]
+			)
+		)
+		_check(
+			_world.run.distance_done > 700.0,
+			(
+				"so andou %.0fm em 45s - o piloto automatico nao consegue atravessar o transito"
+				% _world.run.distance_done
+			)
+		)
 		_check(_player.global_position.y > -50.0, "a moto caiu pra fora do mundo")
 		_finish()
+
+
+## Le `--fase <nome>` da linha de comando.
+##
+## Roda da primeira fase ate a pedida e para ali. As fases nao sao
+## independentes - a freada precisa da velocidade que a aceleracao
+## construiu - entao pular pro meio mediria outra coisa. O que se ganha e
+## nao pagar os 45 s da corrida solta pra conferir um ajuste de curva.
+func _read_phase_arg() -> void:
+	var args := OS.get_cmdline_user_args()
+	var pedida := ""
+	for i: int in args.size():
+		if args[i].begins_with("--fase="):
+			pedida = args[i].substr(7)
+		elif args[i] == "--fase" and i + 1 < args.size():
+			pedida = args[i + 1]
+	if pedida.is_empty():
+		return
+	var indice_fase := PHASE_NAMES.find(pedida)
+	if indice_fase < 0:
+		push_error("fase desconhecida: %s (use uma de %s)" % [pedida, PHASE_NAMES])
+		get_tree().quit(2)
+		return
+	_stop_after = indice_fase
+	print("fase: parando depois de '%s'" % pedida)
+
+
+## So pra a fase de combate saber que o rival caiu de verdade.
+func _on_rival_down() -> void:
+	_rival_staggered = true
+
+
+## O soco do jogador encostou em alguem. E a unica prova de causa que existe:
+## dai pra frente, o que acontecer com o rival e efeito do soco.
+func _on_punch_landed(target: Node3D) -> void:
+	if target is RivalBike:
+		_punch_connected = true
 
 
 func _set_action(action_name: String, pressed: bool) -> void:
@@ -387,21 +638,114 @@ func _set_action(action_name: String, pressed: bool) -> void:
 		Input.action_release(action_name)
 
 
+## Salva o frame e mede o que ele tem dentro.
+##
+## Comparar pixel a pixel entre maquinas nao funciona: driver, GPU e versao de
+## Mesa mudam o ultimo bit de quase todo pixel, e o teste passaria a falhar por
+## motivo nenhum. O que da pra comparar entre plataformas sao proporcoes
+## grosseiras da imagem - e sao elas que pegam a classe de bug que interessa
+## aqui, que e a tela ficar errada por inteiro.
+##
+## O caso registrado no PROTOTIPO.md e exatamente esse: a pista saia com
+## winding anti-horario, o Godot descartava as faces sem um erro no console, e
+## o mundo virava caixas flutuando no vazio. Nenhum numero do banco de provas
+## se mexia - todos medem fisica, e a fisica nao sabe que a pista sumiu.
 func _capture(path: String) -> void:
 	await RenderingServer.frame_post_draw
 	var image := get_viewport().get_texture().get_image()
 	image.save_png(path)
+	_measure_frame(image)
+
+
+## Tres proporcoes da imagem, amostradas de 4 em 4 pixels.
+##
+## A amostragem existe porque isto roda a cada 2,5 s de simulacao e um viewport
+## inteiro sao 900 mil leituras de pixel em GDScript. De 4 em 4 sao 57 mil, e a
+## proporcao nao muda.
+func _measure_frame(image: Image) -> void:
+	var w := image.get_width()
+	var h := image.get_height()
+	if w == 0 or h == 0:
+		return
+
+	# A cor de fundo do projeto. Pixel parecido com ela e ceu - ou seja,
+	# lugar onde NAO ha mundo desenhado.
+	var sky := Color(0.13, 0.14, 0.2)
+	var sky_hits := 0
+	var luma := 0.0
+	var seen := {}
+	var total := 0
+
+	for y in range(0, h, 4):
+		for x in range(0, w, 4):
+			var c := image.get_pixel(x, y)
+			total += 1
+			luma += c.get_luminance()
+			if absf(c.r - sky.r) < 0.06 and absf(c.g - sky.g) < 0.06 and absf(c.b - sky.b) < 0.06:
+				sky_hits += 1
+			# Cor quantizada em 5 niveis por canal: conta quantas familias de
+			# cor a cena tem, sem contar ruido de sombreamento como cor nova.
+			var key := (int(c.r * 4.0) << 6) | (int(c.g * 4.0) << 3) | int(c.b * 4.0)
+			seen[key] = true
+
+	if total == 0:
+		return
+	_frame_sky += float(sky_hits) / float(total)
+	_frame_luma += luma / float(total)
+	_frame_colors += float(seen.size())
 
 
 ## --- Relatorio ------------------------------------------------------------
+
+
+## Registra uma medida em forma de maquina, alem da linha de relatorio.
+##
+## O relatorio e pra pessoa ler; isto e pro baseline comparar. Enquanto o
+## numero so existia como prosa, saber se ele andou dependia de alguem
+## lembrar qual era o valor de ontem.
+func _metric(chave: String, valor: float) -> void:
+	_metrics[chave] = valor
+
 
 func _check(condition: bool, message: String) -> void:
 	if not condition:
 		_failures.append(message)
 
 
+## Despeja as medidas em JSON, se RUSHFOOD_SELFTEST_METRICS apontar um
+## arquivo. E assim que o `dev.py baseline` compara uma rodada com a
+## anterior sem depender de ninguem transcrever numero a mao.
+## Media das medidas de frame, so quando houve captura.
+##
+## Elas vao pro mesmo JSON das outras, mas sao comparadas contra um baseline
+## proprio: so existem quando o jogo roda com tela, e o banco de provas roda
+## headless na maior parte do tempo.
+func _write_frame_metrics() -> void:
+	if _shots_taken == 0:
+		return
+	var n := float(_shots_taken)
+	_metric("visual_frames", float(_shots_taken))
+	_metric("visual_fracao_ceu", _frame_sky / n)
+	_metric("visual_luminancia", _frame_luma / n)
+	_metric("visual_familias_de_cor", _frame_colors / n)
+
+
+func _write_metrics() -> void:
+	var destino := OS.get_environment("RUSHFOOD_SELFTEST_METRICS")
+	if destino.is_empty():
+		return
+	var arquivo := FileAccess.open(destino, FileAccess.WRITE)
+	if arquivo == null:
+		push_error("nao consegui gravar as metricas em %s" % destino)
+		return
+	arquivo.store_string(JSON.stringify(_metrics, "\t", true) + "\n")
+	arquivo.close()
+
+
 func _finish() -> void:
 	set_physics_process(false)
+	_write_frame_metrics()
+	_write_metrics()
 	print("\n--- medidas ---")
 	for line: String in _report:
 		print("  " + line)

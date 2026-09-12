@@ -1,5 +1,5 @@
-extends CharacterBody3D
 class_name PlayerBike
+extends CharacterBody3D
 ## A moto do jogador. Este arquivo e o prototipo.
 ##
 ## Tudo mais aqui existe pra dar contexto a estas ~200 linhas: se acelerar,
@@ -9,10 +9,15 @@ class_name PlayerBike
 ## controla a curva. Voce precisa se comprometer com um lado antes de virar, e
 ## precisa endireitar antes de flicar pro outro. E dai que sai o peso.
 
-const SIZE := Vector3(0.75, 1.75, 2.1)
-const GRAVITY: float = 26.0
+signal crashed(reason: String)
+signal scraped(intensity: float)
+signal punch_landed(target: Node3D)
+signal took_hit
 
 enum State { RIDING, STAGGERED, CRASHED }
+
+const SIZE := Vector3(0.75, 1.75, 2.1)
+const GRAVITY: float = 26.0
 
 var tuning: BikeTuning
 var track: RoadTrack
@@ -20,12 +25,12 @@ var track: RoadTrack
 var state: State = State.RIDING
 var state_timer: float = 0.0
 
-var speed: float = 0.0        ## Escalar, m/s, sempre >= 0.
-var heading: float = 0.0      ## Guinada no mundo, radianos.
-var lean: float = 0.0         ## Inclinacao atual, radianos. + = direita.
-var track_offset: float = 0.0 ## Metros percorridos ao longo da curva.
+var speed: float = 0.0  ## Escalar, m/s, sempre >= 0.
+var heading: float = 0.0  ## Guinada no mundo, radianos.
+var lean: float = 0.0  ## Inclinacao atual, radianos. + = direita.
+var track_offset: float = 0.0  ## Metros percorridos ao longo da curva.
 var track_lateral: float = 0.0
-var adrenaline: float = 0.0   ## 0..100, enche com raspada, gasta com boost.
+var adrenaline: float = 0.0  ## 0..100, enche com raspada, gasta com boost.
 var boosting: bool = false
 var airborne: bool = false
 ## True quando a moto aponta pro lado contrario da pista. Sem aviso, o jogador
@@ -42,18 +47,13 @@ var find_clear_lateral: Callable = Callable()
 
 var _vertical_speed: float = 0.0
 var _punch_timer: float = -1.0
-var _punch_side: int = 0      ## -1 esquerda, +1 direita, 0 nenhum.
+var _punch_side: int = 0  ## -1 esquerda, +1 direita, 0 nenhum.
 var _hitboxes: Dictionary = {}
 var _visual: Node3D
 var _last_road_y: float = 0.0
 var _crash_recover_offset: float = 0.0
 var _off_road: bool = false
 var _crash_grace: float = 0.0
-
-signal crashed(reason: String)
-signal scraped(intensity: float)
-signal punch_landed(target: Node3D)
-signal took_hit
 
 
 func _ready() -> void:
@@ -158,6 +158,7 @@ func _physics_process(delta: float) -> void:
 
 ## --- Nucleo do feel -------------------------------------------------------
 
+
 func _ride(delta: float, steer: float, throttle: float, brake: float) -> void:
 	_update_lean(delta, steer)
 	_update_speed(delta, throttle, brake)
@@ -217,7 +218,9 @@ func _update_heading(delta: float) -> void:
 	# Agilidade em funcao da velocidade: quase nula parado (moto nao anda de
 	# lado), maxima em velocidade media, reduzida no talo.
 	var low := clampf(speed / tuning.turn_ramp_speed, 0.0, 1.0)
-	var high := lerpf(1.0, tuning.turn_high_speed_factor, clampf(speed / tuning.max_speed, 0.0, 1.0))
+	var high := lerpf(
+		1.0, tuning.turn_high_speed_factor, clampf(speed / tuning.max_speed, 0.0, 1.0)
+	)
 	var agility := low * high
 
 	# MENOS: em Godot (Y pra cima, mao direita) guinada positiva gira pra
@@ -264,7 +267,9 @@ func _integrate(delta: float) -> void:
 		# graca, sem nenhum codigo de rampa.
 		airborne = false
 		_vertical_speed = maxf(road_climb, 0.0)
-		velocity = Vector3(horizontal.x, (road_y - global_position.y) / maxf(delta, 0.0001), horizontal.z)
+		velocity = Vector3(
+			horizontal.x, (road_y - global_position.y) / maxf(delta, 0.0001), horizontal.z
+		)
 	else:
 		airborne = true
 		velocity = Vector3(horizontal.x, _vertical_speed, horizontal.z)
@@ -276,6 +281,7 @@ func _integrate(delta: float) -> void:
 
 
 ## --- Impacto --------------------------------------------------------------
+
 
 func _resolve_collisions() -> void:
 	if speed < 0.5:
@@ -292,7 +298,11 @@ func _resolve_collisions() -> void:
 		var head_on := clampf(-dir.dot(normal), 0.0, 1.0)
 		var incidence := rad_to_deg(asin(head_on))
 
-		if incidence > tuning.crash_angle and speed > tuning.crash_min_speed and _crash_grace <= 0.0:
+		if (
+			incidence > tuning.crash_angle
+			and speed > tuning.crash_min_speed
+			and _crash_grace <= 0.0
+		):
 			_crash("bateu de frente")
 			return
 
@@ -311,9 +321,7 @@ func _clamp_to_road() -> void:
 	if absf(track_lateral) > RoadTrack.half_width():
 		var cap := tuning.max_speed * tuning.sidewalk_speed_factor
 		if speed > cap:
-			speed = maxf(
-				speed - tuning.sidewalk_drag * get_physics_process_delta_time(),
-				cap)
+			speed = maxf(speed - tuning.sidewalk_drag * get_physics_process_delta_time(), cap)
 
 	var limit := RoadTrack.sidewalk_limit()
 	if absf(track_lateral) <= limit:
@@ -361,7 +369,9 @@ func _process_crashed(delta: float) -> void:
 	_visual.rotation = Vector3(0.0, 0.0, -deg_to_rad(85.0))
 	if state_timer > 0.0:
 		return
-	var lateral := clampf(track_lateral, -RoadTrack.half_width() + 1.0, RoadTrack.half_width() - 1.0)
+	var lateral := clampf(
+		track_lateral, -RoadTrack.half_width() + 1.0, RoadTrack.half_width() - 1.0
+	)
 	# Levantar a moto em cima do carro que acabou de te derrubar e o jeito mais
 	# rapido de fazer o jogador largar o controle. Procura um vao antes.
 	if find_clear_lateral.is_valid():
@@ -373,6 +383,7 @@ func _process_crashed(delta: float) -> void:
 
 
 ## --- Combate --------------------------------------------------------------
+
 
 func _try_punch() -> void:
 	if _punch_timer > 0.0:
@@ -396,7 +407,9 @@ func _update_hitboxes(delta: float) -> void:
 	var area: Area3D = _hitboxes[_punch_side]
 	area.position = Vector3(tuning.punch_range * float(_punch_side), 0.0, -0.2)
 
-	var active := elapsed >= tuning.punch_windup and elapsed < tuning.punch_windup + tuning.punch_active
+	var active := (
+		elapsed >= tuning.punch_windup and elapsed < tuning.punch_windup + tuning.punch_active
+	)
 	if active and not area.monitoring:
 		area.monitoring = true
 	elif not active and area.monitoring:

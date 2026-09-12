@@ -19,13 +19,13 @@ import pathlib
 import re
 import sys
 
-PROJECT = pathlib.Path(__file__).resolve().parent.parent
-PROJECT_NAME = "RushFood - Prototipo"
-DEFAULT_USER_DIR = (
-    pathlib.Path.home()
-    / "Library/Application Support/Godot/app_userdata"
-    / PROJECT_NAME
-)
+# A pasta do user:// e a forma de gravar saem do dev.py, que e quem conhece as
+# convencoes de cada sistema. Antes daqui, este script so achava o user:// no
+# macOS - no Windows e no Linux ele dizia "nada salvo" com o arquivo no lugar.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from dev import PROJECT, godot_user_data, write_text_lf  # noqa: E402
+
+DEFAULT_USER_DIR = godot_user_data()
 
 # @export_range(20.0, 90.0, 0.5) var max_speed: float = 52.0
 EXPORT_LINE = re.compile(
@@ -130,7 +130,7 @@ def main() -> int:
         for name, old, new in changes:
             print(f"    {name:<26} {old:>10}  ->  {new}")
         if args.apply:
-            script_path.write_text(text, encoding="utf-8")
+            write_text_lf(script_path, text)
 
     if total == 0:
         print("\nos defaults ja sao os valores salvos.")
@@ -143,7 +143,7 @@ def main() -> int:
                 tres.unlink()
             print("override local apagado - o jogo agora roda nos defaults novos.")
         print("rode o banco de provas antes de commitar:")
-        print("  godot --headless --path . -- --selftest")
+        print("  python tools/dev.py selftest")
     else:
         print(f"\n{total} default(s) mudariam. rode com --apply pra gravar.")
     return 0

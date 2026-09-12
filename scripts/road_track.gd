@@ -1,5 +1,5 @@
-extends Node3D
 class_name RoadTrack
+extends Node3D
 ## Pista como geometria 3D real, gerada a partir de uma Curve3D.
 ##
 ## Decisao de arquitetura (ver docs/PROTOTIPO.md): o mundo e 3D de verdade, nao
@@ -33,12 +33,6 @@ const MESH_STEP: float = 4.0
 
 var curve: Curve3D
 var length: float = 0.0
-## Este trecho e um atalho, e nao a rota principal.
-##
-## Muda so o desenho: atalho sobe 4 cm e nao tem acostamento. Ele nasce colado
-## na pista principal na boca da bifurcacao, e duas superficies exatamente na
-## mesma altura piscam (z-fighting) em vez de uma passar por cima da outra.
-var is_shortcut: bool = false
 
 var _asphalt_mesh: MeshInstance3D
 
@@ -101,45 +95,12 @@ func build(total_length: float, rng: RandomNumberGenerator) -> void:
 	_build_mesh()
 
 
-## Constroi um atalho: a corda entre dois pontos da pista principal.
-##
-## Bifurcacao de Road Rash e isto e nada mais: onde a avenida faz a volta, sai
-## uma rua que corta reto e devolve voce la na frente. Nao ha level design
-## nenhum aqui - a geometria da rota e que diz onde valeu a pena cortar, e o
-## `World` so aceita a corda quando ela economiza pista de verdade.
-##
-## As tangentes das pontas sao as da propria pista, entao a boca e a
-## reentrada sao continuas: o atalho nasce apontando pra onde a avenida estava
-## indo e chega apontando pra onde ela vai. E o que permite trocar a moto de
-## pista sem teleporte nenhum.
-func build_shortcut(main: RoadTrack, from_offset: float, to_offset: float) -> void:
-	is_shortcut = true
-	curve = Curve3D.new()
-	curve.bake_interval = 1.0
-
-	var p0 := main.sample_position(from_offset)
-	var p3 := main.sample_position(to_offset)
-	var f0 := -main.sample_basis(from_offset).z
-	var f1 := -main.sample_basis(to_offset).z
-	# 0.34 da distancia entre as pontas: menos que isso faz a corda sair de
-	# lado da avenida como se fosse uma esquina; mais que isso e a corda
-	# abracar a curva que ela deveria estar cortando.
-	var pull := p0.distance_to(p3) * 0.34
-	var p1 := p0 + f0 * pull
-	var p2 := p3 - f1 * pull
-
-	var steps := maxi(int(p0.distance_to(p3) / 10.0), 8)
-	for i in range(steps + 1):
-		curve.add_point(_bezier(p0, p1, p2, p3, float(i) / float(steps)))
-
-	_smooth_tangents()
-	length = curve.get_baked_length()
+func build_surface() -> void:
 	_build_mesh()
 
 
-static func _bezier(p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, t: float) -> Vector3:
-	var u := 1.0 - t
-	return p0 * (u * u * u) + p1 * (3.0 * u * u * t) + p2 * (3.0 * u * t * t) + p3 * (t * t * t)
+func grade_at(offset: float) -> float:
+	return -sample_basis(offset).z.y
 
 
 ## Sorteia a rampa do proximo trecho: plano, ladeira mansa ou ladeira de valer.
@@ -159,12 +120,6 @@ static func _pick_grade(rng: RandomNumberGenerator, altitude: float) -> float:
 	return size if up else -size
 
 
-## Inclinacao da pista no ponto, em altura por metro percorrido.
-## Positivo sobe, negativo desce.
-func grade_at(offset: float) -> float:
-	return -sample_basis(offset).z.y
-
-
 func _smooth_tangents() -> void:
 	var count := curve.point_count
 	for i in range(count):
@@ -177,6 +132,7 @@ func _smooth_tangents() -> void:
 
 ## --- Amostragem -----------------------------------------------------------
 
+
 func sample_position(offset: float) -> Vector3:
 	return curve.sample_baked(clampf(offset, 0.0, length), true)
 
@@ -186,7 +142,7 @@ func sample_basis(offset: float) -> Basis:
 	var o := clampf(offset, 0.0, length)
 	var a := sample_position(maxf(o - 0.5, 0.0))
 	var b := sample_position(minf(o + 0.5, length))
-	var forward := (b - a)
+	var forward := b - a
 	if forward.length_squared() < 1e-8:
 		forward = Vector3.FORWARD
 	forward = forward.normalized()
@@ -266,6 +222,7 @@ static func sidewalk_limit() -> float:
 
 ## --- Mesh -----------------------------------------------------------------
 
+
 func _build_mesh() -> void:
 	var mesh := ArrayMesh.new()
 	var road_w := half_width()
@@ -279,24 +236,19 @@ func _build_mesh() -> void:
 	var paint := SurfaceTool.new()
 	paint.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-	# O atalho sobe 4 cm e dispensa o acostamento. Os 4 cm resolvem o
-	# z-fighting com a avenida na boca da bifurcacao, onde as duas pistas se
-	# sobrepoem; sem acostamento, a unica coisa que o atalho pinta por cima da
-	# avenida e asfalto sobre asfalto, que ninguem enxerga. O terreno dele fica
-	# 35 cm abaixo, entao some sozinho debaixo da avenida.
-	var lift := 0.04 if is_shortcut else 0.0
-	var edge := road_w if is_shortcut else road_w + SHOULDER
+	var lift := 0.0
+	var edge := road_w + SHOULDER
+	var carpet := GROUND
 
 	var steps := int(length / MESH_STEP)
 	for i in range(steps):
 		var o0 := float(i) * MESH_STEP
 		var o1 := minf(o0 + MESH_STEP, length)
 		_quad(asphalt, o0, o1, -road_w, road_w, lift)
-		if not is_shortcut:
-			_quad(shoulder, o0, o1, -road_w - SHOULDER, -road_w)
-			_quad(shoulder, o0, o1, road_w, road_w + SHOULDER)
-		_quad(ground, o0, o1, -edge - GROUND, -edge, lift - 0.35)
-		_quad(ground, o0, o1, edge, edge + GROUND, lift - 0.35)
+		_quad(shoulder, o0, o1, -road_w - SHOULDER, -road_w)
+		_quad(shoulder, o0, o1, road_w, road_w + SHOULDER)
+		_quad(ground, o0, o1, -edge - carpet, -edge, lift - 0.35)
+		_quad(ground, o0, o1, edge, edge + carpet, lift - 0.35)
 
 		# Faixas divisorias tracejadas: alem de ler a pista, elas sao a
 		# referencia visual do corredor entre as filas de carro.
@@ -310,13 +262,8 @@ func _build_mesh() -> void:
 	# O asfalto tem que ficar claramente mais claro que o fundo, senao a pista
 	# desaparece contra o ceu e o jogador nao ve pra onde esta indo.
 	_commit(ground, mesh, _flat_material(Color(0.13, 0.15, 0.13)))
-	# Atalho e rua de bairro, nao avenida: asfalto mais escuro. E a unica pista
-	# do jogador, a 320x180 e de longe, de que aquela boca leva pra outro
-	# lugar.
-	_commit(asphalt, mesh, _flat_material(
-		Color(0.23, 0.23, 0.27) if is_shortcut else Color(0.29, 0.29, 0.33)))
-	if not is_shortcut:
-		_commit(shoulder, mesh, _flat_material(Color(0.19, 0.18, 0.17)))
+	_commit(asphalt, mesh, _flat_material(Color(0.29, 0.29, 0.33)))
+	_commit(shoulder, mesh, _flat_material(Color(0.19, 0.18, 0.17)))
 	_commit(paint, mesh, _flat_material(Color(0.88, 0.86, 0.68)))
 
 	_asphalt_mesh = MeshInstance3D.new()
@@ -324,11 +271,23 @@ func _build_mesh() -> void:
 	_asphalt_mesh.mesh = mesh
 	_asphalt_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_asphalt_mesh)
-	if OS.has_environment("RUSHFOOD_SELFTEST_TRACE") or OS.has_environment("RUSHFOOD_SELFTEST_SHOTS"):
-		print("  malha da pista: %d superficies, aabb=%s" % [mesh.get_surface_count(), mesh.get_aabb()])
+	if (
+		OS.has_environment("RUSHFOOD_SELFTEST_TRACE")
+		or OS.has_environment("RUSHFOOD_SELFTEST_SHOTS")
+	):
+		print(
+			(
+				"  malha da pista: %d superficies, aabb=%s"
+				% [mesh.get_surface_count(), mesh.get_aabb()]
+			)
+		)
 		for i in range(mesh.get_surface_count()):
-			print("    superficie %d: %d vertices, material=%s" % [
-				i, mesh.surface_get_array_len(i), mesh.surface_get_material(i)])
+			print(
+				(
+					"    superficie %d: %d vertices, material=%s"
+					% [i, mesh.surface_get_array_len(i), mesh.surface_get_material(i)]
+				)
+			)
 
 
 func _quad(st: SurfaceTool, o0: float, o1: float, x0: float, x1: float, lift: float = 0.0) -> void:

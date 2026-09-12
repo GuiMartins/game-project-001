@@ -1,5 +1,5 @@
-extends Camera3D
 class_name ChaseCamera
+extends Camera3D
 ## Camera baixa, lente longa, sempre atras.
 ##
 ## Nao e so estetica: a camera fixa atras e o que corta ~60% do sprite sheet
@@ -62,11 +62,17 @@ func _process(delta: float) -> void:
 	_smoothed_position = _smoothed_position.lerp(desired, t)
 	# Mira longe: olhar 14 m a frente abaixa o horizonte e abre a pista. Mirar
 	# em cima da moto so mostra o para-lama.
-	_smoothed_look = _smoothed_look.lerp(target.global_position + forward * 14.0 + Vector3.UP * 1.2, t)
+	_smoothed_look = _smoothed_look.lerp(
+		target.global_position + forward * 14.0 + Vector3.UP * 1.2, t
+	)
 
 	var pos := _smoothed_position
 	if _shake > 0.0:
-		pos += Vector3(_rng.randfn(0.0, 1.0), _rng.randfn(0.0, 1.0), _rng.randfn(0.0, 1.0)) * _shake * 0.35
+		pos += (
+			Vector3(_rng.randfn(0.0, 1.0), _rng.randfn(0.0, 1.0), _rng.randfn(0.0, 1.0))
+			* _shake
+			* 0.35
+		)
 		_shake = maxf(_shake - delta * 1.6, 0.0)
 
 	look_at_from_position(pos, _smoothed_look, Vector3.UP)

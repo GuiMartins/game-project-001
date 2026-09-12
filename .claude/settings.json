@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(python tools/dev.py doctor)",
+      "Bash(python tools/dev.py setup:*)",
+      "Bash(python tools/dev.py import)",
+      "Bash(python tools/dev.py test:*)",
+      "Bash(python tools/dev.py selftest:*)",
+      "Bash(python tools/dev.py lint)",
+      "Bash(python tools/dev.py format:*)",
+      "Bash(python tools/dev.py run)",
+      "Bash(python tools/promote_tuning.py)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)"
+    ]
+  }
+}
