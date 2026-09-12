@@ -11,15 +11,28 @@ extends Node
 
 const KMH: float = 3.6
 
+## Nome de cada fase, na ordem em que rodam. Serve pro `--fase <nome>`:
+## quem esta iterando em curva nao precisa esperar os 45 s da corrida
+## solta, e ciclo curto e o que decide se o teste e rodado ou pulado.
+const PHASE_NAMES: PackedStringArray = [
+	"aceleracao", "freada", "inclinacao", "curva", "soco", "bifurcacao", "corrida"
+]
+
 var _main: Node
 var _player: PlayerBike
 var _world: World
 var _tuning: BikeTuning
 
+## Ultima fase a rodar. Por padrao, todas.
+var _stop_after: int = PHASE_NAMES.size() - 1
 var _phase: int = 0
 var _t: float = 0.0
 var _report: Array[String] = []
 var _failures: Array[String] = []
+## As mesmas medidas do relatorio, em forma de maquina. O baseline
+## versionado compara contra isto - prosa em markdown nao diz se o numero
+## andou, so diz qual ele era no dia em que alguem escreveu o markdown.
+var _metrics: Dictionary = {}
 
 # Medidas coletadas.
 var _t_to_100: float = -1.0
@@ -59,14 +72,21 @@ func setup(main: Node) -> void:
 	# senao "regrediu" e "deu azar" viram a mesma coisa.
 	_rng.seed = 4242
 	_bench_begin()
-	if not _shots_dir.is_empty():
-		# Modo foto: pula o banco de provas e vai direto pra corrida.
-		_phase = 6
+	_read_phase_arg()
 	print("\n=== RUSHFOOD SELFTEST ===")
 	print("tuning: %s" % _main.get("tuning_source"))
-	print("pista: %.0f m | transito: %d | rivais: %d | semaforos: %d | atalhos: %d" % [
-		_world.track.length, _world.traffic.size(), _world.rivals.size(),
-		_world.lights.size(), _world.branches.size()])
+	print(
+		(
+			"pista: %.0f m | transito: %d | rivais: %d | semaforos: %d | atalhos: %d"
+			% [
+				_world.track.length,
+				_world.traffic.size(),
+				_world.rivals.size(),
+				_world.lights.size(),
+				_world.branches.size()
+			]
+		)
+	)
 	_measure_relief()
 
 
@@ -84,31 +104,48 @@ func _measure_relief() -> void:
 		lowest = minf(lowest, y)
 		highest = maxf(highest, y)
 		o += 5.0
-	_report.append("relevo               rampa max %.0f%%, desnivel %.0f m" % [
-		steepest * 100.0, highest - lowest])
+	_metric("relevo_rampa_max_pct", steepest * 100.0)
+	_metric("relevo_desnivel_m", highest - lowest)
+	_report.append(
+		(
+			"relevo               rampa max %.0f%%, desnivel %.0f m"
+			% [steepest * 100.0, highest - lowest]
+		)
+	)
 	_check(steepest > 0.05, "a pista saiu plana: sem ladeira nao ha subida nem descida pra sentir")
 	# Margem sobre o teto: as tangentes suavizadas passam um pouco por cima do
 	# valor sorteado, e isso e esperado.
-	_check(steepest < RoadTrack.MAX_GRADE * 1.4,
-		"rampa de %.0f%% - acima disso a moto sobe empinada e desce voando" % (steepest * 100.0))
+	_check(
+		steepest < RoadTrack.MAX_GRADE * 1.4,
+		"rampa de %.0f%% - acima disso a moto sobe empinada e desce voando" % (steepest * 100.0)
+	)
 
 
 func _physics_process(delta: float) -> void:
 	_t += delta
 	match _phase:
-		0: _phase_accel(delta)
-		1: _phase_brake(delta)
-		2: _phase_lean(delta)
-		3: _phase_turn(delta)
-		4: _phase_punch(delta)
-		5: _phase_fork(delta)
-		6: _phase_freerun(delta)
+		0:
+			_phase_accel(delta)
+		1:
+			_phase_brake(delta)
+		2:
+			_phase_lean(delta)
+		3:
+			_phase_turn(delta)
+		4:
+			_phase_punch(delta)
+		5:
+			_phase_fork(delta)
+		6:
+			_phase_freerun(delta)
 
 
 func _next_phase() -> void:
 	_phase += 1
 	_t = 0.0
 	_release_all()
+	if _phase > _stop_after:
+		_finish()
 
 
 ## O banco mede a MOTO, nao a pista. Sem isolar, a primeira raspada em
@@ -137,8 +174,15 @@ func _bench_end() -> void:
 
 
 func _release_all() -> void:
-	for a: String in ["ride_throttle", "ride_brake", "ride_left", "ride_right", "ride_boost",
-			"hit_left", "hit_right"]:
+	for a: String in [
+		"ride_throttle",
+		"ride_brake",
+		"ride_left",
+		"ride_right",
+		"ride_boost",
+		"hit_left",
+		"hit_right"
+	]:
 		if Input.is_action_pressed(a):
 			Input.action_release(a)
 
@@ -150,14 +194,26 @@ func _phase_accel(_delta: float) -> void:
 		_t_to_100 = _t
 	_top_speed = maxf(_top_speed, _player.speed)
 	if _t >= 22.0:
+		_metric("aceleracao_0_100_s", _t_to_100)
 		_report.append("0-100 km/h          %.2f s" % _t_to_100)
-		_report.append("velocidade em 22s   %.1f km/h  (teto do tuning %.1f)" % [
-			_top_speed * KMH, _tuning.max_speed * KMH])
-		_check(_t_to_100 > 0.0 and _t_to_100 < 9.0,
-			"0-100 em %.2fs: acima de 9s a moto nao parece uma moto" % _t_to_100)
-		_check(_top_speed >= _tuning.max_speed * 0.86,
-			"so chegou a %.0f%% do teto em 22s - a cauda da curva de aceleracao esta morta" % (
-				100.0 * _top_speed / _tuning.max_speed))
+		_metric("velocidade_22s_kmh", _top_speed * KMH)
+		_report.append(
+			(
+				"velocidade em 22s   %.1f km/h  (teto do tuning %.1f)"
+				% [_top_speed * KMH, _tuning.max_speed * KMH]
+			)
+		)
+		_check(
+			_t_to_100 > 0.0 and _t_to_100 < 9.0,
+			"0-100 em %.2fs: acima de 9s a moto nao parece uma moto" % _t_to_100
+		)
+		_check(
+			_top_speed >= _tuning.max_speed * 0.86,
+			(
+				"so chegou a %.0f%% do teto em 22s - a cauda da curva de aceleracao esta morta"
+				% (100.0 * _top_speed / _tuning.max_speed)
+			)
+		)
 		_brake_from = _player.speed
 		_next_phase()
 
@@ -170,9 +226,17 @@ func _phase_brake(delta: float) -> void:
 	_brake_distance += _player.speed * delta
 	_brake_time = _t
 	if _player.speed < 1.0 or _t > 12.0:
-		_report.append("freada %.0f km/h -> 0   %.2f s / %.0f m" % [
-			_brake_from * KMH, _brake_time, _brake_distance])
-		_check(_brake_time < 6.0, "freada de %.2fs e longa demais pro ritmo do corredor" % _brake_time)
+		_metric("freada_tempo_s", _brake_time)
+		_metric("freada_distancia_m", _brake_distance)
+		_report.append(
+			(
+				"freada %.0f km/h -> 0   %.2f s / %.0f m"
+				% [_brake_from * KMH, _brake_time, _brake_distance]
+			)
+		)
+		_check(
+			_brake_time < 6.0, "freada de %.2fs e longa demais pro ritmo do corredor" % _brake_time
+		)
 		_next_phase()
 
 
@@ -190,11 +254,16 @@ func _phase_lean(_delta: float) -> void:
 	if _lean_rise_time < 0.0 and _player.lean >= target * 0.9:
 		_lean_rise_time = _t - 1.5
 	if _t >= 4.0:
+		_metric("inclinacao_0_90_s", _lean_rise_time)
 		_report.append("inclinacao 0->90%%    %.2f s" % _lean_rise_time)
-		_check(_lean_rise_time > 0.05,
-			"a moto assume a inclinacao maxima instantaneamente - nao tem peso nenhum")
-		_check(_lean_rise_time > 0.0 and _lean_rise_time < 1.2,
-			"demora %.2fs pra inclinar: nesse tempo o corredor ja fechou" % _lean_rise_time)
+		_check(
+			_lean_rise_time > 0.05,
+			"a moto assume a inclinacao maxima instantaneamente - nao tem peso nenhum"
+		)
+		_check(
+			_lean_rise_time > 0.0 and _lean_rise_time < 1.2,
+			"demora %.2fs pra inclinar: nesse tempo o corredor ja fechou" % _lean_rise_time
+		)
 		_next_phase()
 
 
@@ -217,19 +286,28 @@ func _phase_turn(_delta: float) -> void:
 		_yaw_rate = rad_to_deg(absf(wrapf(_player.heading - _heading_at_mark, -PI, PI))) / 2.0
 		var mean_speed := (_speed_at_mark + _player.speed) * 0.5
 		_turn_radius = mean_speed / maxf(deg_to_rad(_yaw_rate), 0.0001)
-		_report.append("a %.0f km/h: %.1f graus/s, raio %.0f m" % [
-			mean_speed * KMH, _yaw_rate, _turn_radius])
+		_metric("guinada_graus_s", _yaw_rate)
+		_metric("raio_curva_m", _turn_radius)
+		_report.append(
+			"a %.0f km/h: %.1f graus/s, raio %.0f m" % [mean_speed * KMH, _yaw_rate, _turn_radius]
+		)
 		# Inclinar pra DIREITA tem que mover a moto pra direita na pista. Parece
 		# obvio e nao e: em Godot guinada positiva gira pra esquerda, e o erro
 		# de sinal passa despercebido porque a assistencia de alinhamento
 		# disfarca ate a moto encostar no guard-rail.
 		var drift := _player.track_lateral - _lateral_at_mark
-		_check(drift > 1.0,
-			"inclinou pra direita e a moto foi %.1f m pra ESQUERDA - sinal da guinada invertido"
-			% -drift)
+		_check(
+			drift > 1.0,
+			(
+				"inclinou pra direita e a moto foi %.1f m pra ESQUERDA - sinal da guinada invertido"
+				% -drift
+			)
+		)
 		_check(_yaw_rate > 1.0, "a moto praticamente nao vira no talo")
-		_check(_turn_radius < 260.0,
-			"raio de %.0fm no talo: a moto nao consegue seguir a propria pista" % _turn_radius)
+		_check(
+			_turn_radius < 260.0,
+			"raio de %.0fm no talo: a moto nao consegue seguir a propria pista" % _turn_radius
+		)
 		_tuning.align_assist = _saved_assist
 		_next_phase()
 
@@ -249,11 +327,15 @@ func _phase_punch(_delta: float) -> void:
 		_punch_frames += 1
 	if _t >= _tuning.punch_cooldown + 0.2:
 		var window := float(_punch_frames) / 60.0
-		_report.append("hitbox do soco       %.3f s aberta (tuning pede %.3f)" % [
-			window, _tuning.punch_active])
+		_metric("soco_janela_s", _punch_frames / 60.0)
+		_report.append(
+			"hitbox do soco       %.3f s aberta (tuning pede %.3f)" % [window, _tuning.punch_active]
+		)
 		_check(_punch_frames > 0, "a hitbox do soco nunca abriu")
-		_check(absf(window - _tuning.punch_active) < 0.05,
-			"janela medida (%.3fs) nao bate com o tuning (%.3fs)" % [window, _tuning.punch_active])
+		_check(
+			absf(window - _tuning.punch_active) < 0.05,
+			"janela medida (%.3fs) nao bate com o tuning (%.3fs)" % [window, _tuning.punch_active]
+		)
 		_next_phase()
 
 
@@ -263,7 +345,7 @@ func _phase_punch(_delta: float) -> void:
 ## moto e a coisa mais fragil que o mundo faz: erra o palpite do offset e a
 ## moto reprojeta a 200 m dali, erra a volta e a entrega nunca completa. Nada
 ## disso aparece jogando cinco minutos - so na vez em que voce pega o atalho.
-func _phase_fork(delta: float) -> void:
+func _phase_fork(_delta: float) -> void:
 	if _world.branches.is_empty():
 		_report.append("bifurcacao           a rota nao abriu nenhuma")
 		_check(false, "nenhum atalho nasceu na rota - a busca pela corda parou de achar")
@@ -278,9 +360,11 @@ func _phase_fork(delta: float) -> void:
 		# medida ser sobre a bifurcacao e nao sobre o transito do dia.
 		_player.road_bounds_enabled = true
 		_player.slope_enabled = true
-		_player.place_on_track(branch.from_offset - 70.0,
+		_player.place_on_track(
+			branch.from_offset - 70.0,
 			RoadTrack.lane_center(RoadTrack.LANE_COUNT - 1 if branch.side > 0.0 else 0),
-			30.0)
+			30.0
+		)
 		_last_progress = _world.player_progress()
 
 	# Piloto: segue o sentido da pista e se encosta no lado da boca ate entrar.
@@ -305,16 +389,27 @@ func _phase_fork(delta: float) -> void:
 		_fork_time = _t
 
 	if _fork_time > 0.0 or _t > 25.0:
-		_check(_world._branch_separation(branch.road, branch.from_offset, branch.to_offset)
-			>= World.BRANCH_MIN_APART,
-			"o atalho passa colado na avenida - na tela isso vira uma pista so, larga demais")
-		_report.append("bifurcacao           atalho de %.0f m no lugar de %.0f m (-%.0f m)" % [
-			branch.road.length, branch.to_offset - branch.from_offset, branch.saving()])
-		_check(_fork_entered,
-			"passou pela boca do atalho pelo lado certo e seguiu reto na avenida")
+		_check(
+			(
+				_world._branch_separation(branch.road, branch.from_offset, branch.to_offset)
+				>= World.BRANCH_MIN_APART
+			),
+			"o atalho passa colado na avenida - na tela isso vira uma pista so, larga demais"
+		)
+		_metric("atalho_comprimento_m", branch.road.length)
+		_metric("atalho_economia_m", branch.saving())
+		_report.append(
+			(
+				"bifurcacao           atalho de %.0f m no lugar de %.0f m (-%.0f m)"
+				% [branch.road.length, branch.to_offset - branch.from_offset, branch.saving()]
+			)
+		)
+		_check(_fork_entered, "passou pela boca do atalho pelo lado certo e seguiu reto na avenida")
 		_check(_fork_time > 0.0, "entrou no atalho e nao voltou pra avenida em 25s")
-		_check(_fork_backstep > -2.0,
-			"o progresso andou %.1f m pra TRAS na troca de pista" % -_fork_backstep)
+		_check(
+			_fork_backstep > -2.0,
+			"o progresso andou %.1f m pra TRAS na troca de pista" % -_fork_backstep
+		)
 		_next_phase()
 
 
@@ -355,14 +450,23 @@ func _phase_freerun(_delta: float) -> void:
 		_shots_next += 2.5
 		_capture("%s/rushfood_%02d.png" % [_shots_dir, _shots_taken])
 		_shots_taken += 1
-		# Alterna perseguicao / capacete / camera alta de diagnostico.
-		_world.camera.cycle_mode()
 
 	if _trace and _t >= _trace_next:
 		_trace_next += 1.0
-		print("  t=%4.1f  off=%7.1f  lat=%6.2f  v=%6.1f km/h  y=%6.2f  estado=%d  quedas=%d" % [
-			_t, _player.track_offset, _player.track_lateral, _player.speed * KMH,
-			_player.global_position.y, _player.state, _world.run.crashes])
+		print(
+			(
+				"  t=%4.1f  off=%7.1f  lat=%6.2f  v=%6.1f km/h  y=%6.2f  estado=%d  quedas=%d"
+				% [
+					_t,
+					_player.track_offset,
+					_player.track_lateral,
+					_player.speed * KMH,
+					_player.global_position.y,
+					_player.state,
+					_world.run.crashes
+				]
+			)
+		)
 
 	if not is_finite(_player.global_position.x) or not is_finite(_player.speed):
 		_check(false, "posicao ou velocidade viraram NaN")
@@ -370,29 +474,82 @@ func _phase_freerun(_delta: float) -> void:
 		return
 
 	if _t >= 45.0 or _world.run.phase != DeliveryRun.Phase.RIDING:
-		_report.append("corrida solta 45s    %.0f m percorridos, %d raspadas, %d quedas" % [
-			_world.run.distance_done, _world.run.near_misses, _world.run.crashes])
+		_metric("corrida_distancia_m", _world.run.distance_done)
+		_metric("corrida_raspadas", _world.run.near_misses)
+		_metric("corrida_quedas", _world.run.crashes)
+		_report.append(
+			(
+				"corrida solta 45s    %.0f m percorridos, %d raspadas, %d quedas"
+				% [_world.run.distance_done, _world.run.near_misses, _world.run.crashes]
+			)
+		)
 		var rows := int(_world.world_tuning.jam_length / _world.world_tuning.jam_row_gap)
 		var jam_length := float(rows) * _world.world_tuning.jam_row_gap
-		var corridor := RoadTrack.LANE_WIDTH * (1.0 + _world.world_tuning.jam_spread) \
-			- TrafficCar.SIZE.x
-		_report.append("transito parando     %d carros no vermelho de uma vez, %d engarrafamentos" % [
-			_max_waiting, _world.jams_formed])
-		_report.append("fila parada          %.0f m de fila, vao de %.2f m entre as colunas" % [
-			jam_length, corridor])
+		var corridor := (
+			RoadTrack.LANE_WIDTH * (1.0 + _world.world_tuning.jam_spread) - TrafficCar.SIZE.x
+		)
+		_metric("transito_parados_max", _max_waiting)
+		_metric("transito_engarrafamentos", _world.jams_formed)
+		_report.append(
+			(
+				"transito parando     %d carros no vermelho de uma vez, %d engarrafamentos"
+				% [_max_waiting, _world.jams_formed]
+			)
+		)
+		_metric("jam_fila_m", jam_length)
+		_metric("jam_vao_m", corridor)
+		_report.append(
+			(
+				"fila parada          %.0f m de fila, vao de %.2f m entre as colunas"
+				% [jam_length, corridor]
+			)
+		)
 		_check(_max_waiting > 0, "nenhum carro chegou a parar num semaforo em 45s")
 		_check(_world.jams_formed > 0, "nenhum engarrafamento se formou em 45s")
-		_check(jam_length >= 40.0,
-			"fila de %.0f m: o jogador atravessa antes de perceber que era parede" % jam_length)
+		_check(
+			jam_length >= 40.0,
+			"fila de %.0f m: o jogador atravessa antes de perceber que era parede" % jam_length
+		)
 		# A moto tem 0,75 m. Com menos de 1,60 de vao sobram menos de 40 cm de
 		# cada lado, e o corredor deixa de ser linha pra virar sorte.
-		_check(corridor >= 1.6,
-			"vao de %.2f m entre as colunas do engarrafamento: apertado demais" % corridor)
-		_check(_world.run.distance_done > 700.0,
-			"so andou %.0fm em 45s - o piloto automatico nao consegue atravessar o transito"
-			% _world.run.distance_done)
+		_check(
+			corridor >= 1.6,
+			"vao de %.2f m entre as colunas do engarrafamento: apertado demais" % corridor
+		)
+		_check(
+			_world.run.distance_done > 700.0,
+			(
+				"so andou %.0fm em 45s - o piloto automatico nao consegue atravessar o transito"
+				% _world.run.distance_done
+			)
+		)
 		_check(_player.global_position.y > -50.0, "a moto caiu pra fora do mundo")
 		_finish()
+
+
+## Le `--fase <nome>` da linha de comando.
+##
+## Roda da primeira fase ate a pedida e para ali. As fases nao sao
+## independentes - a freada precisa da velocidade que a aceleracao
+## construiu - entao pular pro meio mediria outra coisa. O que se ganha e
+## nao pagar os 45 s da corrida solta pra conferir um ajuste de curva.
+func _read_phase_arg() -> void:
+	var args := OS.get_cmdline_user_args()
+	var pedida := ""
+	for i: int in args.size():
+		if args[i].begins_with("--fase="):
+			pedida = args[i].substr(7)
+		elif args[i] == "--fase" and i + 1 < args.size():
+			pedida = args[i + 1]
+	if pedida.is_empty():
+		return
+	var indice_fase := PHASE_NAMES.find(pedida)
+	if indice_fase < 0:
+		push_error("fase desconhecida: %s (use uma de %s)" % [pedida, PHASE_NAMES])
+		get_tree().quit(2)
+		return
+	_stop_after = indice_fase
+	print("fase: parando depois de '%s'" % pedida)
 
 
 func _set_action(action_name: String, pressed: bool) -> void:
@@ -410,13 +567,39 @@ func _capture(path: String) -> void:
 
 ## --- Relatorio ------------------------------------------------------------
 
+
+## Registra uma medida em forma de maquina, alem da linha de relatorio.
+##
+## O relatorio e pra pessoa ler; isto e pro baseline comparar. Enquanto o
+## numero so existia como prosa, saber se ele andou dependia de alguem
+## lembrar qual era o valor de ontem.
+func _metric(chave: String, valor: float) -> void:
+	_metrics[chave] = valor
+
+
 func _check(condition: bool, message: String) -> void:
 	if not condition:
 		_failures.append(message)
 
 
+## Despeja as medidas em JSON, se RUSHFOOD_SELFTEST_METRICS apontar um
+## arquivo. E assim que o `dev.py baseline` compara uma rodada com a
+## anterior sem depender de ninguem transcrever numero a mao.
+func _write_metrics() -> void:
+	var destino := OS.get_environment("RUSHFOOD_SELFTEST_METRICS")
+	if destino.is_empty():
+		return
+	var arquivo := FileAccess.open(destino, FileAccess.WRITE)
+	if arquivo == null:
+		push_error("nao consegui gravar as metricas em %s" % destino)
+		return
+	arquivo.store_string(JSON.stringify(_metrics, "\t", true) + "\n")
+	arquivo.close()
+
+
 func _finish() -> void:
 	set_physics_process(false)
+	_write_metrics()
 	print("\n--- medidas ---")
 	for line: String in _report:
 		print("  " + line)

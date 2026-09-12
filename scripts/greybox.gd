@@ -1,10 +1,11 @@
-extends RefCounted
 class_name Greybox
+extends RefCounted
 ## Caixas brancas. Nada mais.
 ##
 ## O texto de referencia e explicito: prototipar o feel com cubos brancos antes
 ## de qualquer arte. Estes helpers existem pra que trocar caixa por Sprite3D
 ## billboard mais tarde seja um unico ponto de mudanca.
+
 
 static func material(color: Color, emissive: bool = false) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()

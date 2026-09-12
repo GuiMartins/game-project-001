@@ -1,5 +1,5 @@
-extends Node3D
 class_name TrafficLight
+extends Node3D
 ## Semaforo: para o transito num ponto fixo da pista.
 ##
 ## Existe pra criar a parede que o corredor resolve. Fila parada e o unico
@@ -150,8 +150,9 @@ func _build() -> void:
 	bar.position = Vector3(0.0, POLE.y - BAR_THICK, 0.0)
 	add_child(bar)
 
-	var caixa := Greybox.box(Vector3(LAMP + 0.3, LAMP_GAP * 3.0 + 0.2, LAMP * 0.6),
-		Color(0.2, 0.2, 0.23))
+	var caixa := Greybox.box(
+		Vector3(LAMP + 0.3, LAMP_GAP * 3.0 + 0.2, LAMP * 0.6), Color(0.2, 0.2, 0.23)
+	)
 	caixa.position = Vector3(0.0, POLE.y - BAR_THICK - LAMP_GAP * 1.6, 0.0)
 	add_child(caixa)
 
@@ -163,8 +164,7 @@ func _build() -> void:
 
 	# Faixa de retencao pintada no asfalto: sem ela o jogador ve a fila parada
 	# mas nao ve ONDE ela para, e o vao entre as filas parece surgir do nada.
-	var line := Greybox.box(Vector3(RoadTrack.half_width() * 2.0, 0.05, 0.5),
-		Color(0.9, 0.88, 0.7))
+	var line := Greybox.box(Vector3(RoadTrack.half_width() * 2.0, 0.05, 0.5), Color(0.9, 0.88, 0.7))
 	line.position = Vector3(0.0, 0.04, STOP_MARGIN)
 	add_child(line)
 

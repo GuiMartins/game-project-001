@@ -1,11 +1,14 @@
-extends AnimatableBody3D
 class_name TrafficCar
+extends AnimatableBody3D
 ## Carro do transito. Parametrico na curva: sabe seu proprio offset e nunca
 ## precisa se projetar na pista.
 ##
 ## E o carro que cria o corredor. Ele anda devagar, muda de faixa sem olhar,
 ## abre a porta na sua cara, para no sinal e empaca no engarrafamento - e cada
 ## uma dessas coisas e um jeito diferente de fechar a pista e deixar so o vao.
+
+## Emitido quando a porta abre, pra HUD/audio avisarem o jogador.
+signal door_opened
 
 ## 1,80 de largura, e nao 1,90: com faixa de 3,30 isso e a diferenca entre
 ## 1,40 e 1,50 de vao entre duas colunas de carro. Parece pouco e nao e - a
@@ -16,8 +19,12 @@ const DOOR_SIZE := Vector3(1.1, 1.0, 1.6)
 ## Greybox com cor, nao greybox cinza. A 320x180 duas caixas cinzas coladas nao
 ## se separam, e o corredor deixa de ser legivel.
 const CAR_COLORS: Array[Color] = [
-	Color(0.62, 0.64, 0.70), Color(0.72, 0.45, 0.40), Color(0.40, 0.52, 0.68),
-	Color(0.75, 0.72, 0.55), Color(0.45, 0.60, 0.52), Color(0.55, 0.50, 0.62),
+	Color(0.62, 0.64, 0.70),
+	Color(0.72, 0.45, 0.40),
+	Color(0.40, 0.52, 0.68),
+	Color(0.75, 0.72, 0.55),
+	Color(0.45, 0.60, 0.52),
+	Color(0.55, 0.50, 0.62),
 ]
 
 ## Valores de fallback, usados so pelo carro que nao pertence a frota - o que
@@ -81,9 +88,6 @@ var _door_mesh: MeshInstance3D
 var _door_shape: CollisionShape3D
 var _body_mesh: MeshInstance3D
 
-## Emitido quando a porta abre, pra HUD/audio avisarem o jogador.
-signal door_opened
-
 
 func _ready() -> void:
 	sync_to_physics = true
@@ -110,8 +114,14 @@ func _ready() -> void:
 	_place_door(-1)
 
 
-func setup(a_track: RoadTrack, a_offset: float, a_lateral: float, seed_value: int,
-		a_parked: bool = false, a_opens_door: bool = false) -> void:
+func setup(
+	a_track: RoadTrack,
+	a_offset: float,
+	a_lateral: float,
+	seed_value: int,
+	a_parked: bool = false,
+	a_opens_door: bool = false
+) -> void:
 	track = a_track
 	_rng.seed = seed_value
 	_lane_change_timer = _rng.randf_range(3.0, 14.0)
@@ -253,8 +263,9 @@ func _set_door(open: bool) -> void:
 
 
 ## Reposiciona o carro mais a frente em vez de instanciar outro.
-func recycle(a_offset: float, a_lateral: float, a_parked: bool = false,
-		a_opens_door: bool = false) -> void:
+func recycle(
+	a_offset: float, a_lateral: float, a_parked: bool = false, a_opens_door: bool = false
+) -> void:
 	_reset_at(a_offset, a_lateral, a_parked, a_opens_door, false)
 
 
@@ -268,8 +279,9 @@ func jam_at(a_offset: float, a_lateral: float) -> void:
 
 
 ## Estado comum entre nascer e ser reciclado.
-func _reset_at(a_offset: float, a_lateral: float, a_parked: bool,
-		a_opens_door: bool, a_jammed: bool) -> void:
+func _reset_at(
+	a_offset: float, a_lateral: float, a_parked: bool, a_opens_door: bool, a_jammed: bool
+) -> void:
 	offset = a_offset
 	lateral = a_lateral
 	_target_lateral = a_lateral
@@ -282,11 +294,13 @@ func _reset_at(a_offset: float, a_lateral: float, a_parked: bool,
 	if a_parked:
 		cruise_speed = 0.0
 	elif a_jammed:
-		cruise_speed = _rng.randf_range(0.0,
-			world_tuning.jam_creep if world_tuning != null else 1.4)
+		cruise_speed = _rng.randf_range(
+			0.0, world_tuning.jam_creep if world_tuning != null else 1.4
+		)
 	else:
-		cruise_speed = _rng.randf_range(0.0,
-			world_tuning.traffic_speed if world_tuning != null else 7.0)
+		cruise_speed = _rng.randf_range(
+			0.0, world_tuning.traffic_speed if world_tuning != null else 7.0
+		)
 	speed = cruise_speed
 	_gap_cache = INF
 	_opens_door = a_parked and a_opens_door

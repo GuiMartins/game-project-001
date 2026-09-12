@@ -3,22 +3,72 @@ name: CI
 # O banco de provas roda o jogo de verdade contra entradas sintéticas e sai
 # com código 1 se algum número cair fora da faixa jogável. Rodar isso a cada
 # push é o que impede a develop de chegar quebrada no dia da release.
+#
+# Roda nos três sistemas operacionais porque o jogo é desenvolvido nos três.
+# Não é zelo: o binário padrão do Godot no Windows é GUI-subsystem e engole a
+# saída quando redirecionada, então o banco de provas passava em silêncio, sem
+# imprimir um número. Uma matrix de um SO só nunca veria isso.
 on:
   push:
-    branches-ignore: [master]
+    branches: ["**"]
   pull_request:
   workflow_dispatch:
 
-env:
-  GODOT_VERSION: 4.7.2
-
 jobs:
-  banco-de-provas:
+  # Estilo não depende de sistema operacional, então roda uma vez só.
+  # Rápido de propósito: falha de formatação aparece antes de a matrix inteira
+  # terminar, e o conserto é `python tools/dev.py format`.
+  qualidade:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-godot
+      - uses: actions/setup-python@v5
         with:
-          version: ${{ env.GODOT_VERSION }}
+          python-version: "3.12"
+      - name: Lint
+        run: python tools/dev.py lint
+      - name: Formatação
+        run: python tools/dev.py format --check
+
+  provas:
+    strategy:
+      # Sem fail-fast: quando um SO diverge, o que interessa é saber quais
+      # outros divergiram junto. Cancelar os irmãos esconde exatamente isso.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+    name: provas (${{ matrix.os }})
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ./.github/actions/setup-godot
+
+      # Unitarios primeiro: 4 s contra 89 s. Quando os dois quebram, o que
+      # aponta a causa e quase sempre o pequeno.
+      - name: Testes unitarios
+        run: python tools/dev.py test
+
       - name: Banco de provas
-        run: godot --headless --path . -- --selftest
+        run: python tools/dev.py selftest
+
+  # Agregador. As branches protegidas exigem um check chamado exatamente
+  # "banco-de-provas", e uma matrix nunca produz um check com esse nome - ela
+  # produz um por sistema. Em vez de afrouxar a proteção pra caber na matrix,
+  # este job mantém o nome e só passa quando os três sistemas passam. Ele é o
+  # portão; os outros são a evidência.
+  banco-de-provas:
+    needs: [qualidade, provas]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conferir os três sistemas
+        run: |
+          echo "qualidade: ${{ needs.qualidade.result }}"
+          echo "provas:    ${{ needs.provas.result }}"
+          if [ "${{ needs.qualidade.result }}" != "success" ] ||              [ "${{ needs.provas.result }}" != "success" ]; then
+            echo "::error::algum job não passou"
+            exit 1
+          fi

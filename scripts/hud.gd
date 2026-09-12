@@ -1,5 +1,5 @@
-extends CanvasLayer
 class_name Hud
+extends CanvasLayer
 ## HUD desenhada DENTRO do SubViewport de 320x180.
 ##
 ## De proposito: se a interface renderizar em resolucao nativa e o mundo em
@@ -77,9 +77,13 @@ func _ready() -> void:
 	# fonte. Existe porque "continua igual" e "voce esta abrindo o build
 	# antigo" sao indistinguiveis sem ele, e ja custaram uma rodada de teste.
 	var stamp := _label(root, Vector2(W - 96, H - 10), 8, Color(0.35, 0.38, 0.48))
-	stamp.text = "v%s %s" % [
-		ProjectSettings.get_setting("application/config/version", "?"),
-		"build" if OS.has_feature("template") else "fonte"]
+	stamp.text = (
+		"v%s %s"
+		% [
+			ProjectSettings.get_setting("application/config/version", "?"),
+			"build" if OS.has_feature("template") else "fonte"
+		]
+	)
 
 	_end_panel = Control.new()
 	_end_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -149,8 +153,9 @@ func _process(delta: float) -> void:
 		return
 
 	_timer_label.text = "%d:%04.1f" % [int(run.time_left / 60.0), fmod(run.time_left, 60.0)]
-	_timer_label.add_theme_color_override("font_color",
-		Color(1.0, 0.35, 0.3) if run.time_left < 15.0 else Color(1, 1, 1))
+	_timer_label.add_theme_color_override(
+		"font_color", Color(1.0, 0.35, 0.3) if run.time_left < 15.0 else Color(1, 1, 1)
+	)
 	_distance_label.text = "%.0f m restantes" % maxf(run.distance_total - run.distance_done, 0.0)
 
 	_speed_label.text = "%3.0f" % player.speed_kmh()

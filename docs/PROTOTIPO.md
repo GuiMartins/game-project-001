@@ -61,14 +61,14 @@ Em cima disso:
 
 ## Números medidos
 
-`godot --headless --path . -- --selftest` roda o jogo de verdade contra entradas
+`python tools/dev.py selftest` roda o jogo de verdade contra entradas
 sintéticas (via `Input.action_press`, mesmo caminho do jogador) e mede.
 
 Ele roda nos **defaults do repositório**, ignorando o `user://` de propósito: a
 semente já era fixa pra o número ser comparável entre rodadas, mas enquanto o
 tuning salvo entrava, bastava alguém clicar em Salvar pra "regrediu" e "você
 mexeu num slider ontem" virarem a mesma coisa. Pra medir os seus ajustes,
-`-- --selftest --selftest-user`. O relatório diz qual dos dois usou.
+`--user-tuning`. O relatório diz qual dos dois usou.
 
 ```
 relevo               rampa max 14%, desnivel 40 m
@@ -78,9 +78,9 @@ freada 183 km/h -> 0   1.48 s / 37 m
 inclinacao 0->90%    0.35 s
 a 175 km/h: 35.8 graus/s, raio 78 m
 hitbox do soco       0.133 s aberta (tuning pede 0.130)
-bifurcacao           atalho de 310 m no lugar de 360 m (-50 m)
-corrida solta 45s    1412 m percorridos, 17 raspadas, 3 quedas
-transito parando     11 carros no vermelho de uma vez, 1 engarrafamentos
+bifurcacao           atalho de 275 m no lugar de 340 m (-65 m)
+corrida solta 45s    1369 m percorridos, 19 raspadas, 3 quedas
+transito parando     52 carros no vermelho de uma vez, 2 engarrafamentos
 fila parada          90 m de fila, vao de 1.90 m entre as colunas
 ```
 
@@ -100,6 +100,11 @@ O número que amarra tudo: a curva mais fechada que o gerador de pista produz é
 35,8. **Curvão passa raspando sem frear, e qualquer coisa mais fechada que isso
 seria injusta** — por isso o teto de curvatura em `road_track.gd` é um número
 de design, não estético.
+
+Estes números vivem agora em [`tests/baseline.json`](../tests/baseline.json),
+e o banco de provas compara cada rodada com eles. A lista acima é para leitura
+humana; quando as duas discordarem, o baseline é que está certo — este bloco
+nasceu desatualizado uma vez, e foi o baseline que percebeu.
 
 "Está gostoso?" é subjetivo. "0-100 em 9 segundos" não é — e o banco pega uma
 regressão de tuning sem ninguém abrir o jogo.
