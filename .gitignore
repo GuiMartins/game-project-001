@@ -8,6 +8,9 @@ dist/
 # Cache de maquina, nao conteudo do projeto - a fonte da verdade e o
 # .godot-version, que e versionado.
 .dev/
+# Relatorios XML/HTML do GdUnit4, gerados a cada rodada
+reports/
+
 # Bytecode do Python das ferramentas de tools/
 __pycache__/
 

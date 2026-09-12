@@ -441,6 +441,24 @@ def cmd_selftest(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_test(args: argparse.Namespace) -> int:
+    """Testes unitarios do GdUnit4: logica pura, em segundos.
+
+    O banco de provas roda a moto de verdade e leva 89 s; isto roda em 4 s e
+    pega a classe de erro que ele nao pega - regra de pontuacao, geometria de
+    faixa, prazo. Os dois existem, e nenhum substitui o outro.
+    """
+    binary = require_godot(godot_version())
+    code = _godot(binary, "--headless", "--import")
+    if code != 0:
+        return code
+    # --ignoreHeadlessMode: o GdUnit4 recusa headless porque InputEvent nao
+    # trafega ali. Nenhum teste daqui usa input - eles testam funcao pura -
+    # e sem headless nao ha como rodar no CI.
+    return _godot(binary, "--headless", "-s", "addons/gdUnit4/bin/GdUnitCmdTool.gd",
+                  "--ignoreHeadlessMode", "-a", args.caminho)
+
+
 def cmd_run(_: argparse.Namespace) -> int:
     return _godot(require_godot(godot_version()))
 
@@ -514,6 +532,9 @@ def main() -> int:
                              "curva, soco, bifurcacao, corrida")
     sub.add_parser("run", help="abre o jogo")
     sub.add_parser("export", help="exporta as tres plataformas")
+    p_test = sub.add_parser("test", help="testes unitarios (GdUnit4), rapidos")
+    p_test.add_argument("caminho", nargs="?", default="tests/unit",
+                        help="pasta ou arquivo de teste (padrao: tests/unit)")
     sub.add_parser("lint", help="gdlint em todo .gd do projeto")
     p_fmt = sub.add_parser("format", help="gdformat em todo .gd do projeto")
     p_fmt.add_argument("--check", action="store_true",
@@ -523,7 +544,7 @@ def main() -> int:
     handler = {
         "doctor": cmd_doctor, "setup": cmd_setup, "import": cmd_import,
         "selftest": cmd_selftest, "run": cmd_run, "export": cmd_export,
-        "lint": cmd_lint, "format": cmd_format,
+        "lint": cmd_lint, "format": cmd_format, "test": cmd_test,
     }[args.comando]
     return handler(args)
 

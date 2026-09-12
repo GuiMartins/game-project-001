@@ -46,5 +46,10 @@ jobs:
 
       - uses: ./.github/actions/setup-godot
 
+      # Unitarios primeiro: 4 s contra 89 s. Quando os dois quebram, o que
+      # aponta a causa e quase sempre o pequeno.
+      - name: Testes unitarios
+        run: python tools/dev.py test
+
       - name: Banco de provas
         run: python tools/dev.py selftest
