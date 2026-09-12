@@ -13,7 +13,7 @@ Os quatro pilares e onde cada um vive no código:
 | --- | --- | --- |
 | Feel da moto | `scripts/player_bike.gd` | jogável e medido |
 | O corredor | `scripts/world.gd` (`_score_corridor`), `world_tuning.gd` | jogável, medido e ajustável ao vivo |
-| Combate lateral | `player_bike.gd` + `rival_bike.gd` | jogável, não medido |
+| Combate lateral | `player_bike.gd` + `rival_bike.gd` | jogável e medido |
 | Loop de entrega | `scripts/delivery_run.gd` | jogável, números provisórios |
 
 ## As decisões de arquitetura, e por que elas se seguram
@@ -79,8 +79,10 @@ inclinacao 0->90%    0.35 s
 a 175 km/h: 35.8 graus/s, raio 78 m
 hitbox do soco       0.133 s aberta (tuning pede 0.130)
 bifurcacao           atalho de 275 m no lugar de 340 m (-65 m)
-corrida solta 45s    1369 m percorridos, 19 raspadas, 3 quedas
-transito parando     52 carros no vermelho de uma vez, 2 engarrafamentos
+calcada              33.3 m/s no asfalto, 13.8 m/s na calcada, parede em 8.80 m
+combate              rival empurrado 4.95 m, cambaleou
+corrida solta 45s    1345 m percorridos, 16 raspadas, 4 quedas
+transito parando     10 carros no vermelho de uma vez, 2 engarrafamentos
 fila parada          90 m de fila, vao de 1.90 m entre as colunas
 ```
 
@@ -191,10 +193,12 @@ Duas ressalvas honestas:
 - **A faixa é estreita.** 2,2 m de calçada para uma moto de 0,76 m deixa ~1,4 m
   de jogo antes de raspar o guard-rail. Funciona, mas exige linha. Alargar é
   mexer em `SHOULDER` no `road_track.gd`, e o mesh acompanha sozinho.
-- **O banco de provas não cobre isto.** O piloto automático nunca sobe na
-  calçada, porque `free_lateral` só considera centros de faixa e de corredor.
-  Os números da corrida solta ficaram idênticos depois da mudança — regressão
-  aqui não é pega por lá, só pelo polegar.
+- **Hoje o banco de provas cobre isto**, numa fase própria. Ela sobe na
+  calçada de propósito, porque o piloto automático da corrida solta nunca
+  sobe: `free_lateral` só considera centros de faixa e de corredor, e por isso
+  os números da corrida ficaram idênticos quando o limite andável mudou. A
+  fase mede a velocidade estabilizada contra o teto que o `sidewalk_speed_factor`
+  declara, e confere que a parede segura exatamente no `sidewalk_limit()`.
 
 ## O trânsito para: semáforo e engarrafamento
 

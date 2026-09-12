@@ -83,10 +83,6 @@ copiam os valores novos.
 
 Saber disto faz parte do contrato. Nenhum destes é pego por nada automatizado:
 
-- **Calçada.** O piloto automático nunca sobe nela, porque `free_lateral` só
-  considera centros de faixa e de corredor. Os testes unitários cobrem a
-  *geometria* do limite; o comportamento de andar nela, não.
-- **Combate.** Derrubar rival no poste funciona e não tem medida nenhuma.
 - **Raspada dentro do atalho.** Não pontua: a frota vive na avenida e os
   offsets das duas curvas se parecem sem querer dizer a mesma coisa.
 - **Regressão visual.** `RUSHFOOD_SELFTEST_SHOTS=<pasta>` despeja PNGs da
@@ -94,6 +90,25 @@ Saber disto faz parte do contrato. Nenhum destes é pego por nada automatizado:
   dummy o viewport não rende e saem zero arquivos. Precisa de display real.
 - **"Está gostoso?"** Os números dizem que a moto é sã, não que ela é boa. Só
   o polegar decide isso, e o painel F3 existe para essa sessão.
+
+## A corrida solta depende do tempo acumulado
+
+Os semáforos e o trânsito evoluem durante **todas** as fases, não só durante a
+corrida. Então acrescentar uma fase antes dela desloca o ciclo dos semáforos e
+muda os números da corrida sem nada no jogo ter mudado.
+
+Aconteceu ao acrescentar calçada e combate: 19 s a mais antes da corrida
+fizeram "carros parados no vermelho" cair de 52 para 10. As asserções passaram
+nos dois casos — é o instante do encontro com o semáforo que mudou, não o
+semáforo.
+
+Duas consequências práticas:
+
+- **Inserir fase antes da corrida obriga a regerar o baseline**, e a
+  justificativa é essa. Não é regressão.
+- **`transito_parados_max` é a medida mais volátil do banco.** Ela responde ao
+  instante em que a corrida começa. Para saber se o semáforo em si regrediu,
+  `transito_engarrafamentos` e `jam_fila_m` são mais firmes.
 
 ## Variáveis de ambiente
 

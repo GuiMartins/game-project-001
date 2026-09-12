@@ -13,9 +13,13 @@
 		"aceleracao_0_100_s": 2.75,
 		"atalho_comprimento_m": 275.292847,
 		"atalho_economia_m": 64.707153,
-		"corrida_distancia_m": 1368.77417,
-		"corrida_quedas": 3.0,
-		"corrida_raspadas": 19.0,
+		"calcada_lateral_max_m": 8.8,
+		"calcada_velocidade_asfalto_ms": 33.281425,
+		"calcada_velocidade_calcada_ms": 13.802046,
+		"combate_empurrao_m": 4.945319,
+		"corrida_distancia_m": 1345.287598,
+		"corrida_quedas": 4.0,
+		"corrida_raspadas": 16.0,
 		"freada_distancia_m": 37.499951,
 		"freada_tempo_s": 1.483333,
 		"guinada_graus_s": 35.777312,
@@ -27,7 +31,7 @@
 		"relevo_rampa_max_pct": 13.657169,
 		"soco_janela_s": 0.133333,
 		"transito_engarrafamentos": 2.0,
-		"transito_parados_max": 52.0,
+		"transito_parados_max": 10.0,
 		"velocidade_22s_kmh": 183.647097
 	}
 }

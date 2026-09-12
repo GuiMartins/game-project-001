@@ -15,7 +15,15 @@ const KMH: float = 3.6
 ## quem esta iterando em curva nao precisa esperar os 45 s da corrida
 ## solta, e ciclo curto e o que decide se o teste e rodado ou pulado.
 const PHASE_NAMES: PackedStringArray = [
-	"aceleracao", "freada", "inclinacao", "curva", "soco", "bifurcacao", "corrida"
+	"aceleracao",
+	"freada",
+	"inclinacao",
+	"curva",
+	"soco",
+	"calcada",
+	"combate",
+	"bifurcacao",
+	"corrida"
 ]
 
 var _main: Node
@@ -53,6 +61,13 @@ var _trace_next: float = 0.0
 var _shots_dir: String = OS.get_environment("RUSHFOOD_SELFTEST_SHOTS")
 var _shots_next: float = 0.0
 var _shots_taken: int = 0
+var _asphalt_speed: float = 0.0
+var _sidewalk_speed: float = 0.0
+var _max_lateral: float = 0.0
+var _rival_lateral_before: float = 0.0
+var _rival_shove: float = 0.0
+var _rival_staggered: bool = false
+var _punch_thrown: bool = false
 var _max_waiting: int = 0
 var _fork_entered: bool = false
 var _fork_time: float = -1.0
@@ -135,8 +150,12 @@ func _physics_process(delta: float) -> void:
 		4:
 			_phase_punch(delta)
 		5:
-			_phase_fork(delta)
+			_phase_sidewalk(delta)
 		6:
+			_phase_combat(delta)
+		7:
+			_phase_fork(delta)
+		8:
 			_phase_freerun(delta)
 
 
@@ -339,7 +358,146 @@ func _phase_punch(_delta: float) -> void:
 		_next_phase()
 
 
-## Fase 5 - bifurcacao: entra no atalho e volta pra avenida ----------------
+## Fase 5 - calcada: a valvula de escape quando o transito fecha ----------
+##
+## Existia um buraco de cobertura aqui, e ele estava escrito no PROTOTIPO.md:
+## o piloto automatico da corrida solta nunca sobe na calcada, porque
+## `free_lateral` so considera centros de faixa e de corredor. Entao "a parede
+## invisivel voltou pro meio do acostamento" e "o teto de velocidade sumiu"
+## eram regressoes que nenhum numero pegava - so o polegar, jogando.
+func _phase_sidewalk(_delta: float) -> void:
+	if _t < 0.02:
+		# Limites ligados: e justamente a parede que esta sendo medida. A ladeira
+		# fica de fora - medir velocidade numa subida mede a subida.
+		_player.road_bounds_enabled = true
+		_player.slope_enabled = false
+		_player.place_on_track(200.0, RoadTrack.lane_center(RoadTrack.LANE_COUNT - 1), 20.0)
+
+	Input.action_press("ride_throttle")
+
+	if _t < 6.0:
+		# Primeiro trecho: no asfalto, pra ter com o que comparar depois.
+		_set_action("ride_right", false)
+		_asphalt_speed = maxf(_asphalt_speed, _player.speed)
+		return
+
+	# Segundo trecho: encosta pra fora ate subir na calcada e achar a parede.
+	_set_action("ride_right", true)
+	# Velocidade ESTABILIZADA, nao o pico: ao subir, a moto ainda esta sendo
+	# puxada pro teto pelo sidewalk_drag, e medir o transiente mediria a
+	# descida da curva em vez do patamar em que ela para.
+	if absf(_player.track_lateral) > RoadTrack.half_width() and _t > 12.0:
+		_sidewalk_speed = _player.speed
+	_max_lateral = maxf(_max_lateral, absf(_player.track_lateral))
+
+	if _t >= 16.0:
+		_metric("calcada_velocidade_asfalto_ms", _asphalt_speed)
+		_metric("calcada_velocidade_calcada_ms", _sidewalk_speed)
+		_metric("calcada_lateral_max_m", _max_lateral)
+		_report.append(
+			(
+				"calcada              %.1f m/s no asfalto, %.1f m/s na calcada, parede em %.2f m"
+				% [_asphalt_speed, _sidewalk_speed, _max_lateral]
+			)
+		)
+		_check(
+			_sidewalk_speed > 1.0,
+			"a moto nao chegou a andar na calcada - ou nao subiu, ou parou de andar la"
+		)
+		# A calcada e grama do Mario Kart: da pra fugir por ela, mas custa tempo.
+		# Se nao custar, ela vira a linha rapida e o corredor morre - e o
+		# corredor e o jogo. O teto e uma regra declarada no tuning, entao e
+		# contra ela que se mede, nao contra um numero escolhido aqui.
+		var cap := _tuning.max_speed * _tuning.sidewalk_speed_factor
+		_check(
+			_sidewalk_speed <= cap + 1.5,
+			(
+				"calcada a %.1f m/s com teto de %.1f: o sidewalk_speed_factor parou de valer"
+				% [_sidewalk_speed, cap]
+			)
+		)
+		_check(
+			_sidewalk_speed < _asphalt_speed,
+			(
+				"calcada a %.1f m/s contra %.1f no asfalto: fugir por ela nao custa nada"
+				% [_sidewalk_speed, _asphalt_speed]
+			)
+		)
+		# A parede nao pode vazar nem ficar aquem: aquem e parede invisivel no
+		# meio de uma coisa com cara de andavel.
+		_check(
+			absf(_max_lateral - RoadTrack.sidewalk_limit()) < 0.2,
+			(
+				"a moto parou em %.2f m e o limite andavel e %.2f m"
+				% [_max_lateral, RoadTrack.sidewalk_limit()]
+			)
+		)
+		_next_phase()
+
+
+## Fase 6 - combate: o soco que derruba rival ----------------------------
+##
+## O pilar do combate lateral era o unico "jogavel" do PROTOTIPO.md sem uma
+## medida sequer. Isto mede a cadeia inteira, do jeito que o jogador a usa:
+## hitbox do soco -> punch_landed -> World -> receive_hit -> empurrao lateral.
+func _phase_combat(_delta: float) -> void:
+	var rival: RivalBike = _world.rivals[0] if not _world.rivals.is_empty() else null
+	if rival == null:
+		_report.append("combate              nenhum rival na rota")
+		_check(false, "nenhum rival existe - o pilar do combate nao tem como ser medido")
+		_next_phase()
+		return
+
+	if _t < 0.02:
+		_player.road_bounds_enabled = false
+		_player.collision_mask = Layers.WORLD | Layers.RIVAL
+		_player.place_on_track(400.0, RoadTrack.lane_center(1), 26.0)
+		# O rival entra na faixa da direita, emparelhado: e a situacao em que o
+		# combate acontece de verdade, lado a lado no meio do transito.
+		rival.offset = _player.track_offset + 0.6
+		rival.lateral = RoadTrack.lane_center(2)
+		rival.speed = _player.speed
+		_rival_lateral_before = rival.lateral
+		if not rival.went_down.is_connected(_on_rival_down):
+			rival.went_down.connect(_on_rival_down)
+
+	# Segura o rival colado enquanto a janela do soco nao abriu: o que esta
+	# sendo medido e o efeito do soco, nao a perseguicao.
+	rival.offset = _player.track_offset + 0.6
+	rival.speed = _player.speed
+	_set_action("ride_throttle", true)
+
+	if _t > 0.4 and not _punch_thrown:
+		_punch_thrown = true
+		Input.action_press("hit_right")
+	elif _punch_thrown:
+		_set_action("hit_right", false)
+
+	if rival.state == RivalBike.State.STAGGERED or rival.state == RivalBike.State.DOWN:
+		_rival_staggered = true
+	_rival_shove = maxf(_rival_shove, absf(rival.lateral - _rival_lateral_before))
+
+	if _t >= 3.0:
+		_metric("combate_empurrao_m", _rival_shove)
+		_report.append(
+			(
+				"combate              rival empurrado %.2f m, %s"
+				% [_rival_shove, "cambaleou" if _rival_staggered else "NAO reagiu"]
+			)
+		)
+		_check(
+			_rival_staggered, "o soco acertou e o rival nao cambaleou - a cadeia do combate quebrou"
+		)
+		# O empurrao e o combate: sem deslocamento lateral nao da pra jogar o
+		# rival dentro de um carro parado, que e o golpe do Road Rash.
+		_check(
+			_rival_shove > 0.1,
+			"o rival mal saiu do lugar (%.2f m): o soco vira cosmetico" % _rival_shove
+		)
+		_next_phase()
+
+
+## Fase 7 - bifurcacao: entra no atalho e volta pra avenida ----------------
 ##
 ## Esta e a fase que existe por medo. Trocar a pista de referencia embaixo da
 ## moto e a coisa mais fragil que o mundo faz: erra o palpite do offset e a
@@ -413,7 +571,7 @@ func _phase_fork(_delta: float) -> void:
 		_next_phase()
 
 
-## Fase 6 - corrida solta: le a pista de verdade ---------------------------
+## Fase 8 - corrida solta: le a pista de verdade ---------------------------
 func _phase_freerun(_delta: float) -> void:
 	if _t < 0.02:
 		_bench_end()
@@ -550,6 +708,11 @@ func _read_phase_arg() -> void:
 		return
 	_stop_after = indice_fase
 	print("fase: parando depois de '%s'" % pedida)
+
+
+## So pra a fase de combate saber que o rival caiu de verdade.
+func _on_rival_down() -> void:
+	_rival_staggered = true
 
 
 func _set_action(action_name: String, pressed: bool) -> void:
