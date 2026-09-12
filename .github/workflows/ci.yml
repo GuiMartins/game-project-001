@@ -54,6 +54,43 @@ jobs:
       - name: Banco de provas
         run: python tools/dev.py selftest
 
+  # Regressao visual. Job separado, e so no Linux, por um motivo tecnico: a
+  # captura de tela NAO funciona em headless - sob o driver dummy o viewport
+  # nao renderiza e saem zero PNGs, sem erro nenhum. Precisa de display, e
+  # xvfb da um sem precisar de GPU.
+  #
+  # Ele pega o que nenhuma medida de fisica pega: a tela ficar errada por
+  # inteiro. O caso registrado no PROTOTIPO.md e a pista sumindo por backface
+  # culling, que o Godot descarta sem um erro no console.
+  regressao-visual:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ./.github/actions/setup-godot
+
+      - name: Display virtual e driver de software
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb mesa-vulkan-drivers
+
+      - name: Regressao visual
+        # LIBGL_ALWAYS_SOFTWARE porque o runner nao tem GPU. O baseline tolera
+        # 12%: e software rendering contra a GPU de quem gravou o baseline, e
+        # estreitar isso troca regressao por alarme falso.
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: xvfb-run -a --server-args="-screen 0 1280x720x24" python tools/dev.py shots
+
+      - name: Guardar os frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frames
+          path: .dev/shots/*.png
+          if-no-files-found: warn
+          retention-days: 7
+
   # Agregador. As branches protegidas exigem um check chamado exatamente
   # "banco-de-provas", e uma matrix nunca produz um check com esse nome - ela
   # produz um por sistema. Em vez de afrouxar a proteção pra caber na matrix,
