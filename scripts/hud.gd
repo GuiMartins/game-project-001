@@ -1,5 +1,5 @@
-extends CanvasLayer
 class_name Hud
+extends CanvasLayer
 ## HUD desenhada DENTRO do SubViewport de 320x180.
 ##
 ## De proposito: se a interface renderizar em resolucao nativa e o mundo em
@@ -141,8 +141,9 @@ func _process(delta: float) -> void:
 		return
 
 	_timer_label.text = "%d:%04.1f" % [int(run.time_left / 60.0), fmod(run.time_left, 60.0)]
-	_timer_label.add_theme_color_override("font_color",
-		Color(1.0, 0.35, 0.3) if run.time_left < 15.0 else Color(1, 1, 1))
+	_timer_label.add_theme_color_override(
+		"font_color", Color(1.0, 0.35, 0.3) if run.time_left < 15.0 else Color(1, 1, 1)
+	)
 	_distance_label.text = "%.0f m restantes" % maxf(run.distance_total - run.distance_done, 0.0)
 
 	_speed_label.text = "%3.0f" % player.speed_kmh()

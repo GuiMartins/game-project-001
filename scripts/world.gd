@@ -1,7 +1,10 @@
-extends Node3D
 class_name World
+extends Node3D
 ## Monta o mundo e arbitra as regras que precisam ver todo mundo ao mesmo
 ## tempo: raspada no corredor, socos que acertaram, reciclagem do transito.
+
+signal run_finished
+signal event_logged(text: String, color: Color)
 
 const ROUTE_LENGTH: float = 3200.0
 
@@ -47,9 +50,6 @@ var _on_branch: RouteBranch = null
 ## tras. Comparar posicao com posicao perderia a boca em qualquer frame em que
 ## a moto andasse mais que a largura dela.
 var _last_progress: float = 0.0
-
-signal run_finished
-signal event_logged(text: String, color: Color)
 
 
 func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 20260831) -> void:
@@ -124,6 +124,7 @@ func restart() -> void:
 
 ## --- Construcao -----------------------------------------------------------
 
+
 func _build_environment() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
@@ -182,7 +183,9 @@ func _build_scenery() -> void:
 			var shade := _rng.randf_range(0.2, 0.42)
 			var building := Greybox.box(Vector3(w, h, w), Color(shade, shade * 0.97, shade * 1.15))
 			props.add_child(building)
-			building.global_position = track.point(o, (edge + 6.0 + w * 0.5) * side) + Vector3.UP * (h * 0.5 - 1.0)
+			building.global_position = (
+				track.point(o, (edge + 6.0 + w * 0.5) * side) + Vector3.UP * (h * 0.5 - 1.0)
+			)
 		o += _rng.randf_range(16.0, 30.0)
 
 
@@ -236,7 +239,8 @@ func _build_branches() -> void:
 		var from_offset := cursor
 		var to_offset := from_offset + span
 		var chord := track.sample_position(from_offset).distance_to(
-			track.sample_position(to_offset))
+			track.sample_position(to_offset)
+		)
 		# 14% de economia e o piso do que o jogador SENTE. Abaixo disso o
 		# atalho e so uma rua diferente com o mesmo custo, e a escolha vira
 		# decoracao.
@@ -301,13 +305,16 @@ func _build_fork_marks(branch: RouteBranch) -> void:
 
 	var post := Greybox.box(Vector3(0.24, 3.2, 0.24), Color(0.55, 0.54, 0.5))
 	branch.road.add_child(post)
-	post.global_position = track.point(branch.from_offset - 30.0,
-		(RoadTrack.sidewalk_limit() + 0.7) * branch.side) + Vector3.UP * 1.6
+	post.global_position = (
+		track.point(branch.from_offset - 30.0, (RoadTrack.sidewalk_limit() + 0.7) * branch.side)
+		+ Vector3.UP * 1.6
+	)
 
 	var panel := Greybox.box(Vector3(2.2, 1.3, 0.14), Color(0.95, 0.78, 0.25), true)
 	branch.road.add_child(panel)
-	panel.global_transform = track.transform_at(branch.from_offset - 30.0,
-		(RoadTrack.sidewalk_limit() + 0.7) * branch.side)
+	panel.global_transform = track.transform_at(
+		branch.from_offset - 30.0, (RoadTrack.sidewalk_limit() + 0.7) * branch.side
+	)
 	panel.global_position += Vector3.UP * 3.6
 
 
@@ -323,8 +330,14 @@ func _litter_branch(branch: RouteBranch) -> void:
 	for i in range(world_tuning.branch_obstacles):
 		var car := TrafficCar.new()
 		branch.road.add_child(car)
-		car.setup(branch.road, 30.0 + _rng.randf() * usable, _pick_lane(),
-			_rng.randi(), true, _rng.randf() < world_tuning.door_chance)
+		car.setup(
+			branch.road,
+			30.0 + _rng.randf() * usable,
+			_pick_lane(),
+			_rng.randi(),
+			true,
+			_rng.randf() < world_tuning.door_chance
+		)
 
 
 ## Onde o jogador esta NA ROTA, sempre em metros da avenida.
@@ -368,13 +381,15 @@ func _update_route() -> void:
 				continue
 			# Cruzou a boca: entra quem estava do lado dela. Quem passou pelo
 			# meio ou pelo outro lado segue na avenida sem nem perceber.
-			if signf(player.track_lateral) == branch.side \
-					and absf(player.track_lateral) >= world_tuning.fork_commit:
+			if (
+				signf(player.track_lateral) == branch.side
+				and absf(player.track_lateral) >= world_tuning.fork_commit
+			):
 				_on_branch = branch
-				player.switch_track(branch.road,
-					maxf(player.track_offset - branch.from_offset, 0.0))
-				event_logged.emit("atalho: -%.0f m" % branch.saving(),
-					Color(1.0, 0.85, 0.4))
+				player.switch_track(
+					branch.road, maxf(player.track_offset - branch.from_offset, 0.0)
+				)
+				event_logged.emit("atalho: -%.0f m" % branch.saving(), Color(1.0, 0.85, 0.4))
 			break
 
 	_last_progress = player_progress()
@@ -400,7 +415,8 @@ func scatter_traffic_ahead(from_offset: float) -> void:
 		_place_car(car, _spawn_cursor)
 		_spawn_cursor += _rng.randf_range(
 			world_tuning.traffic_gap_min,
-			maxf(world_tuning.traffic_gap_min, world_tuning.traffic_gap_max))
+			maxf(world_tuning.traffic_gap_min, world_tuning.traffic_gap_max)
+		)
 
 
 func _pick_lane() -> float:
@@ -415,8 +431,9 @@ func _pick_lane() -> float:
 func _place_car(car: TrafficCar, at_offset: float) -> void:
 	if _rng.randf() < world_tuning.parked_chance:
 		var curb := 0 if _rng.randf() < 0.5 else RoadTrack.LANE_COUNT - 1
-		car.recycle(at_offset, RoadTrack.lane_center(curb), true,
-			_rng.randf() < world_tuning.door_chance)
+		car.recycle(
+			at_offset, RoadTrack.lane_center(curb), true, _rng.randf() < world_tuning.door_chance
+		)
 	else:
 		car.recycle(at_offset, _pick_lane(), false, false)
 
@@ -431,12 +448,21 @@ func _spawn_rivals() -> void:
 	for i in range(world_tuning.rival_count):
 		var rival := RivalBike.new()
 		add_child(rival)
-		rival.setup(track, tuning, self, player, 20.0 + float(i) * 9.0, COLORS[i % COLORS.size()], _rng.randi())
+		rival.setup(
+			track,
+			tuning,
+			self,
+			player,
+			20.0 + float(i) * 9.0,
+			COLORS[i % COLORS.size()],
+			_rng.randi()
+		)
 		rival.went_down.connect(_on_rival_down.bind(rival))
 		rivals.append(rival)
 
 
 ## --- Regras que precisam da visao geral -----------------------------------
+
 
 func _physics_process(delta: float) -> void:
 	if player == null or track == null:
@@ -488,23 +514,30 @@ func _recycle_traffic() -> void:
 
 ## --- Engarrafamento -------------------------------------------------------
 
+
 ## Marca daqui a quantos metros a pista trava de novo.
 func _arm_jam() -> void:
 	_jam_from = 0.0
 	_jam_to = 0.0
 	jams_formed = 0
-	_jam_due = player_progress() + _rng.randf_range(
-		world_tuning.jam_gap_min,
-		maxf(world_tuning.jam_gap_min, world_tuning.jam_gap_max))
+	_jam_due = (
+		player_progress()
+		+ _rng.randf_range(
+			world_tuning.jam_gap_min, maxf(world_tuning.jam_gap_min, world_tuning.jam_gap_max)
+		)
+	)
 
 
 func _maybe_jam() -> void:
 	if player_progress() < _jam_due:
 		return
 	_form_jam()
-	_jam_due = player_progress() + _rng.randf_range(
-		world_tuning.jam_gap_min,
-		maxf(world_tuning.jam_gap_min, world_tuning.jam_gap_max))
+	_jam_due = (
+		player_progress()
+		+ _rng.randf_range(
+			world_tuning.jam_gap_min, maxf(world_tuning.jam_gap_min, world_tuning.jam_gap_max)
+		)
+	)
 
 
 ## Trava um trecho da pista: fileiras cheias, as quatro faixas ocupadas.
@@ -549,7 +582,8 @@ func _form_jam() -> void:
 			# pouco de proposito - e ela que decide se o vao ainda cabe a moto.
 			car.jam_at(
 				_jam_from + float(row) * world_tuning.jam_row_gap + _rng.randf_range(-1.1, 1.1),
-				RoadTrack.lane_center(lane) + _rng.randf_range(-0.25, 0.25))
+				RoadTrack.lane_center(lane) + _rng.randf_range(-0.25, 0.25)
+			)
 
 
 ## Empurra um carro reciclado pra fora do engarrafamento ativo.
@@ -597,8 +631,7 @@ func _score_corridor() -> void:
 ## Devolve `span` quando nao ha nada no caminho.
 ## `exclude` tira um carro da conta - e como o proprio carro pergunta quanta
 ## pista tem a frente sem se enxergar parado a zero metro de si mesmo.
-func path_clearance(from_offset: float, span: float, lateral: float,
-		exclude: Node = null) -> float:
+func path_clearance(from_offset: float, span: float, lateral: float, exclude: Node = null) -> float:
 	var nearest := span
 	for car in traffic:
 		if car == exclude:
@@ -618,16 +651,23 @@ func path_clearance(from_offset: float, span: float, lateral: float,
 ## Precisa varrer o INTERVALO inteiro ate `span`, e nao uma janela em volta de
 ## um ponto la na frente - um carro a 5 m de distancia nao pode ser invisivel
 ## so porque a IA esta olhando pra 38 m.
-func free_lateral(from_offset: float, preferred: float, span: float = 45.0, asker: Node = null) -> float:
+func free_lateral(
+	from_offset: float, preferred: float, span: float = 45.0, asker: Node = null
+) -> float:
 	var best := preferred
 	var best_score := -INF
 	for lane in range(RoadTrack.LANE_COUNT):
 		for i in range(2):
-			var candidate := RoadTrack.lane_center(lane) if i == 0 else RoadTrack.corridor_center(lane)
+			var candidate := (
+				RoadTrack.lane_center(lane) if i == 0 else RoadTrack.corridor_center(lane)
+			)
 			if absf(candidate) > RoadTrack.half_width() - 0.8:
 				continue
 			# Pista livre manda; mudar de faixa custa pouco, mas custa.
-			var score := path_clearance(from_offset, span, candidate, asker) - absf(candidate - preferred) * 0.6
+			var score := (
+				path_clearance(from_offset, span, candidate, asker)
+				- absf(candidate - preferred) * 0.6
+			)
 			# Motoboy anda no corredor, nao na faixa. O bonus faz a IA jogar o
 			# jogo que o tema pede, em vez de virar um carro de duas rodas.
 			if i == 1:
@@ -639,6 +679,7 @@ func free_lateral(from_offset: float, preferred: float, span: float = 45.0, aske
 
 
 ## --- Reacoes --------------------------------------------------------------
+
 
 func _on_player_crashed(reason: String) -> void:
 	run.register_crash()
@@ -669,7 +710,7 @@ func _on_player_punch_landed(target: Node3D) -> void:
 		event_logged.emit("socou lataria", Color(0.8, 0.8, 0.8))
 
 
-func _on_rival_down(rival: RivalBike) -> void:
+func _on_rival_down(_rival: RivalBike) -> void:
 	run.register_rival_down()
 	player.add_adrenaline(20.0)
 	event_logged.emit("rival no chao", Color(0.5, 1.0, 0.7))

@@ -91,7 +91,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action("debug_pixel_toggle"):
 		_pixel_mode = not _pixel_mode
 		_apply_pixel_mode()
-		hud.show_event("pixel %s" % ("ligado" if _pixel_mode else "desligado"), Color(0.7, 0.9, 1.0))
+		hud.show_event(
+			"pixel %s" % ("ligado" if _pixel_mode else "desligado"), Color(0.7, 0.9, 1.0)
+		)
 	elif event.is_action("debug_camera_cycle"):
 		world.camera.cycle_mode()
 	elif event.is_action("debug_tuning_panel"):

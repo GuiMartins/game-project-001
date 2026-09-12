@@ -1,5 +1,5 @@
-extends RefCounted
 class_name RouteBranch
+extends RefCounted
 ## Uma bifurcacao: o atalho que sai da avenida em `from_offset` e devolve o
 ## jogador em `to_offset`.
 ##

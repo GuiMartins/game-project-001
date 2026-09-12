@@ -1,5 +1,5 @@
-extends Node3D
 class_name RoadTrack
+extends Node3D
 ## Pista como geometria 3D real, gerada a partir de uma Curve3D.
 ##
 ## Decisao de arquitetura (ver docs/PROTOTIPO.md): o mundo e 3D de verdade, nao
@@ -177,6 +177,7 @@ func _smooth_tangents() -> void:
 
 ## --- Amostragem -----------------------------------------------------------
 
+
 func sample_position(offset: float) -> Vector3:
 	return curve.sample_baked(clampf(offset, 0.0, length), true)
 
@@ -186,7 +187,7 @@ func sample_basis(offset: float) -> Basis:
 	var o := clampf(offset, 0.0, length)
 	var a := sample_position(maxf(o - 0.5, 0.0))
 	var b := sample_position(minf(o + 0.5, length))
-	var forward := (b - a)
+	var forward := b - a
 	if forward.length_squared() < 1e-8:
 		forward = Vector3.FORWARD
 	forward = forward.normalized()
@@ -266,6 +267,7 @@ static func sidewalk_limit() -> float:
 
 ## --- Mesh -----------------------------------------------------------------
 
+
 func _build_mesh() -> void:
 	var mesh := ArrayMesh.new()
 	var road_w := half_width()
@@ -313,8 +315,11 @@ func _build_mesh() -> void:
 	# Atalho e rua de bairro, nao avenida: asfalto mais escuro. E a unica pista
 	# do jogador, a 320x180 e de longe, de que aquela boca leva pra outro
 	# lugar.
-	_commit(asphalt, mesh, _flat_material(
-		Color(0.23, 0.23, 0.27) if is_shortcut else Color(0.29, 0.29, 0.33)))
+	_commit(
+		asphalt,
+		mesh,
+		_flat_material(Color(0.23, 0.23, 0.27) if is_shortcut else Color(0.29, 0.29, 0.33))
+	)
 	if not is_shortcut:
 		_commit(shoulder, mesh, _flat_material(Color(0.19, 0.18, 0.17)))
 	_commit(paint, mesh, _flat_material(Color(0.88, 0.86, 0.68)))
@@ -324,11 +329,23 @@ func _build_mesh() -> void:
 	_asphalt_mesh.mesh = mesh
 	_asphalt_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_asphalt_mesh)
-	if OS.has_environment("RUSHFOOD_SELFTEST_TRACE") or OS.has_environment("RUSHFOOD_SELFTEST_SHOTS"):
-		print("  malha da pista: %d superficies, aabb=%s" % [mesh.get_surface_count(), mesh.get_aabb()])
+	if (
+		OS.has_environment("RUSHFOOD_SELFTEST_TRACE")
+		or OS.has_environment("RUSHFOOD_SELFTEST_SHOTS")
+	):
+		print(
+			(
+				"  malha da pista: %d superficies, aabb=%s"
+				% [mesh.get_surface_count(), mesh.get_aabb()]
+			)
+		)
 		for i in range(mesh.get_surface_count()):
-			print("    superficie %d: %d vertices, material=%s" % [
-				i, mesh.surface_get_array_len(i), mesh.surface_get_material(i)])
+			print(
+				(
+					"    superficie %d: %d vertices, material=%s"
+					% [i, mesh.surface_get_array_len(i), mesh.surface_get_material(i)]
+				)
+			)
 
 
 func _quad(st: SurfaceTool, o0: float, o1: float, x0: float, x1: float, lift: float = 0.0) -> void:

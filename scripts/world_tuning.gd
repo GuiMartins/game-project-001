@@ -1,5 +1,5 @@
-extends Resource
 class_name WorldTuning
+extends Resource
 ## Constantes do transito e dos rivais.
 ##
 ## Separado de BikeTuning de proposito: aquele arquivo responde "a moto esta
@@ -56,7 +56,6 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## decide o comprimento da fila do semaforo.
 @export_range(5.0, 24.0, 0.1) var traffic_follow_gap: float = 6.2
 
-
 ## Fracao dos carros que entra encostada no meio-fio, parada.
 ##
 ## Encostado quer dizer parado numa das faixas da ponta - a da esquerda ou a
@@ -73,7 +72,6 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## uma aposta em vez de uma regra decorada. O lado que a porta abre tambem e
 ## sorteado - pra pista ou pra calcada.
 @export_range(0.0, 1.0, 0.05) var door_chance: float = 0.6
-
 
 @export_group("Semaforo")
 
@@ -95,7 +93,6 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## E este numero que decide o tamanho da fila: cada segundo de vermelho e mais
 ## um carro parado. Alto demais e o cruzamento vira estacionamento.
 @export_range(1.0, 40.0, 0.5) var light_red_time: float = 9.0
-
 
 @export_group("Engarrafamento")
 
@@ -129,7 +126,6 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## fila que ainda anda.
 @export_range(5.0, 14.0, 0.1) var jam_row_gap: float = 6.4
 
-
 @export_group("Bifurcacao")
 
 ## Quantos atalhos a rota tenta abrir. Vale no R, junto com a pista.
@@ -153,7 +149,6 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## bifurcacao que voce toma sem querer e uma bifurcacao que voce xinga. Dois
 ## metros e meia faixa - da pra ver na tela de que lado voce esta.
 @export_range(0.0, 6.0, 0.1) var fork_commit: float = 2.0
-
 
 @export_group("Rivais")
 

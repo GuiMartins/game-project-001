@@ -1,5 +1,5 @@
-extends AnimatableBody3D
 class_name RivalBike
+extends AnimatableBody3D
 ## Motoboy rival. Parametrico na curva, igual ao transito - so o jogador roda
 ## fisica de verdade.
 ##
@@ -7,9 +7,12 @@ class_name RivalBike
 ## principalmente ser socado pra dentro de um carro parado. Se derrubar um
 ## rival num poste nao for satisfatorio, o combate nao esta pronto.
 
-const SIZE := Vector3(0.75, 1.75, 2.1)
+signal went_down
+signal hit_player
 
 enum State { RACING, STAGGERED, DOWN }
+
+const SIZE := Vector3(0.75, 1.75, 2.1)
 
 var track: RoadTrack
 var tuning: BikeTuning
@@ -33,9 +36,6 @@ var _visual: Node3D
 var _hitbox: Area3D
 var _sensor: Area3D
 var _lean: float = 0.0
-
-signal went_down
-signal hit_player
 
 
 func _ready() -> void:
@@ -76,8 +76,15 @@ func _ready() -> void:
 	add_child(_sensor)
 
 
-func setup(a_track: RoadTrack, a_tuning: BikeTuning, a_world: Node, a_player: PlayerBike,
-		start_offset: float, color: Color, seed_value: int) -> void:
+func setup(
+	a_track: RoadTrack,
+	a_tuning: BikeTuning,
+	a_world: Node,
+	a_player: PlayerBike,
+	start_offset: float,
+	color: Color,
+	seed_value: int
+) -> void:
 	track = a_track
 	tuning = a_tuning
 	world = a_world
@@ -130,8 +137,9 @@ func _drive(delta: float) -> void:
 	# corta por um atalho, o offset passa a ser medido numa curva que o rival
 	# nem conhece, e o rubber band perseguiria um numero sem sentido.
 	var duel: bool = world.player_on_route() if world.has_method("player_on_route") else true
-	var player_at: float = world.player_progress() if world.has_method("player_progress") \
-		else player.track_offset
+	var player_at: float = (
+		world.player_progress() if world.has_method("player_progress") else player.track_offset
+	)
 	var gap := player_at - offset
 
 	# Rubber band: o rival persegue o jogador em vez de correr sozinho. Num
@@ -146,15 +154,21 @@ func _drive(delta: float) -> void:
 	# Emparelhar so faz sentido com os dois na mesma pista. Fora disso o rival
 	# corre a corrida dele.
 	if duel and absf(gap) < 14.0:
-		want = player.track_lateral + signf(lateral - player.track_lateral) * 1.7 * (1.0 - _aggression)
+		want = (
+			player.track_lateral + signf(lateral - player.track_lateral) * 1.7 * (1.0 - _aggression)
+		)
 	if world.has_method("free_lateral"):
 		want = world.free_lateral(offset, want, 20.0 + speed * 0.6, self)
 	_target_lateral = clampf(want, -RoadTrack.half_width() + 1.0, RoadTrack.half_width() - 1.0)
 
-	var move := (_target_lateral - lateral)
+	var move := _target_lateral - lateral
 	var lateral_speed := clampf(move * 3.0, -9.0, 9.0)
 	lateral += lateral_speed * delta
-	_lean = lerpf(_lean, clampf(-lateral_speed / 9.0, -1.0, 1.0) * deg_to_rad(tuning.max_lean), 1.0 - exp(-8.0 * delta))
+	_lean = lerpf(
+		_lean,
+		clampf(-lateral_speed / 9.0, -1.0, 1.0) * deg_to_rad(tuning.max_lean),
+		1.0 - exp(-8.0 * delta)
+	)
 
 	# Ataca quando esta emparelhado.
 	if duel and _punch_cooldown <= 0.0 and absf(gap) < 2.2:
@@ -184,7 +198,9 @@ func _update_hitbox(delta: float) -> void:
 	_punch_timer -= delta
 	var elapsed := tuning.punch_cooldown - _punch_timer
 	_hitbox.position = Vector3(tuning.punch_range * float(_punch_side), 0.0, 0.0)
-	var active := elapsed >= tuning.punch_windup and elapsed < tuning.punch_windup + tuning.punch_active
+	var active := (
+		elapsed >= tuning.punch_windup and elapsed < tuning.punch_windup + tuning.punch_active
+	)
 	_hitbox.monitoring = active
 	if not active:
 		return
