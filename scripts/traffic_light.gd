@@ -96,6 +96,18 @@ func held_lateral_near(lateral: float) -> float:
 	return RoadTrack.lane_center(lane)
 
 
+## Segura o vermelho por `seconds`, sorteando a faixa livre do ciclo.
+##
+## Quem chama e o engarrafamento: uma fila de 90 m parada num cruzamento que
+## abre dois segundos depois nao e engarrafamento, e coincidencia. Com o
+## vermelho segurado, a fila tem MOTIVO - e quando ele abre, ela anda.
+func hold_red(seconds: float) -> void:
+	phase = Phase.RED
+	free_lane = _rng.randi_range(0, RoadTrack.LANE_COUNT - 1)
+	_timer = seconds
+	_paint()
+
+
 func _physics_process(delta: float) -> void:
 	_timer -= delta
 	if _timer > 0.0:

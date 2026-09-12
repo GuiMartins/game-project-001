@@ -16,6 +16,23 @@ var from_offset: float = 0.0
 var to_offset: float = 0.0
 ## Lado da avenida em que a boca abre: -1 esquerda, +1 direita.
 var side: float = 1.0
+## O tracado do atalho amostrado de 6 em 6 m.
+##
+## Existe pro cenario: predio e poste sao plantados em funcao da avenida, e o
+## atalho passa justamente pela faixa de terreno em que eles caem. Sem uma
+## lista de pontos pra consultar, a unica alternativa seria projetar cada prop
+## na curva do atalho - busca local, que erra quando o palpite esta longe.
+var outline: PackedVector3Array = PackedVector3Array()
+
+
+## Amostra o tracado. Chamado uma vez, quando o atalho nasce.
+func trace() -> void:
+	outline = PackedVector3Array()
+	var at := 0.0
+	while at < road.length:
+		outline.append(road.sample_position(at))
+		at += 6.0
+	outline.append(road.sample_position(road.length))
 
 
 ## Quantos metros de AVENIDA valem os `branch_offset` metros ja corridos aqui.

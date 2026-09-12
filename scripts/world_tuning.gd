@@ -105,13 +105,28 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## a excecao e vira o jogo inteiro.
 @export_range(200.0, 6000.0, 20.0) var jam_gap_max: float = 1300.0
 
-## Fracao da frota que um engarrafamento consome.
+## Comprimento da fila parada, em metros.
 ##
-## Diferente do semaforo, aqui as quatro faixas SAO ocupadas de proposito - o
+## Diferente do semaforo, aqui as quatro faixas SAO ocupadas de proposito: o
 ## engarrafamento e a parede completa, e o unico caminho e o vao entre as
-## filas. Por isso ele come tantos carros: parede pela metade nao para
-## ninguem. Em 0 nao ha engarrafamento nenhum.
-@export_range(0.0, 1.0, 0.05) var jam_share: float = 0.5
+## colunas.
+##
+## Os carros dele NAO saem da frota que circula - sao criados a parte e
+## descartados quando a fila fica pra tras. Antes ele comia uma fracao da
+## frota, e com 20 carros isso dava duas fileiras: 13 m de fila, que o jogador
+## atravessa antes de perceber que era pra ser uma parede. Em metros o numero
+## quer dizer o que ele diz.
+##
+## Cada 6,4 m custa quatro carros a mais no mundo. 90 m sao 56 carros: pesado,
+## mas so enquanto a fila esta em cena.
+@export_range(0.0, 300.0, 5.0) var jam_length: float = 90.0
+
+## Quanto as colunas do engarrafamento se abrem em direcao ao meio-fio.
+##
+## E o slider do CORREDOR. Em 0 os carros param no centro das faixas e sobram
+## 1,50 m entre duas colunas; em 0,12 eles encostam mais nas guias e o vao vai
+## a 1,90 m. Acima de 0,15 o carro da ponta comeca a subir na calcada.
+@export_range(0.0, 0.2, 0.01) var jam_spread: float = 0.12
 
 ## Velocidade em que a fila presa rasteja, em m/s.
 ##

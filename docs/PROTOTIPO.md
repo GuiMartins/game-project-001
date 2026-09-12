@@ -61,14 +61,14 @@ Em cima disso:
 
 ## Números medidos
 
-`godot --headless --path . -- --selftest` roda o jogo de verdade contra entradas
+`python tools/dev.py selftest` roda o jogo de verdade contra entradas
 sintéticas (via `Input.action_press`, mesmo caminho do jogador) e mede.
 
 Ele roda nos **defaults do repositório**, ignorando o `user://` de propósito: a
 semente já era fixa pra o número ser comparável entre rodadas, mas enquanto o
 tuning salvo entrava, bastava alguém clicar em Salvar pra "regrediu" e "você
 mexeu num slider ontem" virarem a mesma coisa. Pra medir os seus ajustes,
-`-- --selftest --selftest-user`. O relatório diz qual dos dois usou.
+`--user-tuning`. O relatório diz qual dos dois usou.
 
 ```
 relevo               rampa max 14%, desnivel 40 m
@@ -78,9 +78,10 @@ freada 183 km/h -> 0   1.48 s / 37 m
 inclinacao 0->90%    0.35 s
 a 175 km/h: 35.8 graus/s, raio 78 m
 hitbox do soco       0.133 s aberta (tuning pede 0.130)
-bifurcacao           atalho de 280 m no lugar de 328 m (-48 m)
-corrida solta 45s    1262 m percorridos, 19 raspadas, 4 quedas
-transito parando     6 carros no vermelho de uma vez, 1 engarrafamentos
+bifurcacao           atalho de 275 m no lugar de 340 m (-65 m)
+corrida solta 45s    1369 m percorridos, 19 raspadas, 3 quedas
+transito parando     52 carros no vermelho de uma vez, 2 engarrafamentos
+fila parada          90 m de fila, vao de 1.90 m entre as colunas
 ```
 
 As três últimas linhas não medem a moto, medem o **mundo**: elas existem porque
@@ -99,6 +100,11 @@ O número que amarra tudo: a curva mais fechada que o gerador de pista produz é
 35,8. **Curvão passa raspando sem frear, e qualquer coisa mais fechada que isso
 seria injusta** — por isso o teto de curvatura em `road_track.gd` é um número
 de design, não estético.
+
+Estes números vivem agora em [`tests/baseline.json`](../tests/baseline.json),
+e o banco de provas compara cada rodada com eles. A lista acima é para leitura
+humana; quando as duas discordarem, o baseline é que está certo — este bloco
+nasceu desatualizado uma vez, e foi o baseline que percebeu.
 
 "Está gostoso?" é subjetivo. "0-100 em 9 segundos" não é — e o banco pega uma
 regressão de tuning sem ninguém abrir o jogo.
@@ -210,14 +216,28 @@ faixas **são** ocupadas, em fileiras de para-choque a para-choque. A pista
 acaba de verdade e a única passagem é o vão entre as filas — é a hora em que o
 jogo cobra o pilar do corredor em vez de oferecê-lo.
 
-Ele não cria carros: recruta os que já estavam mais longe à frente, onde a
-neblina esconde, e os monta em grade. Assim o engarrafamento nasce pronto, fora
-de vista, em vez de aparecer fileira por fileira na cara do jogador. O
-`jam_share` (0.5) decide quanto da frota ele come — parede pela metade não para
-ninguém.
+Os carros dele são **criados à parte**, e não emprestados da frota que circula.
+A primeira versão emprestava, e o resultado media 13 m: com 20 carros e metade
+da frota davam duas fileiras — o jogador atravessa isso antes de perceber que
+era pra ser uma parede. Agora `jam_length` está em metros (90 por padrão, 56
+carros) e o número quer dizer o que diz.
 
-O vão entre duas colunas de carro é de 1,4 m para uma moto de 0,76 m. É
-apertado de propósito: passar ali pontua raspada nos dois lados ao mesmo tempo.
+Quando dá, **a fila nasce atrás de um sinal vermelho**, que fica segurado
+enquanto ela existe. Fila de 90 m num cruzamento aberto é fila sem motivo;
+atrás do vermelho ela vira consequência, e quando o sinal abre, ela anda.
+
+O vão entre duas colunas é de 1,90 m para uma moto de 0,75 m: 1,50 do vão
+natural entre faixas, mais o `jam_spread` (0.12), que encosta as colunas nas
+guias. Antes eram 1,40 m com um jitter lateral de ±0,25 que no pior caso
+fechava pra **0,90 m** — 8 cm de folga de cada lado. O banco agora falha se o
+vão cair abaixo de 1,60.
+
+Custo medido, porque 90 m de fila põem 76 carros no mundo: montar tudo num
+frame só levava 9,8 ms, mais da metade do orçamento a 60 Hz. Ela passou a ser
+montada duas fileiras por frame (1,2 ms), e cada carro reconsulta a pista à
+frente a cada 4 frames em vez de todo frame, descontando o vão pelo que ele
+mesmo andou — hipótese conservadora, então errar aqui freia cedo demais, nunca
+tarde demais. Junto, o trânsito inteiro caiu de 4,7 para 1,3 ms por frame.
 
 ## Bifurcações
 
@@ -230,6 +250,33 @@ O atalho é outra `RoadTrack`, uma Bézier cúbica cujas tangentes nas pontas s�
 as da própria avenida. É isso que permite **trocar a moto de pista sem
 teleporte**: na boca e na reentrada as duas curvas se encostam apontando pro
 mesmo lado, e o que muda é só em qual delas o offset passa a ser medido.
+
+O atalho sai e volta **em ângulo** (22°), e não pelas tangentes da própria
+avenida. Com as tangentes dela o atalho nascia grudado e voltava grudado —
+medido, 8,6 m entre os dois eixos no miolo, com as duas pistas tendo 13 m de
+largura. Na tela isso não lia como bifurcação: lia como uma avenida de 30 m com
+duas pinturas de faixa sobrepostas, e todo prédio que mora entre as duas
+aparecia no meio do caminho. Agora o miolo precisa se afastar no mínimo 26 m do
+eixo da avenida (`BRANCH_MIN_APART`) ou o atalho não nasce, e o banco falha se
+algum nascer colado.
+
+A curva do atalho é traçada antes da malha (`plan_shortcut` / `build_surface`):
+a maioria dos candidatos é recusada, e construir um `SurfaceTool` completo pra
+cada um fazia o boot passar de dez minutos.
+
+O atalho **segue o relevo da avenida**: a altura de cada ponto vem do pedaço de
+avenida mais próximo, e não da fração do caminho. Sem isso ele era uma ponte
+reta sobre um terreno que sobe e desce, e como o carpete de chão da avenida tem
+43 m de cada lado do eixo, era ele que passava por cima do atalho — medido,
+1,7 m de asfalto enterrado. Em jogo isso aparecia como a moto afundando no chão
+no meio da rua. A média móvel que tira os degraus da altura também corta pra
+baixo, então o último passo trava o piso em 0,25 m abaixo do terreno — ainda
+acima da terra, que fica 0,35 m abaixo da pista. Medido depois: 3 cm.
+
+E o cenário é construído **depois** dos atalhos, pulando prédio ou poste que
+caia dentro deles. Prédio e poste são plantados em função da avenida, e o
+atalho corta justamente a faixa de terreno em que eles moram: eram 3 props
+dentro de cada atalho, agora zero.
 
 Três decisões que não são óbvias:
 
