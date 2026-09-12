@@ -21,14 +21,6 @@ const MAX_GRADE: float = 0.14
 ## no ar. Alto demais e a pista vira serra e a moto passa a corrida voando.
 const GRADE_BLEND: float = 0.3
 
-## Quantos graus o atalho sai torto em relacao a avenida, nas duas pontas.
-##
-## E o que faz a bifurcacao PARECER uma bifurcacao: a 22 graus as duas pistas
-## se separam uns 0,4 m por metro andado, entao em 50 m ja ha rua no meio
-## delas. Muito acima disso a boca vira esquina, e esquina a 180 km/h nao e
-## escolha, e acidente.
-const DEPART_ANGLE: float = 22.0
-
 const LANE_WIDTH: float = 3.3
 const LANE_COUNT: int = 4
 const SHOULDER: float = 2.2
@@ -41,12 +33,6 @@ const MESH_STEP: float = 4.0
 
 var curve: Curve3D
 var length: float = 0.0
-## Este trecho e um atalho, e nao a rota principal.
-##
-## Muda so o desenho: atalho sobe 4 cm e nao tem acostamento. Ele nasce colado
-## na pista principal na boca da bifurcacao, e duas superficies exatamente na
-## mesma altura piscam (z-fighting) em vez de uma passar por cima da outra.
-var is_shortcut: bool = false
 
 var _asphalt_mesh: MeshInstance3D
 
@@ -109,130 +95,12 @@ func build(total_length: float, rng: RandomNumberGenerator) -> void:
 	_build_mesh()
 
 
-## Constroi um atalho: a corda entre dois pontos da pista principal.
-##
-## Bifurcacao de Road Rash e isto e nada mais: onde a avenida faz a volta, sai
-## uma rua que corta reto e devolve voce la na frente. Nao ha level design
-## nenhum aqui - a geometria da rota e que diz onde valeu a pena cortar, e o
-## `World` so aceita a corda quando ela economiza pista de verdade.
-##
-## As tangentes das pontas sao as da propria pista, entao a boca e a
-## reentrada sao continuas: o atalho nasce apontando pra onde a avenida estava
-## indo e chega apontando pra onde ela vai. E o que permite trocar a moto de
-## pista sem teleporte nenhum.
-## Traca a curva do atalho, SEM malha.
-##
-## Separado de `build_surface` porque a maior parte dos candidatos e recusada -
-## por nao encurtar o bastante, ou por passar colada na avenida. Construir a
-## malha de cada um pra jogar fora em seguida fazia o boot rastejar: e um
-## SurfaceTool completo por candidato.
-func plan_shortcut(main: RoadTrack, from_offset: float, to_offset: float) -> void:
-	is_shortcut = true
-	curve = Curve3D.new()
-	curve.bake_interval = 1.0
-
-	var p0 := main.sample_position(from_offset)
-	var p3 := main.sample_position(to_offset)
-	var f0 := -main.sample_basis(from_offset).z
-	var f1 := -main.sample_basis(to_offset).z
-
-	# De que lado a corda cai em relacao a avenida.
-	var mid_main := main.sample_position((from_offset + to_offset) * 0.5)
-	var mid_chord := (p0 + p3) * 0.5
-	var side := signf(
-		(mid_chord - mid_main).dot(main.sample_basis((from_offset + to_offset) * 0.5).x)
-	)
-	if is_zero_approx(side):
-		side = 1.0
-
-	# 0.34 da distancia entre as pontas: menos que isso faz a corda sair de
-	# lado da avenida como se fosse uma esquina; mais que isso e a corda
-	# abracar a curva que ela deveria estar cortando.
-	var pull := p0.distance_to(p3) * 0.34
-
-	# A saida e a volta sao ANGULADAS, e nao paralelas a avenida.
-	#
-	# Com as tangentes da propria avenida nas duas pontas, o atalho saia
-	# grudado nela e voltava grudado: media 8,6 m de distancia no miolo, com as
-	# duas pistas tendo 13 m de largura. Na tela isso nao le como bifurcacao,
-	# le como uma avenida de 30 m com duas pinturas de faixa sobrepostas - e os
-	# predios que moram entre as duas viram predio no meio do caminho.
-	#
-	# Angulo positivo em torno de UP gira pra ESQUERDA, entao o sinal e
-	# invertido pra "girar pro lado em que o atalho vai".
-	var flare := deg_to_rad(DEPART_ANGLE)
-	var p1 := p0 + f0.rotated(Vector3.UP, -flare * side) * pull
-	var p2 := p3 - f1.rotated(Vector3.UP, flare * side) * pull
-
-	var steps := maxi(int(p0.distance_to(p3) / 10.0), 8)
-	var points: Array[Vector3] = []
-	for i in range(steps + 1):
-		points.append(_bezier(p0, p1, p2, p3, float(i) / float(steps)))
-
-	_follow_terrain(points, main, from_offset, to_offset)
-	for point_at: Vector3 in points:
-		curve.add_point(point_at)
-
-	_smooth_tangents()
-	length = curve.get_baked_length()
-
-
-## Constroi a malha do atalho ja aprovado.
 func build_surface() -> void:
 	_build_mesh()
 
 
-## Cola a altura do atalho no terreno da avenida.
-##
-## Sem isto o atalho e uma ponte: o Bezier interpola a altura entre as duas
-## pontas em linha reta, enquanto o terreno em volta sobe e desce com a
-## avenida. Medido, dava 1,7 m de diferenca - e como o carpete de chao da
-## avenida tem 43 m de cada lado do eixo, ele passava POR CIMA do atalho. O
-## jogador via a moto afundar no chao no meio da rua.
-##
-## A altura vem do ponto da avenida mais proximo de cada ponto do atalho, e nao
-## do progresso ao longo dele: numa corda cortando uma curva fechada, o pedaco
-## de avenida mais perto nao e o que esta na mesma fracao do caminho.
-func _follow_terrain(
-	points: Array[Vector3], main: RoadTrack, from_offset: float, to_offset: float
-) -> void:
-	var terrain := PackedFloat32Array()
-	terrain.resize(points.size())
-	for i in range(points.size()):
-		var best := INF
-		var at := from_offset - 60.0
-		while at < to_offset + 60.0:
-			var candidate := main.sample_position(at)
-			var flat := Vector2(candidate.x - points[i].x, candidate.z - points[i].z)
-			if flat.length_squared() < best:
-				best = flat.length_squared()
-				points[i].y = candidate.y
-			at += 3.0
-		terrain[i] = points[i].y
-
-	# O ponto mais proximo pula quando a corda passa perto de dois pedacos da
-	# mesma curva, e pulo na altura vira degrau na pista. Tres passadas de
-	# media movel resolvem, com as pontas presas: elas TEM que encostar na
-	# avenida, senao a boca e a reentrada ganham degrau.
-	for pass_index in range(3):
-		var smoothed := points.duplicate()
-		for i in range(1, points.size() - 1):
-			smoothed[i].y = points[i - 1].y * 0.25 + points[i].y * 0.5 + points[i + 1].y * 0.25
-		for i in range(1, points.size() - 1):
-			points[i] = smoothed[i]
-
-	# E por ultimo o piso: a media movel corta os picos, e cortar pra baixo era
-	# meio metro de asfalto por baixo do carpete de chao da avenida - o mesmo
-	# afundamento que a correcao veio consertar, so que menor. O carpete fica
-	# 0,35 m abaixo da pista dela, entao 0,25 abaixo do terreno ainda esta por
-	# cima da terra. As pontas ficam de fora: elas encostam na avenida.
-	for i in range(1, points.size() - 1):
-		points[i].y = maxf(points[i].y, terrain[i] - 0.25)
-
-
-static func _bezier(p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, t: float) -> Vector3:
-	var u := 1.0 - t
-	return p0 * (u * u * u) + p1 * (3.0 * u * u * t) + p2 * (3.0 * u * t * t) + p3 * (t * t * t)
+func grade_at(offset: float) -> float:
+	return -sample_basis(offset).z.y
 
 
 ## Sorteia a rampa do proximo trecho: plano, ladeira mansa ou ladeira de valer.
@@ -250,12 +118,6 @@ static func _pick_grade(rng: RandomNumberGenerator, altitude: float) -> float:
 	var steep := kind > 0.82
 	var size := rng.randf_range(0.075, MAX_GRADE) if steep else rng.randf_range(0.025, 0.075)
 	return size if up else -size
-
-
-## Inclinacao da pista no ponto, em altura por metro percorrido.
-## Positivo sobe, negativo desce.
-func grade_at(offset: float) -> float:
-	return -sample_basis(offset).z.y
 
 
 func _smooth_tangents() -> void:
@@ -374,26 +236,17 @@ func _build_mesh() -> void:
 	var paint := SurfaceTool.new()
 	paint.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-	# O atalho sobe 4 cm e dispensa o acostamento. Os 4 cm resolvem o
-	# z-fighting com a avenida na boca da bifurcacao, onde as duas pistas se
-	# sobrepoem; sem acostamento, a unica coisa que o atalho pinta por cima da
-	# avenida e asfalto sobre asfalto, que ninguem enxerga. O terreno dele fica
-	# 35 cm abaixo, entao some sozinho debaixo da avenida.
-	var lift := 0.04 if is_shortcut else 0.0
-	var edge := road_w if is_shortcut else road_w + SHOULDER
-	# Carpete curto no atalho. O da avenida tem 34 m de cada lado e ja cobre o
-	# terreno em volta; o do atalho existe so pra ele nao flutuar no vazio
-	# quando corta longe demais. Largo, ele e que passaria por cima da avenida.
-	var carpet := 20.0 if is_shortcut else GROUND
+	var lift := 0.0
+	var edge := road_w + SHOULDER
+	var carpet := GROUND
 
 	var steps := int(length / MESH_STEP)
 	for i in range(steps):
 		var o0 := float(i) * MESH_STEP
 		var o1 := minf(o0 + MESH_STEP, length)
 		_quad(asphalt, o0, o1, -road_w, road_w, lift)
-		if not is_shortcut:
-			_quad(shoulder, o0, o1, -road_w - SHOULDER, -road_w)
-			_quad(shoulder, o0, o1, road_w, road_w + SHOULDER)
+		_quad(shoulder, o0, o1, -road_w - SHOULDER, -road_w)
+		_quad(shoulder, o0, o1, road_w, road_w + SHOULDER)
 		_quad(ground, o0, o1, -edge - carpet, -edge, lift - 0.35)
 		_quad(ground, o0, o1, edge, edge + carpet, lift - 0.35)
 
@@ -409,16 +262,8 @@ func _build_mesh() -> void:
 	# O asfalto tem que ficar claramente mais claro que o fundo, senao a pista
 	# desaparece contra o ceu e o jogador nao ve pra onde esta indo.
 	_commit(ground, mesh, _flat_material(Color(0.13, 0.15, 0.13)))
-	# Atalho e rua de bairro, nao avenida: asfalto mais escuro. E a unica pista
-	# do jogador, a 320x180 e de longe, de que aquela boca leva pra outro
-	# lugar.
-	_commit(
-		asphalt,
-		mesh,
-		_flat_material(Color(0.23, 0.23, 0.27) if is_shortcut else Color(0.29, 0.29, 0.33))
-	)
-	if not is_shortcut:
-		_commit(shoulder, mesh, _flat_material(Color(0.19, 0.18, 0.17)))
+	_commit(asphalt, mesh, _flat_material(Color(0.29, 0.29, 0.33)))
+	_commit(shoulder, mesh, _flat_material(Color(0.19, 0.18, 0.17)))
 	_commit(paint, mesh, _flat_material(Color(0.88, 0.86, 0.68)))
 
 	_asphalt_mesh = MeshInstance3D.new()

@@ -33,9 +33,6 @@ const CAR_COLORS: Array[Color] = [
 const ACCEL: float = 2.2
 const BRAKE: float = 4.5
 const FOLLOW_GAP: float = 6.2
-## A partir de quantos metros o carro comeca a se preocupar com o semaforo.
-## Nao e slider: e o alcance da consulta, nao um numero de feel.
-const LIGHT_LOOKAHEAD: float = 90.0
 
 ## De quantos em quantos frames o carro reconsulta a pista a frente.
 ##
@@ -60,11 +57,9 @@ var cruise_speed: float = 0.0
 var parked: bool = false
 ## Preso num engarrafamento: no meio da pista, andando a passo, sem trocar de
 ## faixa. Diferente de `parked`, que e carro estacionado no meio-fio.
-var jammed: bool = false
 ## Marcado quando o jogador ja pontuou a raspada neste carro, pra nao contar duas vezes.
 var near_missed: bool = false
 ## Este carro esta comprometido com uma parada no vermelho.
-var waiting: bool = false
 
 ## Quem sabe onde estao os outros carros e os semaforos.
 ##
@@ -128,7 +123,7 @@ func setup(
 	# Consulta desencontrada: se todos perguntassem no mesmo frame, economizar
 	# tres frames em quatro so faria o pico ser quatro vezes maior.
 	_probe_in = _rng.randi_range(1, PROBE_EVERY)
-	_reset_at(a_offset, a_lateral, a_parked, a_opens_door, false)
+	_reset_at(a_offset, a_lateral, a_parked, a_opens_door)
 
 
 ## Poe a porta de um dos lados do carro.
@@ -147,21 +142,14 @@ func _physics_process(delta: float) -> void:
 
 	if parked:
 		speed = 0.0
-		waiting = false
 	else:
-		waiting = _drive(delta)
+		_drive(delta)
 
 	offset += speed * delta
 	lateral = move_toward(lateral, _target_lateral, 1.6 * delta)
 
-	# Encostado nao muda de faixa: esta estacionado, nao no fluxo. Preso no
-	# engarrafamento tambem nao: ali ninguem sai do lugar, e um carro deslizando
-	# de lado numa fila parada denuncia que a fila e cenario.
-	#
-	# E quem esta parando no sinal ja tem faixa escolhida - trocar no meio da
-	# freada abriria e fecharia o corredor bem na hora em que o jogador esta
-	# comprometido com ele.
-	if not parked and not jammed and not waiting:
+	# Encostado nao muda de faixa: esta estacionado, nao no fluxo.
+	if not parked:
 		_lane_change_timer -= delta
 		if _lane_change_timer <= 0.0:
 			_lane_change_timer = _rng.randf_range(4.0, 16.0)
@@ -187,23 +175,11 @@ func _physics_process(delta: float) -> void:
 	_apply_transform()
 
 
-## Ajusta a velocidade ao que a pista permite. Devolve se ha uma parada
-## comprometida a frente (semaforo), que e o que trava a troca de faixa.
-func _drive(delta: float) -> bool:
+## Ajusta a velocidade ao que a pista permite: o carro da frente na mesma
+## faixa e o que decide, e e isso que impede dois carros de ocuparem o mesmo
+## metro de asfalto.
+func _drive(delta: float) -> void:
 	var want := cruise_speed
-	var committed := false
-
-	var light := _light_ahead()
-	if light != null:
-		var to_line: float = light.stop_offset() - offset
-		if to_line > 0.0:
-			committed = true
-			want = minf(want, _approach_speed(to_line))
-			# Quem esta na faixa livre do ciclo sai dela antes de parar. E o
-			# que mantem a promessa do semaforo: sempre sobra uma faixa vazia,
-			# e ela some do mapa se o proprio transito parar dentro dela.
-			if to_line < LIGHT_LOOKAHEAD and not light.holds(_target_lateral):
-				_target_lateral = light.held_lateral_near(_target_lateral)
 
 	var gap: float = world_tuning.traffic_follow_gap if world_tuning != null else FOLLOW_GAP
 	_probe_in -= 1
@@ -217,7 +193,6 @@ func _drive(delta: float) -> bool:
 	var accel: float = world_tuning.traffic_accel if world_tuning != null else ACCEL
 	var rate := accel if want > speed else _brake()
 	speed = move_toward(speed, maxf(want, 0.0), rate * delta)
-	return committed
 
 
 func _brake() -> float:
@@ -227,18 +202,6 @@ func _brake() -> float:
 ## Velocidade maxima pra ainda parar em `distance` metros freando no talo.
 func _approach_speed(distance: float) -> float:
 	return sqrt(2.0 * _brake() * maxf(distance, 0.0))
-
-
-## Semaforo relevante: o proximo a frente, e so enquanto ele estiver segurando.
-func _light_ahead() -> TrafficLight:
-	if world == null or not world.has_method("light_ahead"):
-		return null
-	var light: TrafficLight = world.light_ahead(offset)
-	if light == null or not light.stopping():
-		return null
-	if light.stop_offset() - offset > LIGHT_LOOKAHEAD:
-		return null
-	return light
 
 
 ## Pista livre a frente na faixa deste carro.
@@ -266,37 +229,19 @@ func _set_door(open: bool) -> void:
 func recycle(
 	a_offset: float, a_lateral: float, a_parked: bool = false, a_opens_door: bool = false
 ) -> void:
-	_reset_at(a_offset, a_lateral, a_parked, a_opens_door, false)
-
-
-## Poe o carro dentro de um engarrafamento.
-##
-## Sem porta e sem troca de faixa: aqui o carro nao e um evento, e tijolo. O
-## perigo do engarrafamento e o proprio engarrafamento - somar porta abrindo
-## dentro do vao tiraria do jogador a unica saida que ele tem.
-func jam_at(a_offset: float, a_lateral: float) -> void:
-	_reset_at(a_offset, a_lateral, false, false, true)
+	_reset_at(a_offset, a_lateral, a_parked, a_opens_door)
 
 
 ## Estado comum entre nascer e ser reciclado.
-func _reset_at(
-	a_offset: float, a_lateral: float, a_parked: bool, a_opens_door: bool, a_jammed: bool
-) -> void:
+func _reset_at(a_offset: float, a_lateral: float, a_parked: bool, a_opens_door: bool) -> void:
 	offset = a_offset
 	lateral = a_lateral
 	_target_lateral = a_lateral
 	parked = a_parked
-	jammed = a_jammed
 	# Transito de marginal em hora de pico: quase parado, e ai que ta a graca.
-	# Encostado e parado de verdade - zero, nao "quase". Engarrafado anda a
-	# passo: fila 100% imovel vira cenario, e um metro por segundo ja e o
-	# bastante pro vao respirar enquanto o jogador entra nele.
+	# Encostado e parado de verdade - zero, nao "quase".
 	if a_parked:
 		cruise_speed = 0.0
-	elif a_jammed:
-		cruise_speed = _rng.randf_range(
-			0.0, world_tuning.jam_creep if world_tuning != null else 1.4
-		)
 	else:
 		cruise_speed = _rng.randf_range(
 			0.0, world_tuning.traffic_speed if world_tuning != null else 7.0

@@ -103,7 +103,7 @@ recusa. **Nunca crie tag nem publique release por conta própria.**
 Commits em gitmoji + conventional, assunto imperativo em português:
 
 ```
-✨ feat: semáforo que sempre deixa uma faixa livre
+✨ feat: porta de carro que só abre em quem está encostado
 ```
 
 `✨ feat` · `🐛 fix` · `♻️ refactor` · `⚡️ perf` · `📝 docs` · `✅ test` ·

@@ -15,15 +15,7 @@ const KMH: float = 3.6
 ## quem esta iterando em curva nao precisa esperar os 45 s da corrida
 ## solta, e ciclo curto e o que decide se o teste e rodado ou pulado.
 const PHASE_NAMES: PackedStringArray = [
-	"aceleracao",
-	"freada",
-	"inclinacao",
-	"curva",
-	"soco",
-	"calcada",
-	"combate",
-	"bifurcacao",
-	"corrida"
+	"aceleracao", "freada", "inclinacao", "curva", "soco", "calcada", "combate", "corrida"
 ]
 
 var _main: Node
@@ -68,10 +60,6 @@ var _rival_lateral_before: float = 0.0
 var _rival_shove: float = 0.0
 var _rival_staggered: bool = false
 var _punch_thrown: bool = false
-var _max_waiting: int = 0
-var _fork_entered: bool = false
-var _fork_time: float = -1.0
-var _fork_backstep: float = 0.0
 var _last_progress: float = 0.0
 var _heading_at_mark: float = 0.0
 var _lateral_at_mark: float = 0.0
@@ -92,14 +80,8 @@ func setup(main: Node) -> void:
 	print("tuning: %s" % _main.get("tuning_source"))
 	print(
 		(
-			"pista: %.0f m | transito: %d | rivais: %d | semaforos: %d | atalhos: %d"
-			% [
-				_world.track.length,
-				_world.traffic.size(),
-				_world.rivals.size(),
-				_world.lights.size(),
-				_world.branches.size()
-			]
+			"pista: %.0f m | transito: %d | rivais: %d"
+			% [_world.track.length, _world.traffic.size(), _world.rivals.size()]
 		)
 	)
 	_measure_relief()
@@ -154,8 +136,6 @@ func _physics_process(delta: float) -> void:
 		6:
 			_phase_combat(delta)
 		7:
-			_phase_fork(delta)
-		8:
 			_phase_freerun(delta)
 
 
@@ -497,81 +477,7 @@ func _phase_combat(_delta: float) -> void:
 		_next_phase()
 
 
-## Fase 7 - bifurcacao: entra no atalho e volta pra avenida ----------------
-##
-## Esta e a fase que existe por medo. Trocar a pista de referencia embaixo da
-## moto e a coisa mais fragil que o mundo faz: erra o palpite do offset e a
-## moto reprojeta a 200 m dali, erra a volta e a entrega nunca completa. Nada
-## disso aparece jogando cinco minutos - so na vez em que voce pega o atalho.
-func _phase_fork(_delta: float) -> void:
-	if _world.branches.is_empty():
-		_report.append("bifurcacao           a rota nao abriu nenhuma")
-		_check(false, "nenhum atalho nasceu na rota - a busca pela corda parou de achar")
-		_next_phase()
-		return
-
-	var branch: RouteBranch = _world.branches[0]
-	if _t < 0.02:
-		# Limites e ladeira de volta: sem os limites o mundo nem avalia a boca,
-		# e e justamente isso que esta sendo medido. A colisao continua
-		# desligada e o transito continua estacionado a 9 km daqui, pra a
-		# medida ser sobre a bifurcacao e nao sobre o transito do dia.
-		_player.road_bounds_enabled = true
-		_player.slope_enabled = true
-		_player.place_on_track(
-			branch.from_offset - 70.0,
-			RoadTrack.lane_center(RoadTrack.LANE_COUNT - 1 if branch.side > 0.0 else 0),
-			30.0
-		)
-		_last_progress = _world.player_progress()
-
-	# Piloto: segue o sentido da pista e se encosta no lado da boca ate entrar.
-	var basis := _player.track.sample_basis(_player.track_offset)
-	var road_heading := atan2((-basis.z).x, (-basis.z).z)
-	var want := branch.side * 4.6 if _world.player_on_route() else 0.0
-	var steer := -wrapf(road_heading - _player.heading, -PI, PI)
-	steer += clampf((want - _player.track_lateral) * 0.09, -0.35, 0.35)
-	_set_action("ride_throttle", true)
-	_set_action("ride_right", steer > 0.02)
-	_set_action("ride_left", steer < -0.02)
-
-	# Progresso e a unica coisa que nao pode andar pra tras: o cronometro e a
-	# reciclagem do transito leem dele.
-	var progress: float = _world.player_progress()
-	_fork_backstep = minf(_fork_backstep, progress - _last_progress)
-	_last_progress = progress
-
-	if not _world.player_on_route():
-		_fork_entered = true
-	elif _fork_entered and _fork_time < 0.0:
-		_fork_time = _t
-
-	if _fork_time > 0.0 or _t > 25.0:
-		_check(
-			(
-				_world._branch_separation(branch.road, branch.from_offset, branch.to_offset)
-				>= World.BRANCH_MIN_APART
-			),
-			"o atalho passa colado na avenida - na tela isso vira uma pista so, larga demais"
-		)
-		_metric("atalho_comprimento_m", branch.road.length)
-		_metric("atalho_economia_m", branch.saving())
-		_report.append(
-			(
-				"bifurcacao           atalho de %.0f m no lugar de %.0f m (-%.0f m)"
-				% [branch.road.length, branch.to_offset - branch.from_offset, branch.saving()]
-			)
-		)
-		_check(_fork_entered, "passou pela boca do atalho pelo lado certo e seguiu reto na avenida")
-		_check(_fork_time > 0.0, "entrou no atalho e nao voltou pra avenida em 25s")
-		_check(
-			_fork_backstep > -2.0,
-			"o progresso andou %.1f m pra TRAS na troca de pista" % -_fork_backstep
-		)
-		_next_phase()
-
-
-## Fase 8 - corrida solta: le a pista de verdade ---------------------------
+## Fase 7 - corrida solta: le a pista de verdade ---------------------------
 func _phase_freerun(_delta: float) -> void:
 	if _t < 0.02:
 		_bench_end()
@@ -597,12 +503,6 @@ func _phase_freerun(_delta: float) -> void:
 	_set_action("ride_throttle", not braking)
 	_set_action("ride_right", steer > 0.02)
 	_set_action("ride_left", steer < -0.02)
-
-	var waiting := 0
-	for car in _world.traffic:
-		if car.waiting:
-			waiting += 1
-	_max_waiting = maxi(_max_waiting, waiting)
 
 	if not _shots_dir.is_empty() and _t >= _shots_next:
 		_shots_next += 2.5
@@ -640,39 +540,6 @@ func _phase_freerun(_delta: float) -> void:
 				"corrida solta 45s    %.0f m percorridos, %d raspadas, %d quedas"
 				% [_world.run.distance_done, _world.run.near_misses, _world.run.crashes]
 			)
-		)
-		var rows := int(_world.world_tuning.jam_length / _world.world_tuning.jam_row_gap)
-		var jam_length := float(rows) * _world.world_tuning.jam_row_gap
-		var corridor := (
-			RoadTrack.LANE_WIDTH * (1.0 + _world.world_tuning.jam_spread) - TrafficCar.SIZE.x
-		)
-		_metric("transito_parados_max", _max_waiting)
-		_metric("transito_engarrafamentos", _world.jams_formed)
-		_report.append(
-			(
-				"transito parando     %d carros no vermelho de uma vez, %d engarrafamentos"
-				% [_max_waiting, _world.jams_formed]
-			)
-		)
-		_metric("jam_fila_m", jam_length)
-		_metric("jam_vao_m", corridor)
-		_report.append(
-			(
-				"fila parada          %.0f m de fila, vao de %.2f m entre as colunas"
-				% [jam_length, corridor]
-			)
-		)
-		_check(_max_waiting > 0, "nenhum carro chegou a parar num semaforo em 45s")
-		_check(_world.jams_formed > 0, "nenhum engarrafamento se formou em 45s")
-		_check(
-			jam_length >= 40.0,
-			"fila de %.0f m: o jogador atravessa antes de perceber que era parede" % jam_length
-		)
-		# A moto tem 0,75 m. Com menos de 1,60 de vao sobram menos de 40 cm de
-		# cada lado, e o corredor deixa de ser linha pra virar sorte.
-		_check(
-			corridor >= 1.6,
-			"vao de %.2f m entre as colunas do engarrafamento: apertado demais" % corridor
 		)
 		_check(
 			_world.run.distance_done > 700.0,

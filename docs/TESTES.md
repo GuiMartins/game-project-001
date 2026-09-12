@@ -42,7 +42,7 @@ Para medir os seus ajustes: `--user-tuning`.
 ### Fases
 
 Sete, nesta ordem: `aceleracao`, `freada`, `inclinacao`, `curva`, `soco`,
-`bifurcacao`, `corrida`.
+`calcada`, `combate`, `corrida`.
 
 ```bash
 python tools/dev.py selftest --fase curva    # 32 s em vez de 89 s
@@ -53,10 +53,10 @@ independentes — a freada precisa da velocidade que a aceleração construiu �
 então pular para o meio mediria outra coisa. O que se ganha é não pagar os
 45 s de corrida solta para conferir um ajuste de curva.
 
-As três últimas fases não medem a moto, medem o **mundo**: "o engarrafamento
-parou de nascer" e "o atalho virou um caminho mais longo" são regressões que
-não travam nada. O jogo continua rodando lindamente sem elas, e ninguém percebe
-até jogar a fase inteira.
+As três últimas fases não medem a moto, medem o **mundo**: "a calçada virou a
+linha rápida" e "o soco parou de empurrar o rival" são regressões que não
+travam nada. O jogo continua rodando lindamente sem elas, e ninguém percebe até
+jogar a fase inteira.
 
 ## Baseline
 
@@ -68,8 +68,8 @@ caiu na **faixa jogável**, e a faixa é larga de propósito: o 0-100 passa de
 2,75 s a 8,99 s sem reclamar. Andar de 2,75 para 3,40 é outra moto, e passava
 calado.
 
-Contagens inteiras e pequenas (quedas, engarrafamentos) têm tolerância maior:
-uma unidade já é muito por cento.
+Contagens inteiras e pequenas (quedas, raspadas) têm tolerância maior: uma
+unidade já é muito por cento.
 
 Quando estoura, há dois desfechos honestos: ou a mudança era o objetivo, e o
 novo valor entra no **mesmo commit** com o motivo escrito; ou é regressão.
@@ -83,8 +83,6 @@ copiam os valores novos.
 
 Saber disto faz parte do contrato. Nenhum destes é pego por nada automatizado:
 
-- **Raspada dentro do atalho.** Não pontua: a frota vive na avenida e os
-  offsets das duas curvas se parecem sem querer dizer a mesma coisa.
 - **Regressão visual.** `RUSHFOOD_SELFTEST_SHOTS=<pasta>` despeja PNGs da
   corrida, mas nada os compara — e **não funciona em headless**: sob o driver
   dummy o viewport não rende e saem zero arquivos. Precisa de display real.
@@ -93,22 +91,16 @@ Saber disto faz parte do contrato. Nenhum destes é pego por nada automatizado:
 
 ## A corrida solta depende do tempo acumulado
 
-Os semáforos e o trânsito evoluem durante **todas** as fases, não só durante a
-corrida. Então acrescentar uma fase antes dela desloca o ciclo dos semáforos e
-muda os números da corrida sem nada no jogo ter mudado.
+O trânsito evolui durante **todas** as fases, não só durante a corrida. Então
+acrescentar uma fase antes dela muda os números da corrida sem nada no jogo ter
+mudado: os carros estão em outro lugar quando ela começa.
 
-Aconteceu ao acrescentar calçada e combate: 19 s a mais antes da corrida
-fizeram "carros parados no vermelho" cair de 52 para 10. As asserções passaram
-nos dois casos — é o instante do encontro com o semáforo que mudou, não o
-semáforo.
+Aconteceu ao acrescentar calçada e combate. As asserções passaram nos dois
+casos — é o instante do encontro que mudou.
 
-Duas consequências práticas:
+Consequência prática: **inserir fase antes da corrida obriga a regerar o
+baseline**, e a justificativa é essa. Não é regressão.
 
-- **Inserir fase antes da corrida obriga a regerar o baseline**, e a
-  justificativa é essa. Não é regressão.
-- **`transito_parados_max` é a medida mais volátil do banco.** Ela responde ao
-  instante em que a corrida começa. Para saber se o semáforo em si regrediu,
-  `transito_engarrafamentos` e `jam_fila_m` são mais firmes.
 
 ## Variáveis de ambiente
 

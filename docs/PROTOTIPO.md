@@ -78,20 +78,15 @@ freada 183 km/h -> 0   1.48 s / 37 m
 inclinacao 0->90%    0.35 s
 a 175 km/h: 35.8 graus/s, raio 78 m
 hitbox do soco       0.133 s aberta (tuning pede 0.130)
-bifurcacao           atalho de 275 m no lugar de 340 m (-65 m)
 calcada              33.3 m/s no asfalto, 13.8 m/s na calcada, parede em 8.80 m
-combate              rival empurrado 4.95 m, cambaleou
-corrida solta 45s    1345 m percorridos, 16 raspadas, 4 quedas
-transito parando     10 carros no vermelho de uma vez, 2 engarrafamentos
-fila parada          90 m de fila, vao de 1.90 m entre as colunas
+combate              rival empurrado 4.80 m, cambaleou
+corrida solta 45s    960 m percorridos, 13 raspadas, 4 quedas
 ```
 
 As três últimas linhas não medem a moto, medem o **mundo**: elas existem porque
-"o engarrafamento parou de nascer" e "o atalho virou um caminho mais longo" são
+"a calçada virou a linha rápida" e "o soco parou de empurrar o rival" são
 regressões que não travam nada — o jogo continua rodando lindamente sem elas, e
-ninguém percebe até jogar a fase inteira. A fase da bifurcação é a mais
-paranoica do banco: ela entra no atalho, volta pra avenida e confere que o
-progresso não andou pra trás na troca de pista.
+ninguém percebe até jogar a fase inteira.
 
 O 0-100 e a freada são medidos com a **ladeira desligada** (`slope_enabled`).
 Medir aceleração numa subida mede a subida. A elevação volta a valer na corrida
@@ -150,6 +145,11 @@ Deliberadamente fora do escopo até o feel fechar:
   **`alpha_cut = Discard` em todos** — sem isso o depth sorting quebra e o
   entregador some atrás do carro errado. O ponto de troca é o nó `Visual` de
   `player_bike.gd` / `rival_bike.gd`.
+- **Semáforo, engarrafamento e bifurcação.** Existiram e foram removidos:
+  estavam custando complexidade no `world.gd` antes de o feel da moto estar
+  fechado, que é a única pergunta que este protótipo existe pra responder.
+  O código está no histórico — `git log --diff-filter=D -- scripts/traffic_light.gd`
+  acha o commit que os tirou, e com ele o estado completo de cada um.
 - Áudio, menu, progressão, upgrade de moto.
 - Shader de mundo curvo ("SEGA curved world").
 - Chuva, noite com neon no asfalto molhado.
@@ -199,106 +199,6 @@ Duas ressalvas honestas:
   os números da corrida ficaram idênticos quando o limite andável mudou. A
   fase mede a velocidade estabilizada contra o teto que o `sidewalk_speed_factor`
   declara, e confere que a parede segura exatamente no `sidewalk_limit()`.
-
-## O trânsito para: semáforo e engarrafamento
-
-Duas maneiras de fechar a pista, opostas de propósito.
-
-**Semáforo** (`traffic_light.gd`) é geometria fixa da rota, a cada 260–520 m.
-O carro que se aproxima do vermelho freia na faixa de retenção e fila atrás de
-quem já parou — o mesmo car-following que impede dois carros de ocuparem o
-mesmo metro de asfalto.
-
-A cada ciclo vermelho ele **sorteia uma faixa que não segura ninguém**, e quem
-estava nela sai antes de parar. Sem essa faixa vazia a fila fecha as quatro
-pistas e o semáforo vira um muro: a 50 m/s a única resposta possível seria
-parar, e parar não é o jogo. Como a faixa livre muda de ciclo pra ciclo,
-ninguém decora "é sempre a da direita".
-
-**Engarrafamento** é o contrário, e é por isso que ele existe: ali as quatro
-faixas **são** ocupadas, em fileiras de para-choque a para-choque. A pista
-acaba de verdade e a única passagem é o vão entre as filas — é a hora em que o
-jogo cobra o pilar do corredor em vez de oferecê-lo.
-
-Os carros dele são **criados à parte**, e não emprestados da frota que circula.
-A primeira versão emprestava, e o resultado media 13 m: com 20 carros e metade
-da frota davam duas fileiras — o jogador atravessa isso antes de perceber que
-era pra ser uma parede. Agora `jam_length` está em metros (90 por padrão, 56
-carros) e o número quer dizer o que diz.
-
-Quando dá, **a fila nasce atrás de um sinal vermelho**, que fica segurado
-enquanto ela existe. Fila de 90 m num cruzamento aberto é fila sem motivo;
-atrás do vermelho ela vira consequência, e quando o sinal abre, ela anda.
-
-O vão entre duas colunas é de 1,90 m para uma moto de 0,75 m: 1,50 do vão
-natural entre faixas, mais o `jam_spread` (0.12), que encosta as colunas nas
-guias. Antes eram 1,40 m com um jitter lateral de ±0,25 que no pior caso
-fechava pra **0,90 m** — 8 cm de folga de cada lado. O banco agora falha se o
-vão cair abaixo de 1,60.
-
-Custo medido, porque 90 m de fila põem 76 carros no mundo: montar tudo num
-frame só levava 9,8 ms, mais da metade do orçamento a 60 Hz. Ela passou a ser
-montada duas fileiras por frame (1,2 ms), e cada carro reconsulta a pista à
-frente a cada 4 frames em vez de todo frame, descontando o vão pelo que ele
-mesmo andou — hipótese conservadora, então errar aqui freia cedo demais, nunca
-tarde demais. Junto, o trânsito inteiro caiu de 4,7 para 1,3 ms por frame.
-
-## Bifurcações
-
-A rota abre atalhos onde a avenida faz volta grande. Não há level design nisto:
-o `World` varre a pista atrás de trechos em que a **corda** entre duas pontas é
-pelo menos 14% mais curta que a pista entre elas — que é a definição geométrica
-de "aqui daria pra cortar". Onde a avenida já é reta, atalho nenhum nasce.
-
-O atalho é outra `RoadTrack`, uma Bézier cúbica cujas tangentes nas pontas são
-as da própria avenida. É isso que permite **trocar a moto de pista sem
-teleporte**: na boca e na reentrada as duas curvas se encostam apontando pro
-mesmo lado, e o que muda é só em qual delas o offset passa a ser medido.
-
-O atalho sai e volta **em ângulo** (22°), e não pelas tangentes da própria
-avenida. Com as tangentes dela o atalho nascia grudado e voltava grudado —
-medido, 8,6 m entre os dois eixos no miolo, com as duas pistas tendo 13 m de
-largura. Na tela isso não lia como bifurcação: lia como uma avenida de 30 m com
-duas pinturas de faixa sobrepostas, e todo prédio que mora entre as duas
-aparecia no meio do caminho. Agora o miolo precisa se afastar no mínimo 26 m do
-eixo da avenida (`BRANCH_MIN_APART`) ou o atalho não nasce, e o banco falha se
-algum nascer colado.
-
-A curva do atalho é traçada antes da malha (`plan_shortcut` / `build_surface`):
-a maioria dos candidatos é recusada, e construir um `SurfaceTool` completo pra
-cada um fazia o boot passar de dez minutos.
-
-O atalho **segue o relevo da avenida**: a altura de cada ponto vem do pedaço de
-avenida mais próximo, e não da fração do caminho. Sem isso ele era uma ponte
-reta sobre um terreno que sobe e desce, e como o carpete de chão da avenida tem
-43 m de cada lado do eixo, era ele que passava por cima do atalho — medido,
-1,7 m de asfalto enterrado. Em jogo isso aparecia como a moto afundando no chão
-no meio da rua. A média móvel que tira os degraus da altura também corta pra
-baixo, então o último passo trava o piso em 0,25 m abaixo do terreno — ainda
-acima da terra, que fica 0,35 m abaixo da pista. Medido depois: 3 cm.
-
-E o cenário é construído **depois** dos atalhos, pulando prédio ou poste que
-caia dentro deles. Prédio e poste são plantados em função da avenida, e o
-atalho corta justamente a faixa de terreno em que eles moram: eram 3 props
-dentro de cada atalho, agora zero.
-
-Três decisões que não são óbvias:
-
-- **Entra quem estava do lado da boca** (2 m do eixo pra fora). Bifurcação que
-  você toma sem querer é bifurcação que você xinga.
-- **A corrida continua sendo medida na avenida.** Dentro do atalho o offset da
-  moto é de outra curva; `player_progress()` traduz de volta. Sem isso, cortar
-  caminho zeraria o cronômetro — e como o atalho é mais curto que o trecho que
-  substitui, cada metro rodado nele avança mais de um metro de rota. Esse é o
-  prêmio, e o jogador vê ele no "faltam X m" caindo mais rápido.
-- **Tem carro parado largado dentro.** Sem eles a escolha não existe: pista
-  mais curta e vazia seria sempre a resposta certa, e escolha com resposta
-  certa não é escolha.
-
-O que o banco **não** cobre: a raspada no corredor não pontua dentro do atalho,
-porque a frota vive na avenida e os offsets das duas curvas se parecem sem
-querer dizer a mesma coisa. Também é dentro do atalho que os rivais deixam de
-tentar emparelhar — eles continuam na avenida, correndo a corrida deles.
 
 ## Ladeira
 
