@@ -1,7 +1,13 @@
 # RushFood — protótipo
 
 Protótipo *greybox* de um jogo estilo Road Rash com entregadores de app.
-Godot 4.4, mundo 3D real renderizado num `SubViewport` de 320×180.
+Godot (versão fixada em [`.godot-version`](.godot-version)), mundo 3D real
+renderizado num `SubViewport` de 320×180. Desenvolvido em Windows, macOS e
+Linux; o CI roda nos três.
+
+**Vai mexer no código?** O contrato de operação está em
+[CLAUDE.md](CLAUDE.md) — comandos, o portão de qualidade, e os invariantes que
+não se quebram sem conversa.
 
 A cidade fecha a pista de quatro jeitos: **semáforo** (fila que sempre deixa
 uma faixa livre), **engarrafamento** (as quatro faixas ocupadas, só o vão entre
@@ -14,11 +20,15 @@ essa resposta ser sim.
 
 ## Rodar
 
-Abra a pasta no editor do Godot 4.4+ e dê play, ou:
+Só é preciso ter Python 3.10+. A engine o script baixa:
 
 ```sh
-godot --path .
+python tools/dev.py setup
+python tools/dev.py run
 ```
+
+Ou abra a pasta no editor do Godot e dê play. Detalhes de ambiente em
+[docs/AMBIENTE.md](docs/AMBIENTE.md).
 
 ## Controles
 
@@ -61,8 +71,8 @@ jogo, mas não vai pro git nem pro executável. Quando os valores estiverem bons
 promova para os defaults do repositório:
 
 ```sh
-python3 tools/promote_tuning.py          # mostra o que mudaria
-python3 tools/promote_tuning.py --apply --clear-user
+python tools/promote_tuning.py           # mostra o que mudaria
+python tools/promote_tuning.py --apply --clear-user
 ```
 
 `--clear-user` apaga o override depois de promover, então o jogo passa a rodar
@@ -70,9 +80,9 @@ nos defaults novos de verdade em vez de continuar vendo o seu por cima.
 
 ## Release
 
-Todo merge na `master` dispara [uma pipeline](.github/workflows/release.yml) que
-roda o banco de provas, exporta as três plataformas e publica uma release no
-GitHub:
+Publicar é ato deliberado: a release sai de uma **tag**, não de um merge.
+[A pipeline](.github/workflows/release.yml) roda o banco de provas, exporta as
+três plataformas e publica no GitHub:
 
 | Arquivo | Plataforma |
 | --- | --- |
@@ -80,10 +90,16 @@ GitHub:
 | `RushFood-linux.zip` | Linux x86_64 |
 | `RushFood-macos.zip` | macOS universal (Intel e Apple Silicon) |
 
-A tag sai de `config/version` no `project.godot` — único lugar pra mexer, a
-pipeline injeta essa versão no bundle do macOS na hora do export. **Bump antes
-de merjar**; sem bump, a release existente é substituída em vez de nascer uma
-nova.
+```sh
+git tag v0.0.3 && git push origin v0.0.3
+```
+
+A tag precisa bater com `config/version` no `project.godot` — único lugar pra
+mexer, a pipeline injeta essa versão no bundle do macOS na hora do export. Se
+os dois discordarem, a pipeline recusa antes de publicar qualquer coisa.
+
+Merge na `master` **não** publica nada: com IA operando no repositório, merge
+que distribui binário é um botão sem trava.
 
 Se o banco de provas falhar, nada é publicado — binário quebrado no ar é pior
 que release atrasada.
@@ -93,25 +109,33 @@ O [docs/INSTALAR.txt](docs/INSTALAR.txt) vai dentro de cada zip explicando como
 passar. Assinar de verdade exige certificado pago (e conta de desenvolvedor
 Apple), que não se justifica num protótipo.
 
-Pushes em qualquer outra branch rodam só o banco de provas
-([ci.yml](.github/workflows/ci.yml)), pra a `develop` não chegar quebrada no dia
-da release.
+Todo push roda [ci.yml](.github/workflows/ci.yml): lint, formatação e a
+bateria de testes nos **três sistemas operacionais**, pra a `develop` não
+chegar quebrada no dia da release — e pra bug de plataforma aparecer no dia em
+que nasce.
 
-## Banco de provas
+## Testes
 
 ```sh
-godot --headless --path . -- --selftest
+python tools/dev.py test       # unitários, ~4 s
+python tools/dev.py selftest   # banco de provas, ~89 s
 ```
 
-Roda a moto de verdade contra entradas sintéticas e mede 0–100, freada, tempo
-de inclinação, raio de curva e a janela do soco; falha com código de saída 1 se
-algum número sair da faixa jogável.
+O banco de provas roda a moto de verdade contra entradas sintéticas e mede
+0–100, freada, tempo de inclinação, raio de curva e a janela do soco; falha com
+código 1 se algum número sair da faixa jogável **ou** se ele andar mais do que
+`tests/baseline.json` tolera.
 
 Roda sempre nos **defaults do repositório**, ignorando o que você salvou no F3 —
 senão o número deixa de ser comparável entre rodadas. Para medir os seus
-ajustes, acrescente `--selftest-user`. Detalhes e números atuais em
-[docs/PROTOTIPO.md](docs/PROTOTIPO.md).
+ajustes, `--user-tuning`.
 
-Variáveis de ambiente úteis: `RUSHFOOD_SELFTEST_TRACE=1` imprime a telemetria
-da corrida solta segundo a segundo; `RUSHFOOD_SELFTEST_SHOTS=<pasta>` pula o
-banco e despeja PNGs da corrida.
+Iterando em algo específico, dá pra parar antes da corrida solta:
+
+```sh
+python tools/dev.py selftest --fase curva    # 32 s em vez de 89 s
+```
+
+Detalhes, camadas e os buracos conhecidos de cobertura em
+[docs/TESTES.md](docs/TESTES.md); os números atuais e o que eles significam em
+[docs/PROTOTIPO.md](docs/PROTOTIPO.md).
