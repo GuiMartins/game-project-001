@@ -1,18 +1,21 @@
 name: Release
 
-# Toda entrada na master vira release. A master só recebe merge da develop
-# quando uma versão está pronta pra alguém testar, então "chegou na master" e
-# "é pra distribuir" são a mesma coisa por construção.
+# Publicar é ato deliberado, não efeito colateral de um merge.
+#
+# Antes, toda entrada na master virava release. Com IA operando no repositório
+# isso é um botão de distribuir binário sem trava: um merge de rotina publicava
+# pro mundo. Agora a release sai de uma tag `vX.Y.Z` empurrada de propósito —
+# o merge continua rodando o banco de provas nos três sistemas (ci.yml), e
+# quem decide que aquilo vira release é uma pessoa.
+#
+#   git tag v0.0.3 && git push origin v0.0.3
 on:
   push:
-    branches: [master]
+    tags: ["v*"]
   workflow_dispatch:
 
 permissions:
   contents: write
-
-env:
-  GODOT_VERSION: 4.7.2
 
 jobs:
   release:
@@ -23,38 +26,36 @@ jobs:
 
       - uses: ./.github/actions/setup-godot
         with:
-          version: ${{ env.GODOT_VERSION }}
+          templates: "true"
+
+      # A tag e o config/version precisam contar a mesma história. Divergência
+      # aqui publica um binário que se apresenta com outra versão que a do
+      # nome do arquivo — o tipo de coisa que só se descobre depois.
+      - name: Conferir que a tag bate com o project.godot
+        run: |
+          set -euo pipefail
+          VERSION="$(python -c 'import sys; sys.path.insert(0, "tools"); import dev; print(dev.project_version())')"
+          TAG="${GITHUB_REF_NAME#v}"
+          echo "tag: $TAG | config/version: $VERSION"
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "::error::a tag v$TAG não bate com config/version=$VERSION no project.godot"
+            exit 1
+          fi
 
       # Release só existe se o banco de provas passar. Binário quebrado
       # publicado é pior que release atrasada.
       - name: Banco de provas
-        run: godot --headless --path . -- --selftest
+        run: python tools/dev.py selftest
 
+      # O mesmo comando que exporta na máquina de quem desenvolve, inclusive a
+      # injeção da versão no bundle do macOS.
       - name: Exportar as três plataformas
+        run: python tools/dev.py export
+
+      - name: Empacotar
         run: |
           set -euo pipefail
-          mkdir -p export/windows export/linux export/macos dist
-
-          # O bundle do macOS carrega a versão dentro dele, e o preset é o
-          # único lugar onde ela cabe. Injetar aqui evita a única fonte de
-          # divergência possível: bumpar o project.godot e esquecer o preset.
-          VERSION="$(grep -m1 '^config/version=' project.godot | cut -d'"' -f2)"
-          sed -i \
-            -e "s|^application/short_version=.*|application/short_version=\"$VERSION\"|" \
-            -e "s|^application/version=.*|application/version=\"$VERSION\"|" \
-            export_presets.cfg
-          grep -E '^application/(short_)?version=' export_presets.cfg
-
-          godot --headless --path . --export-release "Windows Desktop"
-          godot --headless --path . --export-release "Linux"
-          godot --headless --path . --export-release "macOS"
-
-          # O export do Godot nem sempre devolve código de erro numa falha;
-          # arquivo ausente ou vazio aqui é a checagem de verdade.
-          test -s export/windows/RushFood.exe
-          test -s export/linux/RushFood.x86_64
-          test -s export/macos/RushFood.zip
-
+          mkdir -p dist
           cp docs/INSTALAR.txt /tmp/LEIA-ME.txt
 
           (cd export/windows && zip -q -j ../../dist/RushFood-windows.zip \
@@ -73,12 +74,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          VERSION="$(grep -m1 '^config/version=' project.godot | cut -d'"' -f2)"
-          TAG="v${VERSION}"
-          echo "versão do project.godot: $VERSION"
+          TAG="$GITHUB_REF_NAME"
 
           NOTES="$(cat <<NOTAS
-          Protótipo greybox do RushFood, build automático de \`${GITHUB_SHA:0:7}\`.
+          Protótipo greybox do RushFood, build de \`${GITHUB_SHA:0:7}\`.
 
           | Arquivo | Plataforma |
           | --- | --- |
@@ -92,8 +91,7 @@ jobs:
           NOTAS
           )"
 
-          # Merjar de novo sem bump de versão atualiza a release existente em
-          # vez de falhar. Bump em project.godot cria uma nova.
+          # Reempurrar a mesma tag substitui os binários em vez de falhar.
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "release $TAG já existe - substituindo os binários"
             gh release upload "$TAG" dist/* --clobber
