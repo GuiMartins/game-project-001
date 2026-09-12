@@ -11,15 +11,28 @@ extends Node
 
 const KMH: float = 3.6
 
+## Nome de cada fase, na ordem em que rodam. Serve pro `--fase <nome>`:
+## quem esta iterando em curva nao precisa esperar os 45 s da corrida
+## solta, e ciclo curto e o que decide se o teste e rodado ou pulado.
+const PHASE_NAMES: PackedStringArray = [
+	"aceleracao", "freada", "inclinacao", "curva", "soco", "bifurcacao", "corrida"
+]
+
 var _main: Node
 var _player: PlayerBike
 var _world: World
 var _tuning: BikeTuning
 
+## Ultima fase a rodar. Por padrao, todas.
+var _stop_after: int = PHASE_NAMES.size() - 1
 var _phase: int = 0
 var _t: float = 0.0
 var _report: Array[String] = []
 var _failures: Array[String] = []
+## As mesmas medidas do relatorio, em forma de maquina. O baseline
+## versionado compara contra isto - prosa em markdown nao diz se o numero
+## andou, so diz qual ele era no dia em que alguem escreveu o markdown.
+var _metrics: Dictionary = {}
 
 # Medidas coletadas.
 var _t_to_100: float = -1.0
@@ -59,9 +72,7 @@ func setup(main: Node) -> void:
 	# senao "regrediu" e "deu azar" viram a mesma coisa.
 	_rng.seed = 4242
 	_bench_begin()
-	if not _shots_dir.is_empty():
-		# Modo foto: pula o banco de provas e vai direto pra corrida.
-		_phase = 6
+	_read_phase_arg()
 	print("\n=== RUSHFOOD SELFTEST ===")
 	print("tuning: %s" % _main.get("tuning_source"))
 	print(
@@ -93,6 +104,8 @@ func _measure_relief() -> void:
 		lowest = minf(lowest, y)
 		highest = maxf(highest, y)
 		o += 5.0
+	_metric("relevo_rampa_max_pct", steepest * 100.0)
+	_metric("relevo_desnivel_m", highest - lowest)
 	_report.append(
 		(
 			"relevo               rampa max %.0f%%, desnivel %.0f m"
@@ -131,6 +144,8 @@ func _next_phase() -> void:
 	_phase += 1
 	_t = 0.0
 	_release_all()
+	if _phase > _stop_after:
+		_finish()
 
 
 ## O banco mede a MOTO, nao a pista. Sem isolar, a primeira raspada em
@@ -179,7 +194,9 @@ func _phase_accel(_delta: float) -> void:
 		_t_to_100 = _t
 	_top_speed = maxf(_top_speed, _player.speed)
 	if _t >= 22.0:
+		_metric("aceleracao_0_100_s", _t_to_100)
 		_report.append("0-100 km/h          %.2f s" % _t_to_100)
+		_metric("velocidade_22s_kmh", _top_speed * KMH)
 		_report.append(
 			(
 				"velocidade em 22s   %.1f km/h  (teto do tuning %.1f)"
@@ -209,6 +226,8 @@ func _phase_brake(delta: float) -> void:
 	_brake_distance += _player.speed * delta
 	_brake_time = _t
 	if _player.speed < 1.0 or _t > 12.0:
+		_metric("freada_tempo_s", _brake_time)
+		_metric("freada_distancia_m", _brake_distance)
 		_report.append(
 			(
 				"freada %.0f km/h -> 0   %.2f s / %.0f m"
@@ -235,6 +254,7 @@ func _phase_lean(_delta: float) -> void:
 	if _lean_rise_time < 0.0 and _player.lean >= target * 0.9:
 		_lean_rise_time = _t - 1.5
 	if _t >= 4.0:
+		_metric("inclinacao_0_90_s", _lean_rise_time)
 		_report.append("inclinacao 0->90%%    %.2f s" % _lean_rise_time)
 		_check(
 			_lean_rise_time > 0.05,
@@ -266,6 +286,8 @@ func _phase_turn(_delta: float) -> void:
 		_yaw_rate = rad_to_deg(absf(wrapf(_player.heading - _heading_at_mark, -PI, PI))) / 2.0
 		var mean_speed := (_speed_at_mark + _player.speed) * 0.5
 		_turn_radius = mean_speed / maxf(deg_to_rad(_yaw_rate), 0.0001)
+		_metric("guinada_graus_s", _yaw_rate)
+		_metric("raio_curva_m", _turn_radius)
 		_report.append(
 			"a %.0f km/h: %.1f graus/s, raio %.0f m" % [mean_speed * KMH, _yaw_rate, _turn_radius]
 		)
@@ -305,6 +327,7 @@ func _phase_punch(_delta: float) -> void:
 		_punch_frames += 1
 	if _t >= _tuning.punch_cooldown + 0.2:
 		var window := float(_punch_frames) / 60.0
+		_metric("soco_janela_s", _punch_frames / 60.0)
 		_report.append(
 			"hitbox do soco       %.3f s aberta (tuning pede %.3f)" % [window, _tuning.punch_active]
 		)
@@ -366,6 +389,8 @@ func _phase_fork(_delta: float) -> void:
 		_fork_time = _t
 
 	if _fork_time > 0.0 or _t > 25.0:
+		_metric("atalho_comprimento_m", branch.road.length)
+		_metric("atalho_economia_m", branch.saving())
 		_report.append(
 			(
 				"bifurcacao           atalho de %.0f m no lugar de %.0f m (-%.0f m)"
@@ -418,8 +443,6 @@ func _phase_freerun(_delta: float) -> void:
 		_shots_next += 2.5
 		_capture("%s/rushfood_%02d.png" % [_shots_dir, _shots_taken])
 		_shots_taken += 1
-		# Alterna perseguicao / capacete / camera alta de diagnostico.
-		_world.camera.cycle_mode()
 
 	if _trace and _t >= _trace_next:
 		_trace_next += 1.0
@@ -444,12 +467,17 @@ func _phase_freerun(_delta: float) -> void:
 		return
 
 	if _t >= 45.0 or _world.run.phase != DeliveryRun.Phase.RIDING:
+		_metric("corrida_distancia_m", _world.run.distance_done)
+		_metric("corrida_raspadas", _world.run.near_misses)
+		_metric("corrida_quedas", _world.run.crashes)
 		_report.append(
 			(
 				"corrida solta 45s    %.0f m percorridos, %d raspadas, %d quedas"
 				% [_world.run.distance_done, _world.run.near_misses, _world.run.crashes]
 			)
 		)
+		_metric("transito_parados_max", _max_waiting)
+		_metric("transito_engarrafamentos", _world.jams_formed)
 		_report.append(
 			(
 				"transito parando     %d carros no vermelho de uma vez, %d engarrafamentos"
@@ -469,6 +497,31 @@ func _phase_freerun(_delta: float) -> void:
 		_finish()
 
 
+## Le `--fase <nome>` da linha de comando.
+##
+## Roda da primeira fase ate a pedida e para ali. As fases nao sao
+## independentes - a freada precisa da velocidade que a aceleracao
+## construiu - entao pular pro meio mediria outra coisa. O que se ganha e
+## nao pagar os 45 s da corrida solta pra conferir um ajuste de curva.
+func _read_phase_arg() -> void:
+	var args := OS.get_cmdline_user_args()
+	var pedida := ""
+	for i: int in args.size():
+		if args[i].begins_with("--fase="):
+			pedida = args[i].substr(7)
+		elif args[i] == "--fase" and i + 1 < args.size():
+			pedida = args[i + 1]
+	if pedida.is_empty():
+		return
+	var indice_fase := PHASE_NAMES.find(pedida)
+	if indice_fase < 0:
+		push_error("fase desconhecida: %s (use uma de %s)" % [pedida, PHASE_NAMES])
+		get_tree().quit(2)
+		return
+	_stop_after = indice_fase
+	print("fase: parando depois de '%s'" % pedida)
+
+
 func _set_action(action_name: String, pressed: bool) -> void:
 	if pressed and not Input.is_action_pressed(action_name):
 		Input.action_press(action_name)
@@ -485,13 +538,38 @@ func _capture(path: String) -> void:
 ## --- Relatorio ------------------------------------------------------------
 
 
+## Registra uma medida em forma de maquina, alem da linha de relatorio.
+##
+## O relatorio e pra pessoa ler; isto e pro baseline comparar. Enquanto o
+## numero so existia como prosa, saber se ele andou dependia de alguem
+## lembrar qual era o valor de ontem.
+func _metric(chave: String, valor: float) -> void:
+	_metrics[chave] = valor
+
+
 func _check(condition: bool, message: String) -> void:
 	if not condition:
 		_failures.append(message)
 
 
+## Despeja as medidas em JSON, se RUSHFOOD_SELFTEST_METRICS apontar um
+## arquivo. E assim que o `dev.py baseline` compara uma rodada com a
+## anterior sem depender de ninguem transcrever numero a mao.
+func _write_metrics() -> void:
+	var destino := OS.get_environment("RUSHFOOD_SELFTEST_METRICS")
+	if destino.is_empty():
+		return
+	var arquivo := FileAccess.open(destino, FileAccess.WRITE)
+	if arquivo == null:
+		push_error("nao consegui gravar as metricas em %s" % destino)
+		return
+	arquivo.store_string(JSON.stringify(_metrics, "\t", true) + "\n")
+	arquivo.close()
+
+
 func _finish() -> void:
 	set_physics_process(false)
+	_write_metrics()
 	print("\n--- medidas ---")
 	for line: String in _report:
 		print("  " + line)

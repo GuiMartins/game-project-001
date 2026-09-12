@@ -1,0 +1,31 @@
+{
+	"_leia": "Os numeros que o banco de provas mede hoje. Ele compara cada rodada com isto e aponta o que andou. NAO atualize pra silenciar uma falha: se o numero mudou, ou a mudanca era o objetivo - e ai o novo valor entra no MESMO commit, com o texto dizendo por que - ou e regressao.",
+	"_como_atualizar": "python tools/dev.py selftest grava as medidas da rodada em .dev/metricas.json; copie os valores de la pra ca.",
+	"tolerancia_padrao_pct": 2.0,
+	"tolerancias_pct": {
+		"_leia": "Contagens inteiras e pequenas: uma unidade ja e muito por cento.",
+		"corrida_quedas": 30.0,
+		"corrida_raspadas": 20.0,
+		"transito_engarrafamentos": 60.0,
+		"transito_parados_max": 25.0
+	},
+	"valores": {
+		"aceleracao_0_100_s": 2.75,
+		"atalho_comprimento_m": 280.005096,
+		"atalho_economia_m": 47.782562,
+		"corrida_distancia_m": 1261.98584,
+		"corrida_quedas": 4.0,
+		"corrida_raspadas": 19.0,
+		"freada_distancia_m": 37.499951,
+		"freada_tempo_s": 1.483333,
+		"guinada_graus_s": 35.777312,
+		"inclinacao_0_90_s": 0.35,
+		"raio_curva_m": 77.65733,
+		"relevo_desnivel_m": 39.593656,
+		"relevo_rampa_max_pct": 13.657169,
+		"soco_janela_s": 0.133333,
+		"transito_engarrafamentos": 1.0,
+		"transito_parados_max": 6.0,
+		"velocidade_22s_kmh": 183.647097
+	}
+}

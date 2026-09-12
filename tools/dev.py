@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import os
 import pathlib
 import platform
@@ -351,6 +352,51 @@ def cmd_import(_: argparse.Namespace) -> int:
     return _godot(require_godot(godot_version()), "--headless", "--import")
 
 
+BASELINE = PROJECT / "tests" / "baseline.json"
+METRICS_OUT = DEV_DIR / "metricas.json"
+
+
+def compare_baseline(medido: dict) -> tuple[int, list[str]]:
+    """Compara as medidas com tests/baseline.json.
+
+    Devolve (quantas estouraram, linhas do relatorio). O baseline existe pra
+    responder "o numero andou?" sem ninguem lembrar qual era o de ontem - a
+    asercao do selftest so diz que o valor caiu dentro da faixa jogavel, que e
+    larga de proposito. Andar de 2.75 s pra 3.40 s no 0-100 passa nela e
+    mesmo assim e outra moto.
+    """
+    if not BASELINE.is_file():
+        return 0, ["  (sem tests/baseline.json - nada pra comparar)"]
+
+    dados = json.loads(BASELINE.read_text(encoding="utf-8"))
+    padrao: float = dados.get("tolerancia_padrao_pct", 2.0)
+    especiais: dict = dados.get("tolerancias_pct", {})
+    esperado: dict = dados.get("valores", {})
+
+    estouros = 0
+    linhas: list[str] = []
+    for chave in sorted(esperado):
+        if chave not in medido:
+            linhas.append(f"  ! {chave}: nao foi medido nesta rodada")
+            estouros += 1
+            continue
+        antes = float(esperado[chave])
+        agora = float(medido[chave])
+        limite = float(especiais.get(chave, padrao))
+        # Metrica que vale zero no baseline nao tem percentual: compara direto.
+        delta_pct = (agora - antes) / antes * 100.0 if antes else (0.0 if agora == antes else 100.0)
+        if abs(delta_pct) > limite:
+            estouros += 1
+            linhas.append(f"  ! {chave}: {antes:g} -> {agora:g} "
+                          f"({delta_pct:+.1f}%, tolera {limite:g}%)")
+        elif abs(delta_pct) > 0.05:
+            linhas.append(f"    {chave}: {antes:g} -> {agora:g} ({delta_pct:+.1f}%)")
+
+    if not linhas:
+        linhas.append("  todas as medidas dentro do baseline, sem variacao")
+    return estouros, linhas
+
+
 def cmd_selftest(args: argparse.Namespace) -> int:
     binary = require_godot(godot_version())
     # O import vem sempre antes: um class_name novo so entra no cache de
@@ -359,10 +405,40 @@ def cmd_selftest(args: argparse.Namespace) -> int:
     code = _godot(binary, "--headless", "--import")
     if code != 0:
         return code
+
     extra = ["--headless", "--", "--selftest"]
     if args.user_tuning:
         extra.append("--selftest-user")
-    return _godot(binary, *extra)
+    if args.fase:
+        extra += ["--fase", args.fase]
+
+    METRICS_OUT.parent.mkdir(parents=True, exist_ok=True)
+    if METRICS_OUT.exists():
+        METRICS_OUT.unlink()
+    os.environ["RUSHFOOD_SELFTEST_METRICS"] = str(METRICS_OUT)
+
+    code = _godot(binary, *extra)
+    if code != 0 or not METRICS_OUT.is_file():
+        return code
+
+    # Rodada parcial mede um subconjunto: comparar so faz sentido no conjunto
+    # inteiro, senao toda fase pulada vira "nao foi medido".
+    if args.fase:
+        return code
+
+    medido = json.loads(METRICS_OUT.read_text(encoding="utf-8"))
+    estouros, linhas = compare_baseline(medido)
+    print("\n--- baseline ---")
+    for linha in linhas:
+        print(linha)
+    if estouros:
+        print(f"\n! {estouros} medida(s) fora do baseline.\n"
+              f"  Se a mudanca era esperada, atualize {BASELINE.relative_to(PROJECT)} "
+              f"no mesmo commit, dizendo no texto por que o numero andou.\n"
+              f"  As medidas desta rodada estao em {METRICS_OUT.relative_to(PROJECT)}.")
+        return 1
+    print()
+    return 0
 
 
 def cmd_run(_: argparse.Namespace) -> int:
@@ -433,6 +509,9 @@ def main() -> int:
     p_self = sub.add_parser("selftest", help="o portao: banco de provas headless")
     p_self.add_argument("--user-tuning", action="store_true",
                         help="mede os seus ajustes salvos em vez dos defaults do repo")
+    p_self.add_argument("--fase", metavar="NOME",
+                        help="roda so ate esta fase: aceleracao, freada, inclinacao, "
+                             "curva, soco, bifurcacao, corrida")
     sub.add_parser("run", help="abre o jogo")
     sub.add_parser("export", help="exporta as tres plataformas")
     sub.add_parser("lint", help="gdlint em todo .gd do projeto")
