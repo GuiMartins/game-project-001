@@ -4,3 +4,13 @@
 export/
 dist/
 *.tmp
+# Toolchain baixada por tools/dev.py: engine e zips da versao fixada.
+# Cache de maquina, nao conteudo do projeto - a fonte da verdade e o
+# .godot-version, que e versionado.
+.dev/
+# Bytecode do Python das ferramentas de tools/
+__pycache__/
+
+# Ajustes locais de agente/editor. O .claude/settings.json (sem .local) e
+# versionado de proposito: e o contrato compartilhado.
+.claude/settings.local.json

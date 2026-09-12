@@ -1,0 +1,6 @@
+# Ferramentas Python do projeto, instaladas por `python tools/dev.py setup`
+# num venv isolado em .dev/venv - nunca no Python do sistema.
+#
+# Versoes fixadas de proposito: linter que muda de opiniao sozinho entre duas
+# maquinas e o mesmo problema da engine solta no PATH.
+gdtoolkit==4.5.0
