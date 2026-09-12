@@ -30,7 +30,7 @@ jobs:
       - name: Formatação
         run: python tools/dev.py format --check
 
-  banco-de-provas:
+  provas:
     strategy:
       # Sem fail-fast: quando um SO diverge, o que interessa é saber quais
       # outros divergiram junto. Cancelar os irmãos esconde exatamente isso.
@@ -39,7 +39,7 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
-    name: banco de provas (${{ matrix.os }})
+    name: provas (${{ matrix.os }})
 
     steps:
       - uses: actions/checkout@v5
@@ -53,3 +53,22 @@ jobs:
 
       - name: Banco de provas
         run: python tools/dev.py selftest
+
+  # Agregador. As branches protegidas exigem um check chamado exatamente
+  # "banco-de-provas", e uma matrix nunca produz um check com esse nome - ela
+  # produz um por sistema. Em vez de afrouxar a proteção pra caber na matrix,
+  # este job mantém o nome e só passa quando os três sistemas passam. Ele é o
+  # portão; os outros são a evidência.
+  banco-de-provas:
+    needs: [qualidade, provas]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conferir os três sistemas
+        run: |
+          echo "qualidade: ${{ needs.qualidade.result }}"
+          echo "provas:    ${{ needs.provas.result }}"
+          if [ "${{ needs.qualidade.result }}" != "success" ] ||              [ "${{ needs.provas.result }}" != "success" ]; then
+            echo "::error::algum job não passou"
+            exit 1
+          fi

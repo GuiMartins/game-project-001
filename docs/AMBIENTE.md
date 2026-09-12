@@ -56,6 +56,13 @@ opinião entre duas máquinas gera diff que ninguém pediu.
 A matrix não tem `fail-fast`: quando um sistema diverge, o que interessa é
 saber quais outros divergiram junto.
 
+O job `banco-de-provas` é um **agregador**, e é ele que as branches protegidas
+exigem. Uma matrix nunca produz um check com um nome só — produz um por
+sistema — então o agregador mantém o nome que a proteção espera e só passa
+quando os três passam. Mexer nos nomes de job aqui quebra o push nas branches
+protegidas: se isso acontecer, o sintoma é `Required status check
+"banco-de-provas" is expected`.
+
 A action de setup não baixa nada por conta própria — chama `tools/dev.py
 setup`, o mesmo comando local. Enquanto eram dois caminhos, "passa aqui e
 quebra lá" era questão de tempo.
