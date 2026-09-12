@@ -53,6 +53,10 @@ var _trace_next: float = 0.0
 var _shots_dir: String = OS.get_environment("RUSHFOOD_SELFTEST_SHOTS")
 var _shots_next: float = 0.0
 var _shots_taken: int = 0
+## Soma das medidas de cada frame capturado, para tirar a media no fim.
+var _frame_sky: float = 0.0
+var _frame_luma: float = 0.0
+var _frame_colors: float = 0.0
 var _asphalt_speed: float = 0.0
 var _sidewalk_speed: float = 0.0
 var _max_lateral: float = 0.0
@@ -589,10 +593,61 @@ func _set_action(action_name: String, pressed: bool) -> void:
 		Input.action_release(action_name)
 
 
+## Salva o frame e mede o que ele tem dentro.
+##
+## Comparar pixel a pixel entre maquinas nao funciona: driver, GPU e versao de
+## Mesa mudam o ultimo bit de quase todo pixel, e o teste passaria a falhar por
+## motivo nenhum. O que da pra comparar entre plataformas sao proporcoes
+## grosseiras da imagem - e sao elas que pegam a classe de bug que interessa
+## aqui, que e a tela ficar errada por inteiro.
+##
+## O caso registrado no PROTOTIPO.md e exatamente esse: a pista saia com
+## winding anti-horario, o Godot descartava as faces sem um erro no console, e
+## o mundo virava caixas flutuando no vazio. Nenhum numero do banco de provas
+## se mexia - todos medem fisica, e a fisica nao sabe que a pista sumiu.
 func _capture(path: String) -> void:
 	await RenderingServer.frame_post_draw
 	var image := get_viewport().get_texture().get_image()
 	image.save_png(path)
+	_measure_frame(image)
+
+
+## Tres proporcoes da imagem, amostradas de 4 em 4 pixels.
+##
+## A amostragem existe porque isto roda a cada 2,5 s de simulacao e um viewport
+## inteiro sao 900 mil leituras de pixel em GDScript. De 4 em 4 sao 57 mil, e a
+## proporcao nao muda.
+func _measure_frame(image: Image) -> void:
+	var w := image.get_width()
+	var h := image.get_height()
+	if w == 0 or h == 0:
+		return
+
+	# A cor de fundo do projeto. Pixel parecido com ela e ceu - ou seja,
+	# lugar onde NAO ha mundo desenhado.
+	var sky := Color(0.13, 0.14, 0.2)
+	var sky_hits := 0
+	var luma := 0.0
+	var seen := {}
+	var total := 0
+
+	for y in range(0, h, 4):
+		for x in range(0, w, 4):
+			var c := image.get_pixel(x, y)
+			total += 1
+			luma += c.get_luminance()
+			if absf(c.r - sky.r) < 0.06 and absf(c.g - sky.g) < 0.06 and absf(c.b - sky.b) < 0.06:
+				sky_hits += 1
+			# Cor quantizada em 5 niveis por canal: conta quantas familias de
+			# cor a cena tem, sem contar ruido de sombreamento como cor nova.
+			var key := (int(c.r * 4.0) << 6) | (int(c.g * 4.0) << 3) | int(c.b * 4.0)
+			seen[key] = true
+
+	if total == 0:
+		return
+	_frame_sky += float(sky_hits) / float(total)
+	_frame_luma += luma / float(total)
+	_frame_colors += float(seen.size())
 
 
 ## --- Relatorio ------------------------------------------------------------
@@ -615,6 +670,21 @@ func _check(condition: bool, message: String) -> void:
 ## Despeja as medidas em JSON, se RUSHFOOD_SELFTEST_METRICS apontar um
 ## arquivo. E assim que o `dev.py baseline` compara uma rodada com a
 ## anterior sem depender de ninguem transcrever numero a mao.
+## Media das medidas de frame, so quando houve captura.
+##
+## Elas vao pro mesmo JSON das outras, mas sao comparadas contra um baseline
+## proprio: so existem quando o jogo roda com tela, e o banco de provas roda
+## headless na maior parte do tempo.
+func _write_frame_metrics() -> void:
+	if _shots_taken == 0:
+		return
+	var n := float(_shots_taken)
+	_metric("visual_frames", float(_shots_taken))
+	_metric("visual_fracao_ceu", _frame_sky / n)
+	_metric("visual_luminancia", _frame_luma / n)
+	_metric("visual_familias_de_cor", _frame_colors / n)
+
+
 func _write_metrics() -> void:
 	var destino := OS.get_environment("RUSHFOOD_SELFTEST_METRICS")
 	if destino.is_empty():
@@ -629,6 +699,7 @@ func _write_metrics() -> void:
 
 func _finish() -> void:
 	set_physics_process(false)
+	_write_frame_metrics()
 	_write_metrics()
 	print("\n--- medidas ---")
 	for line: String in _report:

@@ -23,6 +23,7 @@ qual binário usar, e no Windows escolhe a variante que não engole a saída.
 | `python tools/dev.py test` | Testes unitários (GdUnit4). ~4 s. |
 | `python tools/dev.py selftest` | Banco de provas: roda a moto de verdade e compara com o baseline. ~89 s. |
 | `python tools/dev.py selftest --fase curva` | Só até aquela fase. ~32 s, para iterar. |
+| `python tools/dev.py shots` | Regressão visual: roda com tela e mede o frame. |
 | `python tools/dev.py lint` / `format` | gdlint e gdformat. |
 | `python tools/dev.py run` | Abre o jogo. |
 | `python tools/dev.py export` | Exporta as três plataformas. |
@@ -143,5 +144,6 @@ saber onde **não** há rede faz parte do contrato.
 | `scripts/bike_tuning.gd`, `world_tuning.gd` | Os sliders do F3. |
 | `tests/unit/` | Testes unitários. |
 | `tests/baseline.json` | Os números esperados. |
+| `tests/baseline_visual.json` | O que a tela tem dentro. |
 | `tools/dev.py` | Todos os comandos. |
 | `docs/PROTOTIPO.md` | Por que o jogo é assim. Leia antes de mexer no feel. |

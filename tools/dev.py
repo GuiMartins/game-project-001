@@ -356,19 +356,13 @@ BASELINE = PROJECT / "tests" / "baseline.json"
 METRICS_OUT = DEV_DIR / "metricas.json"
 
 
-def compare_baseline(medido: dict) -> tuple[int, list[str]]:
-    """Compara as medidas com tests/baseline.json.
+def _compare(medido: dict, dados: dict) -> tuple[int, list[str]]:
+    """Compara medidas com um baseline. Devolve (quantas estouraram, relatorio).
 
-    Devolve (quantas estouraram, linhas do relatorio). O baseline existe pra
-    responder "o numero andou?" sem ninguem lembrar qual era o de ontem - a
-    asercao do selftest so diz que o valor caiu dentro da faixa jogavel, que e
-    larga de proposito. Andar de 2.75 s pra 3.40 s no 0-100 passa nela e
-    mesmo assim e outra moto.
+    Serve aos dois baselines - o numerico e o visual - porque a regra e a
+    mesma: valor esperado, tolerancia por metrica, e o delta impresso mesmo
+    quando passa, pra quem le ver o numero andando antes de ele estourar.
     """
-    if not BASELINE.is_file():
-        return 0, ["  (sem tests/baseline.json - nada pra comparar)"]
-
-    dados = json.loads(BASELINE.read_text(encoding="utf-8"))
     padrao: float = dados.get("tolerancia_padrao_pct", 2.0)
     especiais: dict = dados.get("tolerancias_pct", {})
     esperado: dict = dados.get("valores", {})
@@ -395,6 +389,19 @@ def compare_baseline(medido: dict) -> tuple[int, list[str]]:
     if not linhas:
         linhas.append("  todas as medidas dentro do baseline, sem variacao")
     return estouros, linhas
+
+
+def compare_baseline(medido: dict) -> tuple[int, list[str]]:
+    """O baseline numerico do banco de provas.
+
+    Existe pra responder "o numero andou?" sem ninguem lembrar qual era o de
+    ontem: a asercao do selftest so diz que o valor caiu dentro da faixa
+    jogavel, que e larga de proposito. Andar de 2.75 s pra 3.40 s no 0-100
+    passa nela e mesmo assim e outra moto.
+    """
+    if not BASELINE.is_file():
+        return 0, ["  (sem tests/baseline.json - nada pra comparar)"]
+    return _compare(medido, json.loads(BASELINE.read_text(encoding="utf-8")))
 
 
 def cmd_selftest(args: argparse.Namespace) -> int:
@@ -457,6 +464,91 @@ def cmd_test(args: argparse.Namespace) -> int:
     # e sem headless nao ha como rodar no CI.
     return _godot(binary, "--headless", "-s", "addons/gdUnit4/bin/GdUnitCmdTool.gd",
                   "--ignoreHeadlessMode", "-a", args.caminho)
+
+
+BASELINE_VISUAL = PROJECT / "tests" / "baseline_visual.json"
+
+
+def cmd_shots(args: argparse.Namespace) -> int:
+    """Regressao visual: roda o jogo COM tela e mede o que aparece nela.
+
+    Nao roda headless de proposito - e nao e escolha, e limitacao: sob o driver
+    dummy o viewport nao renderiza e saem zero PNGs, sem erro nenhum. Por isso
+    isto e um comando a parte, e no CI um job a parte com xvfb.
+
+    O que ele pega: a tela ficar errada por inteiro. O caso registrado no
+    PROTOTIPO.md e a pista sumindo por backface culling - o Godot descartava as
+    faces sem um erro no console e o mundo virava caixas flutuando. Nenhuma das
+    dez medidas do banco de provas se mexia, porque todas medem fisica, e a
+    fisica nao sabe que a pista sumiu.
+    """
+    binary = require_godot(godot_version())
+    code = _godot(binary, "--headless", "--import")
+    if code != 0:
+        return code
+
+    out = pathlib.Path(args.out).resolve() if args.out else DEV_DIR / "shots"
+    out.mkdir(parents=True, exist_ok=True)
+    for antigo in out.glob("*.png"):
+        antigo.unlink()
+
+    METRICS_OUT.parent.mkdir(parents=True, exist_ok=True)
+    if METRICS_OUT.exists():
+        METRICS_OUT.unlink()
+    os.environ["RUSHFOOD_SELFTEST_SHOTS"] = str(out)
+    os.environ["RUSHFOOD_SELFTEST_METRICS"] = str(METRICS_OUT)
+
+    # Sem --headless: e o ponto todo do comando.
+    code = _godot(binary, "--", "--selftest")
+    pngs = sorted(out.glob("*.png"))
+    print(f"\n{len(pngs)} frame(s) em {out}")
+    if code != 0:
+        return code
+    if not pngs:
+        return _fail("nenhum frame foi capturado - ha display nesta sessao?")
+    if not METRICS_OUT.is_file():
+        return _fail("o jogo nao gravou as medidas")
+
+    medido = json.loads(METRICS_OUT.read_text(encoding="utf-8"))
+    visual = {k: v for k, v in medido.items() if k.startswith("visual_")}
+    if args.update or not BASELINE_VISUAL.is_file():
+        _write_visual_baseline(visual)
+        return 0
+
+    dados = json.loads(BASELINE_VISUAL.read_text(encoding="utf-8"))
+    estouros, linhas = _compare(visual, dados)
+    print("\n--- baseline visual ---")
+    for linha in linhas:
+        print(linha)
+    if estouros:
+        print(f"\n! {estouros} medida(s) de frame fora do baseline.\n"
+              f"  Olhe os PNGs em {out} antes de decidir: se a tela mudou de "
+              f"proposito, regrave com `--update`.")
+        return 1
+    print()
+    return 0
+
+
+def _write_visual_baseline(visual: dict) -> None:
+    dados = {
+        "_leia": ("O que a tela tem dentro, em proporcoes grosseiras. Nao e "
+                  "comparacao pixel a pixel: driver e GPU mudam o ultimo bit de "
+                  "quase todo pixel, e o teste falharia por motivo nenhum. Isto "
+                  "pega a tela ficar ERRADA POR INTEIRO - a pista sumir, o mundo "
+                  "apagar - que e o que nenhuma medida de fisica pega."),
+        "_como_atualizar": "python tools/dev.py shots --update, depois de olhar os PNGs.",
+        # Tolerancia larga: a corrida e deterministica, mas o instante exato do
+        # frame capturado depende de quando o render fecha, e a camera esta em
+        # movimento. Estreitar isso troca regressao por alarme falso.
+        "tolerancia_padrao_pct": 12.0,
+        "tolerancias_pct": {"visual_frames": 0.0},
+        "valores": {k: round(float(v), 6) for k, v in sorted(visual.items())},
+    }
+    write_text_lf(BASELINE_VISUAL,
+                  json.dumps(dados, indent="\t", ensure_ascii=False) + "\n")
+    print(f"+ baseline visual gravado em {BASELINE_VISUAL.relative_to(PROJECT)}:")
+    for chave, valor in dados["valores"].items():
+        print(f"    {chave}: {valor:g}")
 
 
 def cmd_run(_: argparse.Namespace) -> int:
@@ -530,6 +622,10 @@ def main() -> int:
     p_self.add_argument("--fase", metavar="NOME",
                         help="roda so ate esta fase: aceleracao, freada, inclinacao, "
                              "curva, soco, bifurcacao, corrida")
+    p_shots = sub.add_parser("shots", help="regressao visual: roda COM tela e mede o frame")
+    p_shots.add_argument("--out", metavar="PASTA", help="onde gravar os PNGs")
+    p_shots.add_argument("--update", action="store_true",
+                         help="regrava o baseline visual (olhe os PNGs antes)")
     sub.add_parser("run", help="abre o jogo")
     sub.add_parser("export", help="exporta as tres plataformas")
     p_test = sub.add_parser("test", help="testes unitarios (GdUnit4), rapidos")
@@ -545,6 +641,7 @@ def main() -> int:
         "doctor": cmd_doctor, "setup": cmd_setup, "import": cmd_import,
         "selftest": cmd_selftest, "run": cmd_run, "export": cmd_export,
         "lint": cmd_lint, "format": cmd_format, "test": cmd_test,
+        "shots": cmd_shots,
     }[args.comando]
     return handler(args)
 

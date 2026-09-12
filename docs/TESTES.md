@@ -7,6 +7,7 @@ Três camadas, e nenhuma substitui a outra.
 | Unitários | `python tools/dev.py test` | ~4 s | Lógica pura: pontuação, geometria de faixa, prazo |
 | Banco de provas | `python tools/dev.py selftest` | ~89 s | A moto e o mundo rodando de verdade |
 | Baseline | (dentro do selftest) | — | O número *andou*, mesmo continuando na faixa jogável |
+| Regressão visual | `python tools/dev.py shots` | ~90 s | A tela ficou errada por inteiro |
 
 ## Unitários (GdUnit4)
 
@@ -83,11 +84,46 @@ copiam os valores novos.
 
 Saber disto faz parte do contrato. Nenhum destes é pego por nada automatizado:
 
-- **Regressão visual.** `RUSHFOOD_SELFTEST_SHOTS=<pasta>` despeja PNGs da
-  corrida, mas nada os compara — e **não funciona em headless**: sob o driver
-  dummy o viewport não rende e saem zero arquivos. Precisa de display real.
 - **"Está gostoso?"** Os números dizem que a moto é sã, não que ela é boa. Só
   o polegar decide isso, e o painel F3 existe para essa sessão.
+
+## Regressão visual
+
+```bash
+python tools/dev.py shots
+```
+
+Roda o jogo **com tela** — e isso não é escolha, é limitação: em headless o
+viewport não renderiza e saem zero PNGs, sem erro nenhum. Por isso é um
+comando à parte, e no CI um job à parte com `xvfb`.
+
+Ele existe para pegar o que nenhuma medida de física pega: **a tela ficar
+errada por inteiro**. O caso registrado no `PROTOTIPO.md` é a pista saindo com
+winding anti-horário — o Godot descartava as faces sem um erro no console e o
+mundo virava caixas flutuando no vazio. Nenhum dos números do banco de provas
+se mexia, porque todos medem física, e a física não sabe que a pista sumiu.
+
+**Não é comparação pixel a pixel**, e não pode ser: driver, GPU e versão de
+Mesa mudam o último bit de quase todo pixel, e o teste falharia por motivo
+nenhum. O que se compara são três proporções grosseiras da imagem, amostradas
+de 4 em 4 pixels:
+
+| medida | o que denuncia |
+| --- | --- |
+| `visual_fracao_ceu` | quanto da tela é cor de fundo, ou seja, onde **não** há mundo |
+| `visual_luminancia` | a cena apagar ou estourar |
+| `visual_familias_de_cor` | elementos sumindo da cena |
+
+Verificado com o bug de verdade: escondendo o mesh da pista, `fracao_ceu` cai
+48,6% e `luminancia` 46,4% — muito além dos 12% de tolerância. Com a pista de
+volta, as três ficam abaixo de 1% de variação.
+
+A tolerância é larga (12%) de propósito: o CI roda em software rendering sem
+GPU, contra um baseline gravado numa máquina com GPU. Estreitar isso troca
+regressão por alarme falso.
+
+Para atualizar: **olhe os PNGs primeiro**, depois `python tools/dev.py shots
+--update`.
 
 ## A corrida solta depende do tempo acumulado
 
