@@ -64,6 +64,7 @@ var _rival_lateral_before: float = 0.0
 var _rival_shove: float = 0.0
 var _rival_staggered: bool = false
 var _punch_thrown: bool = false
+var _punch_connected: bool = false
 var _last_progress: float = 0.0
 var _heading_at_mark: float = 0.0
 var _lateral_at_mark: float = 0.0
@@ -436,39 +437,76 @@ func _phase_combat(_delta: float) -> void:
 		_player.road_bounds_enabled = false
 		_player.collision_mask = Layers.WORLD | Layers.RIVAL
 		_player.place_on_track(400.0, RoadTrack.lane_center(1), 26.0)
-		# O rival entra na faixa da direita, emparelhado: e a situacao em que o
-		# combate acontece de verdade, lado a lado no meio do transito.
+		# De pe, explicitamente. `place_on_track` recoloca a moto mas nao mexe
+		# no estado, e a fase anterior termina com ela batendo na parede da
+		# calcada - ou seja, chegando aqui capotada. `_try_punch` so roda em
+		# RIDING, entao o soco nunca saia e o teste media um rival que nunca
+		# foi socado.
+		_player.state = PlayerBike.State.RIDING
+		# Emparelhado a um alcance de soco de distancia - nao a uma faixa
+		# inteira. Duas motos lado a lado no corredor ficam a pouco mais de um
+		# metro; 3,3 m e o centro da faixa vizinha, e la o soco nao alcanca
+		# ninguem. Sai do tuning pra o teste acompanhar quem mexer no alcance.
 		rival.offset = _player.track_offset + 0.6
-		rival.lateral = RoadTrack.lane_center(2)
+		rival.lateral = _player.track_lateral + _tuning.punch_range
 		rival.speed = _player.speed
-		_rival_lateral_before = rival.lateral
 		if not rival.went_down.is_connected(_on_rival_down):
 			rival.went_down.connect(_on_rival_down)
+		if not _player.punch_landed.is_connected(_on_punch_landed):
+			_player.punch_landed.connect(_on_punch_landed)
 
-	# Segura o rival colado enquanto a janela do soco nao abriu: o que esta
-	# sendo medido e o efeito do soco, nao a perseguicao.
+	# Segura o rival emparelhado ATE o soco sair - inclusive na lateral.
+	#
+	# Sem prender a lateral, a IA dele desvia sozinha e sai do alcance do soco,
+	# e o teste passa a depender do humor do frame. Pior: o deslocamento que a
+	# perseguicao dele produz parecia empurrao, entao a medida passava sem o
+	# soco ter acertado. Foi o que aconteceu ao baixar a densidade do transito
+	# - a medida era de correlacao, nao de causa.
 	rival.offset = _player.track_offset + 0.6
 	rival.speed = _player.speed
+	if not _punch_connected:
+		rival.lateral = _player.track_lateral + _tuning.punch_range
+		_rival_lateral_before = rival.lateral
 	_set_action("ride_throttle", true)
 
-	if _t > 0.4 and not _punch_thrown:
+	# Soca assim que o rival esta posicionado, e nao depois de meio segundo.
+	#
+	# A IA do rival entra em duelo com gap abaixo de 2,2 m, e o rival esta
+	# emparelhado a um alcance de soco - ou seja, dentro dela. Esperando, ele
+	# socava primeiro, o jogador ficava STAGGERED, e `_try_punch` so roda em
+	# RIDING: o soco do jogador nunca saia e o teste media um rival que nunca
+	# foi socado.
+	#
+	# Segura o botao por alguns frames antes de soltar, porque `_try_punch` le
+	# `is_action_just_pressed` - so verdadeiro no processamento seguinte ao
+	# press, entao soltar no frame de depois perde o soco.
+	if _t > 0.06 and not _punch_thrown:
 		_punch_thrown = true
 		Input.action_press("hit_right")
-	elif _punch_thrown:
+	elif _punch_thrown and _t > 0.16:
 		_set_action("hit_right", false)
 
-	if rival.state == RivalBike.State.STAGGERED or rival.state == RivalBike.State.DOWN:
-		_rival_staggered = true
-	_rival_shove = maxf(_rival_shove, absf(rival.lateral - _rival_lateral_before))
+	# Só conta depois de o soco ter ACERTADO, avisado pelo proprio sinal do
+	# jogador. Antes disso, qualquer estado ou deslocamento do rival e coisa
+	# dele, nao efeito do soco.
+	if _punch_connected:
+		if rival.state == RivalBike.State.STAGGERED or rival.state == RivalBike.State.DOWN:
+			_rival_staggered = true
+		_rival_shove = maxf(_rival_shove, absf(rival.lateral - _rival_lateral_before))
 
 	if _t >= 3.0:
 		_metric("combate_empurrao_m", _rival_shove)
 		_report.append(
 			(
-				"combate              rival empurrado %.2f m, %s"
-				% [_rival_shove, "cambaleou" if _rival_staggered else "NAO reagiu"]
+				"combate              soco %s, rival empurrado %.2f m, %s"
+				% [
+					"acertou" if _punch_connected else "ERROU",
+					_rival_shove,
+					"cambaleou" if _rival_staggered else "NAO reagiu"
+				]
 			)
 		)
+		_check(_punch_connected, "o soco passou pelo rival emparelhado sem acertar")
 		_check(
 			_rival_staggered, "o soco acertou e o rival nao cambaleou - a cadeia do combate quebrou"
 		)
@@ -584,6 +622,13 @@ func _read_phase_arg() -> void:
 ## So pra a fase de combate saber que o rival caiu de verdade.
 func _on_rival_down() -> void:
 	_rival_staggered = true
+
+
+## O soco do jogador encostou em alguem. E a unica prova de causa que existe:
+## dai pra frente, o que acontecer com o rival e efeito do soco.
+func _on_punch_landed(target: Node3D) -> void:
+	if target is RivalBike:
+		_punch_connected = true
 
 
 func _set_action(action_name: String, pressed: bool) -> void:
