@@ -9,11 +9,12 @@ extends CanvasLayer
 const W: int = 320
 const H: int = 180
 
-var run: DeliveryRun
+var run: RaceRun
 var player: PlayerBike
 
 var _timer_label: Label
 var _distance_label: Label
+var _position_label: Label
 var _speed_label: Label
 var _stars_label: Label
 var _bag_label: Label
@@ -27,8 +28,10 @@ var _end_text: Label
 var _hint_label: Label
 
 var _event_time: float = 0.0
+var _position_flash: float = 0.0
 var _combo_flash: float = 0.0
 var _hint_time: float = 0.0
+var _last_position: int = 0
 
 
 func _ready() -> void:
@@ -40,6 +43,17 @@ func _ready() -> void:
 
 	_timer_label = _label(root, Vector2(6, 4), 16, Color(1, 1, 1))
 	_distance_label = _label(root, Vector2(7, 22), 8, Color(0.72, 0.78, 0.9))
+
+	# A colocacao mora no topo, no meio, e e o maior numero da tela depois da
+	# velocidade: o jogo e uma corrida, e a pergunta que o jogador faz o tempo
+	# todo e "em que lugar eu estou?".
+	_position_label = _label(root, Vector2(W * 0.5 - 40.0, 2), 16, Color(1, 1, 1))
+	_position_label.size = Vector2(80, 20)
+	_position_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var position_caption := _label(root, Vector2(W * 0.5 - 40.0, 20), 8, Color(0.7, 0.75, 0.85))
+	position_caption.size = Vector2(80, 10)
+	position_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	position_caption.text = "POSICAO"
 
 	_stars_label = _label(root, Vector2(W - 70, 4), 16, Color(1.0, 0.85, 0.25))
 	_stars_label.size = Vector2(64, 20)
@@ -128,13 +142,14 @@ func _bar(parent: Control, rect: Rect2, color: Color) -> ColorRect:
 	return fill
 
 
-func bind(a_run: DeliveryRun, a_player: PlayerBike) -> void:
+func bind(a_run: RaceRun, a_player: PlayerBike) -> void:
 	run = a_run
 	player = a_player
 	_end_panel.visible = false
 	# A lista de teclas some depois da largada: no meio do transito ela vira
 	# ruido em cima da pista.
 	_hint_time = 7.0
+	_last_position = a_run.position
 
 
 func show_event(text: String, color: Color) -> void:
@@ -156,7 +171,21 @@ func _process(delta: float) -> void:
 	_timer_label.add_theme_color_override(
 		"font_color", Color(1.0, 0.35, 0.3) if run.time_left < 15.0 else Color(1, 1, 1)
 	)
+	if run.late:
+		_timer_label.text = "ATRASADO"
 	_distance_label.text = "%.0f m restantes" % maxf(run.distance_total - run.distance_done, 0.0)
+
+	# Pisca por um instante na troca de posicao. O aviso de texto some em 1,6 s,
+	# e sem o pisca a unica coisa que marca uma ultrapassagem e um numero que
+	# muda no canto sem ninguem olhar.
+	if run.position != _last_position:
+		_position_flash = 0.6
+		_last_position = run.position
+	_position_flash = maxf(_position_flash - delta, 0.0)
+	_position_label.text = run.position_text()
+	_position_label.add_theme_color_override(
+		"font_color", Color(1.0, 0.9, 0.4) if _position_flash > 0.0 else Color(1, 1, 1)
+	)
 
 	_speed_label.text = "%3.0f" % player.speed_kmh()
 	_stars_label.text = "*".repeat(run.stars())

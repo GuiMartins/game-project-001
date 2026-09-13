@@ -21,7 +21,7 @@ qual binário usar, e no Windows escolhe a variante que não engole a saída.
 | `python tools/dev.py setup` | Baixa a engine fixada em `.godot-version`. Primeira coisa a rodar. |
 | `python tools/dev.py doctor` | Diz onde está o Godot e se bate com a versão fixada. |
 | `python tools/dev.py test` | Testes unitários (GdUnit4). ~4 s. |
-| `python tools/dev.py selftest` | Banco de provas: roda a moto de verdade e compara com o baseline. ~89 s. |
+| `python tools/dev.py selftest` | Banco de provas: roda a moto de verdade e compara com o baseline. ~110 s. |
 | `python tools/dev.py selftest --fase curva` | Só até aquela fase. ~32 s, para iterar. |
 | `python tools/dev.py shots` | Regressão visual: roda com tela e mede o frame. |
 | `python tools/dev.py lint` / `format` | gdlint e gdformat. |
@@ -68,9 +68,10 @@ jogo continua rodando, só errado. Estão explicados em `docs/PROTOTIPO.md`.
   está em 320×180.
 - **A HUD mora dentro do SubViewport.** HUD nítida sobre mundo pixelado é o
   visual de remaster preguiçoso.
-- **Semente fixa no banco de provas** (4242) e ele roda nos **defaults do
-  repositório**, ignorando o `user://`. Sem isso, "regrediu" e "você mexeu num
-  slider ontem" viram a mesma coisa.
+- **Semente fixa no banco de provas** — ela mora em `World.setup` (20260831) e
+  os rivais herdam dela; o selftest não sorteia nada por conta própria. Ele
+  também roda nos **defaults do repositório**, ignorando o `user://`. Sem os
+  dois, "regrediu" e "você mexeu num slider ontem" viram a mesma coisa.
 - **Guinada positiva gira para a esquerda** (Y para cima, mão direita). Já
   inverteu o jogo uma vez.
 

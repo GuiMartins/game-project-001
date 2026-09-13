@@ -15,7 +15,15 @@ const KMH: float = 3.6
 ## quem esta iterando em curva nao precisa esperar os 45 s da corrida
 ## solta, e ciclo curto e o que decide se o teste e rodado ou pulado.
 const PHASE_NAMES: PackedStringArray = [
-	"aceleracao", "freada", "inclinacao", "curva", "soco", "calcada", "combate", "corrida"
+	"aceleracao",
+	"freada",
+	"inclinacao",
+	"curva",
+	"soco",
+	"calcada",
+	"combate",
+	"corrida",
+	"disputa"
 ]
 
 var _main: Node
@@ -46,7 +54,6 @@ var _turn_radius: float = 0.0
 var _saved_assist: float = 0.0
 var _punch_frames: int = 0
 var _punch_seen: bool = false
-var _rng := RandomNumberGenerator.new()
 var _trace: bool = OS.has_environment("RUSHFOOD_SELFTEST_TRACE")
 var _trace_next: float = 0.0
 ## Pasta pra despejar PNGs da corrida. So pra inspecao visual do prototipo.
@@ -76,9 +83,9 @@ func setup(main: Node) -> void:
 	_world = main.get("world")
 	_player = _world.player
 	_tuning = main.get("tuning")
-	# Semente fixa: o numero do relatorio precisa ser comparavel entre rodadas,
-	# senao "regrediu" e "deu azar" viram a mesma coisa.
-	_rng.seed = 4242
+	# Nada aqui sorteia nada: o que varia de uma rodada pra outra mora no
+	# mundo, e a semente dele e fixa (World.setup), com os rivais herdando
+	# dela. Sem isso "regrediu" e "deu azar" viram a mesma coisa.
 	_bench_begin()
 	_read_phase_arg()
 	print("\n=== RUSHFOOD SELFTEST ===")
@@ -142,6 +149,8 @@ func _physics_process(delta: float) -> void:
 			_phase_combat(delta)
 		7:
 			_phase_freerun(delta)
+		8:
+			_phase_sprint(delta)
 
 
 func _next_phase() -> void:
@@ -171,10 +180,10 @@ func _bench_end() -> void:
 	_player.road_bounds_enabled = true
 	_player.slope_enabled = true
 	_player.collision_mask = Layers.WORLD | Layers.RIVAL
-	_player.place_on_track(40.0, RoadTrack.corridor_center(1), 20.0)
-	_world.scatter_traffic_ahead(_player.track_offset)
-	for rival in _world.rivals:
-		rival.offset = _player.track_offset + 15.0 + _rng.randf() * 40.0
+	# Larga do grid de verdade, com o pelotao inteiro e a moto ja rolando.
+	# Medir o corredor com os rivais parados a 9 km daqui mediria outro jogo -
+	# eles disputam o mesmo vao de transito que o jogador.
+	_world.start_race(0.0, 20.0)
 
 
 func _release_all() -> void:
@@ -519,14 +528,14 @@ func _phase_combat(_delta: float) -> void:
 		_next_phase()
 
 
-## Fase 7 - corrida solta: le a pista de verdade ---------------------------
-func _phase_freerun(_delta: float) -> void:
-	if _t < 0.02:
-		_bench_end()
-		_world.run.start(_world.track.length - 30.0)
-	# Piloto automatico: mira o corredor livre mais proximo, exatamente com a
-	# mesma consulta que a IA dos rivais usa. Nao joga bonito, mas se nem ele
-	# atravessa o transito, a densidade esta injogavel pra qualquer um.
+## Piloto automatico: mira o corredor livre mais proximo, exatamente com a
+## mesma consulta que a IA dos rivais usa. Nao joga bonito, mas se nem ele
+## atravessa o transito, a densidade esta injogavel pra qualquer um.
+##
+## E o mesmo piloto nas duas fases de mundo. Se a disputa usasse outro, a
+## diferenca entre "o pelotao ficou pra tras" e "o bot da disputa e melhor"
+## seria indistinguivel.
+func _autopilot() -> void:
 	var basis := _player.track.sample_basis(_player.track_offset)
 	var road_heading := atan2((-basis.z).x, (-basis.z).z)
 	var lookahead := 22.0 + _player.speed * 0.9
@@ -545,6 +554,22 @@ func _phase_freerun(_delta: float) -> void:
 	_set_action("ride_throttle", not braking)
 	_set_action("ride_right", steer > 0.02)
 	_set_action("ride_left", steer < -0.02)
+
+
+## Quanto o lider do pelotao esta a frente do jogador, em metros. Negativo
+## quer dizer que quem lidera e o jogador.
+func _gap_to_leader() -> float:
+	var leader := _player.track_offset
+	for rival in _world.rivals:
+		leader = maxf(leader, rival.offset)
+	return leader - _player.track_offset
+
+
+## Fase 7 - corrida solta: le a pista de verdade ---------------------------
+func _phase_freerun(_delta: float) -> void:
+	if _t < 0.02:
+		_bench_end()
+	_autopilot()
 
 	if not _shots_dir.is_empty() and _t >= _shots_next:
 		_shots_next += 2.5
@@ -573,14 +598,32 @@ func _phase_freerun(_delta: float) -> void:
 		_finish()
 		return
 
-	if _t >= 45.0 or _world.run.phase != DeliveryRun.Phase.RIDING:
+	if _t >= 45.0 or _world.run.phase != RaceRun.Phase.RACING:
+		var gap := _gap_to_leader()
 		_metric("corrida_distancia_m", _world.run.distance_done)
 		_metric("corrida_raspadas", _world.run.near_misses)
 		_metric("corrida_quedas", _world.run.crashes)
+		_metric("corrida_posicao", float(_world.run.position))
+		_metric("corrida_atras_do_lider_m", gap)
+		# O ritmo do lider e o numero que um humano consegue comparar com o
+		# proprio velocimetro: e a media que a corrida exige pra ser ganha.
+		# O piloto automatico nao serve de referencia de dificuldade, mas o
+		# pelotao serve - e calibrar `rival_pace_*` sem um alvo em km/h e
+		# mexer no slider no escuro.
+		var leader_pace := (
+			(_player.track_offset + gap - _world.grid_slot(0, 0.0).x) / maxf(_t, 0.01) * KMH
+		)
+		_metric("corrida_ritmo_lider_kmh", leader_pace)
 		_report.append(
 			(
 				"corrida solta 45s    %.0f m percorridos, %d raspadas, %d quedas"
 				% [_world.run.distance_done, _world.run.near_misses, _world.run.crashes]
+			)
+		)
+		_report.append(
+			(
+				"pelotao em 45s       %s, %.0f m do lider (media dele %.0f km/h)"
+				% [_world.run.position_text(), gap, leader_pace]
 			)
 		)
 		_check(
@@ -590,8 +633,81 @@ func _phase_freerun(_delta: float) -> void:
 				% _world.run.distance_done
 			)
 		)
+		# O pelotao tem que continuar sendo uma corrida. Sumir de vista e tao
+		# ruim quanto grudar: nos dois casos a colocacao para de depender do que
+		# o jogador faz, e ai o jogo nao e mais uma corrida.
+		_check(
+			absf(gap) < 1200.0,
+			(
+				(
+					"o lider esta a %.0f m do jogador em 45s - nesse ritmo a colocacao ja"
+					+ " esta decidida antes de a corrida comecar"
+				)
+				% gap
+			)
+		)
 		_check(_player.global_position.y > -50.0, "a moto caiu pra fora do mundo")
-		_finish()
+		_next_phase()
+
+
+## Fase 8 - disputa: os ultimos 260 m, pra a chegada existir de verdade -----
+##
+## A corrida inteira sao 3,2 km, mais de dois minutos com o piloto automatico -
+## caro demais pra rodar a cada mudanca. Largar o grid perto da linha custa uns
+## 12 s e mede a unica coisa que a corrida solta nao alcanca: alguem cruza a
+## linha, em alguma ordem, e a colocacao que o resultado congela e a mesma que
+## a ordem de chegada diz.
+func _phase_sprint(_delta: float) -> void:
+	if _t < 0.02:
+		# A corrida solta pode ter terminado e parado o mundo.
+		_world.set_physics_process(true)
+		_world.start_race(_world.run.distance_total - 260.0, 30.0)
+		return
+
+	_autopilot()
+
+	if _world.run.phase == RaceRun.Phase.RACING and _t < 30.0:
+		return
+
+	var finished_rivals := 0
+	var rivals_ahead := 0
+	for rival in _world.rivals:
+		if rival.finish_time < 0.0:
+			continue
+		finished_rivals += 1
+		if _world.run.finish_time >= 0.0 and rival.finish_time < _world.run.finish_time:
+			rivals_ahead += 1
+
+	_metric("disputa_posicao", float(_world.run.position))
+	_metric("disputa_rivais_na_linha", float(finished_rivals))
+	_report.append(
+		(
+			"disputa 260 m        %s, %d de %d rivais cruzaram"
+			% [_world.run.position_text(), finished_rivals, _world.rivals.size()]
+		)
+	)
+	_check(
+		_world.run.phase == RaceRun.Phase.FINISHED,
+		"o jogador nao cruzou a linha largando a 260 m dela - a corrida nao termina"
+	)
+	_check(
+		finished_rivals > 0,
+		"nenhum rival cruzou a linha: o pelotao nao corre a corrida, so acompanha o jogador"
+	)
+	# A prova de que o placar nao mente: quem cruzou a linha antes do jogador e
+	# exatamente quem esta na frente dele no resultado.
+	if _world.run.phase == RaceRun.Phase.FINISHED:
+		_check(
+			_world.run.position == rivals_ahead + 1,
+			(
+				(
+					"%d rivais chegaram antes e o jogador terminou em %do - a colocacao"
+					+ " nao esta saindo da ordem de chegada"
+				)
+				% [rivals_ahead, _world.run.position]
+			)
+		)
+	_finish()
 
 
 ## Le `--fase <nome>` da linha de comando.
