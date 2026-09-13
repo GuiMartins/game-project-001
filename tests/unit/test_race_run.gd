@@ -163,6 +163,22 @@ func test_raspada_cobra_proporcional_a_intensidade() -> void:
 	assert_float(raspao.style).is_equal_approx(leve.style, 0.001)
 
 
+func test_pancada_conta_e_zera_o_combo() -> void:
+	# O contador e o que o banco de provas le pra saber se encostar num rival
+	# virou pedagio. Sem ele a diferenca entre um rival que mede antes de bater
+	# e um que bate no primeiro frame nao aparece em medida nenhuma.
+	var corrida := _corrida()
+	corrida.register_near_miss()
+	corrida.register_hit_taken()
+	corrida.register_hit_taken()
+	assert_int(corrida.hits_taken).is_equal(2)
+	assert_int(corrida.combo).is_equal(0)
+	# Largada zera: contagem que vaza de uma corrida pra outra faz o teste medir
+	# a sessao, nao a corrida.
+	corrida.start(1000.0, 6)
+	assert_int(corrida.hits_taken).is_equal(0)
+
+
 func test_rival_derrubado_vale_estilo() -> void:
 	var corrida := _corrida()
 	corrida.register_rival_down()

@@ -52,6 +52,13 @@ var late: bool = false  ## Estourou o prazo. Custa estrela, nao encerra a corrid
 var style: float = 0.0  ## Pontos de estilo (corredor, rival derrubado).
 var near_misses: int = 0
 var crashes: int = 0
+## Socos de rival que acertaram o jogador.
+##
+## Existe pro banco de provas ter como medir "encostar num rival custa quanto".
+## Sem um contador, a diferenca entre um rival que mede antes de bater e um que
+## bate no primeiro frame em que alcanca nao aparece em medida nenhuma - e foi
+## exatamente assim que o segundo passou despercebido.
+var hits_taken: int = 0
 var rivals_downed: int = 0
 var combo: int = 0
 var combo_timer: float = 0.0
@@ -71,6 +78,7 @@ func start(finish_distance: float, racer_count: int = 1) -> void:
 	style = 0.0
 	near_misses = 0
 	crashes = 0
+	hits_taken = 0
 	rivals_downed = 0
 	combo = 0
 	combo_timer = 0.0
@@ -138,6 +146,7 @@ func register_scrape(intensity: float) -> void:
 
 
 func register_hit_taken() -> void:
+	hits_taken += 1
 	combo = 0
 
 
@@ -214,5 +223,6 @@ func summary() -> String:
 	lines.append("ultrapassagens  %5d" % overtakes)
 	lines.append("corredor        %5d" % near_misses)
 	lines.append("rivais no chao  %5d" % rivals_downed)
+	lines.append("pancadas         %5d" % hits_taken)
 	lines.append("quedas          %5d" % crashes)
 	return "\n".join(lines)

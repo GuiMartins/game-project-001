@@ -66,6 +66,17 @@ a linha rápida", "o soco parou de empurrar o rival" e "ninguém mais cruza a
 linha de chegada" são regressões que não travam nada. O jogo continua rodando
 lindamente sem elas, e ninguém percebe até jogar a fase inteira.
 
+`corrida` também mede **quantos socos o piloto automático toma** nos 45 s. A
+medida vale zero hoje, e é de propósito: o piloto não briga, então sem rival
+vindo atrás dele ninguém encosta. Ela existe porque a decisão de socar do rival
+já rodou por frame, e a essa altura o piloto atravessava a corrida apanhando —
+com o comportamento antigo restaurado pelos sliders a mesma rodada mede quatro.
+
+Junto do baseline vai um `FREERUN_HITS_MAX` no código, e os dois não são
+redundantes: o baseline aponta que o número **andou**, o `_check` aponta que ele
+andou para o lado que importa — e continua valendo depois que alguém atualizar o
+baseline, que é justamente quando uma regressão de agressividade passaria batida.
+
 `disputa` é a mais nova e a mais barata pelo que cobre: larga o grid a 260 m da
 chegada em vez de pagar os 3,2 km da rota, e é a única prova de que a corrida
 **termina**. Além de medir a colocação final, ela confere que quem cruzou a
@@ -99,6 +110,11 @@ Saber disto faz parte do contrato. Nenhum destes é pego por nada automatizado:
 
 - **"Está gostoso?"** Os números dizem que a moto é sã, não que ela é boa. Só
   o polegar decide isso, e o painel F3 existe para essa sessão.
+- **"Encostar num rival é uma escolha?"** Meio coberto, e vale saber de que
+  metade. A fase `corrida` pega o caso grosseiro — rival que volta a bater por
+  proximidade faz a contagem de pancadas saltar. O que ela **não** pega é o
+  ajuste fino: 0,9 s de mira antes do soco é aviso suficiente ou é tempo demais
+  para reagir? Isso é polegar, e é no F3 que se decide.
 - **"A corrida está disputada?"** O banco prova que ela termina e que o placar
   bate com a ordem de chegada. Se o pelotão está no ritmo certo é outra
   pergunta, e o piloto automático não serve de referência: ele faz uns 24 m/s
