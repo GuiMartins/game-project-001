@@ -1,17 +1,22 @@
 class_name RaceRun
 extends RefCounted
-## A corrida de entregadores: posicao, prazo, bag, estilo, estrelas.
+## A corrida de entregadores: posicao, prazo, estilo, estrelas.
 ##
 ## O jogo e essencialmente uma CORRIDA - quem decide o resultado e a posicao na
-## chegada, e quem decide o fim e a linha, nao o cronometro. O prazo e a bag
-## continuam pesando porque chegar em primeiro com a comida no chao nao e
-## vitoria de entregador: eles modulam a nota, nunca a classificacao.
+## chegada, e quem decide o fim e a linha, nao o cronometro. O prazo e o estilo
+## continuam pesando porque chegar em primeiro arrastando a moto nao e entrega
+## de entregador: eles modulam a nota, nunca a classificacao.
+##
+## Existiu aqui uma "integridade da bag" em porcentagem, que caia a cada queda,
+## raspada e pancada. Saiu porque media a mesma coisa que o resto do painel ja
+## media - quem cai e apanha tambem chega tarde e sem estilo - e cobrava por
+## isso uma barra permanente na HUD de 320x180, onde nao sobra espaco pra
+## numero redundante. O custo de raspar virou estilo, que e onde ele ja doia.
 
 enum Phase { RACING, FINISHED }
 
-const BAG_LOSS_CRASH: float = 14.0
-const BAG_LOSS_SCRAPE: float = 3.0
-const BAG_LOSS_HIT: float = 6.0
+## Estilo perdido numa raspada de intensidade cheia.
+const STYLE_LOSS_SCRAPE: float = 25.0
 
 ## Segundos por metro que o prazo concede. 0.055 s/m ~ 65 km/h de media exigida:
 ## da pra entregar dirigindo limpo, mas 5 estrelas exige o corredor.
@@ -44,7 +49,6 @@ var position: int = 1  ## Colocacao no pelotao, 1 = lider.
 var racers: int = 1  ## Quantos correm, jogador incluido.
 var overtakes: int = 0  ## Posicoes ganhas ao longo da corrida.
 var late: bool = false  ## Estourou o prazo. Custa estrela, nao encerra a corrida.
-var bag: float = 100.0  ## Integridade da comida, 0..100.
 var style: float = 0.0  ## Pontos de estilo (corredor, rival derrubado).
 var near_misses: int = 0
 var crashes: int = 0
@@ -64,7 +68,6 @@ func start(finish_distance: float, racer_count: int = 1) -> void:
 	racers = maxi(racer_count, 1)
 	overtakes = 0
 	late = false
-	bag = 100.0
 	style = 0.0
 	near_misses = 0
 	crashes = 0
@@ -122,16 +125,19 @@ func register_crash() -> void:
 	crashes += 1
 	combo = 0
 	combo_timer = 0.0
-	bag = maxf(bag - BAG_LOSS_CRASH, 0.0)
 	style = maxf(style - 40.0, 0.0)
 
 
+## Raspou de verdade num carro - encostou, nao passou perto.
+##
+## O piso de 0.2 na intensidade e o que separa raspar de passar no corredor:
+## quem encostou de leve ainda encostou, e o `register_near_miss` e que paga
+## por passar perto sem tocar.
 func register_scrape(intensity: float) -> void:
-	bag = maxf(bag - BAG_LOSS_SCRAPE * clampf(intensity, 0.2, 1.0), 0.0)
+	style = maxf(style - STYLE_LOSS_SCRAPE * clampf(intensity, 0.2, 1.0), 0.0)
 
 
 func register_hit_taken() -> void:
-	bag = maxf(bag - BAG_LOSS_HIT, 0.0)
 	combo = 0
 
 
@@ -161,19 +167,18 @@ static func position_of(mine: float, all_keys: Array[float]) -> int:
 ## Estrelas de 1 a 5, como na avaliacao do app.
 ##
 ## A posicao pesa metade: e ela que diz se voce ganhou a corrida. O resto e o
-## entregador dentro do piloto - chegou no prazo, chegou com a comida inteira,
-## chegou pelo corredor.
+## entregador dentro do piloto - chegou no prazo, chegou pelo corredor.
+##
+## Os 20 pontos da bag foram redistribuidos quando ela saiu: 10 pro prazo e 10
+## pro estilo. Guardar a metade da posicao intacta e o que mantem a frase acima
+## verdadeira; jogar os 20 pontos todos num lado so mudaria em silencio o que a
+## nota esta perguntando.
 func stars() -> int:
 	var podium := 1.0
 	if racers > 1:
 		podium = clampf(1.0 - float(position - 1) / float(racers - 1), 0.0, 1.0)
 	var time_frac := clampf(time_left / maxf(time_total, 0.01), 0.0, 1.0)
-	var score := (
-		podium * 50.0
-		+ time_frac * 20.0
-		+ (bag / 100.0) * 20.0
-		+ clampf(style / 2500.0, 0.0, 1.0) * 10.0
-	)
+	var score := podium * 50.0 + time_frac * 30.0 + clampf(style / 2500.0, 0.0, 1.0) * 20.0
 	if late:
 		score = minf(score, LATE_SCORE_CAP)
 	if score >= 82.0:
@@ -205,7 +210,6 @@ func summary() -> String:
 		lines.append("prazo           ESTOUROU")
 	else:
 		lines.append("prazo           %5.1fs" % time_left)
-	lines.append("bag             %5.0f%%" % bag)
 	lines.append("estilo          %5.0f" % style)
 	lines.append("ultrapassagens  %5d" % overtakes)
 	lines.append("corredor        %5d" % near_misses)

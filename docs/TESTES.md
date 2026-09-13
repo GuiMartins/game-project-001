@@ -12,7 +12,7 @@ Três camadas, e nenhuma substitui a outra.
 ## Unitários (GdUnit4)
 
 `tests/unit/`. Testam o que não precisa de cena nem de física: `RaceRun` é
-`RefCounted` puro — prazo, bag, estrelas e a ordenação do pelotão — e as
+`RefCounted` puro — prazo, estilo, estrelas e a ordenação do pelotão — e as
 estáticas de `RoadTrack` são geometria.
 
 Existem por uma razão específica: há uma classe de erro que o banco de provas
