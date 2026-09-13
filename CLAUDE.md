@@ -114,6 +114,28 @@ O que **continua** precisando de aval: abrir PR, fazer merge, criar tag,
 publicar release. Empurrar a branch é para o trabalho ficar visível; decidir
 que ele entra é outra coisa.
 
+**Merge exige check verde conferido — não basta o aval humano.** São duas
+perguntas diferentes, e cada uma tem a sua resposta:
+
+```bash
+gh pr checks <n>                  # os testes passaram?
+gh pr view <n> --json mergeable   # dá pra juntar sem conflito?
+```
+
+`mergeable` só fala de conflito de git, e é fácil ler `MERGEABLE` como
+"liberado". Foi assim que o #9 entrou na `master` com o portão visual
+reprovando.
+
+Vermelho que **você acredita** ser instabilidade do portão não é exceção à
+regra — é bug de portão. Conserte o portão primeiro, em PR próprio, e mergeie
+em cima dele depois.
+
+Foi o que o #10 fez. O limite da regressão visual estava plantado no meio do
+ruído da própria medida: reprovava até commit que só mexia em markdown, e
+enquanto existisse, nenhuma branch ficava verde de forma confiável. Portão que
+reprova metade das entregas corretas deixa de ser rede e vira pedágio — e a
+primeira coisa que se aprende com ele é a ignorar o vermelho.
+
 Release sai de uma tag, que é ato deliberado e humano:
 
 ```bash
