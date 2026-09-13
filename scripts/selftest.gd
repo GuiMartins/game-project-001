@@ -11,6 +11,20 @@ extends Node
 
 const KMH: float = 3.6
 
+## Teto de socos que o piloto automatico pode tomar nos 45 s da fase `corrida`.
+##
+## Hoje a medida da ZERO: o piloto automatico nao briga, entao sem rival vindo
+## atras dele ninguem encosta. Com o comportamento antigo restaurado pelos
+## sliders - agressividade 0.35..0.95, cacada em 12 m, mira e respiro em zero -
+## a mesma rodada mede QUATRO. Ou seja, este teto nao e chute: ele fica entre os
+## dois valores medidos, e com folga dos dois lados.
+##
+## Ele existe ao lado do baseline porque os dois respondem coisas diferentes. O
+## baseline aponta que o numero ANDOU; este `_check` aponta que ele andou pro
+## lado que importa, e continua valendo depois que alguem atualizar o baseline -
+## que e justamente quando uma regressao de agressividade passaria batida.
+const FREERUN_HITS_MAX: int = 2
+
 ## Nome de cada fase, na ordem em que rodam. Serve pro `--fase <nome>`:
 ## quem esta iterando em curva nao precisa esperar os 45 s da corrida
 ## solta, e ciclo curto e o que decide se o teste e rodado ou pulado.
@@ -603,6 +617,7 @@ func _phase_freerun(_delta: float) -> void:
 		_metric("corrida_distancia_m", _world.run.distance_done)
 		_metric("corrida_raspadas", _world.run.near_misses)
 		_metric("corrida_quedas", _world.run.crashes)
+		_metric("corrida_pancadas_tomadas", _world.run.hits_taken)
 		_metric("corrida_posicao", float(_world.run.position))
 		_metric("corrida_atras_do_lider_m", gap)
 		# O ritmo do lider e o numero que um humano consegue comparar com o
@@ -616,8 +631,13 @@ func _phase_freerun(_delta: float) -> void:
 		_metric("corrida_ritmo_lider_kmh", leader_pace)
 		_report.append(
 			(
-				"corrida solta 45s    %.0f m percorridos, %d raspadas, %d quedas"
-				% [_world.run.distance_done, _world.run.near_misses, _world.run.crashes]
+				"corrida solta 45s    %.0f m percorridos, %d raspadas, %d quedas, %d pancadas"
+				% [
+					_world.run.distance_done,
+					_world.run.near_misses,
+					_world.run.crashes,
+					_world.run.hits_taken
+				]
 			)
 		)
 		_report.append(
@@ -647,6 +667,25 @@ func _phase_freerun(_delta: float) -> void:
 			)
 		)
 		_check(_player.global_position.y > -50.0, "a moto caiu pra fora do mundo")
+		# Encostar num rival nao pode ser pedagio.
+		#
+		# A decisao de socar do rival ja rodou POR FRAME - `randf() < agressividade`
+		# dentro do `_physics_process` - e a 60 Hz isso nao quer dizer "as vezes":
+		# o soco saia em media no segundo frame dentro do alcance, e o piloto
+		# automatico, que nem tenta brigar, atravessava a corrida apanhando. O
+		# numero e baixo de proposito: nao existe teto "certo" de pancada, mas
+		# existe um acima do qual o combate deixou de ser escolha do jogador, e
+		# este teste so precisa saber de que lado dele estamos.
+		_check(
+			_world.run.hits_taken <= FREERUN_HITS_MAX,
+			(
+				(
+					"o piloto automatico tomou %d socos em 45 s - o rival voltou a bater"
+					+ " por proximidade, e emparelhar virou pedagio"
+				)
+				% _world.run.hits_taken
+			)
+		)
 		_next_phase()
 
 

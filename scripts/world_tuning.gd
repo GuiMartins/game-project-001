@@ -101,6 +101,47 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 @export_range(0.3, 1.0, 0.01) var rival_pace_min: float = 0.55
 @export_range(0.3, 1.1, 0.01) var rival_pace_max: float = 0.72
 
+## Quao briguento e o rival mais manso e o mais barraqueiro do pelotao, 0..1.
+##
+## Sorteado por rival na largada. Um numero so decide tres coisas: se ele larga
+## a corrida pra ir CACAR o jogador, quanto tempo ele mede antes do primeiro
+## soco, e quanto respiro da entre um soco e o proximo.
+##
+## Era 0.35..0.95 e o combate virou pedagio: mais da metade do pelotao
+## abandonava a corrida pra emparelhar, e chegar perto de um rival era sinonimo
+## de apanhar. O combate lateral e um pilar, mas pilar de jogo e coisa que o
+## jogador ESCOLHE - se ele acontece sozinho toda vez que duas motos se
+## encostam, o jogador aprende a nao encostar, e o pilar morre de tanto ser
+## usado. Aqui o teto fica logo acima do gatilho de cacada (0.5), entao poucos
+## rivais vem atras de voce, e nenhum e implacavel.
+@export_range(0.0, 1.0, 0.05) var rival_aggression_min: float = 0.1
+@export_range(0.0, 1.0, 0.05) var rival_aggression_max: float = 0.55
+
+## Distancia em que um rival briguento larga a corrida pra ir atras do jogador,
+## em metros.
+##
+## Eram 12 m fixos, ou seja meia dezena de comprimentos de moto: o rival mudava
+## de faixa pra cima de voce antes mesmo de voce ver que ele existia. Em 5 m ele
+## precisa ja estar praticamente do seu lado.
+@export_range(0.0, 30.0, 0.5) var rival_hunt_range: float = 5.0
+
+## Segundos que o rival passa colado antes de tentar o primeiro soco, no rival
+## mais manso; o mais briguento espera a metade.
+##
+## E o aviso que nao existia. A decisao de socar era um sorteio POR FRAME
+## (`randf() < agressividade`), e a 60 Hz isso nao e "as vezes": com 0.5 de
+## agressividade o soco saia no segundo frame dentro do alcance. Emparelhar era
+## apanhar, sem janela pra sair, socar primeiro ou aceitar a briga.
+@export_range(0.0, 3.0, 0.1) var rival_punch_delay: float = 0.9
+
+## Respiro entre dois socos do mesmo rival, em segundos, no rival mais manso;
+## o mais briguento espera a metade.
+##
+## Somado ao cooldown do soco. Antes o cooldown era DIVIDIDO pela agressividade,
+## o que deixava o rival briguento socando a cada 0,47 s - metralhadora, nao
+## briga.
+@export_range(0.0, 6.0, 0.1) var rival_punch_rest: float = 2.6
+
 ## Quanto da distancia pro jogador vira velocidade do rival, em (m/s) por metro.
 ##
 ## E o slider de "quanto de corrida, quanto de briga". Zero e corrida honesta:

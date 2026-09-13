@@ -15,7 +15,7 @@ Os cinco pilares e onde cada um vive no código:
 | O corredor | `scripts/world.gd` (`_score_corridor`), `world_tuning.gd` | jogável, medido e ajustável ao vivo |
 | Combate lateral | `player_bike.gd` + `rival_bike.gd` | jogável e medido |
 | A corrida | `rival_bike.gd` + `world.gd` (`_update_standings`) | jogável e medido, ritmo do pelotão por calibrar |
-| Nota da entrega | `scripts/race_run.gd` | prazo e bag pesam na nota, nunca na classificação |
+| Nota da entrega | `scripts/race_run.gd` | prazo e estilo pesam na nota, nunca na classificação |
 
 ## As decisões de arquitetura, e por que elas se seguram
 
@@ -161,10 +161,18 @@ Deliberadamente fora do escopo até o feel fechar:
 ## A corrida
 
 O protótipo nasceu como entrega contra o relógio e virou **corrida**: seis
-motos na pista, e o que decide o resultado é a posição na chegada. O prazo e a
-bag continuam lá, mas mudaram de papel — eles pesam na nota, nunca na
-classificação. Chegar em primeiro com a comida no chão é vitória feia, não
+motos na pista, e o que decide o resultado é a posição na chegada. O prazo e o
+estilo continuam lá, mas mudaram de papel — eles pesam na nota, nunca na
+classificação. Chegar em primeiro arrastando a moto é vitória feia, não
 derrota.
+
+Houve também uma **integridade da bag** em porcentagem, com barra na HUD, que
+caía a cada queda, raspada e pancada. Ela saiu: media a mesma coisa que o resto
+do painel já media — quem cai e apanha também chega tarde e sem estilo — e
+cobrava por essa redundância uma barra permanente numa tela de 320×180, onde o
+espaço é o recurso escasso. O custo de raspar virou estilo, e os 20 pontos que
+ela valia na nota foram divididos entre prazo e estilo, deixando a metade da
+posição intacta.
 
 Três decisões sustentam isso.
 

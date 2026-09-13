@@ -1,7 +1,7 @@
 extends GdUnitTestSuite
 ## Regras da corrida, testadas sem abrir o jogo.
 ##
-## RaceRun e RefCounted puro: colocacao, prazo, bag, combo e estrelas nao
+## RaceRun e RefCounted puro: colocacao, prazo, estilo, combo e estrelas nao
 ## dependem de cena, fisica nem pista. O banco de provas roda a moto de verdade
 ## e leva ~100 s; estas regras cabem em milissegundos, e sao justamente as que
 ## uma IA mexe sem perceber o efeito - "so aumentei um pouco o multiplicador".
@@ -47,7 +47,7 @@ func test_atraso_limita_a_nota_mesmo_vencendo() -> void:
 	corrida.tick(999.0, 10.0)  # estourou o prazo
 	corrida.update_position(1)
 	corrida.tick(1.0, 1000.0)
-	# Primeiro lugar com a bag inteira, mas atrasado: no maximo tres estrelas.
+	# Primeiro lugar, mas atrasado: no maximo tres estrelas.
 	assert_int(corrida.stars()).is_equal(3)
 
 
@@ -127,35 +127,56 @@ func test_combo_expira_sozinho() -> void:
 	assert_int(corrida.combo).is_equal(0)
 
 
-func test_queda_zera_o_combo_e_come_a_bag() -> void:
+func test_queda_zera_o_combo_e_come_o_estilo() -> void:
 	var corrida := _corrida()
 	corrida.register_near_miss()
 	corrida.register_near_miss()
+	var antes := corrida.style
 	corrida.register_crash()
 	assert_int(corrida.combo).is_equal(0)
-	assert_float(corrida.bag).is_equal_approx(100.0 - RaceRun.BAG_LOSS_CRASH, 0.001)
+	assert_float(corrida.style).is_less(antes)
 	assert_int(corrida.crashes).is_equal(1)
 
 
-func test_bag_nunca_fica_negativa() -> void:
+func test_estilo_nunca_fica_negativo() -> void:
+	# Cair muito nao pode deixar a nota abaixo de zero: sem o piso, uma corrida
+	# desastrosa daria estilo negativo e a nota final passaria a depender de
+	# quantas vezes voce caiu DEPOIS de ja ter zerado.
 	var corrida := _corrida()
 	for i in 20:
 		corrida.register_crash()
-	assert_float(corrida.bag).is_equal(0.0)
-	# Estilo tambem tem piso: cair muito nao deixa a nota abaixo de zero.
-	assert_float(corrida.style).is_greater_equal(0.0)
+	assert_float(corrida.style).is_equal(0.0)
 
 
 func test_raspada_cobra_proporcional_a_intensidade() -> void:
 	var leve := _corrida()
+	leve.register_near_miss()  # estilo pra ter o que perder
 	leve.register_scrape(0.2)
 	var forte := _corrida()
+	forte.register_near_miss()
 	forte.register_scrape(1.0)
-	assert_float(forte.bag).is_less(leve.bag)
+	assert_float(forte.style).is_less(leve.style)
 	# A intensidade e grampeada em 0.2..1.0: raspada de raspao ainda custa.
 	var raspao := _corrida()
+	raspao.register_near_miss()
 	raspao.register_scrape(0.0)
-	assert_float(raspao.bag).is_equal_approx(leve.bag, 0.001)
+	assert_float(raspao.style).is_equal_approx(leve.style, 0.001)
+
+
+func test_pancada_conta_e_zera_o_combo() -> void:
+	# O contador e o que o banco de provas le pra saber se encostar num rival
+	# virou pedagio. Sem ele a diferenca entre um rival que mede antes de bater
+	# e um que bate no primeiro frame nao aparece em medida nenhuma.
+	var corrida := _corrida()
+	corrida.register_near_miss()
+	corrida.register_hit_taken()
+	corrida.register_hit_taken()
+	assert_int(corrida.hits_taken).is_equal(2)
+	assert_int(corrida.combo).is_equal(0)
+	# Largada zera: contagem que vaza de uma corrida pra outra faz o teste medir
+	# a sessao, nao a corrida.
+	corrida.start(1000.0, 6)
+	assert_int(corrida.hits_taken).is_equal(0)
 
 
 func test_rival_derrubado_vale_estilo() -> void:

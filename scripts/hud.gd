@@ -17,12 +17,10 @@ var _distance_label: Label
 var _position_label: Label
 var _speed_label: Label
 var _stars_label: Label
-var _bag_label: Label
 var _combo_label: Label
 var _event_label: Label
 var _wrong_way_label: Label
 var _adrenaline_fill: ColorRect
-var _bag_fill: ColorRect
 var _end_panel: Control
 var _end_text: Label
 var _hint_label: Label
@@ -58,11 +56,6 @@ func _ready() -> void:
 	_stars_label = _label(root, Vector2(W - 70, 4), 16, Color(1.0, 0.85, 0.25))
 	_stars_label.size = Vector2(64, 20)
 	_stars_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-
-	_bag_label = _label(root, Vector2(W - 70, 24), 8, Color(0.95, 0.6, 0.3))
-	_bag_label.size = Vector2(64, 12)
-	_bag_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_bag_fill = _bar(root, Rect2(W - 68, 34, 62, 4), Color(0.95, 0.45, 0.15))
 
 	_speed_label = _label(root, Vector2(6, H - 26), 16, Color(1, 1, 1))
 	_label(root, Vector2(46, H - 14), 8, Color(0.7, 0.75, 0.85)).text = "km/h"
@@ -189,8 +182,6 @@ func _process(delta: float) -> void:
 
 	_speed_label.text = "%3.0f" % player.speed_kmh()
 	_stars_label.text = "*".repeat(run.stars())
-	_bag_label.text = "BAG %.0f%%" % run.bag
-	_bag_fill.size.x = 62.0 * (run.bag / 100.0)
 	_adrenaline_fill.size.x = 62.0 * (player.adrenaline / 100.0)
 	_adrenaline_fill.color = Color(1.0, 0.9, 0.3) if player.boosting else Color(0.3, 0.85, 1.0)
 
