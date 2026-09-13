@@ -9,9 +9,11 @@ Linux; o CI roda nos três.
 [CLAUDE.md](CLAUDE.md) — comandos, o portão de qualidade, e os invariantes que
 não se quebram sem conversa.
 
-O trânsito flui em quatro faixas, muda de faixa sem olhar e abre porta de
-carro encostado. A pista tem curva e **ladeira** de até 14%, que cobra gás na
-subida e devolve na descida. O corredor entre os carros é o jogo.
+É uma **corrida**: seis motos na pista, e quem decide o resultado é a posição
+na chegada. O trânsito flui em quatro faixas, muda de faixa sem olhar e abre
+porta de carro encostado. A pista tem curva e **ladeira** de até 14%, que cobra
+gás na subida e devolve na descida. O corredor entre os carros é o jogo — e o
+prazo e a bag da entrega pesam na nota final, nunca na classificação.
 
 Ele existe para responder uma pergunta e só uma: **acelerar, inclinar, se
 enfiar no corredor e bater está gostoso?** Nada de arte, áudio ou menu até
@@ -116,13 +118,13 @@ que nasce.
 
 ```sh
 python tools/dev.py test       # unitários, ~4 s
-python tools/dev.py selftest   # banco de provas, ~89 s
+python tools/dev.py selftest   # banco de provas, ~110 s
 ```
 
 O banco de provas roda a moto de verdade contra entradas sintéticas e mede
-0–100, freada, tempo de inclinação, raio de curva e a janela do soco; falha com
-código 1 se algum número sair da faixa jogável **ou** se ele andar mais do que
-`tests/baseline.json` tolera.
+0–100, freada, tempo de inclinação, raio de curva, a janela do soco e a chegada
+da corrida; falha com código 1 se algum número sair da faixa jogável **ou** se
+ele andar mais do que `tests/baseline.json` tolera.
 
 Roda sempre nos **defaults do repositório**, ignorando o que você salvou no F3 —
 senão o número deixa de ser comparável entre rodadas. Para medir os seus
@@ -131,7 +133,7 @@ ajustes, `--user-tuning`.
 Iterando em algo específico, dá pra parar antes da corrida solta:
 
 ```sh
-python tools/dev.py selftest --fase curva    # 32 s em vez de 89 s
+python tools/dev.py selftest --fase curva    # 32 s em vez de 110 s
 ```
 
 Detalhes, camadas e os buracos conhecidos de cobertura em

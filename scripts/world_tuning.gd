@@ -83,7 +83,31 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 
 ## Quantos rivais correm junto. Muda na proxima corrida (R), nao ao vivo:
 ## rival tem estado de IA e trocar no meio faria o placar mentir.
-@export_range(0, 12, 1) var rival_count: int = 4
+##
+## Cinco e o pelotao do GDD - seis na pista contando o jogador. E tambem o
+## numero que decide quanto a colocacao significa: com um rival so, "segundo
+## lugar" e outra palavra pra "perdeu".
+@export_range(0, 12, 1) var rival_count: int = 5
+
+## Ritmo mais lento e mais rapido que um rival busca sozinho, em fracao do teto
+## de velocidade da moto.
+##
+## Este par e o coracao da corrida. O teto de 52 m/s e velocidade de pista
+## limpa; no transito ninguem sustenta isso, e o piloto automatico do banco de
+## provas faz uns 27 m/s de media. 0.55 a 0.72 poe o pelotao entre 29 e 37 m/s
+## nominais, que com carro na frente e queda no meio vira uma corrida disputada
+## em vez de uma fuga. Espalhar o intervalo espalha o pelotao: min = max faz
+## cinco rivais que chegam juntos.
+@export_range(0.3, 1.0, 0.01) var rival_pace_min: float = 0.55
+@export_range(0.3, 1.1, 0.01) var rival_pace_max: float = 0.72
+
+## Quanto da distancia pro jogador vira velocidade do rival, em (m/s) por metro.
+##
+## E o slider de "quanto de corrida, quanto de briga". Zero e corrida honesta:
+## o rival ignora onde voce esta e o pelotao se espalha ate sumir. Alto demais
+## e o pelotao gruda em voce e a colocacao deixa de significar - voce sente que
+## a corrida esta encenada, porque esta.
+@export_range(0.0, 0.6, 0.01) var rival_rubber_band: float = 0.15
 
 
 static func load_or_default() -> WorldTuning:

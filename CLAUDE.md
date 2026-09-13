@@ -21,7 +21,7 @@ qual binário usar, e no Windows escolhe a variante que não engole a saída.
 | `python tools/dev.py setup` | Baixa a engine fixada em `.godot-version`. Primeira coisa a rodar. |
 | `python tools/dev.py doctor` | Diz onde está o Godot e se bate com a versão fixada. |
 | `python tools/dev.py test` | Testes unitários (GdUnit4). ~4 s. |
-| `python tools/dev.py selftest` | Banco de provas: roda a moto de verdade e compara com o baseline. ~89 s. |
+| `python tools/dev.py selftest` | Banco de provas: roda a moto de verdade e compara com o baseline. ~110 s. |
 | `python tools/dev.py selftest --fase curva` | Só até aquela fase. ~32 s, para iterar. |
 | `python tools/dev.py shots` | Regressão visual: roda com tela e mede o frame. |
 | `python tools/dev.py lint` / `format` | gdlint e gdformat. |
@@ -68,9 +68,10 @@ jogo continua rodando, só errado. Estão explicados em `docs/PROTOTIPO.md`.
   está em 320×180.
 - **A HUD mora dentro do SubViewport.** HUD nítida sobre mundo pixelado é o
   visual de remaster preguiçoso.
-- **Semente fixa no banco de provas** (4242) e ele roda nos **defaults do
-  repositório**, ignorando o `user://`. Sem isso, "regrediu" e "você mexeu num
-  slider ontem" viram a mesma coisa.
+- **Semente fixa no banco de provas** — ela mora em `World.setup` (20260831) e
+  os rivais herdam dela; o selftest não sorteia nada por conta própria. Ele
+  também roda nos **defaults do repositório**, ignorando o `user://`. Sem os
+  dois, "regrediu" e "você mexeu num slider ontem" viram a mesma coisa.
 - **Guinada positiva gira para a esquerda** (Y para cima, mão direita). Já
   inverteu o jogo uma vez.
 
@@ -91,6 +92,27 @@ jogo continua rodando, só errado. Estão explicados em `docs/PROTOTIPO.md`.
 
 `master` é estável. `develop` recebe o trabalho. Merge em `master` **não**
 publica nada.
+
+**Trabalho novo nasce em branch, e a branch vive no remoto desde o primeiro
+commit.** Não espere ser mandado: ao começar qualquer tarefa, saia de `master`
+para uma branch com nome do assunto, e conforme o trabalho fecha etapas, vá
+commitando e **dando push** sem pedir autorização.
+
+```bash
+git switch -c corrida-por-posicao
+# ... trabalho, portão, commit ...
+git push -u origin corrida-por-posicao
+```
+
+Duas razões, e nenhuma é cerimônia. A primeira é que trabalho de IA que só
+existe na máquina de quem rodou o agente é trabalho que some junto com a
+sessão — e ninguém consegue ler o diff de algo que não foi empurrado. A segunda
+é que aqui push não distribui nada: a release sai de tag, então a pior
+consequência de uma branch empurrada é uma branch a mais no remoto.
+
+O que **continua** precisando de aval: abrir PR, fazer merge, criar tag,
+publicar release. Empurrar a branch é para o trabalho ficar visível; decidir
+que ele entra é outra coisa.
 
 Release sai de uma tag, que é ato deliberado e humano:
 

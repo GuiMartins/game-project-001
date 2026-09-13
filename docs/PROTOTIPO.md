@@ -7,14 +7,15 @@ pra testar a aposta antes de qualquer arte:
 > arte. Se acelerar/inclinar/bater não estiver gostoso em uma semana de
 > protótipo, arte nenhuma salva.
 
-Os quatro pilares e onde cada um vive no código:
+Os cinco pilares e onde cada um vive no código:
 
 | Pilar | Arquivo | Estado |
 | --- | --- | --- |
 | Feel da moto | `scripts/player_bike.gd` | jogável e medido |
 | O corredor | `scripts/world.gd` (`_score_corridor`), `world_tuning.gd` | jogável, medido e ajustável ao vivo |
 | Combate lateral | `player_bike.gd` + `rival_bike.gd` | jogável e medido |
-| Loop de entrega | `scripts/delivery_run.gd` | jogável, números provisórios |
+| A corrida | `rival_bike.gd` + `world.gd` (`_update_standings`) | jogável e medido, ritmo do pelotão por calibrar |
+| Nota da entrega | `scripts/race_run.gd` | prazo e bag pesam na nota, nunca na classificação |
 
 ## As decisões de arquitetura, e por que elas se seguram
 
@@ -79,14 +80,17 @@ inclinacao 0->90%    0.35 s
 a 175 km/h: 35.8 graus/s, raio 78 m
 hitbox do soco       0.133 s aberta (tuning pede 0.130)
 calcada              33.3 m/s no asfalto, 13.8 m/s na calcada, parede em 8.80 m
-combate              soco acertou, rival empurrado 3.34 m, cambaleou
-corrida solta 45s    1229 m percorridos, 10 raspadas, 5 quedas
+combate              soco acertou, rival empurrado 3.30 m, cambaleou
+corrida solta 45s    1095 m percorridos, 11 raspadas, 5 quedas
+pelotao em 45s       6/6, 204 m do lider (media dele 102 km/h)
+disputa 260 m        6/6, 5 de 5 rivais cruzaram
 ```
 
-As três últimas linhas não medem a moto, medem o **mundo**: elas existem porque
-"a calçada virou a linha rápida" e "o soco parou de empurrar o rival" são
-regressões que não travam nada — o jogo continua rodando lindamente sem elas, e
-ninguém percebe até jogar a fase inteira.
+As cinco últimas linhas não medem a moto, medem o **mundo**: elas existem
+porque "a calçada virou a linha rápida", "o soco parou de empurrar o rival" e
+"ninguém mais cruza a linha de chegada" são regressões que não travam nada — o
+jogo continua rodando lindamente sem elas, e ninguém percebe até jogar a fase
+inteira.
 
 O 0-100 e a freada são medidos com a **ladeira desligada** (`slope_enabled`).
 Medir aceleração numa subida mede a subida. A elevação volta a valer na corrida
@@ -153,6 +157,74 @@ Deliberadamente fora do escopo até o feel fechar:
 - Áudio, menu, progressão, upgrade de moto.
 - Shader de mundo curvo ("SEGA curved world").
 - Chuva, noite com neon no asfalto molhado.
+
+## A corrida
+
+O protótipo nasceu como entrega contra o relógio e virou **corrida**: seis
+motos na pista, e o que decide o resultado é a posição na chegada. O prazo e a
+bag continuam lá, mas mudaram de papel — eles pesam na nota, nunca na
+classificação. Chegar em primeiro com a comida no chão é vitória feia, não
+derrota.
+
+Três decisões sustentam isso.
+
+**Quem decide o fim é a linha, não o cronômetro.** Estourar o prazo antes
+encerrava a corrida na hora. Numa corrida isso tira do jogador justamente o que
+ainda estava em disputa: a posição. Hoje o prazo estourado acende `ATRASADO` na
+HUD e limita a nota a três estrelas (`LATE_SCORE_CAP`), e a corrida continua
+até alguém cruzar.
+
+**Uma chave só ordena o pelotão.** Comparar quem já cruzou a linha com quem
+ainda está na pista precisaria de dois casos em toda conta, e o empate entre
+dois que terminaram sairia pela ordem da lista — ou seja, por acidente.
+`RaceRun.rank_key` devolve o progresso de quem corre e `100000 - tempo` de quem
+chegou: um número, uma comparação, e quem cruzou primeiro fica na frente por
+construção. É o pedaço testável da corrida, e está coberto por unitário.
+
+**O rival tem ritmo próprio, com rubber band por cima — nessa ordem.** Antes
+ele perseguia a velocidade do jogador e nada mais: nunca ganhava, nunca perdia,
+só acompanhava. Agora cada rival sorteia um `pace` entre `rival_pace_min` e
+`rival_pace_max` (fração do teto da moto) e corre por ele; o band entra depois,
+e é **assimétrico de propósito** — puxa quem ficou para trás com o dobro da
+força com que segura quem abriu. Segurar o líder tanto quanto se empurra o
+lanterna é o que faz o jogador sentir que a corrida está encenada, porque
+estaria.
+
+`rival_rubber_band` é o slider de *quanto de corrida, quanto de briga*: em zero
+o pelotão se espalha até sumir e a briga lateral quase não acontece; alto
+demais ele gruda em você e a colocação deixa de depender do que você faz.
+
+A IA ganhou as intenções que o GDD pede (`RivalBike.Mode`): `FOLLOW` segue a
+pista, `OVERTAKE` abre caminho quando a frente fecha a dois terços da janela de
+visão, `ATTACK` briga com quem está emparelhado. Elas são separadas de `State`
+(de pé, cambaleando, no chão) porque cair acontece por cima de qualquer
+intenção — juntar os dois faria "cair atacando" precisar de um estado próprio.
+
+**O grid larga o jogador em último.** Fila dupla, corredores alternados, e o
+índice mais alto — sempre o do jogador — no fundo. Numa corrida em que você já
+começa na frente, a primeira coisa que o jogo ensina é que a posição não
+depende de você.
+
+### O que está medido, e o que não está
+
+O banco de provas ganhou uma fase própria (`disputa`): larga o grid a 260 m da
+linha e roda a chegada de verdade, em ~12 s em vez dos dois minutos que a rota
+inteira custaria. Ela mede a colocação final, quantos rivais cruzaram, e checa
+a única coisa que prova que o placar não mente — **quem cruzou antes está na
+frente no resultado**. A corrida solta, que era só distância e raspadas, agora
+também reporta a colocação aos 45 s e a distância para o líder.
+
+O que **não** está medido é se o ritmo do pelotão é justo. O piloto automático
+do banco faz uns 24 m/s de média; os rivais, 29 a 37 m/s nominais. Por isso ele
+termina os 45 s em último e chega em sexto na disputa — e isso não quer dizer
+que o jogo está difícil, quer dizer que o bot é ruim.
+
+Para essa pergunta ter um alvo em vez de um palpite, o banco também mede o
+**ritmo do líder**: hoje **102 km/h de média**, trânsito e quedas incluídos. É
+o número que dá para comparar com o próprio velocímetro numa sessão de jogo —
+sustentou mais que isso, ganhou a corrida. Calibrar `rival_pace_min` e
+`rival_pace_max` continua sendo trabalho de polegar, e está nos próximos
+passos; o que mudou é que agora se sabe contra o quê.
 
 ## A porta do carro
 
@@ -258,12 +330,19 @@ ser a velocidade máxima, e slider que mente é slider que ninguém ajusta.
    corredor está puxando o jogador pra dentro do trânsito, é o número pra
    vigiar em qualquer mexida aqui. Continua sendo o segundo maior risco depois
    do feel.
-3. **Fechar o combate.** Derrubar rival no poste já funciona, mas não tem
+3. **Calibrar o ritmo do pelotão.** `rival_pace_min` / `rival_pace_max` e
+   `rival_rubber_band`, os três no F3. O banco prova que a corrida existe e
+   termina; ele não tem como dizer se ficou disputada, porque o piloto
+   automático dele não joga bem o bastante para ser referência. A pergunta é
+   uma sessão de jogo: *dá pra virar a corrida no último quilômetro, e custa
+   suor?*
+4. **Fechar o combate.** Derrubar rival no poste já funciona, mas não tem
    medida nenhuma. Falta o feedback de impacto (hit stop, shake, som).
-4. **Calibrar as estrelas.** `SECONDS_PER_METER = 0.055` exige ~65 km/h de
-   média. Dá pra entregar dirigindo limpo; 5 estrelas exige o corredor. É a
-   intenção, mas não foi verificada com um humano no controle.
-5. **Só então** modelar o entregador low-poly e começar o batch de render.
+5. **Calibrar as estrelas.** `SECONDS_PER_METER = 0.055` exige ~65 km/h de
+   média. Dá pra entregar dirigindo limpo; 5 estrelas exige o corredor, e agora
+   exige também chegar na frente — metade da nota é posição. É a intenção, mas
+   não foi verificada com um humano no controle.
+6. **Só então** modelar o entregador low-poly e começar o batch de render.
 
 ## Nota de marca
 
