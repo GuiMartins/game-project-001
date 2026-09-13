@@ -1,12 +1,33 @@
 class_name World
 extends Node3D
 ## Monta o mundo e arbitra as regras que precisam ver todo mundo ao mesmo
-## tempo: raspada no corredor, socos que acertaram, reciclagem do transito.
+## tempo: colocacao na corrida, raspada no corredor, socos que acertaram,
+## reciclagem do transito.
 
 signal run_finished
 signal event_logged(text: String, color: Color)
 
 const ROUTE_LENGTH: float = 3200.0
+
+## Metros antes do fim da curva onde a linha de chegada fica. A curva termina
+## com as tangentes suavizadas num ponto so, e chegar exatamente nele poria a
+## moto num trecho onde a amostragem ja esta grampeada.
+const FINISH_MARGIN: float = 30.0
+
+## Cor da bag de cada rival. E o unico jeito de distinguir um do outro no
+## greybox - e ja e o plano de arte: mesmo rig, paleta trocada.
+const RIVAL_COLORS: Array[Color] = [
+	Color(0.25, 0.85, 0.45),
+	Color(0.95, 0.85, 0.2),
+	Color(0.6, 0.35, 0.95),
+	Color(0.2, 0.75, 0.95),
+	Color(0.95, 0.35, 0.45),
+]
+
+## Quanto tempo a HUD fica sem anunciar outra mudanca de posicao, em segundos.
+## Dois corredores emparelhados trocam de lugar varias vezes por segundo, e sem
+## isto o aviso vira estroboscopio em cima da pista.
+const POSITION_EVENT_COOLDOWN: float = 1.2
 
 ## Distancia lateral (centro a centro) que ainda conta como raspada.
 const NEAR_MISS_LATERAL: float = 2.6
@@ -16,26 +37,18 @@ const NEAR_MISS_MIN_LATERAL: float = 1.30
 ## Abaixo desta velocidade passar entre carros nao e coragem, e manobra.
 const NEAR_MISS_MIN_SPEED: float = 17.0
 
-## O quanto o miolo do atalho precisa se afastar do eixo da avenida, em metros.
-##
-## 26 m poe as duas pistas a uns 13 m de asfalto a asfalto: quarteirao no meio,
-## nao costura. O teto existe pro atalho continuar sobre o carpete de chao da
-## avenida, que vai ate 43 m - alem disso ele sairia voando sobre o vazio.
-
 var tuning: BikeTuning
 var world_tuning: WorldTuning
 var track: RoadTrack
 var player: PlayerBike
 var camera: ChaseCamera
-var run := DeliveryRun.new()
+var run := RaceRun.new()
 
 var traffic: Array[TrafficCar] = []
 var rivals: Array[RivalBike] = []
 var _rng := RandomNumberGenerator.new()
 var _spawn_cursor: float = 0.0
-## Progresso do frame passado. Continua existindo pra o corredor saber o
-## sentido da marcha entre um frame e o outro.
-var _last_progress: float = 0.0
+var _position_event_timer: float = 0.0
 
 
 func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 20260831) -> void:
@@ -70,30 +83,46 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	camera.current = true
 
 	_spawn_traffic()
-	_spawn_rivals()
-	_last_progress = player.track_offset
-
-	run.start(track.length - 30.0)
+	_sync_rival_pool()
+	start_race()
 
 
 func restart() -> void:
-	for car in traffic:
-		car.queue_free()
-	traffic.clear()
-	for rival in rivals:
-		rival.queue_free()
-	rivals.clear()
-
-	player.setup(tuning, track, 12.0)
-	player.speed = 0.0
-	player.adrenaline = 0.0
-	player.state = PlayerBike.State.RIDING
-	_spawn_cursor = 0.0
-	_spawn_traffic()
-	_spawn_rivals()
-	_last_progress = player.track_offset
-	run.start(track.length - 30.0)
+	# A frota de rivais so se reconcilia entre corridas: rival tem estado de IA,
+	# e trocar o pelotao no meio faria o placar mentir.
+	_sync_rival_pool()
+	start_race()
 	event_logged.emit("nova corrida", Color(0.7, 0.9, 1.0))
+
+
+## Larga a corrida com o grid comecando em `grid_offset` metros de rota.
+##
+## O grid tem endereco proprio porque o banco de provas precisa largar perto da
+## linha de chegada pra medir a chegada sem pagar os 3 km inteiros - e medir a
+## chegada e o unico jeito de saber se a ordem de chegada existe.
+func start_race(grid_offset: float = 0.0, at_speed: float = 0.0) -> void:
+	run.start(track.length - FINISH_MARGIN, rivals.size() + 1)
+	var slot := grid_slot(rivals.size(), grid_offset)
+	player.place_on_track(slot.x, slot.y, at_speed)
+	player.adrenaline = 0.0
+	for i in rivals.size():
+		var rival_slot := grid_slot(i, grid_offset)
+		rivals[i].reset_race(rival_slot.x, rival_slot.y, run.distance_total)
+	_position_event_timer = 0.0
+	scatter_traffic_ahead(player.track_offset)
+
+
+## Onde o corredor `index` larga: fila dupla, corredores alternados, o de
+## indice mais alto no fundo do grid.
+##
+## O jogador recebe sempre o ULTIMO indice, ou seja, larga em ultimo. E de
+## proposito: numa corrida em que voce ja comeca na frente, a primeira coisa
+## que o jogo ensina e que a posicao nao depende de voce.
+func grid_slot(index: int, base: float) -> Vector2:
+	var row := index / 2
+	var column := index % 2
+	var forward := base + 26.0 - float(row) * 7.0
+	return Vector2(maxf(forward, 4.0), RoadTrack.corridor_center(0 if column == 0 else 2))
 
 
 ## --- Construcao -----------------------------------------------------------
@@ -163,7 +192,8 @@ func _build_scenery() -> void:
 		o += _rng.randf_range(16.0, 30.0)
 
 
-## aqui, e nao pro jogador.
+## Quanto o jogador ja andou da rota, em metros. E daqui que sai a colocacao -
+## e por isso que rival e HUD perguntam a pista, e nao a moto.
 func player_progress() -> float:
 	return player.track_offset
 
@@ -216,23 +246,21 @@ func _place_car(car: TrafficCar, at_offset: float) -> void:
 		car.recycle(at_offset, _pick_lane(), false, false)
 
 
-func _spawn_rivals() -> void:
-	const COLORS: Array[Color] = [
-		Color(0.25, 0.85, 0.45),
-		Color(0.95, 0.85, 0.2),
-		Color(0.6, 0.35, 0.95),
-		Color(0.2, 0.75, 0.95),
-	]
-	for i in range(world_tuning.rival_count):
+## Reconcilia a frota de rivais com o tuning, sem mexer em quem ja existe.
+func _sync_rival_pool() -> void:
+	while rivals.size() > world_tuning.rival_count:
+		var leaving: RivalBike = rivals.pop_back()
+		leaving.queue_free()
+	while rivals.size() < world_tuning.rival_count:
 		var rival := RivalBike.new()
 		add_child(rival)
 		rival.setup(
 			track,
 			tuning,
+			world_tuning,
 			self,
 			player,
-			20.0 + float(i) * 9.0,
-			COLORS[i % COLORS.size()],
+			RIVAL_COLORS[rivals.size() % RIVAL_COLORS.size()],
 			_rng.randi()
 		)
 		rival.went_down.connect(_on_rival_down.bind(rival))
@@ -246,14 +274,38 @@ func _physics_process(delta: float) -> void:
 	if player == null or track == null:
 		return
 
+	# A colocacao vem ANTES do tick: e o tick que pode cruzar a linha, e a
+	# posicao que ele congelar no resultado tem que ser a deste frame.
+	_position_event_timer = maxf(_position_event_timer - delta, 0.0)
+	_update_standings()
 	run.tick(delta, player_progress())
 	_sync_traffic_pool()
 	_recycle_traffic()
 	_score_corridor()
 
-	if run.phase != DeliveryRun.Phase.RIDING:
+	if run.phase != RaceRun.Phase.RACING:
 		set_physics_process(false)
 		run_finished.emit()
+
+
+## Quem esta em que lugar.
+##
+## A chave de cada corredor mistura progresso e tempo de chegada num numero so
+## (ver RaceRun.rank_key): sem ela, comparar quem ja cruzou a linha com quem
+## ainda corre precisaria de dois casos em cada comparacao, e o empate entre
+## dois que terminaram sairia pela ordem da lista.
+func _update_standings() -> void:
+	var keys: Array[float] = [RaceRun.rank_key(player_progress(), run.finish_time)]
+	for rival in rivals:
+		keys.append(RaceRun.rank_key(rival.offset, rival.finish_time))
+	var moved := run.update_position(RaceRun.position_of(keys[0], keys))
+	if moved == 0 or _position_event_timer > 0.0:
+		return
+	_position_event_timer = POSITION_EVENT_COOLDOWN
+	if moved > 0:
+		event_logged.emit("ultrapassou - %s" % run.position_text(), Color(0.6, 1.0, 0.6))
+	else:
+		event_logged.emit("perdeu posicao - %s" % run.position_text(), Color(1.0, 0.6, 0.4))
 
 
 ## Reconcilia o tamanho da frota com o tuning.

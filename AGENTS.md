@@ -13,7 +13,7 @@ O resumo mínimo, se você só vai ler isto:
 ```bash
 python tools/dev.py setup      # primeira vez: baixa a engine fixada
 python tools/dev.py test       # unitários, ~4 s
-python tools/dev.py selftest   # banco de provas, ~89 s — o portão
+python tools/dev.py selftest   # banco de provas, ~110 s — o portão
 python tools/dev.py lint
 ```
 

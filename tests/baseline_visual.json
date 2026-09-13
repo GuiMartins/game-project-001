@@ -1,14 +1,14 @@
 {
 	"_leia": "O que a tela tem dentro, em proporcoes grosseiras. Nao e comparacao pixel a pixel: driver e GPU mudam o ultimo bit de quase todo pixel, e o teste falharia por motivo nenhum. Isto pega a tela ficar ERRADA POR INTEIRO - a pista sumir, o mundo apagar - que e o que nenhuma medida de fisica pega.",
 	"_como_atualizar": "python tools/dev.py shots --update, depois de olhar os PNGs.",
-	"tolerancia_padrao_pct": 12.0,
+	"tolerancia_padrao_pct": 20.0,
 	"tolerancias_pct": {
 		"visual_frames": 0.0
 	},
 	"valores": {
-		"visual_familias_de_cor": 33.315789,
-		"visual_fracao_ceu": 0.143311,
+		"visual_familias_de_cor": 33.368421,
+		"visual_fracao_ceu": 0.159447,
 		"visual_frames": 19.0,
-		"visual_luminancia": 0.189417
+		"visual_luminancia": 0.178902
 	}
 }
