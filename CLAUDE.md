@@ -93,6 +93,27 @@ jogo continua rodando, só errado. Estão explicados em `docs/PROTOTIPO.md`.
 `master` é estável. `develop` recebe o trabalho. Merge em `master` **não**
 publica nada.
 
+**Trabalho novo nasce em branch, e a branch vive no remoto desde o primeiro
+commit.** Não espere ser mandado: ao começar qualquer tarefa, saia de `master`
+para uma branch com nome do assunto, e conforme o trabalho fecha etapas, vá
+commitando e **dando push** sem pedir autorização.
+
+```bash
+git switch -c corrida-por-posicao
+# ... trabalho, portão, commit ...
+git push -u origin corrida-por-posicao
+```
+
+Duas razões, e nenhuma é cerimônia. A primeira é que trabalho de IA que só
+existe na máquina de quem rodou o agente é trabalho que some junto com a
+sessão — e ninguém consegue ler o diff de algo que não foi empurrado. A segunda
+é que aqui push não distribui nada: a release sai de tag, então a pior
+consequência de uma branch empurrada é uma branch a mais no remoto.
+
+O que **continua** precisando de aval: abrir PR, fazer merge, criar tag,
+publicar release. Empurrar a branch é para o trabalho ficar visível; decidir
+que ele entra é outra coisa.
+
 Release sai de uma tag, que é ato deliberado e humano:
 
 ```bash
