@@ -133,12 +133,29 @@ de 4 em 4 pixels:
 | `visual_familias_de_cor` | elementos sumindo da cena |
 
 Verificado com o bug de verdade: escondendo o mesh da pista, `fracao_ceu` cai
-48,6% e `luminancia` 46,4% — muito além dos 12% de tolerância. Com a pista de
-volta, as três ficam abaixo de 1% de variação.
+48,6% e `luminancia` 46,4% — muito além da tolerância. Com a pista de volta, as
+três ficam abaixo de 1% de variação.
 
-A tolerância é larga (12%) de propósito: o CI roda em software rendering sem
-GPU, contra um baseline gravado numa máquina com GPU. Estreitar isso troca
-regressão por alarme falso.
+A tolerância é larga (**20%**) de propósito: o CI roda em software rendering sem
+GPU contra um baseline gravado numa máquina com GPU, e — o que pesa mais — o
+instante do frame capturado flutua com a velocidade do render. Estreitar isso
+troca regressão por alarme falso.
+
+Ela era 12% e subiu quando o jogo virou corrida. A simulação continua
+determinística: o que varia é **qual frame renderizado** é capturado no instante
+pedido, e com a câmera tremendo numa queda dois frames de atraso são duas
+imagens bem diferentes. Medido com o **mesmo código**: três rodadas de CI deram
++10,6%, +13,5% e +11,2%, e a própria máquina que gravou o baseline deu +9,6% na
+rodada seguinte.
+
+Ou seja, 12% caía **dentro do ruído** e o portão virou cara ou coroa — chegou a
+reprovar um commit que só mexeu em markdown, e a mesma alteração passou na
+rodada seguinte. Limite dentro da variação não é rede, é moeda. 20% deixa o
+dobro de margem sobre o pior caso medido, e o bug de verdade move 46–48%.
+
+Consequência honesta: este teste só promete pegar a tela ficando **errada por
+inteiro**. Regressão visual sutil passa por ele, e ninguém deve contar com o
+contrário.
 
 Para atualizar: **olhe os PNGs primeiro**, depois `python tools/dev.py shots
 --update`.
