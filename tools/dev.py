@@ -540,7 +540,20 @@ def _write_visual_baseline(visual: dict) -> None:
         # Tolerancia larga: a corrida e deterministica, mas o instante exato do
         # frame capturado depende de quando o render fecha, e a camera esta em
         # movimento. Estreitar isso troca regressao por alarme falso.
-        "tolerancia_padrao_pct": 12.0,
+        #
+        # Foi de 12% pra 20% quando o jogo virou corrida. A simulacao continua
+        # deterministica - o que flutua e QUAL frame renderizado e capturado no
+        # instante pedido, e com a camera tremendo numa queda dois frames de
+        # atraso sao duas imagens bem diferentes. Medido com o MESMO codigo:
+        # tres rodadas de CI deram +10.6%, +13.5% e +11.2%, e a propria maquina
+        # que gravou o baseline deu +9.6% na rodada seguinte.
+        #
+        # Ou seja, 12% caia DENTRO do ruido e o portao virou cara ou coroa -
+        # chegou a reprovar um commit que so mexeu em markdown. O que este teste
+        # existe pra pegar mexe 46% e 48% (a pista sumindo por backface
+        # culling), entao 20% continua com o dobro de margem sobre o pior caso
+        # medido.
+        "tolerancia_padrao_pct": 20.0,
         "tolerancias_pct": {"visual_frames": 0.0},
         "valores": {k: round(float(v), 6) for k, v in sorted(visual.items())},
     }
