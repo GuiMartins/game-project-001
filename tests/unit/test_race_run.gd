@@ -184,3 +184,14 @@ func test_rival_derrubado_vale_estilo() -> void:
 	corrida.register_rival_down()
 	assert_int(corrida.rivals_downed).is_equal(1)
 	assert_float(corrida.style).is_equal_approx(150.0, 0.001)
+
+
+func test_rival_que_cai_sozinho_nao_paga_estilo() -> void:
+	# O contador existe, o estilo nao: a recompensa de um rival que se
+	# espatifou sozinho e a posicao que ele perdeu, e essa voce ja ganhou.
+	var corrida := _corrida()
+	corrida.register_rival_fell()
+	corrida.register_rival_fell()
+	assert_int(corrida.rivals_fell).is_equal(2)
+	assert_int(corrida.rivals_downed).is_equal(0)
+	assert_float(corrida.style).is_equal(0.0)

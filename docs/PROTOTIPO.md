@@ -218,6 +218,20 @@ de `State` (de pé, cambaleando, no chão) porque cair acontece por cima de
 qualquer intenção — juntar os dois faria "cair atacando" precisar de um estado
 próprio.
 
+**Derrubar rival é conquista, não acidente de trânsito.** Rival no chão pagava
+150 de estilo e 20 de adrenalina toda vez que um rival caía, sem perguntar quem
+o derrubou. Somado ao bug 6 acima, a conta de **ficar parado na largada** era:
+em dois segundos os cinco rivais se espatifavam sozinhos, e o jogador terminava
+com o boost cheio e 750 de estilo — um quinto da nota — sem ter acelerado.
+Pilar que acontece sozinho deixa de ser pilar.
+
+Hoje quem paga é a **autoria**: `RivalBike` guarda por 1,5 s
+(`CREDITO_DO_SOCO`) o soco que o empurrou, e o sinal `went_down` diz se a queda
+é do jogador. O prazo existe porque o golpe do Road Rash não derruba, empurra —
+a lataria pode estar alguns metros adiante, e o rival ainda passa o
+`punch_stagger` inteiro sem governar a moto. Quem cai sozinho continua valendo
+o que sempre valeu de verdade: a posição que ele perde, que é sua de graça.
+
 **O grid larga o jogador em último.** Fila dupla, corredores alternados, e o
 índice mais alto — sempre o do jogador — no fundo. Numa corrida em que você já
 começa na frente, a primeira coisa que o jogo ensina é que a posição não
@@ -230,7 +244,11 @@ linha e roda a chegada de verdade, em ~12 s em vez dos dois minutos que a rota
 inteira custaria. Ela mede a colocação final, quantos rivais cruzaram, e checa
 a única coisa que prova que o placar não mente — **quem cruzou antes está na
 frente no resultado**. A corrida solta, que era só distância e raspadas, agora
-também reporta a colocação aos 45 s e a distância para o líder.
+também reporta a colocação aos 45 s, a distância para o líder e **quantos
+rivais foram ao chão, separados por quem os derrubou**. O piloto automático não
+dá um soco em 45 s, então o número de rivais creditados a ele tem que ser zero:
+é a asserção que impede a queda alheia de voltar a pagar estilo. O outro
+número, o de quedas sozinhas, é calibragem — hoje mede **1** em 45 s.
 
 O que **não** está medido é se o ritmo do pelotão é justo. O piloto automático
 do banco faz uns 24 m/s de média; os rivais, 29 a 37 m/s nominais. Por isso ele

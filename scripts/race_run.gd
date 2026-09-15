@@ -59,7 +59,13 @@ var crashes: int = 0
 ## bate no primeiro frame em que alcanca nao aparece em medida nenhuma - e foi
 ## exatamente assim que o segundo passou despercebido.
 var hits_taken: int = 0
-var rivals_downed: int = 0
+var rivals_downed: int = 0  ## Rivais que o JOGADOR derrubou.
+## Rivais que foram ao chao sozinhos, no transito.
+##
+## Nao paga nada, e existe so pra medida: sem ele, "o jogador nao derrubou
+## ninguem" e "ninguem caiu" viram a mesma leitura, e uma calibragem que
+## espatifa o pelotao inteiro passa despercebida.
+var rivals_fell: int = 0
 var combo: int = 0
 var combo_timer: float = 0.0
 
@@ -80,6 +86,7 @@ func start(finish_distance: float, racer_count: int = 1) -> void:
 	crashes = 0
 	hits_taken = 0
 	rivals_downed = 0
+	rivals_fell = 0
 	combo = 0
 	combo_timer = 0.0
 	phase = Phase.RACING
@@ -150,9 +157,19 @@ func register_hit_taken() -> void:
 	combo = 0
 
 
+## Rival derrubado PELO jogador: o estilo do pilar do combate.
+##
+## Quem decide a autoria e o RivalBike, que guarda por 1,5 s o soco que o
+## empurrou (`CREDITO_DO_SOCO`); aqui so se paga.
 func register_rival_down() -> void:
 	rivals_downed += 1
 	style += 150.0
+
+
+## Rival que caiu sozinho. Nao paga estilo nem adrenalina: a recompensa dele e
+## a posicao que voce ganha de graca.
+func register_rival_fell() -> void:
+	rivals_fell += 1
 
 
 ## Chave de ordenacao de um corredor: quanto maior, mais na frente.

@@ -15,6 +15,13 @@ Três camadas, e nenhuma substitui a outra.
 `RefCounted` puro — prazo, estilo, estrelas e a ordenação do pelotão — e as
 estáticas de `RoadTrack` são geometria.
 
+A exceção é `test_rival_autoria.gd`, que põe um `RivalBike` na árvore (é o
+`_ready` dele que monta o sensor de acidente) e avança o relógio chamando
+`_physics_process` na mão. Continua sendo unitário pelo que importa: roda em
+milissegundos, não depende de mundo nem de trânsito, e a regra que ele mede —
+por quanto tempo um soco responde pela queda do rival — é a diferença entre
+derrubar rival ser conquista ou ser acidente de trânsito.
+
 Existem por uma razão específica: há uma classe de erro que o banco de provas
 não pega, e é justamente a que se introduz sem perceber. "Só aumentei um pouco
 o multiplicador do combo" não move nenhuma das dez medidas do banco — e o
@@ -72,6 +79,14 @@ vindo atrás dele ninguém encosta. Ela existe porque a decisão de socar do riv
 já rodou por frame, e a essa altura o piloto atravessava a corrida apanhando —
 com o comportamento antigo restaurado pelos sliders a mesma rodada mede quatro.
 
+`corrida` também conta **quantos rivais foram ao chão**, separando os que o
+jogador derrubou dos que se espatifaram sozinhos. O piloto automático não soca,
+então o primeiro número tem que ser **zero** — e essa asserção é a rede embaixo
+da regra de autoria: enquanto rival no chão pagava estilo e adrenalina sem
+perguntar quem derrubou, ficar parado na largada rendia boost cheio e um quinto
+da nota. O segundo número é calibragem: se o pelotão voltar a se espatifar
+sozinho, ele salta.
+
 Junto do baseline vai um `FREERUN_HITS_MAX` no código, e os dois não são
 redundantes: o baseline aponta que o número **andou**, o `_check` aponta que ele
 andou para o lado que importa — e continua valendo depois que alguém atualizar o
@@ -115,6 +130,13 @@ Saber disto faz parte do contrato. Nenhum destes é pego por nada automatizado:
   proximidade faz a contagem de pancadas saltar. O que ela **não** pega é o
   ajuste fino: 0,9 s de mira antes do soco é aviso suficiente ou é tempo demais
   para reagir? Isso é polegar, e é no F3 que se decide.
+- **"Derrubar rival com o soco paga certo?"** Meio coberto. O unitário prova a
+  regra da autoria (socou credita, não encostou não credita, o crédito expira)
+  e a `corrida` prova que ninguém ganha estilo sem socar. O que **não** tem
+  teste é o caminho inteiro do lado que paga — soco derruba de fato e o placar
+  soma os 150 —, porque encaixar o rival numa lataria de propósito custaria uma
+  fase inteira do banco. E 1,5 s de crédito é um número de polegar: ele cobre o
+  cambaleio com folga, mas ninguém mediu se é o corte certo.
 - **"A corrida está disputada?"** O banco prova que ela termina e que o placar
   bate com a ordem de chegada. Se o pelotão está no ritmo certo é outra
   pergunta, e o piloto automático não serve de referência: ele faz uns 24 m/s

@@ -447,7 +447,22 @@ func _on_player_punch_landed(target: Node3D) -> void:
 		event_logged.emit("socou lataria", Color(0.8, 0.8, 0.8))
 
 
-func _on_rival_down(_rival: RivalBike) -> void:
+## Um rival foi ao chao. So paga quem derrubou.
+##
+## Pagava sempre, e a conta de ficar PARADO na largada era esta: em dois
+## segundos os cinco rivais se espatifavam sozinhos no transito, e o jogador
+## terminava com a adrenalina cheia e 750 de estilo - um quinto da nota - sem
+## ter acelerado. Derrubar rival e o pilar do combate, e pilar que acontece
+## sozinho deixa de ser pilar.
+##
+## A queda alheia continua valendo o que sempre valeu de verdade: a posicao que
+## ele perde, que e sua de graca. O que ela nao paga mais e estilo e boost - e o
+## aviso cinza na HUD e o que diz ao jogador que a diferenca existe.
+func _on_rival_down(pelo_jogador: bool, _rival: RivalBike) -> void:
+	if not pelo_jogador:
+		run.register_rival_fell()
+		event_logged.emit("rival caiu sozinho", Color(0.62, 0.66, 0.74))
+		return
 	run.register_rival_down()
 	player.add_adrenaline(20.0)
 	event_logged.emit("rival no chao", Color(0.5, 1.0, 0.7))
