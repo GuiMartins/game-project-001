@@ -464,8 +464,19 @@ custa mais navegação do que organiza. `EnemyBike` virou `RivalBike` porque
 
 ## Menu (§5)
 
-`MainMenu.tscn` não existe e não vai existir enquanto a pergunta do protótipo
-não tiver resposta. O jogo abre direto na corrida.
+`MainMenu.tscn` não existe; existe [`race_flow.gd`](../scripts/race_flow.gd),
+construído em código como toda a interface deste protótipo. Ele tem as três
+linhas que o GDD pede — Jogar, Configurações, Sair — mais uma tela de resultado
+e uma pausa, que o GDD não previa.
+
+O que mudou de sentido foi "Configurações": sem áudio e sem opção gráfica para
+configurar, ela lista os três atalhos de debug que já existiam e que ninguém
+achava sem ler o README. O raciocínio está em
+[PROTOTIPO.md](PROTOTIPO.md#o-fluxo-em-volta-da-corrida).
+
+Ele entrou antes de o feel fechar, contrariando o que esta seção dizia até
+13/09/2026, por um motivo só: o protótipo é exportado para as três plataformas
+para alguém jogá-lo, e quem recebe o zip não recebe junto a tecla `R`.
 
 ## Carga (§11)
 
