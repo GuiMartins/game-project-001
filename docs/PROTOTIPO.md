@@ -112,8 +112,8 @@ regressão de tuning sem ninguém abrir o jogo.
 
 ## O que o protótipo já mostrou (e custou conserto)
 
-Cinco bugs que só apareceram porque as medidas existem. Ficam registrados
-porque três deles são armadilhas de Godot que vão voltar:
+Seis bugs que só apareceram porque as medidas existem. Ficam registrados
+porque quatro deles são armadilhas de Godot que vão voltar:
 
 1. **Sinal da guinada invertido.** Em Godot (Y pra cima, mão direita) guinada
    positiva gira pra *esquerda*. Inclinar pra direita mandava a moto pra
@@ -135,6 +135,15 @@ porque três deles são armadilhas de Godot que vão voltar:
 5. **Corpo físico não girava com a moto.** A cápsula de colisão e as hitboxes
    de soco ficavam alinhadas ao mundo. O soco saía pro lado errado sempre que a
    pista curvava.
+6. **`Area3D` responde com o mundo do frame passado.** No primeiro passo de
+   física de cada corrida, os corpos ainda estavam todos na origem — recém
+   criados, antes de qualquer `global_transform` — e o sensor de acidente de
+   **cada** rival lia os dez carros do trânsito como "encostei". Os cinco
+   rivais capotavam no frame 1 de toda largada, contra carros a 150 m dali, e
+   nada no console reclamava: só a corrida começava com o pelotão no chão. Vale
+   para toda reposição em massa — a largada, o `R`, o teleporte de +9000 m do
+   banco de provas. Hoje o sensor confere a distância antes de aceitar o
+   encosto (`RivalBike.WIPEOUT_ALCANCE`).
 
 Também apareceu uma lacuna de design: nada avisava que a moto estava na
 contramão. Capotar, levantar virado e passar dez segundos sem entender o que
@@ -229,7 +238,7 @@ termina os 45 s em último e chega em sexto na disputa — e isso não quer dize
 que o jogo está difícil, quer dizer que o bot é ruim.
 
 Para essa pergunta ter um alvo em vez de um palpite, o banco também mede o
-**ritmo do líder**: hoje **102 km/h de média**, trânsito e quedas incluídos. É
+**ritmo do líder**: hoje **108 km/h de média**, trânsito e quedas incluídos. É
 o número que dá para comparar com o próprio velocímetro numa sessão de jogo —
 sustentou mais que isso, ganhou a corrida. Calibrar `rival_pace_min` e
 `rival_pace_max` continua sendo trabalho de polegar, e está nos próximos

@@ -24,6 +24,19 @@ enum Mode { FOLLOW, OVERTAKE, ATTACK }
 
 const SIZE := Vector3(0.75, 1.75, 2.1)
 
+## Distancia centro a centro acima da qual um "encostou" do sensor e mentira.
+##
+## O Area3D responde com o estado do ULTIMO passo de fisica, e num passo em que
+## todo mundo acabou de ser reposicionado - a largada, o R, o teleporte de
+## +9000 m do banco de provas - esse estado descreve um mundo que nao existe
+## mais: os corpos ainda estavam na origem, todos sobrepostos. Sem este filtro
+## os cinco rivais capotavam no primeiro frame de toda corrida, contra carros
+## que estavam a 150 m dali.
+##
+## 4,5 m e folga em cima do encosto real: meia diagonal do sensor (0,95 m) mais
+## meio carro (2,2 m) da 3,4 m, e um frame de aproximacao a 33 m/s soma 0,55 m.
+const WIPEOUT_ALCANCE: float = 4.5
+
 var track: RoadTrack
 var tuning: BikeTuning
 var world_tuning: WorldTuning
@@ -378,9 +391,10 @@ func _update_hitbox(delta: float) -> void:
 func _check_wipeout() -> void:
 	if state == State.DOWN:
 		return
-	if _sensor.get_overlapping_bodies().is_empty():
-		return
-	_go_down()
+	for body: Node3D in _sensor.get_overlapping_bodies():
+		if global_position.distance_to(body.global_position) <= WIPEOUT_ALCANCE:
+			_go_down()
+			return
 
 
 func _go_down() -> void:
