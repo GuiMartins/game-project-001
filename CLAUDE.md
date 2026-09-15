@@ -191,3 +191,4 @@ saber onde **não** há rede faz parte do contrato.
 | `tests/baseline_visual.json` | O que a tela tem dentro. |
 | `tools/dev.py` | Todos os comandos. |
 | `docs/PROTOTIPO.md` | Por que o jogo é assim. Leia antes de mexer no feel. |
+| `docs/GDD.md` | O briefing original, congelado. O que o jogo queria ser. |
