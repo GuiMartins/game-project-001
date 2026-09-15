@@ -154,7 +154,7 @@ Deliberadamente fora do escopo até o feel fechar:
   fechado, que é a única pergunta que este protótipo existe pra responder.
   O código está no histórico — `git log --diff-filter=D -- scripts/traffic_light.gd`
   acha o commit que os tirou, e com ele o estado completo de cada um.
-- Áudio, menu, progressão, upgrade de moto.
+- Áudio, progressão, upgrade de moto.
 - Shader de mundo curvo ("SEGA curved world").
 - Chuva, noite com neon no asfalto molhado.
 
@@ -202,11 +202,12 @@ estaria.
 o pelotão se espalha até sumir e a briga lateral quase não acontece; alto
 demais ele gruda em você e a colocação deixa de depender do que você faz.
 
-A IA ganhou as intenções que o GDD pede (`RivalBike.Mode`): `FOLLOW` segue a
-pista, `OVERTAKE` abre caminho quando a frente fecha a dois terços da janela de
-visão, `ATTACK` briga com quem está emparelhado. Elas são separadas de `State`
-(de pé, cambaleando, no chão) porque cair acontece por cima de qualquer
-intenção — juntar os dois faria "cair atacando" precisar de um estado próprio.
+A IA ganhou as intenções que o [GDD](GDD.md) pede (`RivalBike.Mode`): `FOLLOW`
+segue a pista, `OVERTAKE` abre caminho quando a frente fecha a dois terços da
+janela de visão, `ATTACK` briga com quem está emparelhado. Elas são separadas
+de `State` (de pé, cambaleando, no chão) porque cair acontece por cima de
+qualquer intenção — juntar os dois faria "cair atacando" precisar de um estado
+próprio.
 
 **O grid larga o jogador em último.** Fila dupla, corredores alternados, e o
 índice mais alto — sempre o do jogador — no fundo. Numa corrida em que você já
@@ -233,6 +234,69 @@ o número que dá para comparar com o próprio velocímetro numa sessão de jogo
 sustentou mais que isso, ganhou a corrida. Calibrar `rival_pace_min` e
 `rival_pace_max` continua sendo trabalho de polegar, e está nos próximos
 passos; o que mudou é que agora se sabe contra o quê.
+
+## O fluxo em volta da corrida
+
+O GDD pede um menu (§5: Jogar, Configurações, Sair) e o contrato manda menu
+para depois de o feel fechar. As duas coisas continuam de pé, porque o que
+entrou não é a camada de interface do jogo — é o **caminho** de entrar e sair
+de uma corrida.
+
+Até aqui, jogar duas corridas seguidas exigia saber que `R` reinicia, e
+descobrir que existe troca de câmera exigia ler o README. Quem baixa o zip da
+release não lê o README. O protótipo é exportado para as três plataformas
+justamente para alguém sentar e responder *"está gostoso?"* — e essa pessoa
+estava esbarrando na porta antes de chegar na pergunta.
+
+Quatro telas, em [`scripts/race_flow.gd`](../scripts/race_flow.gd):
+
+| Tela | O que faz |
+| --- | --- |
+| `MENU` | JOGAR / CONFIGURACOES / SAIR |
+| `CORRIDA` | o jogo; o fluxo não desenha nada |
+| `CONFIGURACOES` | pixel, câmera e painel de tuning — os três atalhos de `F1`–`F3` |
+| `RESULTADO` | o placar de `RaceRun.summary()`, com CORRER DE NOVO e MENU |
+
+Quatro decisões que não são óbvias:
+
+**As configurações mostram o que existe, e nada além.** As três linhas são os
+três atalhos de debug que já existiam e que ninguém achava sem o README. Um
+slider de volume numa tela sem áudio seria menu de mentira, e menu de mentira é
+pior que menu nenhum.
+
+**`ESC` no meio da corrida congela, e `CONTINUAR` devolve a mesma corrida.**
+Menu de pausa que larga tudo de novo apagaria a colocação de quem pausou
+faltando 200 m — e menu que faz isso é menu que ninguém abre. Por isso a
+primeira linha troca de **nome** (JOGAR ↔ CONTINUAR) e nunca de lugar: mexer no
+número de itens moveria o índice que `_escolher` usa, e SAIR passaria a morar
+onde CONFIGURACOES morava. É um bug que continua desenhando lindamente, e que
+só aparece quando alguém fecha o jogo sem querer.
+
+**O mundo congela por `process_mode` no `World`, não nó a nó.** Uma linha
+derruba a árvore inteira: moto, rivais, trânsito e câmera. Desligar um por um é
+uma lista que alguém esquece de atualizar quando nascer o próximo nó, e
+`get_tree().paused` levaria junto o próprio menu e o painel de tuning.
+
+**O banco de provas não passa por aqui.** `iniciar(true)` larga direto na
+corrida. Menu esperando `ENTER` num processo headless não reprova o portão: ele
+o **trava**, e travado não tem código de saída para a CI ler. É a regressão
+mais cara que este arquivo podia introduzir, e é a primeira coisa que
+[`tests/unit/test_race_flow.gd`](../tests/unit/test_race_flow.gd) verifica.
+
+### O que está medido, e o que não está
+
+O unitário cobre a navegação inteira: a ordem das linhas em cada tela, a volta
+da seleção, o ESC que congela sem jogar a corrida fora, e o largar direto no
+modo selftest. São nove casos que rodam em milissegundos.
+
+O que ele **não** cobre é o desenho. A regressão visual mede o frame da
+corrida, e nenhuma das telas novas aparece nela — o fluxo não desenha nada em
+`CORRIDA`, que é justamente o que mantém o baseline visual intacto (medido:
+a luminância do frame andou 0,2 ponto percentual, dentro do ruído da própria
+medida). As três telas foram conferidas a olho, uma captura por tela, e a
+conferência pegou exatamente um erro: o placar de dez linhas passava por cima
+das duas saídas, porque a entrelinha padrão da fonte de 8px estoura 150 px
+numa tela de 180. É o tipo de coisa que nenhum número pega.
 
 ## A porta do carro
 
