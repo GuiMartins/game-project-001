@@ -31,7 +31,16 @@ qual binário usar, e no Windows escolhe a variante que não engole a saída.
 | `python tools/dev.py run` | Abre o jogo. |
 | `python tools/dev.py export` | Exporta as três plataformas. |
 
-Em algumas distribuições Linux o executável é `python3`.
+Em muitas máquinas o executável é `python3`, e `python` simplesmente não
+existe — vale para macOS, não só para Linux. Se o seu caso for esse, troque em
+todos os comandos desta página.
+
+E uma armadilha específica de quem roda comando com a saída redirecionada, que
+é como todo CI e todo agente roda: com `python` inexistente e a saída num pipe
+(`python tools/dev.py selftest | tail`), o código de saída passa a ser o do
+**último** comando do pipe. O portão devolve **0** sem ter rodado nada. Sempre
+`set -o pipefail` antes de encanar qualquer comando do portão — senão "passou"
+e "nem existe" ficam indistinguíveis.
 
 ## O portão: o que rodar antes de dizer que terminou
 
@@ -196,3 +205,4 @@ saber onde **não** há rede faz parte do contrato.
 | `tools/dev.py` | Todos os comandos. |
 | `docs/PROTOTIPO.md` | Por que o jogo é assim. Leia antes de mexer no feel. |
 | `docs/GDD.md` | O briefing original, congelado. O que o jogo queria ser. |
+| `docs/DIRECAO_VISUAL.md` | Como sair do greybox: resolução, sprite, luz, partícula. Leia antes de mexer no visual. |
