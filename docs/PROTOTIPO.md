@@ -202,11 +202,12 @@ estaria.
 o pelotão se espalha até sumir e a briga lateral quase não acontece; alto
 demais ele gruda em você e a colocação deixa de depender do que você faz.
 
-A IA ganhou as intenções que o GDD pede (`RivalBike.Mode`): `FOLLOW` segue a
-pista, `OVERTAKE` abre caminho quando a frente fecha a dois terços da janela de
-visão, `ATTACK` briga com quem está emparelhado. Elas são separadas de `State`
-(de pé, cambaleando, no chão) porque cair acontece por cima de qualquer
-intenção — juntar os dois faria "cair atacando" precisar de um estado próprio.
+A IA ganhou as intenções que o [GDD](GDD.md) pede (`RivalBike.Mode`): `FOLLOW`
+segue a pista, `OVERTAKE` abre caminho quando a frente fecha a dois terços da
+janela de visão, `ATTACK` briga com quem está emparelhado. Elas são separadas
+de `State` (de pé, cambaleando, no chão) porque cair acontece por cima de
+qualquer intenção — juntar os dois faria "cair atacando" precisar de um estado
+próprio.
 
 **O grid larga o jogador em último.** Fila dupla, corredores alternados, e o
 índice mais alto — sempre o do jogador — no fundo. Numa corrida em que você já

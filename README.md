@@ -19,6 +19,10 @@ Ele existe para responder uma pergunta e só uma: **acelerar, inclinar, se
 enfiar no corredor e bater está gostoso?** Nada de arte, áudio ou menu até
 essa resposta ser sim.
 
+O briefing original, escrito antes de existir uma linha de código, está
+congelado em [docs/GDD.md](docs/GDD.md). Onde ele já não bate com o que foi
+construído, a seção Deriva diz o que mudou e por quê.
+
 ## Rodar
 
 Só é preciso ter Python 3.10+. A engine o script baixa:
