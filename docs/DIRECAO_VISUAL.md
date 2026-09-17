@@ -653,17 +653,32 @@ em resolução nativa volta. Nenhum dos dois precisa cair.
 | Sombra, céu, LUT, glow | `scripts/world.gd::_build_environment` | seção inteira |
 | `cast_shadow` por mesh | `road_track.gd`, `greybox.gd`, `world.gd` | 1 linha em cada construtor |
 | Baseline visual | `tests/baseline_visual.json` | as 4 medidas mudam — atualização legítima, no mesmo commit, com o motivo |
-| O número "320×180" escrito em prosa | 9 arquivos: `hud.gd`, `race_run.gd`, `traffic_car.gd`, `world.gd`, `world_tuning.gd`, `main.gd`, `docs/PROTOTIPO.md`, `docs/INSTALAR.txt`, `CLAUDE.md` | comentários e documento |
+| O número "320×180" escrito em prosa | **13 arquivos** (lista abaixo) | comentários e documento |
 
 Esse último item é o achado desagradável, e é melhor saber antes: **320×180 não
-é uma constante, é um número gravado em nove arquivos**, a maioria deles em
+é uma constante, é um número gravado em treze arquivos**, a maioria deles em
 comentários que explicam *por que* algo é do jeito que é ("a 320×180 duas
 caixas cinzas coladas não leem"). Trocar a resolução sem revisar esses
 comentários deixa o repositório cheio de justificativa que virou mentira — e
 justificativa mentirosa é pior que comentário ausente, porque é acreditada.
 
+```bash
+# a lista se regenera; nao confie na contagem abaixo sem rodar isto
+grep -rln "320x180\|320×180" scripts/ docs/ tools/ project.godot CLAUDE.md README.md
+```
+
+Hoje: `scripts/hud.gd`, `main.gd`, `race_flow.gd`, `race_run.gd`,
+`traffic_car.gd`, `world.gd`, `world_tuning.gd`, `project.godot`, `README.md`,
+`CLAUDE.md`, `docs/PROTOTIPO.md`, `docs/GDD.md`, `docs/INSTALAR.txt`.
+
+**E a contagem cresce sozinha.** Este documento nasceu dizendo nove; três dias
+depois eram treze, porque entrou uma tela de menu e ela também justificou uma
+decisão pelo tamanho da tela. Isso não é crítica a quem escreveu — é o
+comportamento normal de um número que virou argumento. Só reforça a moral:
+quanto mais tarde a resolução mudar, mais prosa haverá para revisar.
+
 Nenhum deles muda a decisão. Mas o trabalho é "trocar a resolução **e** revisar
-nove arquivos de prosa", não "trocar uma linha".
+treze arquivos de prosa", não "trocar uma linha".
 
 E um deles é o `CLAUDE.md`, que é acordo: **não se altera sem conversa.**
 
@@ -672,6 +687,12 @@ E um deles é o `CLAUDE.md`, que é acordo: **não se altera sem conversa.**
 Fases pensadas para serem pegas uma por vez, cada uma com critério de aceite
 verificável e cada uma entregando algo visível sozinha. A ordem é por risco:
 o que pode invalidar as outras vem antes.
+
+O plano executável que sai desta lista — com manifesto de assets, formato de
+cada arquivo e critério de abandono — está em
+[PROVA_VISUAL.md](PROVA_VISUAL.md). Ele recorta um trecho de pista e uma hora
+do dia para responder "dá ou não dá" antes de qualquer produção de arte em
+escala.
 
 **Fase 0 — medir o que existe.** Implementar `dev.py fps` e gravar o tempo de
 quadro do greybox atual. Sem esta linha de base, nenhuma fase seguinte tem como
