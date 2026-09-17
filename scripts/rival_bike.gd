@@ -9,7 +9,10 @@ extends AnimatableBody3D
 ## tempo registrado. Rival que so acompanha o jogador nao e adversario, e
 ## cenario que anda junto.
 
-signal went_down
+## Ele foi ao chao. `pelo_jogador` diz se um soco do jogador responde pela
+## queda - e o que separa conquista de acidente de transito. Ver
+## `CREDITO_DO_SOCO`.
+signal went_down(pelo_jogador: bool)
 signal hit_player
 
 enum State { RACING, STAGGERED, DOWN }
@@ -23,6 +26,29 @@ enum State { RACING, STAGGERED, DOWN }
 enum Mode { FOLLOW, OVERTAKE, ATTACK }
 
 const SIZE := Vector3(0.75, 1.75, 2.1)
+
+## Segundos em que um soco do jogador continua respondendo pela queda do rival.
+##
+## O golpe do Road Rash nao derruba: ele EMPURRA pra dentro de alguma coisa. O
+## empurrao sai no frame do soco, mas a lataria pode estar alguns metros
+## adiante, e o rival ainda passa `punch_stagger` (0,7 s de fabrica) sem
+## governar a moto. 1,5 s cobre o cambaleio inteiro com folga pra ele chegar no
+## carro, e e curto o bastante pra nao creditar ao jogador uma queda que
+## aconteceu meia avenida depois, quando o rival ja tinha voltado a correr.
+const CREDITO_DO_SOCO: float = 1.5
+
+## Distancia centro a centro acima da qual um "encostou" do sensor e mentira.
+##
+## O Area3D responde com o estado do ULTIMO passo de fisica, e num passo em que
+## todo mundo acabou de ser reposicionado - a largada, o R, o teleporte de
+## +9000 m do banco de provas - esse estado descreve um mundo que nao existe
+## mais: os corpos ainda estavam na origem, todos sobrepostos. Sem este filtro
+## os cinco rivais capotavam no primeiro frame de toda corrida, contra carros
+## que estavam a 150 m dali.
+##
+## 4,5 m e folga em cima do encosto real: meia diagonal do sensor (0,95 m) mais
+## meio carro (2,2 m) da 3,4 m, e um frame de aproximacao a 33 m/s soma 0,55 m.
+const WIPEOUT_ALCANCE: float = 4.5
 
 var track: RoadTrack
 var tuning: BikeTuning
@@ -52,6 +78,8 @@ var _punch_side: int = 0
 ## mirando. Ver `_aim_punch`.
 var _punch_delay: float = -1.0
 var _aggression: float = 0.5
+## Segundos que faltam pro soco do jogador parar de responder pela queda.
+var _credito_jogador: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _visual: Node3D
 var _hitbox: Area3D
@@ -136,6 +164,7 @@ func reset_race(at_offset: float, at_lateral: float, a_finish_offset: float) -> 
 	_punch_timer = -1.0
 	_punch_cooldown = 0.0
 	_punch_delay = -1.0
+	_credito_jogador = 0.0
 	_hitbox.monitoring = false
 	_lean = 0.0
 	pace = _rng.randf_range(world_tuning.rival_pace_min, world_tuning.rival_pace_max)
@@ -153,6 +182,9 @@ func _physics_process(delta: float) -> void:
 
 	_update_hitbox(delta)
 	_punch_cooldown = maxf(_punch_cooldown - delta, 0.0)
+	# Corre em qualquer estado: o rival socado passa o cambaleio inteiro sem
+	# governar a moto, e e justamente ai que ele bate.
+	_credito_jogador = maxf(_credito_jogador - delta, 0.0)
 
 	match state:
 		State.DOWN:
@@ -378,9 +410,10 @@ func _update_hitbox(delta: float) -> void:
 func _check_wipeout() -> void:
 	if state == State.DOWN:
 		return
-	if _sensor.get_overlapping_bodies().is_empty():
-		return
-	_go_down()
+	for body: Node3D in _sensor.get_overlapping_bodies():
+		if global_position.distance_to(body.global_position) <= WIPEOUT_ALCANCE:
+			_go_down()
+			return
 
 
 func _go_down() -> void:
@@ -389,7 +422,19 @@ func _go_down() -> void:
 	_punch_timer = -1.0
 	_punch_delay = -1.0
 	_hitbox.monitoring = false
-	went_down.emit()
+	went_down.emit(derrubado_pelo_jogador())
+	# Gasta o credito na queda que ele pagou: o rival levanta em 2,6 s, e um
+	# soco nao pode responder por duas quedas.
+	_credito_jogador = 0.0
+
+
+## Se este rival cair AGORA, a queda e do jogador?
+##
+## A pergunta existe como metodo, e nao como comparacao solta no `_go_down`,
+## porque quem paga a queda esta do outro lado do sinal (ver `World`) e quem
+## testa a regra nao tem como espiar um `_` privado.
+func derrubado_pelo_jogador() -> bool:
+	return _credito_jogador > 0.0
 
 
 ## Chamado quando o jogador acerta este rival.
@@ -399,6 +444,9 @@ func receive_hit(from_side: int, shove: float, stagger: float) -> void:
 	state = State.STAGGERED
 	state_timer = stagger
 	_punch_delay = -1.0
+	# Este metodo so e chamado pelo soco do jogador (ver World). E aqui, e nao
+	# no `_go_down`, que a autoria da queda nasce.
+	_credito_jogador = CREDITO_DO_SOCO
 	# O empurrao move o rival LATERALMENTE na pista. Se do outro lado tiver um
 	# carro parado, ele vai direto pra dentro - esse e o combate do Road Rash.
 	lateral += float(from_side) * shove * 0.14

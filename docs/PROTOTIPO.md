@@ -112,8 +112,8 @@ regressão de tuning sem ninguém abrir o jogo.
 
 ## O que o protótipo já mostrou (e custou conserto)
 
-Cinco bugs que só apareceram porque as medidas existem. Ficam registrados
-porque três deles são armadilhas de Godot que vão voltar:
+Seis bugs que só apareceram porque as medidas existem. Ficam registrados
+porque quatro deles são armadilhas de Godot que vão voltar:
 
 1. **Sinal da guinada invertido.** Em Godot (Y pra cima, mão direita) guinada
    positiva gira pra *esquerda*. Inclinar pra direita mandava a moto pra
@@ -135,6 +135,15 @@ porque três deles são armadilhas de Godot que vão voltar:
 5. **Corpo físico não girava com a moto.** A cápsula de colisão e as hitboxes
    de soco ficavam alinhadas ao mundo. O soco saía pro lado errado sempre que a
    pista curvava.
+6. **`Area3D` responde com o mundo do frame passado.** No primeiro passo de
+   física de cada corrida, os corpos ainda estavam todos na origem — recém
+   criados, antes de qualquer `global_transform` — e o sensor de acidente de
+   **cada** rival lia os dez carros do trânsito como "encostei". Os cinco
+   rivais capotavam no frame 1 de toda largada, contra carros a 150 m dali, e
+   nada no console reclamava: só a corrida começava com o pelotão no chão. Vale
+   para toda reposição em massa — a largada, o `R`, o teleporte de +9000 m do
+   banco de provas. Hoje o sensor confere a distância antes de aceitar o
+   encosto (`RivalBike.WIPEOUT_ALCANCE`).
 
 Também apareceu uma lacuna de design: nada avisava que a moto estava na
 contramão. Capotar, levantar virado e passar dez segundos sem entender o que
@@ -209,6 +218,20 @@ de `State` (de pé, cambaleando, no chão) porque cair acontece por cima de
 qualquer intenção — juntar os dois faria "cair atacando" precisar de um estado
 próprio.
 
+**Derrubar rival é conquista, não acidente de trânsito.** Rival no chão pagava
+150 de estilo e 20 de adrenalina toda vez que um rival caía, sem perguntar quem
+o derrubou. Somado ao bug 6 acima, a conta de **ficar parado na largada** era:
+em dois segundos os cinco rivais se espatifavam sozinhos, e o jogador terminava
+com o boost cheio e 750 de estilo — um quinto da nota — sem ter acelerado.
+Pilar que acontece sozinho deixa de ser pilar.
+
+Hoje quem paga é a **autoria**: `RivalBike` guarda por 1,5 s
+(`CREDITO_DO_SOCO`) o soco que o empurrou, e o sinal `went_down` diz se a queda
+é do jogador. O prazo existe porque o golpe do Road Rash não derruba, empurra —
+a lataria pode estar alguns metros adiante, e o rival ainda passa o
+`punch_stagger` inteiro sem governar a moto. Quem cai sozinho continua valendo
+o que sempre valeu de verdade: a posição que ele perde, que é sua de graça.
+
 **O grid larga o jogador em último.** Fila dupla, corredores alternados, e o
 índice mais alto — sempre o do jogador — no fundo. Numa corrida em que você já
 começa na frente, a primeira coisa que o jogo ensina é que a posição não
@@ -221,7 +244,11 @@ linha e roda a chegada de verdade, em ~12 s em vez dos dois minutos que a rota
 inteira custaria. Ela mede a colocação final, quantos rivais cruzaram, e checa
 a única coisa que prova que o placar não mente — **quem cruzou antes está na
 frente no resultado**. A corrida solta, que era só distância e raspadas, agora
-também reporta a colocação aos 45 s e a distância para o líder.
+também reporta a colocação aos 45 s, a distância para o líder e **quantos
+rivais foram ao chão, separados por quem os derrubou**. O piloto automático não
+dá um soco em 45 s, então o número de rivais creditados a ele tem que ser zero:
+é a asserção que impede a queda alheia de voltar a pagar estilo. O outro
+número, o de quedas sozinhas, é calibragem — hoje mede **1** em 45 s.
 
 O que **não** está medido é se o ritmo do pelotão é justo. O piloto automático
 do banco faz uns 24 m/s de média; os rivais, 29 a 37 m/s nominais. Por isso ele
@@ -229,7 +256,7 @@ termina os 45 s em último e chega em sexto na disputa — e isso não quer dize
 que o jogo está difícil, quer dizer que o bot é ruim.
 
 Para essa pergunta ter um alvo em vez de um palpite, o banco também mede o
-**ritmo do líder**: hoje **102 km/h de média**, trânsito e quedas incluídos. É
+**ritmo do líder**: hoje **108 km/h de média**, trânsito e quedas incluídos. É
 o número que dá para comparar com o próprio velocímetro numa sessão de jogo —
 sustentou mais que isso, ganhou a corrida. Calibrar `rival_pace_min` e
 `rival_pace_max` continua sendo trabalho de polegar, e está nos próximos
