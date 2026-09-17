@@ -21,8 +21,6 @@ var _combo_label: Label
 var _event_label: Label
 var _wrong_way_label: Label
 var _adrenaline_fill: ColorRect
-var _end_panel: Control
-var _end_text: Label
 var _hint_label: Label
 
 var _event_time: float = 0.0
@@ -78,32 +76,25 @@ func _ready() -> void:
 	_wrong_way_label.visible = false
 
 	_hint_label = _label(root, Vector2(6, H - 42), 8, Color(0.45, 0.5, 0.6))
-	_hint_label.text = "WASD  Q/E soco  SHIFT boost  1 pixel  2 camera  3 tuning  R reinicia"
+	_hint_label.text = "WASD   Q/E soco   SHIFT boost   R reinicia   ESC menu"
 
-	# Carimbo de versao, e se isto e o executavel ou o projeto rodando da
-	# fonte. Existe porque "continua igual" e "voce esta abrindo o build
-	# antigo" sao indistinguiveis sem ele, e ja custaram uma rodada de teste.
-	var stamp := _label(root, Vector2(W - 96, H - 10), 8, Color(0.35, 0.38, 0.48))
-	stamp.text = (
+	_label(root, Vector2(W - 96, H - 10), 8, Color(0.35, 0.38, 0.48)).text = carimbo_versao()
+
+
+## Carimbo de versao, e se isto e o executavel ou o projeto rodando da fonte.
+##
+## Existe porque "continua igual" e "voce esta abrindo o build antigo" sao
+## indistinguiveis sem ele, e ja custaram uma rodada de teste. E estatico
+## porque o menu mostra o mesmo carimbo, e a Hud fica escondida la - dois
+## lugares lendo a versao de jeitos diferentes e o proximo jeito de ela mentir.
+static func carimbo_versao() -> String:
+	return (
 		"v%s %s"
 		% [
 			ProjectSettings.get_setting("application/config/version", "?"),
 			"build" if OS.has_feature("template") else "fonte"
 		]
 	)
-
-	_end_panel = Control.new()
-	_end_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_end_panel.visible = false
-	_end_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(_end_panel)
-	var dim := ColorRect.new()
-	dim.color = Color(0.05, 0.05, 0.09, 0.82)
-	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_end_panel.add_child(dim)
-	_end_text = _label(_end_panel, Vector2(0, 26), 8, Color(1, 1, 1))
-	_end_text.size = Vector2(W, H - 40)
-	_end_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 
 func _label(parent: Control, pos: Vector2, size: int, color: Color) -> Label:
@@ -138,7 +129,6 @@ func _bar(parent: Control, rect: Rect2, color: Color) -> ColorRect:
 func bind(a_run: RaceRun, a_player: PlayerBike) -> void:
 	run = a_run
 	player = a_player
-	_end_panel.visible = false
 	# A lista de teclas some depois da largada: no meio do transito ela vira
 	# ruido em cima da pista.
 	_hint_time = 7.0
@@ -149,11 +139,6 @@ func show_event(text: String, color: Color) -> void:
 	_event_label.text = text
 	_event_label.add_theme_color_override("font_color", color)
 	_event_time = 1.6
-
-
-func show_result(text: String) -> void:
-	_end_text.text = text
-	_end_panel.visible = true
 
 
 func _process(delta: float) -> void:

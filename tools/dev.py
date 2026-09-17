@@ -348,8 +348,21 @@ def _godot(binary: pathlib.Path, *extra: str) -> int:
     return subprocess.run(cmd).returncode
 
 
+def _import_antes(binary: pathlib.Path) -> int:
+    """Reimporta o projeto. Roda antes de QUALQUER comando que abra o jogo.
+
+    Um `class_name` novo so entra no cache de classes globais pelo scan do
+    editor. Sem ele, o headless trava sem imprimir nada, e o jogo com tela
+    abre num "Parse Error: Cannot infer the type" que aponta pro arquivo
+    errado - o que usa a classe, nao o que a declara. Ninguem liga esse erro
+    a um cache, e o caminho curto ate ele e trivial: trocar de branch, ou
+    rodar qualquer coisa num worktree que nao conhece a classe.
+    """
+    return _godot(binary, "--headless", "--import")
+
+
 def cmd_import(_: argparse.Namespace) -> int:
-    return _godot(require_godot(godot_version()), "--headless", "--import")
+    return _import_antes(require_godot(godot_version()))
 
 
 BASELINE = PROJECT / "tests" / "baseline.json"
@@ -406,10 +419,7 @@ def compare_baseline(medido: dict) -> tuple[int, list[str]]:
 
 def cmd_selftest(args: argparse.Namespace) -> int:
     binary = require_godot(godot_version())
-    # O import vem sempre antes: um class_name novo so entra no cache de
-    # classes globais pelo scan do editor, e sem ele o Godot headless trava
-    # sem imprimir nada.
-    code = _godot(binary, "--headless", "--import")
+    code = _import_antes(binary)
     if code != 0:
         return code
 
@@ -456,7 +466,7 @@ def cmd_test(args: argparse.Namespace) -> int:
     faixa, prazo. Os dois existem, e nenhum substitui o outro.
     """
     binary = require_godot(godot_version())
-    code = _godot(binary, "--headless", "--import")
+    code = _import_antes(binary)
     if code != 0:
         return code
     # --ignoreHeadlessMode: o GdUnit4 recusa headless porque InputEvent nao
@@ -483,7 +493,7 @@ def cmd_shots(args: argparse.Namespace) -> int:
     fisica nao sabe que a pista sumiu.
     """
     binary = require_godot(godot_version())
-    code = _godot(binary, "--headless", "--import")
+    code = _import_antes(binary)
     if code != 0:
         return code
 
@@ -565,7 +575,11 @@ def _write_visual_baseline(visual: dict) -> None:
 
 
 def cmd_run(_: argparse.Namespace) -> int:
-    return _godot(require_godot(godot_version()))
+    binary = require_godot(godot_version())
+    code = _import_antes(binary)
+    if code != 0:
+        return code
+    return _godot(binary)
 
 
 def project_version() -> str:

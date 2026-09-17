@@ -5,8 +5,11 @@ aqui não funcionar na sua máquina, isso é um bug do contrato, não seu.
 
 O projeto é um protótipo *greybox* de Road Rash com entregadores de app, em
 Godot. Ele existe para responder **uma** pergunta: *acelerar, inclinar, se
-enfiar no corredor e bater está gostoso?* Nada de arte, áudio ou menu até a
-resposta ser sim. Contexto e decisões de design em [docs/PROTOTIPO.md](docs/PROTOTIPO.md).
+enfiar no corredor e bater está gostoso?* Nada de arte nem áudio até a resposta
+ser sim. **Menu existe**, mas só o fluxo de entrar e sair de uma corrida
+(`scripts/race_flow.gd`): o zip da release precisa ser jogável por quem não leu
+este repositório, senão ninguém responde a pergunta. Contexto e decisões de
+design em [docs/PROTOTIPO.md](docs/PROTOTIPO.md).
 
 Desenvolvido nos três sistemas — Windows, macOS e Linux. Toda ferramenta daqui
 funciona nos três, e o CI roda nos três.
@@ -193,6 +196,7 @@ saber onde **não** há rede faz parte do contrato.
 | `scripts/player_bike.gd` | O protótipo. Se algo é "o jogo", é este arquivo. |
 | `scripts/world.gd` | Monta o mundo e arbitra o que precisa ver todo mundo. |
 | `scripts/road_track.gd` | Geometria da pista: curva, rampa, faixas. |
+| `scripts/race_flow.gd` | Menu, pausa e tela de resultado: o que existe em volta da corrida. |
 | `scripts/selftest.gd` | O banco de provas. |
 | `scripts/bike_tuning.gd`, `world_tuning.gd` | Os sliders do F3. |
 | `tests/unit/` | Testes unitários. |
@@ -200,4 +204,5 @@ saber onde **não** há rede faz parte do contrato.
 | `tests/baseline_visual.json` | O que a tela tem dentro. |
 | `tools/dev.py` | Todos os comandos. |
 | `docs/PROTOTIPO.md` | Por que o jogo é assim. Leia antes de mexer no feel. |
+| `docs/GDD.md` | O briefing original, congelado. O que o jogo queria ser. |
 | `docs/DIRECAO_VISUAL.md` | Como sair do greybox: resolução, sprite, luz, partícula. Leia antes de mexer no visual. |

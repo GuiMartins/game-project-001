@@ -19,6 +19,10 @@ Ele existe para responder uma pergunta e só uma: **acelerar, inclinar, se
 enfiar no corredor e bater está gostoso?** Nada de arte, áudio ou menu até
 essa resposta ser sim.
 
+O briefing original, escrito antes de existir uma linha de código, está
+congelado em [docs/GDD.md](docs/GDD.md). Onde ele já não bate com o que foi
+construído, a seção Deriva diz o que mudou e por quê.
+
 ## Rodar
 
 Só é preciso ter Python 3.10+. A engine o script baixa:
@@ -31,6 +35,10 @@ python tools/dev.py run
 Ou abra a pasta no editor do Godot e dê play. Detalhes de ambiente em
 [docs/AMBIENTE.md](docs/AMBIENTE.md).
 
+O jogo abre num menu: **JOGAR**, **CONFIGURACOES** (pixel, câmera e o painel de
+tuning) e **SAIR**. A corrida termina numa tela de resultado que oferece correr
+de novo ou voltar. `ESC` no meio da corrida congela e abre o menu.
+
 ## Controles
 
 | Tecla | Ação |
@@ -41,6 +49,8 @@ Ou abra a pasta no editor do Godot e dê play. Detalhes de ambiente em
 | `Shift` | boost (gasta adrenalina) |
 | `Q` / `E` | soco pra esquerda / direita |
 | `R` | reiniciar a corrida |
+| `ESC` | menu (congela a corrida; `CONTINUAR` devolve ela do jeito que estava) |
+| `ENTER` / setas | navegar o menu |
 | `1` ou `F1` | liga/desliga o pixel de 320×180 |
 | `2` ou `F2` | alterna câmera (perseguição / capacete / diagnóstico) |
 | `3` ou `F3` | painel de tuning (abre em janela separada) |
