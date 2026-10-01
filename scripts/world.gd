@@ -14,8 +14,9 @@ const ROUTE_LENGTH: float = 3200.0
 ## moto num trecho onde a amostragem ja esta grampeada.
 const FINISH_MARGIN: float = 30.0
 
-## Cor da bag de cada rival. E o unico jeito de distinguir um do outro no
-## greybox - e ja e o plano de arte: mesmo rig, paleta trocada.
+## A cor de cada rival: bag e moto nela, jaqueta num tom escuro dela (ver
+## `Entregador.pintar`). Todos sao o mesmo modelo, e e a cor que separa um do
+## outro de longe. Nenhuma encosta no laranja do jogador (`PlayerBike.COR`).
 const RIVAL_COLORS: Array[Color] = [
 	Color(0.25, 0.85, 0.45),
 	Color(0.95, 0.85, 0.2),

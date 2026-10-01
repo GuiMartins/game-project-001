@@ -6,10 +6,13 @@ aqui não funcionar na sua máquina, isso é um bug do contrato, não seu.
 O projeto é um protótipo *greybox* de Road Rash com entregadores de app, em
 Godot. Ele existe para responder **uma** pergunta: *acelerar, inclinar, se
 enfiar no corredor e bater está gostoso?* Nada de arte nem áudio até a resposta
-ser sim. **Menu existe**, mas só o fluxo de entrar e sair de uma corrida
-(`scripts/race_flow.gd`): o zip da release precisa ser jogável por quem não leu
-este repositório, senão ninguém responde a pergunta. Contexto e decisões de
-design em [docs/PROTOTIPO.md](docs/PROTOTIPO.md).
+ser sim, com duas exceções. **Menu existe**, mas só o fluxo de entrar e sair de
+uma corrida (`scripts/race_flow.gd`): o zip da release precisa ser jogável por
+quem não leu este repositório, senão ninguém responde a pergunta. **O
+entregador é modelo 3D** (`scripts/entregador.gd`), moto e piloto posados a
+cada passo pelo estado da física: roda, joelho, pé no chão e tombo mostram o
+que a moto está fazendo, e isso é feel, não enfeite. O mundo continua de
+caixas. Contexto e decisões de design em [docs/PROTOTIPO.md](docs/PROTOTIPO.md).
 
 Desenvolvido nos três sistemas — Windows, macOS e Linux. Toda ferramenta daqui
 funciona nos três, e o CI roda nos três.
@@ -31,7 +34,16 @@ qual binário usar, e no Windows escolhe a variante que não engole a saída.
 | `python tools/dev.py run` | Abre o jogo. |
 | `python tools/dev.py export` | Exporta as três plataformas. |
 
-Em algumas distribuições Linux o executável é `python3`.
+Em muitas máquinas o executável é `python3`, e `python` simplesmente não
+existe — vale para macOS, não só para Linux. Se o seu caso for esse, troque em
+todos os comandos desta página.
+
+E uma armadilha específica de quem roda comando com a saída redirecionada, que
+é como todo CI e todo agente roda: com `python` inexistente e a saída num pipe
+(`python tools/dev.py selftest | tail`), o código de saída passa a ser o do
+**último** comando do pipe. O portão devolve **0** sem ter rodado nada. Sempre
+`set -o pipefail` antes de encanar qualquer comando do portão — senão "passou"
+e "nem existe" ficam indistinguíveis.
 
 ## O portão: o que rodar antes de dizer que terminou
 
@@ -190,9 +202,13 @@ saber onde **não** há rede faz parte do contrato.
 | `scripts/race_flow.gd` | Menu, pausa e tela de resultado: o que existe em volta da corrida. |
 | `scripts/selftest.gd` | O banco de provas. |
 | `scripts/bike_tuning.gd`, `world_tuning.gd` | Os sliders do F3. |
+| `scripts/entregador.gd` | O ator: moto e piloto, posados pelo estado da física. |
+| `arte/entregador.py` | Gera o modelo no Blender. É a fonte: o `.blend` e o `assets/entregador/` são build. |
+| `assets/entregador/` | O modelo e as texturas que o jogo carrega. Não edite à mão: regere pelo script. |
 | `tests/unit/` | Testes unitários. |
 | `tests/baseline.json` | Os números esperados. |
 | `tests/baseline_visual.json` | O que a tela tem dentro. |
 | `tools/dev.py` | Todos os comandos. |
 | `docs/PROTOTIPO.md` | Por que o jogo é assim. Leia antes de mexer no feel. |
 | `docs/GDD.md` | O briefing original, congelado. O que o jogo queria ser. |
+| `docs/DIRECAO_VISUAL.md` | Como sair do greybox: resolução, sprite, luz, partícula. Leia antes de mexer no visual. |

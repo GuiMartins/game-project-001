@@ -18,6 +18,9 @@ enum State { RIDING, STAGGERED, CRASHED }
 
 const SIZE := Vector3(0.75, 1.75, 2.1)
 const GRAVITY: float = 26.0
+## A cor do jogador. Laranja desde o primeiro cubo de greybox, e nenhum rival
+## de `World.RIVAL_COLORS` chega perto dela.
+const COR := Color(0.95, 0.42, 0.15)
 
 var tuning: BikeTuning
 var track: RoadTrack
@@ -50,6 +53,13 @@ var _punch_timer: float = -1.0
 var _punch_side: int = 0  ## -1 esquerda, +1 direita, 0 nenhum.
 var _hitboxes: Dictionary = {}
 var _visual: Node3D
+var _ator: Entregador
+## O que o polegar pediu neste passo. So a pose le: a fisica recebe o input
+## direto em `_ride`.
+var _acelerador: float = 0.0
+var _esterco: float = 0.0
+## Para que lado a moto tomba na queda: o lado em que ela estava inclinada.
+var _lado_queda: float = 1.0
 var _last_road_y: float = 0.0
 var _crash_recover_offset: float = 0.0
 var _off_road: bool = false
@@ -64,28 +74,16 @@ func _ready() -> void:
 	add_child(Greybox.box_shape(SIZE))
 
 	# O visual e um no separado do corpo fisico: a moto inclina, a capsula de
-	# colisao nao. Quando o Sprite3D billboard entrar, ele entra aqui.
+	# colisao nao. Ele fica no chao, e nao no centro da capsula: a moto inclina
+	# em volta do pneu no asfalto. Em volta do centro, nos 38 graus de fabrica
+	# as rodas escorregariam 54 cm para fora da curva.
 	_visual = Node3D.new()
 	_visual.name = "Visual"
+	_visual.position = Vector3(0.0, -SIZE.y * 0.5, 0.0)
 	add_child(_visual)
-
-	# Silhueta em tres blocos em vez de uma caixa unica: a 96 px o que se le e a
-	# forma geral, e "moto + piloto + bag" ja e a leitura certa desde o greybox.
-	var chassis := Greybox.box(Vector3(0.6, 0.75, SIZE.z), Color(0.32, 0.34, 0.42))
-	chassis.position = Vector3(0.0, -0.5, 0.0)
-	_visual.add_child(chassis)
-	var rider := Greybox.box(Vector3(0.7, 1.0, 0.75), Color(0.9, 0.9, 0.95))
-	rider.position = Vector3(0.0, 0.35, 0.2)
-	_visual.add_child(rider)
-	# A bag termica: silhueta grande e quadrada nas costas. Ja no greybox ela e
-	# o que identifica o personagem a 96px.
-	var bag := Greybox.box(Vector3(0.85, 0.8, 0.5), Color(0.95, 0.42, 0.15))
-	bag.position = Vector3(0.0, 0.5, 0.72)
-	_visual.add_child(bag)
-	# Nariz: sem ele nao da pra ler pra onde a moto aponta no greybox.
-	var nose := Greybox.box(Vector3(0.3, 0.3, 0.9), Color(0.35, 0.7, 1.0), true)
-	nose.position = Vector3(0.0, -0.55, -1.15)
-	_visual.add_child(nose)
+	_ator = Entregador.new()
+	_visual.add_child(_ator)
+	_ator.pintar(COR)
 
 	_hitboxes[-1] = _make_hitbox(-1)
 	_hitboxes[1] = _make_hitbox(1)
@@ -139,10 +137,11 @@ func _physics_process(delta: float) -> void:
 	# Hitboxes sempre correm, ate durante o stagger - o soco ja saiu.
 	_update_hitboxes(delta)
 
+	_acelerador = 0.0
+	_esterco = 0.0
 	match state:
 		State.CRASHED:
 			_process_crashed(delta)
-			return
 		State.STAGGERED:
 			state_timer -= delta
 			if state_timer <= 0.0:
@@ -154,6 +153,10 @@ func _physics_process(delta: float) -> void:
 			var brake := Input.get_action_strength("ride_brake")
 			_ride(delta, steer, throttle, brake)
 			_try_punch()
+			_acelerador = throttle
+			_esterco = steer
+
+	_ator.atualizar(delta, speed, _acelerador, _esterco, state == State.CRASHED, _lado_queda)
 
 
 ## --- Nucleo do feel -------------------------------------------------------
@@ -359,14 +362,15 @@ func _crash(reason: String) -> void:
 	velocity = Vector3.ZERO
 	adrenaline = 0.0
 	_crash_recover_offset = maxf(track_offset - 6.0, 0.0)
+	_lado_queda = -1.0 if lean < 0.0 else 1.0
 	crashed.emit(reason)
 
 
 func _process_crashed(delta: float) -> void:
 	state_timer -= delta
-	# Tomba a moto no chao enquanto o timer corre. Placeholder do frame de
-	# capotagem que vira do render pre-calculado.
-	_visual.rotation = Vector3(0.0, 0.0, -deg_to_rad(85.0))
+	# Quem tomba a moto e o ator, em volta da lateral que bate no chao. Aqui so
+	# zera a inclinacao da curva, senao o tombo soma com ela.
+	_visual.rotation = Vector3.ZERO
 	if state_timer > 0.0:
 		return
 	var lateral := clampf(

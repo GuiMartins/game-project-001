@@ -119,7 +119,17 @@ const SAVE_PATH: String = "user://tuning.tres"
 ## Quantos graus de FOV a mais na velocidade maxima (sensacao de velocidade).
 @export_range(0.0, 40.0, 0.5) var cam_fov_speed_gain: float = 16.0
 ## Quanto da inclinacao da moto a camera copia (0 = fixa, 1 = acompanha tudo).
-@export_range(0.0, 1.0, 0.02) var cam_lean_follow: float = 0.3
+## Era 0.3: a 38 graus de inclinacao a camera girava 11, e na entrada de curva
+## isso pesava mais que a propria curva.
+@export_range(0.0, 1.0, 0.02) var cam_lean_follow: float = 0.2
+## Quao rapido o giro da camera alcanca a inclinacao da moto (1/s).
+##
+## A moto inclina na velocidade do polegar; a camera nao pode. Copiando direto,
+## cada correcao pequena de trajetoria - que inclina a moto pra la e pra ca
+## varias vezes por segundo - virava a tela balancando. Atrasada, ela deixa
+## passar a curva de verdade, que segura a inclinacao, e engole o tremor: a
+## 2.5, uma correcao de 3 Hz chega na camera com um oitavo da amplitude.
+@export_range(0.5, 20.0, 0.25) var cam_lean_rate: float = 2.5
 
 ## --- Calcada ---------------------------------------------------------------
 @export_group("Calcada")

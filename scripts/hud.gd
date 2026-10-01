@@ -61,15 +61,22 @@ func _ready() -> void:
 	_adrenaline_fill = _bar(root, Rect2(W - 68, H - 12, 62, 6), Color(0.3, 0.85, 1.0))
 	_label(root, Vector2(W - 68, H - 24), 8, Color(0.5, 0.8, 0.95)).text = "ADRENALINA"
 
-	_combo_label = _label(root, Vector2(0, 52), 16, Color(1.0, 0.9, 0.4))
-	_combo_label.size = Vector2(W, 20)
-	_combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-
-	_event_label = _label(root, Vector2(0, 76), 8, Color(1, 1, 1))
+	# Os avisos moram logo abaixo da colocacao, e nao no meio da tela: ali e
+	# onde a pista a frente aparece, e texto em cima do corredor tapa o carro
+	# que voce vai ter que desviar. O aviso de evento fica colado na
+	# "POSICAO" porque "ultrapassou" e "perdeu posicao", que ele anuncia, sao
+	# sobre aquele numero.
+	_event_label = _label(root, Vector2(0, 32), 8, Color(1, 1, 1))
 	_event_label.size = Vector2(W, 12)
 	_event_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	_wrong_way_label = _label(root, Vector2(0, 34), 16, Color(1.0, 0.35, 0.3))
+	_combo_label = _label(root, Vector2(0, 44), 16, Color(1.0, 0.9, 0.4))
+	_combo_label.size = Vector2(W, 20)
+	_combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	# Mesmo lugar do combo: os dois quase nunca coincidem, e quando coincidem a
+	# contramao ganha (ver `_process`).
+	_wrong_way_label = _label(root, Vector2(0, 44), 16, Color(1.0, 0.35, 0.3))
 	_wrong_way_label.size = Vector2(W, 20)
 	_wrong_way_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_wrong_way_label.text = "CONTRAMAO"
@@ -174,7 +181,7 @@ func _process(delta: float) -> void:
 		_combo_flash = 0.35
 		_combo_label.text = "CORREDOR x%d" % run.combo
 	_combo_flash = maxf(_combo_flash - delta, 0.0)
-	_combo_label.visible = _combo_flash > 0.0
+	_combo_label.visible = _combo_flash > 0.0 and not player.wrong_way
 
 	_event_time = maxf(_event_time - delta, 0.0)
 	_event_label.visible = _event_time > 0.0

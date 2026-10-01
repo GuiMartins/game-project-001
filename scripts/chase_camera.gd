@@ -14,6 +14,8 @@ var mode: int = Mode.CHASE
 
 var _smoothed_position: Vector3
 var _smoothed_look: Vector3
+## Giro atual da camera em volta do eixo de visao, em radianos.
+var _roll: float = 0.0
 var _shake: float = 0.0
 var _rng := RandomNumberGenerator.new()
 
@@ -25,6 +27,7 @@ func setup(a_tuning: BikeTuning, a_target: PlayerBike) -> void:
 	far = 800.0
 	_smoothed_position = a_target.global_position + Vector3(0, 3, 8)
 	_smoothed_look = a_target.global_position
+	_roll = 0.0
 
 
 func cycle_mode() -> void:
@@ -88,5 +91,8 @@ func _process(delta: float) -> void:
 
 	look_at_from_position(pos, _smoothed_look, Vector3.UP)
 	# Um pingo da inclinacao da moto na camera. Muito disso embrulha o estomago;
-	# nada disso deixa a curva sem peso.
-	rotate_object_local(Vector3.FORWARD, -target.lean * tuning.cam_lean_follow)
+	# nada disso deixa a curva sem peso. E o giro PERSEGUE a inclinacao em vez
+	# de copia-la: ver `cam_lean_rate`.
+	var roll_alvo := -target.lean * tuning.cam_lean_follow
+	_roll = lerpf(_roll, roll_alvo, 1.0 - exp(-tuning.cam_lean_rate * delta))
+	rotate_object_local(Vector3.FORWARD, _roll)
