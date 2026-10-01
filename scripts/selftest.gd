@@ -76,8 +76,8 @@ var _shots_next: float = 0.0
 var _shots_taken: int = 0
 ## Soma das medidas de cada frame capturado, para tirar a media no fim.
 var _frame_sky: float = 0.0
-## O ceu sozinho, sem nenhuma geometria, capturado antes do primeiro quadro.
-## Ver `_capture`.
+## O ceu sozinho, sem nenhuma geometria, capturado logo antes de cada quadro.
+## Ver `_captura_ceu`.
 var _ceu_referencia: Image
 var _frame_luma: float = 0.0
 var _frame_colors: float = 0.0
@@ -852,8 +852,7 @@ func _set_action(action_name: String, pressed: bool) -> void:
 ## o mundo virava caixas flutuando no vazio. Nenhum numero do banco de provas
 ## se mexia - todos medem fisica, e a fisica nao sabe que a pista sumiu.
 func _capture(path: String) -> void:
-	if _ceu_referencia == null:
-		await _captura_ceu()
+	await _captura_ceu()
 	await RenderingServer.frame_post_draw
 	var image := get_viewport().get_texture().get_image()
 	image.save_png(path)
@@ -868,6 +867,11 @@ func _capture(path: String) -> void:
 ## mesmo pos-processamento que o quadro medido, entao ceu e o pixel igual ao
 ## da referencia na mesma posicao - e pista sumida vira "ceu" de novo, porque
 ## o ceu tambem desenha o chao abaixo do horizonte.
+##
+## Uma referencia por quadro, e nao uma por corrida: o FOV abre com a
+## velocidade e a camera gira na curva, e isso desloca as bandas do degrade na
+## tela. Com a cor quantizada, banda deslocada vira pixel de outro degrau, e
+## uma referencia velha chamava metade do ceu de "mundo".
 func _captura_ceu() -> void:
 	var camera := _world.camera
 	var mascara := camera.cull_mask

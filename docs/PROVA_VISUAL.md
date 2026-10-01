@@ -312,6 +312,45 @@ não se sabe mais qual dos dois está errado.
 
 *Aceite:* o mesmo quadro da P0, antes e depois, lado a lado.
 
+**Estado (01/10/2026):** feito, e a folha antes/depois sai de `dev.py prova`
+contra os quadros da P0. A cadeia ficou:
+
+1. **Tonemap** filmic.
+2. **LUT** de 16³ em `Environment.adjustment_color_correction`, gerado por
+   `arte/paleta.py`: saturação 1,2, curva em S, sombra fria e luz quente.
+3. **Quantização** a 16 níveis por canal com Bayer 4×4 (`scripts/paleta.gdshader`),
+   num `CanvasLayer` abaixo da HUD.
+
+Duas saídas do manifesto:
+
+- **Sem `bayer4.png`.** A matriz é constante no shader: textura de 4×4 passa
+  por importação, compressão e mipmap, e cada um desses estraga o padrão sem
+  avisar.
+- **A orientação das fatias foi conferida** com `python arte/paleta.py
+  --neutro`. Com o LUT identidade a tela muda em média 2,9 de 255, e só 0,001%
+  dos pixels passa de 16. Fatia trocada deixaria o céu vermelho.
+
+As cores de base do greybox eram de noite, puxadas para o azul. Com o céu
+iluminando tudo de azul, o asfalto virava violeta. Foram para dia: asfalto
+neutro, calçada de concreto claro, mato seco, prédio de concreto quente. O sol
+subiu de 1,35 para 2,0 e o ambiente desceu de 0,7 para 0,5.
+
+A medida de céu precisou de mais um ajuste. Com cor quantizada, um degrau vale
+0,067, mais que a tolerância antiga de 0,06. A referência capturada uma vez por
+corrida não servia mais: o FOV muda com a velocidade e desloca as bandas.
+Agora há uma referência por quadro e tolerância de 0,08. Duas rodadas diferem
+0,1%. Sem a pista, `fracao_ceu` sobe 97%; a luminância sozinha cairia 18%,
+dentro da tolerância, e passaria.
+
+- **Baseline visual:** céu 0,365, luminância 0,437, famílias de cor 34,8.
+- **`fps`:** p50 0,74 ms, p95 1,39 ms, pior 2,52 ms.
+
+**Os critérios de parada, aplicados.** Depois de P2 e P3 a imagem andou de
+forma óbvia: de noite de greybox para meio-dia com sombra e paleta. O que ela
+ainda não tem é densidade. Continua lendo como low-poly limpo, e não como as
+referências. Era o esperado nesta ordem: é o que a P4 (textura e cenário) e a
+textura do ator existem para resolver. O `fps` não chegou perto de ameaçar 60.
+
 ### P4 — Textura no mundo
 
 **Assets:** todo o bloco "Mundo — texturas", `carro.glb`, `onibus.glb`,

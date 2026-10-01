@@ -260,10 +260,13 @@ func _build_mesh() -> void:
 		_quad(paint, o0, o1, road_w - 0.04, road_w + 0.28, lift + 0.03)
 
 	# O asfalto tem que ficar claramente mais claro que o fundo, senao a pista
-	# desaparece contra o ceu e o jogador nao ve pra onde esta indo.
-	_commit(ground, mesh, _flat_material(Color(0.13, 0.15, 0.13)))
-	_commit(asphalt, mesh, _flat_material(Color(0.29, 0.29, 0.33)))
-	_commit(shoulder, mesh, _flat_material(Color(0.19, 0.18, 0.17)))
+	# desaparece e o jogador nao ve pra onde esta indo. Cores de meio-dia, e
+	# neutras ou quentes de proposito: as de antes eram de noite, puxadas pro
+	# azul, e com o ceu iluminando tudo de azul o asfalto virava violeta. O
+	# fundo e mato seco; a calcada, concreto claro.
+	_commit(ground, mesh, _flat_material(Color(0.24, 0.27, 0.17)))
+	_commit(asphalt, mesh, _flat_material(Color(0.34, 0.34, 0.35)))
+	_commit(shoulder, mesh, _flat_material(Color(0.52, 0.5, 0.47)))
 	_commit(paint, mesh, _flat_material(Color(0.88, 0.86, 0.68)))
 
 	_asphalt_mesh = MeshInstance3D.new()

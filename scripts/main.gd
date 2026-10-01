@@ -73,6 +73,8 @@ func _ready() -> void:
 	sub_viewport.add_child(world)
 	world.setup(tuning, world_tuning)
 
+	_monta_paleta()
+
 	hud = Hud.new()
 	hud.name = "Hud"
 	sub_viewport.add_child(hud)
@@ -113,6 +115,26 @@ func _ready() -> void:
 		var prova: Node = load("res://scripts/prova.gd").new()
 		add_child(prova)
 		prova.call("setup", self)
+
+
+## O passe de quantizacao com dither (`paleta.gdshader`): o ultimo do mundo.
+##
+## Um ColorRect que le a tela ja desenhada, numa camada acima do 3D e abaixo da
+## HUD (layer 10). Acima de tudo que mexe na cor - neblina, tonemap, LUT -
+## porque eles devolveriam os tons que ele tira; abaixo da HUD porque texto
+## passado no dither so suja.
+func _monta_paleta() -> void:
+	var camada := CanvasLayer.new()
+	camada.name = "Paleta"
+	camada.layer = 5
+	sub_viewport.add_child(camada)
+	var tela := ColorRect.new()
+	tela.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tela.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var material := ShaderMaterial.new()
+	material.shader = preload("res://scripts/paleta.gdshader")
+	tela.material = material
+	camada.add_child(tela)
 
 
 func _apply_pixel_mode() -> void:

@@ -18,6 +18,9 @@ const FINISH_MARGIN: float = 30.0
 ## que faz o banco de provas medir a mesma corrida toda vez.
 const SEMENTE: int = 20260831
 
+## O LUT de cor do dia (`arte/paleta.py`), importado como `Texture3D`.
+const LUT_DIA: Texture3D = preload("res://assets/visual/lut_dia.png")
+
 ## A cor de cada rival: bag e moto nela, jaqueta num tom escuro dela (ver
 ## `Entregador.pintar`). Todos sao o mesmo modelo, e e a cor que separa um do
 ## outro de longe. Nenhuma encosta no laranja do jogador (`PlayerBike.COR`).
@@ -153,7 +156,7 @@ func _build_environment() -> void:
 	# A luz ambiente vem do CEU, e nao de uma cor escolhida: a sombra fica azul
 	# porque o ceu e azul. E a diferenca entre cena iluminada e cena pintada.
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.7
+	env.ambient_light_energy = 0.5
 	# Neblina segurando o horizonte: em pixel grosso o fade e o que da
 	# profundidade, e de quebra esconde o fim do mundo sem precisar de LOD. Na
 	# cor do horizonte, para o predio do fundo sumir no ceu e nao num cinza.
@@ -162,6 +165,16 @@ func _build_environment() -> void:
 	env.fog_density = 0.0045
 	env.fog_aerial_perspective = 0.5
 	env.fog_sky_affect = 0.0
+	# Tonemap antes do LUT, que e o ultimo passo do Environment: o sol de
+	# meio-dia estoura o branco em linear, e o filmic devolve o alto sem
+	# achatar a sombra.
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_white = 6.0
+	# A paleta: o LUT e o ponto unico onde o clima da tela se ajusta. Gerado
+	# por `arte/paleta.py`. Depois dele so vem a quantizacao com dither, que e
+	# do `main.gd` e e o ultimo passe de todos.
+	env.adjustment_enabled = true
+	env.adjustment_color_correction = LUT_DIA
 
 	var we := WorldEnvironment.new()
 	we.environment = env
@@ -169,7 +182,7 @@ func _build_environment() -> void:
 
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-42.0, 38.0, 0.0)
-	sun.light_energy = 1.35
+	sun.light_energy = 2.0
 	sun.light_color = Color(1.0, 0.96, 0.88)
 	# Sombra de contato e o que poe veiculo no chao: sem ela, tudo flutua. Os
 	# tres numeros dela, do DIRECAO_VISUAL.md:
@@ -218,7 +231,10 @@ func _build_scenery() -> void:
 			var w := _rng.randf_range(6.0, 14.0)
 			var at := track.point(o, (edge + 6.0 + w * 0.5) * side) + Vector3.UP * (h * 0.5 - 1.0)
 			var shade := _rng.randf_range(0.2, 0.42)
-			var building := Greybox.box(Vector3(w, h, w), Color(shade, shade * 0.97, shade * 1.15))
+			# Concreto quente, de dia. Era azulado, de noite, e virava roxo sob o
+			# ceu. O sorteio continua o mesmo: mexer nele mudaria o transito.
+			var concreto := Color(shade * 1.45, shade * 1.38, shade * 1.25)
+			var building := Greybox.box(Vector3(w, h, w), concreto)
 			props.add_child(building)
 			building.global_position = at
 		o += _rng.randf_range(16.0, 30.0)

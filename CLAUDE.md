@@ -207,6 +207,9 @@ saber onde **não** há rede faz parte do contrato.
 | `scripts/entregador.gd` | O ator: moto e piloto, posados pelo estado da física. |
 | `arte/entregador.py` | Gera o modelo no Blender. É a fonte: o `.blend` e o `assets/entregador/` são build. |
 | `assets/entregador/` | O modelo e as texturas que o jogo carrega. Não edite à mão: regere pelo script. |
+| `arte/paleta.py` | Gera o LUT de cor do dia (`assets/visual/lut_dia.png`). O clima da tela se ajusta ali. |
+| `scripts/paleta.gdshader` | Quantização e dither: o último passe do mundo, abaixo da HUD. |
+| `scripts/prova.gd` | O quadro congelado da prova visual (`dev.py prova`). |
 | `tests/unit/` | Testes unitários. |
 | `tests/baseline.json` | Os números esperados. |
 | `tests/baseline_visual.json` | O que a tela tem dentro. |

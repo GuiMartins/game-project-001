@@ -32,8 +32,12 @@ static func medir(image: Image, ceu: Image) -> Dictionary:
 			var c := image.get_pixel(x, y)
 			total += 1
 			luma += c.get_luminance()
+			# Pouco mais de um degrau da quantizacao (1/15 = 0,067, ver
+			# `paleta.gdshader`): entre a referencia e o quadro a camera anda
+			# dois quadros, e o pixel que estava na borda de uma banda pode cair
+			# no degrau vizinho sem deixar de ser ceu.
 			var sky := ceu.get_pixel(x, y)
-			if absf(c.r - sky.r) < 0.06 and absf(c.g - sky.g) < 0.06 and absf(c.b - sky.b) < 0.06:
+			if absf(c.r - sky.r) < 0.08 and absf(c.g - sky.g) < 0.08 and absf(c.b - sky.b) < 0.08:
 				sky_hits += 1
 			# Cor quantizada em 5 niveis por canal: conta quantas familias de
 			# cor a cena tem, sem contar ruido de sombreamento como cor nova.
