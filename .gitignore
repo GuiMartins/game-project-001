@@ -17,3 +17,8 @@ __pycache__/
 # Ajustes locais de agente/editor. O .claude/settings.json (sem .local) e
 # versionado de proposito: e o contrato compartilhado.
 .claude/settings.local.json
+
+# Copia de seguranca que o Blender grava ao salvar por cima. O .blend daqui
+# e regerado por arte/entregador.py, entao a copia nao guarda nada que o
+# script nao refaca.
+*.blend1
