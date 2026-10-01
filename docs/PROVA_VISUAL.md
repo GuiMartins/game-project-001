@@ -369,6 +369,25 @@ mural, entram placa verde e contêiner. O trânsito troca caixa por modelo.
 *Aceite:* o quadro da P0 tem densidade comparável à referência — não detalhe
 comparável, que é foto, mas **quanta coisa entra no quadro**.
 
+**Estado (01/10/2026), P4a — chão:** asfalto e calçada texturizados, gerados
+por `arte/chao.py`. O asfalto tem brita, remendo, marca de pneu e pingo de
+óleo; a calçada é pedra portuguesa com a onda de Copacabana e meio-fio. Tudo
+foi desenhado para ser **visto passando a 180 km/h**, e a receita explica as
+três regras que saem disso. A principal: nada fino atravessado na pista com
+período menor que 1,7 m, o dobro do que a moto anda num quadro, porque isso
+pisca em vez de passar. O guard-rail não entrou: ele não tem geometria, é um
+empurrão analítico, e textura sem malha não tem onde morar.
+
+- **Importação:** o default do Godot marcou as duas como "3D", ou seja,
+  compressão VRAM e sem mipmap. Era a armadilha descrita acima. Os `.import`
+  ficaram com `detect_3d/compress_to=0` e `mipmaps/generate=true`.
+- **Filtro:** linear com mipmap anisotrópico, e não nearest. O pixelado vem
+  do 640×360 e do dither; nearest num chão rasante faz o asfalto ferver.
+- **Números:** banco sem variação; visual com luminância +3,9% e famílias de
+  cor +1,5%, regravado. `fps` p50 de 0,74 para 0,78 ms, p95 igual (1,39 ms).
+
+Falta da P4: fachada, mural, placa e contêiner (P4b); carro e ônibus (P4c).
+
 ### P5 — O ator
 
 **Assets:** `entregador.glb`, `entregador_albedo.png`,
