@@ -35,6 +35,7 @@ qual binário usar, e no Windows escolhe a variante que não engole a saída.
 | `python tools/dev.py lint` / `format` | gdlint e gdformat. |
 | `python tools/dev.py run` | Abre o jogo. |
 | `python tools/dev.py export` | Exporta as três plataformas. |
+| `python tools/dev.py versao patch` | Sobe a versão. O merge disso na `master` publica a release. |
 
 Em muitas máquinas o executável é `python3`, e `python` simplesmente não
 existe — vale para macOS, não só para Linux. Se o seu caso for esse, troque em
@@ -107,8 +108,14 @@ jogo continua rodando, só errado. Estão explicados em `docs/PROTOTIPO.md`.
 
 ## Branches e release
 
-`master` é estável. `develop` recebe o trabalho. Merge em `master` **não**
-publica nada.
+Uma branch só de longa duração: `master`. Todo trabalho entra nela por PR, com
+o portão verde. Merge em `master` **sem versão nova** não publica nada.
+
+Já existiu uma `develop` na frente da `master`, e ela morreu na 0.0.5. Cada
+release pedia uma branch `release-X` só para o bump, um PR para a `master`,
+uma tag empurrada à mão depois do merge e um PR de volta para ressincronizar
+a `develop` — quatro passos manuais para separar "testado" de "estável", numa
+separação que o check obrigatório em todo PR já garante.
 
 **Trabalho novo nasce em branch, e a branch vive no remoto desde o primeiro
 commit.** Não espere ser mandado: ao começar qualquer tarefa, saia de `master`
@@ -124,11 +131,12 @@ git push -u origin corrida-por-posicao
 Duas razões, e nenhuma é cerimônia. A primeira é que trabalho de IA que só
 existe na máquina de quem rodou o agente é trabalho que some junto com a
 sessão — e ninguém consegue ler o diff de algo que não foi empurrado. A segunda
-é que aqui push não distribui nada: a release sai de tag, então a pior
-consequência de uma branch empurrada é uma branch a mais no remoto.
+é que aqui push não distribui nada: a release sai de versão nova na `master`,
+então a pior consequência de uma branch empurrada é uma branch a mais no
+remoto.
 
-O que **continua** precisando de aval: abrir PR, fazer merge, criar tag,
-publicar release. Empurrar a branch é para o trabalho ficar visível; decidir
+O que **continua** precisando de aval: abrir PR, fazer merge, subir a versão,
+criar tag, publicar release. Empurrar a branch é para o trabalho ficar visível; decidir
 que ele entra é outra coisa.
 
 **Merge exige check verde conferido — não basta o aval humano.** São duas
@@ -153,14 +161,25 @@ enquanto existisse, nenhuma branch ficava verde de forma confiável. Portão que
 reprova metade das entregas corretas deixa de ser rede e vira pedágio — e a
 primeira coisa que se aprende com ele é a ignorar o vermelho.
 
-Release sai de uma tag, que é ato deliberado e humano:
+Release sai de **subir a versão**, que é ato deliberado e humano:
 
 ```bash
-git tag v0.0.3 && git push origin v0.0.3
+python tools/dev.py versao patch   # 0.0.5 -> 0.0.6
+# commit, PR para a master; o merge dele publica a v0.0.6
 ```
 
-A tag precisa bater com `config/version` no `project.godot`, senão a pipeline
-recusa. **Nunca crie tag nem publique release por conta própria.**
+O `release.yml` roda a cada push na `master`: se o `config/version` ainda não
+tem tag, ele cria a `vX.Y.Z` no commit do merge, roda o banco de provas e
+publica; se já tem, para sem fazer nada. A decisão de publicar fica no diff do
+PR, onde dá para revisar, e não num comando que alguém precisa lembrar de
+rodar depois do merge — foi esquecendo dele que a 0.0.5 ficou mergeada e sem
+release. **Nunca suba a versão, crie tag nem publique release por conta
+própria**: o bump só entra com pedido explícito.
+
+A proteção da `master` exige dois checks: `banco-de-provas` (que agrega
+`qualidade` e os três `provas`) e `regressao-visual`. Com os dois obrigatórios,
+o auto-merge do GitHub espera o portão inteiro, e dá para ligá-lo sem furar a
+regra do check verde.
 
 Commits em gitmoji + conventional, assunto imperativo em português:
 
