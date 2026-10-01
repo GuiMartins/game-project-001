@@ -544,8 +544,10 @@ def cmd_shots(args: argparse.Namespace) -> int:
     os.environ["RUSHFOOD_SELFTEST_SHOTS"] = str(out)
     os.environ["RUSHFOOD_SELFTEST_METRICS"] = str(METRICS_OUT)
 
-    # Sem --headless: e o ponto todo do comando.
-    code = _godot(binary, "--", "--selftest", vigia_erros=True)
+    # Sem --headless: e o ponto todo do comando. Mas com audio dummy: o jogo
+    # nao tem som, e o runner Linux do CI nao tem placa - o ALSA falha com um
+    # ERROR que nao diz nada sobre o jogo e reprovaria toda rodada ali.
+    code = _godot(binary, "--audio-driver", "Dummy", "--", "--selftest", vigia_erros=True)
     pngs = sorted(out.glob("*.png"))
     print(f"\n{len(pngs)} frame(s) em {out}")
     if code != 0:
