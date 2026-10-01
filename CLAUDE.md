@@ -30,6 +30,8 @@ qual binário usar, e no Windows escolhe a variante que não engole a saída.
 | `python tools/dev.py selftest` | Banco de provas: roda a moto de verdade e compara com o baseline. ~110 s. |
 | `python tools/dev.py selftest --fase curva` | Só até aquela fase. ~32 s, para iterar. |
 | `python tools/dev.py shots` | Regressão visual: roda com tela e mede o frame. |
+| `python tools/dev.py prova` | Os mesmos quatro quadros congelados, em `.dev/prova/`, para comparar visual antes e depois. |
+| `python tools/dev.py fps` | Tempo de quadro da corrida solta, com tela e sem vsync. Compara a mesma máquina. |
 | `python tools/dev.py lint` / `format` | gdlint e gdformat. |
 | `python tools/dev.py run` | Abre o jogo. |
 | `python tools/dev.py export` | Exporta as três plataformas. |
@@ -80,7 +82,7 @@ jogo continua rodando, só errado. Estão explicados em `docs/PROTOTIPO.md`.
   inteira some e o mundo vira caixas flutuando.
 - **`stretch_shrink`, nunca `SubViewport.size`.** Com `stretch` ligado o
   container sobrescreve o tamanho, e você renderiza em 1280×720 achando que
-  está em 320×180.
+  está em 640×360.
 - **A HUD mora dentro do SubViewport.** HUD nítida sobre mundo pixelado é o
   visual de remaster preguiçoso.
 - **Semente fixa no banco de provas** — ela mora em `World.setup` (20260831) e
@@ -205,6 +207,10 @@ saber onde **não** há rede faz parte do contrato.
 | `scripts/entregador.gd` | O ator: moto e piloto, posados pelo estado da física. |
 | `arte/entregador.py` | Gera o modelo no Blender. É a fonte: o `.blend` e o `assets/entregador/` são build. |
 | `assets/entregador/` | O modelo e as texturas que o jogo carrega. Não edite à mão: regere pelo script. |
+| `arte/chao.py` | Gera as texturas de asfalto e calçada (`assets/visual/`). As regras de "visto a 180 km/h" estão no topo dele. |
+| `arte/paleta.py` | Gera o LUT de cor do dia (`assets/visual/lut_dia.png`). O clima da tela se ajusta ali. |
+| `scripts/paleta.gdshader` | Quantização e dither: o último passe do mundo, abaixo da HUD. |
+| `scripts/prova.gd` | O quadro congelado da prova visual (`dev.py prova`). |
 | `tests/unit/` | Testes unitários. |
 | `tests/baseline.json` | Os números esperados. |
 | `tests/baseline_visual.json` | O que a tela tem dentro. |

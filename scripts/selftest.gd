@@ -76,6 +76,9 @@ var _shots_next: float = 0.0
 var _shots_taken: int = 0
 ## Soma das medidas de cada frame capturado, para tirar a media no fim.
 var _frame_sky: float = 0.0
+## O ceu sozinho, sem nenhuma geometria, capturado logo antes de cada quadro.
+## Ver `_captura_ceu`.
+var _ceu_referencia: Image
 var _frame_luma: float = 0.0
 var _frame_colors: float = 0.0
 var _asphalt_speed: float = 0.0
@@ -90,6 +93,11 @@ var _last_progress: float = 0.0
 var _heading_at_mark: float = 0.0
 var _lateral_at_mark: float = 0.0
 var _speed_at_mark: float = 0.0
+## `--fps`: so a corrida solta, com tela e sem vsync, medindo cada quadro.
+## Mede a corrida solta porque e o pior caso que o banco ja sabe montar:
+## pelotao inteiro, transito em volta e o piloto automatico no corredor.
+var _fps: bool = OS.get_cmdline_user_args().has("--fps")
+var _quadros_ms: PackedFloat32Array = []
 
 
 func setup(main: Node) -> void:
@@ -102,6 +110,14 @@ func setup(main: Node) -> void:
 	# dela. Sem isso "regrediu" e "deu azar" viram a mesma coisa.
 	_bench_begin()
 	_read_phase_arg()
+	if _fps:
+		_phase = PHASE_NAMES.find("corrida")
+		_stop_after = _phase
+		# Sem vsync e sem teto: com eles, todo quadro mede 16,7 ms e o numero
+		# diz a taxa do monitor, nao o custo do jogo.
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+		Engine.max_fps = 0
+		print("fps: so a corrida solta, sem vsync")
 	print("\n=== RUSHFOOD SELFTEST ===")
 	print("tuning: %s" % _main.get("tuning_source"))
 	print(
@@ -165,6 +181,13 @@ func _physics_process(delta: float) -> void:
 			_phase_freerun(delta)
 		8:
 			_phase_sprint(delta)
+
+
+func _process(delta: float) -> void:
+	# O primeiro segundo fica de fora: e compilacao de shader e cache frio, que
+	# o jogador paga uma vez e a media pagaria a corrida inteira.
+	if _fps and _phase == PHASE_NAMES.find("corrida") and _t > 1.0:
+		_quadros_ms.append(delta * 1000.0)
 
 
 func _next_phase() -> void:
@@ -829,48 +852,44 @@ func _set_action(action_name: String, pressed: bool) -> void:
 ## o mundo virava caixas flutuando no vazio. Nenhum numero do banco de provas
 ## se mexia - todos medem fisica, e a fisica nao sabe que a pista sumiu.
 func _capture(path: String) -> void:
+	await _captura_ceu()
 	await RenderingServer.frame_post_draw
 	var image := get_viewport().get_texture().get_image()
 	image.save_png(path)
 	_measure_frame(image)
 
 
-## Tres proporcoes da imagem, amostradas de 4 em 4 pixels.
+## Um quadro com a camera sem desenhar geometria nenhuma: so o ceu.
 ##
-## A amostragem existe porque isto roda a cada 2,5 s de simulacao e um viewport
-## inteiro sao 900 mil leituras de pixel em GDScript. De 4 em 4 sao 57 mil, e a
-## proporcao nao muda.
+## "Onde nao ha mundo" era "onde a cor e a do fundo", e o fundo era uma cor
+## chapada. Com ceu de verdade o fundo e um degrade, e depois de tonemap, LUT
+## e dither nenhuma cor fixa diz mais o que e ceu. A referencia passa pelo
+## mesmo pos-processamento que o quadro medido, entao ceu e o pixel igual ao
+## da referencia na mesma posicao - e pista sumida vira "ceu" de novo, porque
+## o ceu tambem desenha o chao abaixo do horizonte.
+##
+## Uma referencia por quadro, e nao uma por corrida: o FOV abre com a
+## velocidade e a camera gira na curva, e isso desloca as bandas do degrade na
+## tela. Com a cor quantizada, banda deslocada vira pixel de outro degrau, e
+## uma referencia velha chamava metade do ceu de "mundo".
+func _captura_ceu() -> void:
+	var camera := _world.camera
+	var mascara := camera.cull_mask
+	camera.cull_mask = 0
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_ceu_referencia = get_viewport().get_texture().get_image()
+	camera.cull_mask = mascara
+
+
+## As tres proporcoes do quadro (`MedidaDeQuadro`), somadas para a media.
 func _measure_frame(image: Image) -> void:
-	var w := image.get_width()
-	var h := image.get_height()
-	if w == 0 or h == 0:
+	var medida := MedidaDeQuadro.medir(image, _ceu_referencia)
+	if medida.is_empty():
 		return
-
-	# A cor de fundo do projeto. Pixel parecido com ela e ceu - ou seja,
-	# lugar onde NAO ha mundo desenhado.
-	var sky := Color(0.13, 0.14, 0.2)
-	var sky_hits := 0
-	var luma := 0.0
-	var seen := {}
-	var total := 0
-
-	for y in range(0, h, 4):
-		for x in range(0, w, 4):
-			var c := image.get_pixel(x, y)
-			total += 1
-			luma += c.get_luminance()
-			if absf(c.r - sky.r) < 0.06 and absf(c.g - sky.g) < 0.06 and absf(c.b - sky.b) < 0.06:
-				sky_hits += 1
-			# Cor quantizada em 5 niveis por canal: conta quantas familias de
-			# cor a cena tem, sem contar ruido de sombreamento como cor nova.
-			var key := (int(c.r * 4.0) << 6) | (int(c.g * 4.0) << 3) | int(c.b * 4.0)
-			seen[key] = true
-
-	if total == 0:
-		return
-	_frame_sky += float(sky_hits) / float(total)
-	_frame_luma += luma / float(total)
-	_frame_colors += float(seen.size())
+	_frame_sky += medida["ceu"]
+	_frame_luma += medida["luminancia"]
+	_frame_colors += medida["familias"]
 
 
 ## --- Relatorio ------------------------------------------------------------
@@ -922,6 +941,7 @@ func _write_metrics() -> void:
 
 func _finish() -> void:
 	set_physics_process(false)
+	_relata_fps()
 	_write_frame_metrics()
 	_write_metrics()
 	print("\n--- medidas ---")
@@ -936,3 +956,28 @@ func _finish() -> void:
 			print("  ! " + line)
 		print("")
 		get_tree().quit(1)
+
+
+## Tempo de quadro da corrida solta: mediana, p95 e o pior.
+##
+## A mediana diz o custo normal; o p95 e o pior diz o tranco que se sente. Nao
+## entra no baseline: depende da GPU de quem roda, e no CI e renderizacao por
+## software. E numero para comparar na mesma maquina, antes e depois.
+func _relata_fps() -> void:
+	if not _fps or _quadros_ms.is_empty():
+		return
+	var ordenados := _quadros_ms.duplicate()
+	ordenados.sort()
+	var n := ordenados.size()
+	var p50 := ordenados[n / 2]
+	var p95 := ordenados[mini(int(n * 0.95), n - 1)]
+	var pior := ordenados[n - 1]
+	_metric("fps_p50_ms", p50)
+	_metric("fps_p95_ms", p95)
+	_metric("fps_pior_ms", pior)
+	_report.append(
+		(
+			"tempo de quadro      p50 %.2f ms (%.0f fps), p95 %.2f ms, pior %.2f ms, %d quadros"
+			% [p50, 1000.0 / p50, p95, pior, n]
+		)
+	)

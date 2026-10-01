@@ -54,18 +54,34 @@ opinião entre duas máquinas gera diff que ninguém pediu.
 ## Blender (só para mexer no modelo)
 
 Jogar, testar e exportar não precisam de Blender: o jogo carrega o `.glb`
-versionado. Ele só entra para mudar o entregador, e aí o caminho é o script, não
-o `.blend`:
+versionado. Ele só entra para mudar o entregador ou os prédios, e aí o caminho
+é o script, não o `.blend`:
 
 ```bash
 blender --background --factory-startup --python arte/entregador.py
+blender --background --factory-startup --python arte/predios.py
 ```
 
-Testado no Blender 5.2. O script apaga a cena, monta o modelo e regrava
-`arte/entregador.blend` e `assets/entregador/`. A saída é reprodutível byte a
+Testado no Blender 5.2. Cada script apaga a cena, monta o modelo e regrava o
+seu `.blend` em `arte/` e a sua pasta em `assets/` (`entregador/`, `predios/`). A saída é reprodutível byte a
 byte — mesma versão do Blender, mesmo `.glb` —, então regerar sem mudar nada
 não gera diff. O `--factory-startup` existe para isso: deixa de fora os add-ons
 e as preferências de quem roda.
+
+## O LUT de cor
+
+`assets/visual/lut_dia.png` é build de `arte/paleta.py`, que roda com o Python
+do sistema, sem dependência:
+
+```bash
+python arte/paleta.py            # o LUT do dia
+python arte/paleta.py --neutro   # o identidade, para conferir a importação
+```
+
+O PNG é importado como `Texture3D` (`importer="3d_texture"`,
+`slices/horizontal=16` no `.import`). Se o Godot um dia o reimportar como
+textura 2D, o `preload` do `world.gd` quebra com erro de tipo, e não com tela
+estranha. Isso é bom.
 
 ## CI
 

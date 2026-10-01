@@ -339,13 +339,49 @@ def cmd_doctor(_: argparse.Namespace) -> int:
     return 0
 
 
-def _godot(binary: pathlib.Path, *extra: str) -> int:
-    """Roda o Godot no projeto. Comando headless usa a variante de console."""
+# O que o Godot imprime quando algo deu errado e ele seguiu em frente: erro do
+# motor, de script e o `push_error`. Aviso (WARNING) fica de fora - o import
+# do CI e o driver de video sem GPU emitem os seus, e nenhum indica jogo errado.
+_LINHA_DE_ERRO = re.compile(rb"^\s*(SCRIPT |USER )?ERROR:")
+
+
+def _godot(binary: pathlib.Path, *extra: str, vigia_erros: bool = False) -> int:
+    """Roda o Godot no projeto. Comando headless usa a variante de console.
+
+    Com `vigia_erros`, uma rodada que imprimiu ERROR reprova mesmo que o
+    processo saia com 0. O Godot nao para no erro: ele loga e continua. O
+    selftest ja passou verde com 4316 "Basis must be normalized" na saida, um
+    por pe por passo de fisica, e o primeiro a ver foi quem abriu o jogo a mao.
+    Erro que nao reprova nada vira paisagem, e o proximo, o que importa, chega
+    escondido no meio dele.
+    """
     if "--headless" in extra:
         binary = _console_variant(binary)
     cmd = [str(binary), "--path", str(PROJECT), *extra]
-    print(f"$ {' '.join(cmd)}")
-    return subprocess.run(cmd).returncode
+    print(f"$ {' '.join(cmd)}", flush=True)
+    if not vigia_erros:
+        return subprocess.run(cmd).returncode
+
+    # Bytes, e nao texto: a saida passa adiante intacta, sem depender de o
+    # console do Windows saber codificar o que o Godot escreveu.
+    erros: list[str] = []
+    with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as proc:
+        assert proc.stdout is not None
+        for linha in proc.stdout:
+            sys.stdout.buffer.write(linha)
+            sys.stdout.buffer.flush()
+            if _LINHA_DE_ERRO.match(linha):
+                erros.append(linha.decode("utf-8", "replace").strip())
+    if proc.returncode != 0 or not erros:
+        return proc.returncode
+    # Distinto pelo texto sem os numeros: o mesmo erro a cada passo muda so a
+    # matriz que ele imprime, e listar mil variacoes dele esconde o segundo.
+    distintos = list({re.sub(r"-?\d[\d.]*", "#", e): e for e in erros}.values())
+    print(f"\n! o Godot imprimiu {len(erros)} linha(s) de ERROR "
+          f"({len(distintos)} distinta(s)). Rodou ate o fim, mas reprova:")
+    for erro in distintos[:5]:
+        print(f"  {erro[:200]}")
+    return 1
 
 
 def _import_antes(binary: pathlib.Path) -> int:
@@ -434,7 +470,7 @@ def cmd_selftest(args: argparse.Namespace) -> int:
         METRICS_OUT.unlink()
     os.environ["RUSHFOOD_SELFTEST_METRICS"] = str(METRICS_OUT)
 
-    code = _godot(binary, *extra)
+    code = _godot(binary, *extra, vigia_erros=True)
     if code != 0 or not METRICS_OUT.is_file():
         return code
 
@@ -473,7 +509,7 @@ def cmd_test(args: argparse.Namespace) -> int:
     # trafega ali. Nenhum teste daqui usa input - eles testam funcao pura -
     # e sem headless nao ha como rodar no CI.
     return _godot(binary, "--headless", "-s", "addons/gdUnit4/bin/GdUnitCmdTool.gd",
-                  "--ignoreHeadlessMode", "-a", args.caminho)
+                  "--ignoreHeadlessMode", "-a", args.caminho, vigia_erros=True)
 
 
 BASELINE_VISUAL = PROJECT / "tests" / "baseline_visual.json"
@@ -508,8 +544,10 @@ def cmd_shots(args: argparse.Namespace) -> int:
     os.environ["RUSHFOOD_SELFTEST_SHOTS"] = str(out)
     os.environ["RUSHFOOD_SELFTEST_METRICS"] = str(METRICS_OUT)
 
-    # Sem --headless: e o ponto todo do comando.
-    code = _godot(binary, "--", "--selftest")
+    # Sem --headless: e o ponto todo do comando. Mas com audio dummy: o jogo
+    # nao tem som, e o runner Linux do CI nao tem placa - o ALSA falha com um
+    # ERROR que nao diz nada sobre o jogo e reprovaria toda rodada ali.
+    code = _godot(binary, "--audio-driver", "Dummy", "--", "--selftest", vigia_erros=True)
     pngs = sorted(out.glob("*.png"))
     print(f"\n{len(pngs)} frame(s) em {out}")
     if code != 0:
@@ -572,6 +610,54 @@ def _write_visual_baseline(visual: dict) -> None:
     print(f"+ baseline visual gravado em {BASELINE_VISUAL.relative_to(PROJECT)}:")
     for chave, valor in dados["valores"].items():
         print(f"    {chave}: {valor:g}")
+
+
+PROVA_DIR = DEV_DIR / "prova"
+
+
+def cmd_prova(_: argparse.Namespace) -> int:
+    """O quadro congelado da prova visual: os mesmos quatro quadros, sempre.
+
+    Mesma semente, mesmo trecho de pista, camera encaixada e mundo congelado
+    antes do primeiro passo de fisica. Rodar duas vezes da o mesmo PNG - e o
+    que faz "melhorou?" ter resposta, em vez de cada um comparar o print que
+    calhou de tirar. Precisa de tela, pelo mesmo motivo do `shots`.
+    """
+    binary = require_godot(godot_version())
+    code = _import_antes(binary)
+    if code != 0:
+        return code
+    PROVA_DIR.mkdir(parents=True, exist_ok=True)
+    for antigo in PROVA_DIR.glob("*.png"):
+        antigo.unlink()
+    os.environ["RUSHFOOD_PROVA_DIR"] = str(PROVA_DIR)
+    code = _godot(binary, "--", "--prova")
+    pngs = sorted(PROVA_DIR.glob("*.png"))
+    if code != 0:
+        return code
+    if not pngs:
+        return _fail("nenhum quadro foi salvo - ha display nesta sessao?")
+    print(f"\n{len(pngs)} imagem(ns) em {PROVA_DIR}")
+    return 0
+
+
+def cmd_fps(_: argparse.Namespace) -> int:
+    """Tempo de quadro da corrida solta, com tela e sem vsync.
+
+    Imprime mediana, p95 e o pior quadro. Nao compara com baseline: o numero
+    depende da GPU de quem roda. Serve para comparar a mesma maquina antes e
+    depois de uma mudanca de visual.
+    """
+    binary = require_godot(godot_version())
+    code = _import_antes(binary)
+    if code != 0:
+        return code
+    METRICS_OUT.parent.mkdir(parents=True, exist_ok=True)
+    if METRICS_OUT.exists():
+        METRICS_OUT.unlink()
+    os.environ["RUSHFOOD_SELFTEST_METRICS"] = str(METRICS_OUT)
+    # Sem --headless: sem tela nao ha quadro para medir.
+    return _godot(binary, "--", "--selftest", "--fps")
 
 
 def cmd_run(_: argparse.Namespace) -> int:
@@ -653,6 +739,8 @@ def main() -> int:
     p_shots.add_argument("--out", metavar="PASTA", help="onde gravar os PNGs")
     p_shots.add_argument("--update", action="store_true",
                          help="regrava o baseline visual (olhe os PNGs antes)")
+    sub.add_parser("prova", help="prova visual: os mesmos quadros congelados, para comparar")
+    sub.add_parser("fps", help="tempo de quadro da corrida solta, com tela e sem vsync")
     sub.add_parser("run", help="abre o jogo")
     sub.add_parser("export", help="exporta as tres plataformas")
     p_test = sub.add_parser("test", help="testes unitarios (GdUnit4), rapidos")
@@ -669,6 +757,8 @@ def main() -> int:
         "selftest": cmd_selftest, "run": cmd_run, "export": cmd_export,
         "lint": cmd_lint, "format": cmd_format, "test": cmd_test,
         "shots": cmd_shots,
+        "prova": cmd_prova,
+        "fps": cmd_fps,
     }[args.comando]
     return handler(args)
 

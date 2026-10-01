@@ -53,8 +53,8 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## Frenagem do carro do transito, em m/s^2.
 ##
 ## Maior que a aceleracao de proposito: carro que reage devagar a fila entra
-## dentro do carro da frente, e duas caixas se atravessando a 320x180 le como
-## bug, nao como transito.
+## dentro do carro da frente, e duas caixas se atravessando em pixel grosso le
+## como bug, nao como transito.
 @export_range(1.0, 25.0, 0.1) var traffic_brake: float = 4.5
 ## Distancia centro a centro que o carro guarda do carro da frente, em metros.
 ##

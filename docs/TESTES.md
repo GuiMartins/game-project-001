@@ -183,13 +183,31 @@ de 4 em 4 pixels:
 
 | medida | o que denuncia |
 | --- | --- |
-| `visual_fracao_ceu` | quanto da tela é cor de fundo, ou seja, onde **não** há mundo |
+| `visual_fracao_ceu` | quanto da tela é céu, ou seja, onde **não** há mundo |
 | `visual_luminancia` | a cena apagar ou estourar |
 | `visual_familias_de_cor` | elementos sumindo da cena |
 
 Verificado com o bug de verdade: escondendo o mesh da pista, `fracao_ceu` cai
 48,6% e `luminancia` 46,4% — muito além da tolerância. Com a pista de volta, as
 três ficam abaixo de 1% de variação.
+
+**Céu é o que o céu de referência diz que é.** Até a P2 da prova visual o fundo
+era uma cor chapada, e céu era "pixel parecido com a cor de fundo". Com céu de
+verdade o fundo é um degradê, e depois de tonemap, LUT e dither nenhuma cor fixa
+diz mais o que é céu. Agora, antes do primeiro quadro, o banco captura o mesmo
+quadro com a câmera sem desenhar geometria (`cull_mask = 0`): só o céu, passando
+pelo mesmo pós-processamento. Céu é o pixel igual ao dessa referência na mesma
+posição. Pista sumida vira céu de novo, porque o céu também desenha o chão
+abaixo do horizonte.
+
+Verificado de novo, com o céu de meio-dia: escondendo a pista, `fracao_ceu`
+sobe de 0,354 para 0,670 (+89%). A `luminancia` sozinha **não** pegaria mais
+(−6%): com céu claro, pista sumida e pista no lugar têm brilho parecido. Quatro
+rodadas do mesmo código na mesma máquina variaram menos de 1% nas três medidas.
+O ruído de CI, que é o que obrigou a tolerância de 20%, se mede lá.
+
+A medida mora em `scripts/medida_de_quadro.gd`, fora do banco: ele mede a moto,
+ela mede a tela.
 
 A tolerância é larga (**20%**) de propósito: o CI roda em software rendering sem
 GPU contra um baseline gravado numa máquina com GPU, e — o que pesa mais — o

@@ -1,14 +1,19 @@
 extends Node
 ## Pipeline de render e teclas globais.
 ##
-## O look pixel sai de um SubViewport de 320x180 com upscale INTEIRO de 4x pra
-## 1280x720. Inteiro importa: 3.7x deixa pixel de tamanhos diferentes na mesma
-## tela e o serrilhado fica sujo em vez de proposital.
+## O look pixel sai de um SubViewport de 640x360 com upscale INTEIRO de 2x pra
+## 1280x720. Inteiro importa: 2.5x deixa pixel de tamanhos diferentes na mesma
+## tela e o serrilhado fica sujo em vez de proposital. A janela escala o resto
+## (ver `scale_mode` no `project.godot`): 1920x1080 da 3x por pixel, exato.
 
-## 1280x720 / 4 = 320x180 exato. O SubViewportContainer faz a conta sozinho
+## 1280x720 / 2 = 640x360 exato. O SubViewportContainer faz a conta sozinho
 ## via stretch_shrink - setar sub_viewport.size na mao nao funciona com stretch
 ## ligado, o container sobrescreve.
-const PIXEL_SHRINK: int = 4
+##
+## Era 4 (320x180). Subiu na P1 da prova visual: a 320x180 o piloto tem uns
+## 37 px de altura no talo, e nao cabe nele o que faz um ator ler como foto em
+## vez de boneco. A conta esta no `docs/DIRECAO_VISUAL.md`.
+const PIXEL_SHRINK: int = 2
 
 var sub_viewport: SubViewport
 var container: SubViewportContainer
@@ -27,6 +32,8 @@ var _pixel_mode: bool = true
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	var selftest_mode := args.has("--selftest") or OS.has_environment("RUSHFOOD_SELFTEST")
+	var prova_mode := args.has("--prova")
+	var medindo := selftest_mode or prova_mode
 
 	## O banco de provas roda nos defaults do repositorio, nao no user://.
 	##
@@ -34,7 +41,7 @@ func _ready() -> void:
 	## tuning tinha ficado de fora: bastava alguem clicar em Salvar pra
 	## "regrediu" e "voce mexeu num slider ontem" virarem a mesma coisa. Com
 	## --selftest-user voce mede os seus ajustes, quando e isso que quer.
-	var use_saved := not selftest_mode or args.has("--selftest-user")
+	var use_saved := not medindo or args.has("--selftest-user")
 	tuning = BikeTuning.load_or_default() if use_saved else BikeTuning.new()
 	world_tuning = WorldTuning.load_or_default() if use_saved else WorldTuning.new()
 	tuning_source = "user:// (ajustes salvos)" if use_saved else "defaults do repositorio"
@@ -55,10 +62,18 @@ func _ready() -> void:
 	sub_viewport.handle_input_locally = false
 	container.add_child(sub_viewport)
 
+	# A cor de cada carro do transito sai do sorteio global, e nao da semente
+	# do mundo. Semear o global aqui, antes de o mundo nascer, fixa a cor sem
+	# mexer na sequencia da semente - que e de onde saem pista e transito, e
+	# mexer nela mudaria todo numero do banco de provas.
+	if medindo:
+		seed(World.SEMENTE)
 	world = World.new()
 	world.name = "World"
 	sub_viewport.add_child(world)
 	world.setup(tuning, world_tuning)
+
+	_monta_paleta()
 
 	hud = Hud.new()
 	hud.name = "Hud"
@@ -90,12 +105,36 @@ func _ready() -> void:
 	# O banco de provas larga direto na corrida. Menu esperando ENTER num
 	# processo headless e teste que trava em vez de falhar - e travado nao tem
 	# codigo de saida pra CI ler.
-	fluxo.iniciar(selftest_mode)
+	fluxo.iniciar(medindo)
 
 	if selftest_mode:
 		var selftest: Node = load("res://scripts/selftest.gd").new()
 		add_child(selftest)
 		selftest.call("setup", self)
+	elif prova_mode:
+		var prova: Node = load("res://scripts/prova.gd").new()
+		add_child(prova)
+		prova.call("setup", self)
+
+
+## O passe de quantizacao com dither (`paleta.gdshader`): o ultimo do mundo.
+##
+## Um ColorRect que le a tela ja desenhada, numa camada acima do 3D e abaixo da
+## HUD (layer 10). Acima de tudo que mexe na cor - neblina, tonemap, LUT -
+## porque eles devolveriam os tons que ele tira; abaixo da HUD porque texto
+## passado no dither so suja.
+func _monta_paleta() -> void:
+	var camada := CanvasLayer.new()
+	camada.name = "Paleta"
+	camada.layer = 5
+	sub_viewport.add_child(camada)
+	var tela := ColorRect.new()
+	tela.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tela.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var material := ShaderMaterial.new()
+	material.shader = preload("res://scripts/paleta.gdshader")
+	tela.material = material
+	camada.add_child(tela)
 
 
 func _apply_pixel_mode() -> void:
@@ -140,7 +179,7 @@ func _on_tela_mudou(tela: int) -> void:
 	# A Hud some em qualquer tela que nao seja a corrida, o resultado incluso.
 	# Deixa-la por baixo do placar parecia dar contexto e na pratica so
 	# embaralhou: sao dois textos claros, do mesmo tamanho, no mesmo lugar da
-	# tela de 320x180 - o "6/6" da corrida bem em cima do "6o LUGAR de 6".
+	# tela - o "6/6" da corrida bem em cima do "6o LUGAR de 6".
 	hud.visible = correndo
 
 

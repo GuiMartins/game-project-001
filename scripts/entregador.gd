@@ -233,7 +233,12 @@ func _posa() -> void:
 			polo = polo.lerp(global_basis * Vector3(-0.3, 0.3, -1.0), no_chao)
 		_ik(perna[0], perna[1], pe, alvo, polo)
 		# Na pedaleira a bota acompanha a moto; no chao, assenta no asfalto.
-		pe.global_basis = base.slerp(global_basis, no_chao)
+		# Por quaternion, e nao `Basis.slerp`: o `global_basis` sai do produto
+		# de tombo, guinada e inclinacao, e chega com o comprimento dos eixos em
+		# 0,9999. O `slerp` da Basis exige rotacao exata e cospe um erro por pe
+		# por passo de fisica; `get_rotation_quaternion` ortonormaliza antes.
+		var na_moto := base.get_rotation_quaternion()
+		pe.global_basis = Basis(na_moto.slerp(global_basis.get_rotation_quaternion(), no_chao))
 
 
 ## IK de dois ossos: dobra `raiz` e `meio` para a `ponta` alcancar o `alvo`.

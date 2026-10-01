@@ -157,6 +157,7 @@ uma grande para número (velocidade, posição) e uma pequena para legenda.
 | Arquivo | Nota |
 | --- | --- |
 | `docs/referencias/*.png` | **As quatro imagens entram no repositório.** A prova compara contra elas; comparação contra arquivo que mora no chat de alguém não é reproduzível |
+| `docs/referencias/video_01.mp4` | A referência em movimento: 6 s de corrida, com câmera, inclinação, trânsito e HUD medidos quadro a quadro em [REFERENCIA_VIDEO.md](REFERENCIA_VIDEO.md) |
 
 **Pendente, e é a única linha do manifesto que não pode ser produzida por quem
 executa o plano:** as quatro imagens chegaram anexadas numa conversa, não como
@@ -224,6 +225,21 @@ Sai junto o `dev.py fps`, que o `DIRECAO_VISUAL.md` já propõe como Fase 0.
 *Aceite:* rodar duas vezes seguidas produz PNGs visualmente idênticos, e o
 comando roda nos três sistemas.
 
+**Estado (01/10/2026):** feito. Quatro quadros (`largada`, `curva`, `ladeira`,
+`reta`, com os três últimos escolhidos pela geometria da pista) e uma `folha.png`
+com os quatro, todos na resolução interna, sem HUD. O mundo roda 30 passos de
+física fixos depois da largada e congela; a câmera é encaixada, não perseguida.
+Duas rodadas seguidas: três quadros idênticos byte a byte, e o quarto com até 7
+pixels de 57.600 diferentes, arredondamento de física. Com um passo só saía
+tudo idêntico, mas o piloto aparecia com o pé no chão a 90 km/h.
+
+A cor de cada carro do trânsito vinha do sorteio global, sem semente. Agora o
+sorteio global é semeado em `main.gd` nos modos de medição, sem tocar na
+semente do mundo — nenhum número do banco andou.
+
+`dev.py fps`, linha de base na máquina de desenvolvimento, ainda em 320×180:
+p50 0,70 ms, p95 1,39 ms, pior quadro 3,12 ms. Rodado só no Windows até aqui.
+
 ### P1 — Resolução
 
 **Sem asset.** `PIXEL_SHRINK = 2`, `scale_mode = integer`, HUD reposicionada
@@ -232,6 +248,29 @@ no mesmo commit com o motivo.
 
 *Aceite:* portão verde; `fps` registrado; janela em 1600×900 com tarja em vez
 de pixel irregular.
+
+**Estado (01/10/2026):** feito. `PIXEL_SHRINK = 2` e `scale_mode = "integer"`.
+A HUD e as telas do fluxo continuam escritas em unidades de 320×180 e passam por
+`Hud.ESCALA = 2` em toda posição, tamanho e fonte: multiplicar ~35 números à mão
+seria um erro por número esperando acontecer, e o redesenho é a P8. A prosa foi
+revisada nos 13 arquivos; as menções que sobraram a 320×180 são históricas ou
+são a unidade de layout, de propósito.
+
+- **Portão:** verde, banco sem variação.
+- **Baseline visual:** mantido. Andou dentro do ruído (famílias de cor −2,7%,
+  céu −1,4%, luminância −0,1%), porque as medidas são da janela, e a janela
+  continua 1280×720.
+- **`fps`:** p50 0,66 ms, p95 1,39 ms, pior 1,45 ms, contra 0,70 / 1,39 / 3,12
+  em 320×180. Quatro vezes mais fragmentos não aparecem nesta GPU.
+- **1600×900:** a janela desenha o jogo em 1280×720 com tarja em volta. Com
+  `fractional`, o mesmo teste estica para 1600×900, 2,5× por pixel.
+- **Revertido no mesmo dia para `fractional`.** O `integer` arredonda a escala
+  sobre o viewport base (1280×720), e não sobre os 640×360 do mundo, como a
+  tabela do DIRECAO_VISUAL.md supõe. Em 1920×1080 (1,5×) ele caía para 1×: o
+  jogo ocupava 1280×720 no meio da janela, com tarja. O teste em 1600×900
+  mostrava exatamente isso, e foi lido como acerto. Fracionário preenche a
+  janela, é 3× exato em 1920×1080, e só fica irregular em tamanhos fora do
+  padrão.
 
 ### P2 — Luz, sombra e céu
 
@@ -250,6 +289,24 @@ o portão reprovar um commit de markdown.
 *Aceite:* a moto tem sombra de contato que acompanha a ladeira; variância
 medida e registrada; tempo do job `regressao-visual` no CI anotado.
 
+**Estado (01/10/2026):** feito, com o sol onde já estava, em `(-42, 38, 0)`.
+`ProceduralSkyMaterial` com `use_debanding` desligado, ambiente vindo do céu,
+neblina na cor do horizonte com `fog_aerial_perspective`, e sombra do sol em
+70 m, duas divisões, bias baixo. A pista já não projetava sombra.
+
+- **Sombra:** toda moto tem sombra de contato, inclusive no quadro da ladeira.
+- **A medida de céu teve de mudar.** "Pixel da cor do fundo" não serve com céu
+  em degradê, nem depois de LUT e dither. Céu passou a ser o pixel igual ao de
+  um quadro de referência desenhado sem geometria (ver `docs/TESTES.md`). Com
+  a pista escondida, `fracao_ceu` sobe 89%; a luminância sozinha não pegaria
+  mais (−6%).
+- **Ruído:** quatro rodadas do mesmo código, menos de 1% nas três medidas, na
+  máquina de desenvolvimento. Baseline regravado: céu 0,165 → 0,355,
+  luminância 0,197 → 0,385, famílias de cor 32,8 → 32,1.
+- **`fps`:** p50 0,70 ms, p95 1,39 ms, pior 1,41 ms. A sombra não aparece
+  nesta GPU.
+- **Tempo do job no CI:** anotado no PR.
+
 ### P3 — Paleta
 
 **Assets:** `lut_dia.png`, `bayer4.png`.
@@ -263,6 +320,45 @@ não se sabe mais qual dos dois está errado.
 
 *Aceite:* o mesmo quadro da P0, antes e depois, lado a lado.
 
+**Estado (01/10/2026):** feito, e a folha antes/depois sai de `dev.py prova`
+contra os quadros da P0. A cadeia ficou:
+
+1. **Tonemap** filmic.
+2. **LUT** de 16³ em `Environment.adjustment_color_correction`, gerado por
+   `arte/paleta.py`: saturação 1,2, curva em S, sombra fria e luz quente.
+3. **Quantização** a 16 níveis por canal com Bayer 4×4 (`scripts/paleta.gdshader`),
+   num `CanvasLayer` abaixo da HUD.
+
+Duas saídas do manifesto:
+
+- **Sem `bayer4.png`.** A matriz é constante no shader: textura de 4×4 passa
+  por importação, compressão e mipmap, e cada um desses estraga o padrão sem
+  avisar.
+- **A orientação das fatias foi conferida** com `python arte/paleta.py
+  --neutro`. Com o LUT identidade a tela muda em média 2,9 de 255, e só 0,001%
+  dos pixels passa de 16. Fatia trocada deixaria o céu vermelho.
+
+As cores de base do greybox eram de noite, puxadas para o azul. Com o céu
+iluminando tudo de azul, o asfalto virava violeta. Foram para dia: asfalto
+neutro, calçada de concreto claro, mato seco, prédio de concreto quente. O sol
+subiu de 1,35 para 2,0 e o ambiente desceu de 0,7 para 0,5.
+
+A medida de céu precisou de mais um ajuste. Com cor quantizada, um degrau vale
+0,067, mais que a tolerância antiga de 0,06. A referência capturada uma vez por
+corrida não servia mais: o FOV muda com a velocidade e desloca as bandas.
+Agora há uma referência por quadro e tolerância de 0,08. Duas rodadas diferem
+0,1%. Sem a pista, `fracao_ceu` sobe 97%; a luminância sozinha cairia 18%,
+dentro da tolerância, e passaria.
+
+- **Baseline visual:** céu 0,365, luminância 0,437, famílias de cor 34,8.
+- **`fps`:** p50 0,74 ms, p95 1,39 ms, pior 2,52 ms.
+
+**Os critérios de parada, aplicados.** Depois de P2 e P3 a imagem andou de
+forma óbvia: de noite de greybox para meio-dia com sombra e paleta. O que ela
+ainda não tem é densidade. Continua lendo como low-poly limpo, e não como as
+referências. Era o esperado nesta ordem: é o que a P4 (textura e cenário) e a
+textura do ator existem para resolver. O `fps` não chegou perto de ameaçar 60.
+
 ### P4 — Textura no mundo
 
 **Assets:** todo o bloco "Mundo — texturas", `carro.glb`, `onibus.glb`,
@@ -273,6 +369,25 @@ mural, entram placa verde e contêiner. O trânsito troca caixa por modelo.
 
 *Aceite:* o quadro da P0 tem densidade comparável à referência — não detalhe
 comparável, que é foto, mas **quanta coisa entra no quadro**.
+
+**Estado (01/10/2026), P4a — chão:** asfalto e calçada texturizados, gerados
+por `arte/chao.py`. O asfalto tem brita, remendo, marca de pneu e pingo de
+óleo; a calçada é pedra portuguesa com a onda de Copacabana e meio-fio. Tudo
+foi desenhado para ser **visto passando a 180 km/h**, e a receita explica as
+três regras que saem disso. A principal: nada fino atravessado na pista com
+período menor que 1,7 m, o dobro do que a moto anda num quadro, porque isso
+pisca em vez de passar. O guard-rail não entrou: ele não tem geometria, é um
+empurrão analítico, e textura sem malha não tem onde morar.
+
+- **Importação:** o default do Godot marcou as duas como "3D", ou seja,
+  compressão VRAM e sem mipmap. Era a armadilha descrita acima. Os `.import`
+  ficaram com `detect_3d/compress_to=0` e `mipmaps/generate=true`.
+- **Filtro:** linear com mipmap anisotrópico, e não nearest. O pixelado vem
+  do 640×360 e do dither; nearest num chão rasante faz o asfalto ferver.
+- **Números:** banco sem variação; visual com luminância +3,9% e famílias de
+  cor +1,5%, regravado. `fps` p50 de 0,74 para 0,78 ms, p95 igual (1,39 ms).
+
+Falta da P4: fachada, mural, placa e contêiner (P4b); carro e ônibus (P4c).
 
 ### P5 — O ator
 
