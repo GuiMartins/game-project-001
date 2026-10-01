@@ -289,6 +289,19 @@ print — só em movimento.
 
 *Aceite:* julgado **rodando**, não em captura. Print de ator parado engana.
 
+**Estado (01/10/2026):** os três assets existem e o ator está no jogo (#22),
+antes de P0–P4, por decisão. Ele saiu do manifesto em dois pontos, os dois a
+favor da prova:
+
+- **Não é pose parada.** A pose é lida do estado da física a cada passo: roda,
+  guidão, joelho, pé no chão e tombo.
+- **A máscara troca mais que a bag.** Pinta também a moto e a jaqueta, uma cor
+  por corredor.
+
+O que é desta tarefa continua aberto: a cadência travada em 12 fps não existe,
+e o aceite — julgar rodando — espera o resto da prova (luz, paleta) para valer.
+O como está em `docs/PROTOTIPO.md`, seção *O entregador*.
+
 ### P6 — Partículas
 
 **Assets:** todo o bloco de partículas.

@@ -217,8 +217,9 @@ paleta trocada" em `RIVAL_COLORS`. Basta renderizar um passe de máscara
 
 `PROTOTIPO.md` diz hoje:
 
-> Quando entrarem, entram como `Sprite3D` com `billboard = Y-Billboard`,
-> `texture_filter = Nearest` e `alpha_cut = Discard` em todos.
+> Sprite pré-renderizado, se entrar no cenário, entra como `Sprite3D` com
+> `billboard = Y-Billboard`, `texture_filter = Nearest` e `alpha_cut =
+> Discard` em todos.
 
 As três propriedades estão certas e continuam valendo. O **nó** está errado
 para o que este documento pede, e a razão é concreta: `Sprite3D` não expõe
