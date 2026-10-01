@@ -339,13 +339,49 @@ def cmd_doctor(_: argparse.Namespace) -> int:
     return 0
 
 
-def _godot(binary: pathlib.Path, *extra: str) -> int:
-    """Roda o Godot no projeto. Comando headless usa a variante de console."""
+# O que o Godot imprime quando algo deu errado e ele seguiu em frente: erro do
+# motor, de script e o `push_error`. Aviso (WARNING) fica de fora - o import
+# do CI e o driver de video sem GPU emitem os seus, e nenhum indica jogo errado.
+_LINHA_DE_ERRO = re.compile(rb"^\s*(SCRIPT |USER )?ERROR:")
+
+
+def _godot(binary: pathlib.Path, *extra: str, vigia_erros: bool = False) -> int:
+    """Roda o Godot no projeto. Comando headless usa a variante de console.
+
+    Com `vigia_erros`, uma rodada que imprimiu ERROR reprova mesmo que o
+    processo saia com 0. O Godot nao para no erro: ele loga e continua. O
+    selftest ja passou verde com 4316 "Basis must be normalized" na saida, um
+    por pe por passo de fisica, e o primeiro a ver foi quem abriu o jogo a mao.
+    Erro que nao reprova nada vira paisagem, e o proximo, o que importa, chega
+    escondido no meio dele.
+    """
     if "--headless" in extra:
         binary = _console_variant(binary)
     cmd = [str(binary), "--path", str(PROJECT), *extra]
-    print(f"$ {' '.join(cmd)}")
-    return subprocess.run(cmd).returncode
+    print(f"$ {' '.join(cmd)}", flush=True)
+    if not vigia_erros:
+        return subprocess.run(cmd).returncode
+
+    # Bytes, e nao texto: a saida passa adiante intacta, sem depender de o
+    # console do Windows saber codificar o que o Godot escreveu.
+    erros: list[str] = []
+    with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as proc:
+        assert proc.stdout is not None
+        for linha in proc.stdout:
+            sys.stdout.buffer.write(linha)
+            sys.stdout.buffer.flush()
+            if _LINHA_DE_ERRO.match(linha):
+                erros.append(linha.decode("utf-8", "replace").strip())
+    if proc.returncode != 0 or not erros:
+        return proc.returncode
+    # Distinto pelo texto sem os numeros: o mesmo erro a cada passo muda so a
+    # matriz que ele imprime, e listar mil variacoes dele esconde o segundo.
+    distintos = list({re.sub(r"-?\d[\d.]*", "#", e): e for e in erros}.values())
+    print(f"\n! o Godot imprimiu {len(erros)} linha(s) de ERROR "
+          f"({len(distintos)} distinta(s)). Rodou ate o fim, mas reprova:")
+    for erro in distintos[:5]:
+        print(f"  {erro[:200]}")
+    return 1
 
 
 def _import_antes(binary: pathlib.Path) -> int:
@@ -434,7 +470,7 @@ def cmd_selftest(args: argparse.Namespace) -> int:
         METRICS_OUT.unlink()
     os.environ["RUSHFOOD_SELFTEST_METRICS"] = str(METRICS_OUT)
 
-    code = _godot(binary, *extra)
+    code = _godot(binary, *extra, vigia_erros=True)
     if code != 0 or not METRICS_OUT.is_file():
         return code
 
@@ -473,7 +509,7 @@ def cmd_test(args: argparse.Namespace) -> int:
     # trafega ali. Nenhum teste daqui usa input - eles testam funcao pura -
     # e sem headless nao ha como rodar no CI.
     return _godot(binary, "--headless", "-s", "addons/gdUnit4/bin/GdUnitCmdTool.gd",
-                  "--ignoreHeadlessMode", "-a", args.caminho)
+                  "--ignoreHeadlessMode", "-a", args.caminho, vigia_erros=True)
 
 
 BASELINE_VISUAL = PROJECT / "tests" / "baseline_visual.json"
@@ -508,8 +544,10 @@ def cmd_shots(args: argparse.Namespace) -> int:
     os.environ["RUSHFOOD_SELFTEST_SHOTS"] = str(out)
     os.environ["RUSHFOOD_SELFTEST_METRICS"] = str(METRICS_OUT)
 
-    # Sem --headless: e o ponto todo do comando.
-    code = _godot(binary, "--", "--selftest")
+    # Sem --headless: e o ponto todo do comando. Mas com audio dummy: o jogo
+    # nao tem som, e o runner Linux do CI nao tem placa - o ALSA falha com um
+    # ERROR que nao diz nada sobre o jogo e reprovaria toda rodada ali.
+    code = _godot(binary, "--audio-driver", "Dummy", "--", "--selftest", vigia_erros=True)
     pngs = sorted(out.glob("*.png"))
     print(f"\n{len(pngs)} frame(s) em {out}")
     if code != 0:
