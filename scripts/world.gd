@@ -232,17 +232,38 @@ func _build_scenery() -> void:
 		for side: float in [-1.0, 1.0]:
 			if _rng.randf() < 0.35:
 				continue
+			# Os tres sorteios sao os mesmos da caixa do greybox, na mesma ordem:
+			# mexer neles mudaria o transito e os rivais, que vem do mesmo
+			# gerador. So o que se faz com eles mudou.
 			var h := _rng.randf_range(6.0, 26.0)
 			var w := _rng.randf_range(6.0, 14.0)
-			var at := track.point(o, (edge + 6.0 + w * 0.5) * side) + Vector3.UP * (h * 0.5 - 1.0)
 			var shade := _rng.randf_range(0.2, 0.42)
-			# Concreto quente, de dia. Era azulado, de noite, e virava roxo sob o
-			# ceu. O sorteio continua o mesmo: mexer nele mudaria o transito.
-			var concreto := Color(shade * 1.45, shade * 1.38, shade * 1.25)
-			var building := Greybox.box(Vector3(w, h, w), concreto)
+			var tipo := _tipo_de_predio(h)
+			var building := Predio.criar(tipo, (w - 6.0) / 8.0, (shade - 0.2) / 0.22)
 			props.add_child(building)
-			building.global_position = at
+			# A fachada (-Z) olha para a pista, e a ponta dela fica a 6 m do
+			# acostamento. Base 1 m abaixo da pista: o terreno cai depois do
+			# acostamento, e na rampa o predio nao pode ficar com o pe no ar.
+			var lateral := (edge + 6.0 + Predio.frente(tipo)) * side
+			var base := track.transform_at(o, lateral)
+			building.global_transform = Transform3D(
+				Basis.looking_at(base.basis.x * -side, Vector3.UP), base.origin + Vector3.DOWN
+			)
 		o += _rng.randf_range(16.0, 30.0)
+
+
+## Qual dos quatro predios cabe na altura sorteada. A faixa de cada um e a
+## proporcao dele na avenida: um quarto de sobrado, o grosso de predio baixo
+## de comercio, e torre so de vez em quando - torre demais fecha o ceu, e o
+## ceu e metade da leitura de velocidade.
+static func _tipo_de_predio(altura: float) -> Predio.Tipo:
+	if altura < 11.0:
+		return Predio.Tipo.SOBRADO
+	if altura < 19.0:
+		return Predio.Tipo.COMERCIO
+	if altura < 23.0:
+		return Predio.Tipo.ESCRITORIO
+	return Predio.Tipo.TORRE
 
 
 ## Quanto o jogador ja andou da rota, em metros. E daqui que sai a colocacao -
