@@ -31,6 +31,16 @@ const GROUND: float = 34.0
 ## Espacamento da amostragem ao gerar o mesh, em metros.
 const MESH_STEP: float = 4.0
 
+## Texturas do chao, geradas por `arte/chao.py`. Os comprimentos de tile ao
+## longo da pista sao os da receita de la, e mudar um sem o outro estica o
+## desenho: o grao do asfalto foi feito para 6,6 m e a onda da calcada para
+## 4,4 m. Os dois ficam bem acima de 1,7 m, que e o dobro do que a moto anda
+## num quadro a 180 km/h - abaixo disso o desenho pisca em vez de passar.
+const ASFALTO: Texture2D = preload("res://assets/visual/asfalto_albedo.png")
+const ASFALTO_TILE: float = 6.6
+const CALCADA: Texture2D = preload("res://assets/visual/calcada_albedo.png")
+const CALCADA_TILE: float = 4.4
+
 var curve: Curve3D
 var length: float = 0.0
 
@@ -244,9 +254,13 @@ func _build_mesh() -> void:
 	for i in range(steps):
 		var o0 := float(i) * MESH_STEP
 		var o1 := minf(o0 + MESH_STEP, length)
-		_quad(asphalt, o0, o1, -road_w, road_w, lift)
-		_quad(shoulder, o0, o1, -road_w - SHOULDER, -road_w)
-		_quad(shoulder, o0, o1, road_w, road_w + SHOULDER)
+		# No asfalto o U conta faixas de rolamento: cada faixa e um tile inteiro,
+		# entao a marca de pneu cai sempre onde a roda passa. Na calcada o U e 0
+		# no meio-fio e 1 na borda de fora, dos dois lados.
+		var faixas := road_w / LANE_WIDTH
+		_quad(asphalt, o0, o1, -road_w, road_w, lift, Vector2(-faixas, faixas), ASFALTO_TILE)
+		_quad(shoulder, o0, o1, -road_w - SHOULDER, -road_w, 0.0, Vector2(1, 0), CALCADA_TILE)
+		_quad(shoulder, o0, o1, road_w, road_w + SHOULDER, 0.0, Vector2(0, 1), CALCADA_TILE)
 		_quad(ground, o0, o1, -edge - carpet, -edge, lift - 0.35)
 		_quad(ground, o0, o1, edge, edge + carpet, lift - 0.35)
 
@@ -265,8 +279,8 @@ func _build_mesh() -> void:
 	# azul, e com o ceu iluminando tudo de azul o asfalto virava violeta. O
 	# fundo e mato seco; a calcada, concreto claro.
 	_commit(ground, mesh, _flat_material(Color(0.24, 0.27, 0.17)))
-	_commit(asphalt, mesh, _flat_material(Color(0.34, 0.34, 0.35)))
-	_commit(shoulder, mesh, _flat_material(Color(0.52, 0.5, 0.47)))
+	_commit(asphalt, mesh, _textured_material(ASFALTO))
+	_commit(shoulder, mesh, _textured_material(CALCADA))
 	_commit(paint, mesh, _flat_material(Color(0.88, 0.86, 0.68)))
 
 	_asphalt_mesh = MeshInstance3D.new()
@@ -293,7 +307,18 @@ func _build_mesh() -> void:
 			)
 
 
-func _quad(st: SurfaceTool, o0: float, o1: float, x0: float, x1: float, lift: float = 0.0) -> void:
+## `u` e o U nas bordas `x0` e `x1`; com `tile` maior que zero, o quad ganha UV,
+## com V em tiles percorridos ao longo da pista.
+func _quad(
+	st: SurfaceTool,
+	o0: float,
+	o1: float,
+	x0: float,
+	x1: float,
+	lift: float = 0.0,
+	u: Vector2 = Vector2.ZERO,
+	tile: float = 0.0
+) -> void:
 	var up := Vector3.UP * lift
 	var a := point(o0, x0) + up
 	var b := point(o0, x1) + up
@@ -305,14 +330,39 @@ func _quad(st: SurfaceTool, o0: float, o1: float, x0: float, x1: float, lift: fl
 	# Ordem HORARIA vista de cima. Godot considera a face frontal a de winding
 	# horario; com a ordem invertida a pista inteira e descartada pelo backface
 	# culling e some da tela sem erro nenhum no console.
-	for v: Vector3 in [a, c, b, a, d, c]:
+	var v0 := o0 / tile if tile > 0.0 else 0.0
+	var v1 := o1 / tile if tile > 0.0 else 0.0
+	var uvs: Array[Vector2] = [
+		Vector2(u.x, v0),
+		Vector2(u.y, v1),
+		Vector2(u.y, v0),
+		Vector2(u.x, v0),
+		Vector2(u.x, v1),
+		Vector2(u.y, v1)
+	]
+	var verts: Array[Vector3] = [a, c, b, a, d, c]
+	for i in verts.size():
 		st.set_normal(n)
-		st.add_vertex(v)
+		if tile > 0.0:
+			st.set_uv(uvs[i])
+		st.add_vertex(verts[i])
 
 
 func _commit(st: SurfaceTool, mesh: ArrayMesh, mat: Material) -> void:
 	st.commit(mesh)
 	mesh.surface_set_material(mesh.get_surface_count() - 1, mat)
+
+
+func _textured_material(tex: Texture2D) -> StandardMaterial3D:
+	var mat := _flat_material(Color.WHITE)
+	mat.albedo_texture = tex
+	# Linear com mipmap e anisotropico, e nao "nearest": o chao e visto quase
+	# de lado e passando rapido. Com nearest, cada texel pula de pixel em pixel
+	# a cada quadro e o asfalto ferve; o mipmap anisotropico media o que ja e
+	# menor que um pixel na tela. O pixelado vem da resolucao de 640x360 e da
+	# quantizacao com dither, que pegam a imagem pronta - nao da textura.
+	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	return mat
 
 
 func _flat_material(color: Color) -> StandardMaterial3D:
