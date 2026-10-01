@@ -157,6 +157,7 @@ uma grande para número (velocidade, posição) e uma pequena para legenda.
 | Arquivo | Nota |
 | --- | --- |
 | `docs/referencias/*.png` | **As quatro imagens entram no repositório.** A prova compara contra elas; comparação contra arquivo que mora no chat de alguém não é reproduzível |
+| `docs/referencias/video_01.mp4` | A referência em movimento: 6 s de corrida, com câmera, inclinação, trânsito e HUD medidos quadro a quadro em [REFERENCIA_VIDEO.md](REFERENCIA_VIDEO.md) |
 
 **Pendente, e é a única linha do manifesto que não pode ser produzida por quem
 executa o plano:** as quatro imagens chegaram anexadas numa conversa, não como
