@@ -618,6 +618,8 @@ func _phase_freerun(_delta: float) -> void:
 		_metric("corrida_raspadas", _world.run.near_misses)
 		_metric("corrida_quedas", _world.run.crashes)
 		_metric("corrida_pancadas_tomadas", _world.run.hits_taken)
+		_metric("corrida_rivais_derrubados", _world.run.rivals_downed)
+		_metric("corrida_rivais_caidos", _world.run.rivals_fell)
 		_metric("corrida_posicao", float(_world.run.position))
 		_metric("corrida_atras_do_lider_m", gap)
 		# O ritmo do lider e o numero que um humano consegue comparar com o
@@ -646,6 +648,12 @@ func _phase_freerun(_delta: float) -> void:
 				% [_world.run.position_text(), gap, leader_pace]
 			)
 		)
+		_report.append(
+			(
+				"quedas de rival 45s  %d pelo jogador, %d sozinhos no transito"
+				% [_world.run.rivals_downed, _world.run.rivals_fell]
+			)
+		)
 		_check(
 			_world.run.distance_done > 700.0,
 			(
@@ -667,6 +675,21 @@ func _phase_freerun(_delta: float) -> void:
 			)
 		)
 		_check(_player.global_position.y > -50.0, "a moto caiu pra fora do mundo")
+		# O piloto automatico nao da um soco em 45 s. Entao toda queda de rival
+		# nesta fase e do transito, e nenhuma pode virar estilo do jogador - era
+		# exatamente assim que ficar parado na largada rendia boost cheio e um
+		# quinto da nota. O unitario prova a regra da autoria em laboratorio;
+		# esta linha prova que ela vale com o mundo inteiro rodando.
+		_check(
+			_world.run.rivals_downed == 0,
+			(
+				(
+					"o piloto automatico derrubou %d rival(is) sem dar um soco: a queda"
+					+ " alheia voltou a pagar estilo e adrenalina"
+				)
+				% _world.run.rivals_downed
+			)
+		)
 		# Encostar num rival nao pode ser pedagio.
 		#
 		# A decisao de socar do rival ja rodou POR FRAME - `randf() < agressividade`
@@ -775,7 +798,7 @@ func _read_phase_arg() -> void:
 
 
 ## So pra a fase de combate saber que o rival caiu de verdade.
-func _on_rival_down() -> void:
+func _on_rival_down(_pelo_jogador: bool) -> void:
 	_rival_staggered = true
 
 

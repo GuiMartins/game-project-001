@@ -31,6 +31,17 @@ func cycle_mode() -> void:
 	mode = (mode + 1) % 3
 
 
+## Nome do modo atual, pra tela de configuracoes. Mora aqui e nao la porque o
+## nome e do enum: quem acrescentar um modo mexe num arquivo so.
+func mode_name() -> String:
+	match mode:
+		Mode.HOOD:
+			return "CAPACETE"
+		Mode.DEBUG_FREE:
+			return "DIAGNOSTICO"
+	return "PERSEGUICAO"
+
+
 func add_shake(amount: float) -> void:
 	_shake = minf(_shake + amount, 1.0)
 
