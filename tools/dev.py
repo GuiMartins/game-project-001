@@ -11,6 +11,7 @@ da maioria das maquinas e ninguem sabe qual versao usar. Quem chega no projeto
     python tools/dev.py selftest   # importa e roda o banco de provas
     python tools/dev.py run        # abre o jogo
     python tools/dev.py export     # exporta as tres plataformas
+    python tools/dev.py versao patch  # sobe a versao: o merge dela publica
 
 A versao vem de `.godot-version`, que e a fonte unica: o CI le o mesmo arquivo.
 Bumpar a engine e editar uma linha, nao cacar constantes em tres workflows.
@@ -699,6 +700,35 @@ def sync_preset_version() -> bool:
     return True
 
 
+def cmd_versao(args: argparse.Namespace) -> int:
+    """Mostra ou sobe a versao do jogo. Subir a versao e o que publica.
+
+    O PR que muda o `config/version` vira release quando entra na master: o
+    release.yml cria a tag e publica. Por isso o bump e um comando, e nao uma
+    edicao a mao - ele valida o formato e espelha no preset do macOS, e quem
+    revisa o PR ve exatamente duas linhas mudando.
+    """
+    atual = project_version()
+    if args.nova is None:
+        print(atual)
+        return 0
+    nova = args.nova
+    if nova == "patch":
+        maior, menor, patch = (int(p) for p in atual.split("."))
+        nova = f"{maior}.{menor}.{patch + 1}"
+    if not re.fullmatch(r"\d+\.\d+\.\d+", nova):
+        return _fail(f"versao {nova!r} nao e X.Y.Z")
+    if tuple(int(p) for p in nova.split(".")) <= tuple(int(p) for p in atual.split(".")):
+        return _fail(f"{nova} nao e maior que a atual ({atual}): a tag ja existiria")
+    path = PROJECT / "project.godot"
+    texto = path.read_text(encoding="utf-8")
+    write_text_lf(path, re.sub(r'^config/version=".*"$', f'config/version="{nova}"',
+                               texto, flags=re.MULTILINE))
+    sync_preset_version()
+    print(f"{atual} -> {nova}. Commit, PR para a master, e o merge publica a v{nova}.")
+    return 0
+
+
 def cmd_export(_: argparse.Namespace) -> int:
     version = godot_version()
     binary = require_godot(version)
@@ -743,6 +773,9 @@ def main() -> int:
     sub.add_parser("fps", help="tempo de quadro da corrida solta, com tela e sem vsync")
     sub.add_parser("run", help="abre o jogo")
     sub.add_parser("export", help="exporta as tres plataformas")
+    p_versao = sub.add_parser("versao", help="mostra ou sobe a versao; o merge da versao nova publica")
+    p_versao.add_argument("nova", nargs="?", metavar="X.Y.Z|patch",
+                          help="a versao nova, ou `patch` para subir o ultimo numero")
     p_test = sub.add_parser("test", help="testes unitarios (GdUnit4), rapidos")
     p_test.add_argument("caminho", nargs="?", default="tests/unit",
                         help="pasta ou arquivo de teste (padrao: tests/unit)")
@@ -758,6 +791,7 @@ def main() -> int:
         "lint": cmd_lint, "format": cmd_format, "test": cmd_test,
         "shots": cmd_shots,
         "prova": cmd_prova,
+        "versao": cmd_versao,
         "fps": cmd_fps,
     }[args.comando]
     return handler(args)

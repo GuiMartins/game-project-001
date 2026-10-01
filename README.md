@@ -93,9 +93,10 @@ nos defaults novos de verdade em vez de continuar vendo o seu por cima.
 
 ## Release
 
-Publicar é ato deliberado: a release sai de uma **tag**, não de um merge.
-[A pipeline](.github/workflows/release.yml) roda o banco de provas, exporta as
-três plataformas e publica no GitHub:
+Publicar é ato deliberado: a release sai de **subir a versão**, não de um merge
+qualquer. O PR que muda o `config/version` entra na `master`, e
+[a pipeline](.github/workflows/release.yml) cria a tag, roda o banco de provas,
+exporta as três plataformas e publica no GitHub:
 
 | Arquivo | Plataforma |
 | --- | --- |
@@ -104,15 +105,17 @@ três plataformas e publica no GitHub:
 | `RushFood-macos.zip` | macOS universal (Intel e Apple Silicon) |
 
 ```sh
-git tag v0.0.3 && git push origin v0.0.3
+python tools/dev.py versao patch   # 0.0.5 -> 0.0.6, e o PR disso publica
 ```
 
-A tag precisa bater com `config/version` no `project.godot` — único lugar pra
-mexer, a pipeline injeta essa versão no bundle do macOS na hora do export. Se
-os dois discordarem, a pipeline recusa antes de publicar qualquer coisa.
+O `config/version` no `project.godot` é o único lugar da versão — o comando
+espelha no preset do macOS, e a pipeline confere os dois antes de publicar.
 
-Merge na `master` **não** publica nada: com IA operando no repositório, merge
-que distribui binário é um botão sem trava.
+Merge na `master` **sem** versão nova não publica nada: a tag já existe e a
+pipeline para no primeiro passo. Com IA operando no repositório, merge de rotina
+que distribui binário seria um botão sem trava. Tag empurrada à mão
+(`git tag v0.0.6 && git push origin v0.0.6`) continua funcionando, para
+republicar.
 
 Se o banco de provas falhar, nada é publicado — binário quebrado no ar é pior
 que release atrasada.
@@ -123,8 +126,8 @@ passar. Assinar de verdade exige certificado pago (e conta de desenvolvedor
 Apple), que não se justifica num protótipo.
 
 Todo push roda [ci.yml](.github/workflows/ci.yml): lint, formatação e a
-bateria de testes nos **três sistemas operacionais**, pra a `develop` não
-chegar quebrada no dia da release — e pra bug de plataforma aparecer no dia em
+bateria de testes nos **três sistemas operacionais**, pra a `master` não
+receber um PR quebrado — e pra bug de plataforma aparecer no dia em
 que nasce.
 
 ## Testes

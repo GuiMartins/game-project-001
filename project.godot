@@ -7,8 +7,8 @@ config_version=5
 [application]
 
 config/name="RushFood - Prototipo"
-; A pipeline le esta versao pra nomear a tag e a release. Bump aqui
-; antes de merjar pra master; sem bump, a release e substituida.
+; Subir esta versao e o que publica: o merge na master de uma versao que
+; ainda nao tem tag vira release. Use `python tools/dev.py versao patch`.
 config/version="0.0.5"
 config/description="Prototipo greybox para validar os pilares: feel da moto, o corredor, combate lateral e o loop de entrega."
 run/main_scene="res://scenes/main.tscn"
