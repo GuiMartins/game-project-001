@@ -1,0 +1,3 @@
+# Imagem e video de referencia sao documento, nao recurso do jogo. Sem isto o
+# Godot importa cada PNG daqui, e o export (filtro "all_resources") empacota
+# todos no zip da release: megabytes de referencia que o jogo nunca carrega.
