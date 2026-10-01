@@ -574,6 +574,54 @@ def _write_visual_baseline(visual: dict) -> None:
         print(f"    {chave}: {valor:g}")
 
 
+PROVA_DIR = DEV_DIR / "prova"
+
+
+def cmd_prova(_: argparse.Namespace) -> int:
+    """O quadro congelado da prova visual: os mesmos quatro quadros, sempre.
+
+    Mesma semente, mesmo trecho de pista, camera encaixada e mundo congelado
+    antes do primeiro passo de fisica. Rodar duas vezes da o mesmo PNG - e o
+    que faz "melhorou?" ter resposta, em vez de cada um comparar o print que
+    calhou de tirar. Precisa de tela, pelo mesmo motivo do `shots`.
+    """
+    binary = require_godot(godot_version())
+    code = _import_antes(binary)
+    if code != 0:
+        return code
+    PROVA_DIR.mkdir(parents=True, exist_ok=True)
+    for antigo in PROVA_DIR.glob("*.png"):
+        antigo.unlink()
+    os.environ["RUSHFOOD_PROVA_DIR"] = str(PROVA_DIR)
+    code = _godot(binary, "--", "--prova")
+    pngs = sorted(PROVA_DIR.glob("*.png"))
+    if code != 0:
+        return code
+    if not pngs:
+        return _fail("nenhum quadro foi salvo - ha display nesta sessao?")
+    print(f"\n{len(pngs)} imagem(ns) em {PROVA_DIR}")
+    return 0
+
+
+def cmd_fps(_: argparse.Namespace) -> int:
+    """Tempo de quadro da corrida solta, com tela e sem vsync.
+
+    Imprime mediana, p95 e o pior quadro. Nao compara com baseline: o numero
+    depende da GPU de quem roda. Serve para comparar a mesma maquina antes e
+    depois de uma mudanca de visual.
+    """
+    binary = require_godot(godot_version())
+    code = _import_antes(binary)
+    if code != 0:
+        return code
+    METRICS_OUT.parent.mkdir(parents=True, exist_ok=True)
+    if METRICS_OUT.exists():
+        METRICS_OUT.unlink()
+    os.environ["RUSHFOOD_SELFTEST_METRICS"] = str(METRICS_OUT)
+    # Sem --headless: sem tela nao ha quadro para medir.
+    return _godot(binary, "--", "--selftest", "--fps")
+
+
 def cmd_run(_: argparse.Namespace) -> int:
     binary = require_godot(godot_version())
     code = _import_antes(binary)
@@ -653,6 +701,8 @@ def main() -> int:
     p_shots.add_argument("--out", metavar="PASTA", help="onde gravar os PNGs")
     p_shots.add_argument("--update", action="store_true",
                          help="regrava o baseline visual (olhe os PNGs antes)")
+    sub.add_parser("prova", help="prova visual: os mesmos quadros congelados, para comparar")
+    sub.add_parser("fps", help="tempo de quadro da corrida solta, com tela e sem vsync")
     sub.add_parser("run", help="abre o jogo")
     sub.add_parser("export", help="exporta as tres plataformas")
     p_test = sub.add_parser("test", help="testes unitarios (GdUnit4), rapidos")
@@ -669,6 +719,8 @@ def main() -> int:
         "selftest": cmd_selftest, "run": cmd_run, "export": cmd_export,
         "lint": cmd_lint, "format": cmd_format, "test": cmd_test,
         "shots": cmd_shots,
+        "prova": cmd_prova,
+        "fps": cmd_fps,
     }[args.comando]
     return handler(args)
 

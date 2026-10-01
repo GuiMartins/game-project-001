@@ -34,9 +34,14 @@ cada um sabe seu próprio offset e nunca precisa se projetar. Só a moto do
 jogador faz a projeção, e mesmo assim com busca local em janela (`RoadTrack.project`),
 não com `get_closest_offset()`, que varre todos os pontos bakeados.
 
-**320×180 com upscale inteiro de 4×.** Via `SubViewportContainer.stretch_shrink = 4`.
-Setar `SubViewport.size` na mão **não funciona** com `stretch` ligado — o
-container sobrescreve e você renderiza em 1280×720 achando que está em 320×180.
+**640×360 com upscale inteiro de 2×.** Via `SubViewportContainer.stretch_shrink = 2`,
+com `scale_mode = integer` no `project.godot` para a janela também só escalar em
+número inteiro. Setar `SubViewport.size` na mão **não funciona** com `stretch`
+ligado — o container sobrescreve e você renderiza em 1280×720 achando que está
+em 640×360. Foi 320×180 (`stretch_shrink = 4`) até a P1 da prova visual: a
+320×180 o piloto tem uns 37 px no talo, e não cabe nele o que faz um ator ler
+como foto. A conta está no `DIRECAO_VISUAL.md`. A HUD continua escrita em
+unidades de 320×180 e escala por `Hud.ESCALA`, até a P8 redesenhar.
 A HUD mora dentro do SubViewport de propósito: HUD nítida sobre mundo pixelado
 é o visual de remaster preguiçoso.
 
@@ -178,8 +183,8 @@ derrota.
 Houve também uma **integridade da bag** em porcentagem, com barra na HUD, que
 caía a cada queda, raspada e pancada. Ela saiu: media a mesma coisa que o resto
 do painel já media — quem cai e apanha também chega tarde e sem estilo — e
-cobrava por essa redundância uma barra permanente numa tela de 320×180, onde o
-espaço é o recurso escasso. O custo de raspar virou estilo, e os 20 pontos que
+cobrava por essa redundância uma barra permanente numa tela que então era de
+320×180, onde o espaço era o recurso escasso. O custo de raspar virou estilo, e os 20 pontos que
 ela valia na nota foram divididos entre prazo e estilo, deixando a metade da
 posição intacta.
 
@@ -323,7 +328,7 @@ a luminância do frame andou 0,2 ponto percentual, dentro do ruído da própria
 medida). As três telas foram conferidas a olho, uma captura por tela, e a
 conferência pegou exatamente um erro: o placar de dez linhas passava por cima
 das duas saídas, porque a entrelinha padrão da fonte de 8px estoura 150 px
-numa tela de 180. É o tipo de coisa que nenhum número pega.
+numa tela de 180 (a resolução da época; o layout da HUD ainda é escrito nela). É o tipo de coisa que nenhum número pega.
 
 ## O entregador
 

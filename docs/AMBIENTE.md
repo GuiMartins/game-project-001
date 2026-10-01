@@ -67,6 +67,21 @@ byte — mesma versão do Blender, mesmo `.glb` —, então regerar sem mudar na
 não gera diff. O `--factory-startup` existe para isso: deixa de fora os add-ons
 e as preferências de quem roda.
 
+## O LUT de cor
+
+`assets/visual/lut_dia.png` é build de `arte/paleta.py`, que roda com o Python
+do sistema, sem dependência:
+
+```bash
+python arte/paleta.py            # o LUT do dia
+python arte/paleta.py --neutro   # o identidade, para conferir a importação
+```
+
+O PNG é importado como `Texture3D` (`importer="3d_texture"`,
+`slices/horizontal=16` no `.import`). Se o Godot um dia o reimportar como
+textura 2D, o `preload` do `world.gd` quebra com erro de tipo, e não com tela
+estranha. Isso é bom.
+
 ## CI
 
 | Workflow | Quando | O quê |

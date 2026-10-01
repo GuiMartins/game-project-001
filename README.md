@@ -2,7 +2,7 @@
 
 Protótipo *greybox* de um jogo estilo Road Rash com entregadores de app.
 Godot (versão fixada em [`.godot-version`](.godot-version)), mundo 3D real
-renderizado num `SubViewport` de 320×180. Desenvolvido em Windows, macOS e
+renderizado num `SubViewport` de 640×360. Desenvolvido em Windows, macOS e
 Linux; o CI roda nos três.
 
 **Vai mexer no código?** O contrato de operação está em
@@ -27,7 +27,8 @@ construído, a seção Deriva diz o que mudou e por quê.
 
 ## Rodar
 
-Só é preciso ter Python 3.10+. A engine o script baixa:
+É preciso ter Python 3.10+ e o Git LFS instalado antes de clonar (o modelo e
+as texturas moram nele). A engine o script baixa:
 
 ```sh
 python tools/dev.py setup
@@ -53,7 +54,7 @@ de novo ou voltar. `ESC` no meio da corrida congela e abre o menu.
 | `R` | reiniciar a corrida |
 | `ESC` | menu (congela a corrida; `CONTINUAR` devolve ela do jeito que estava) |
 | `ENTER` / setas | navegar o menu |
-| `1` ou `F1` | liga/desliga o pixel de 320×180 |
+| `1` ou `F1` | liga/desliga o pixel de 640×360 |
 | `2` ou `F2` | alterna câmera (perseguição / capacete / diagnóstico) |
 | `3` ou `F3` | painel de tuning (abre em janela separada) |
 

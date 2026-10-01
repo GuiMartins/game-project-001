@@ -9,7 +9,7 @@ extends CanvasLayer
 ## baixa o zip da release nao le o README, e prototipo que ninguem consegue
 ## jogar de ponta a ponta nao responde a pergunta que ele existe pra responder.
 ##
-## Mora DENTRO do SubViewport de 320x180 pelo mesmo motivo que a `Hud`:
+## Mora DENTRO do SubViewport, na resolucao interna, pelo mesmo motivo que a `Hud`:
 ## interface nitida sobre mundo pixelado e o visual de remaster preguicoso.
 ##
 ## O banco de provas NAO passa por aqui - `iniciar(true)` larga direto na
@@ -30,8 +30,9 @@ enum Tela { MENU, CORRIDA, CONFIGURACOES, RESULTADO }
 ## configuracoes, com quatro.
 const MAX_ITENS: int = 4
 
-## Altura de uma linha de menu, em pixels da tela de 320x180. Menos que isto e
-## o contorno preto de um rotulo encosta no de baixo.
+## Altura de uma linha de menu, em unidades de layout (a tela de 320x180 em que
+## a `Hud` e escrita; ver `Hud.ESCALA`). Menos que isto e o contorno preto de
+## um rotulo encosta no de baixo.
 const PASSO_ITEM: float = 14.0
 
 ## Escurecedor por cima do mundo congelado. O mesmo alpha que a antiga tela de
@@ -86,10 +87,10 @@ func _ready() -> void:
 	_subtitulo = _rotulo(8, Color(0.7, 0.75, 0.85))
 	_texto = _rotulo(8, Color(1, 1, 1))
 	# O resumo tem dez linhas, e no espacamento padrao da fonte elas passam de
-	# 150px numa tela de 180 - as duas saidas embaixo ficavam POR CIMA das
+	# 150 unidades numa tela de 180 - as duas saidas embaixo ficavam POR CIMA das
 	# ultimas linhas do placar. Apertar a entrelinha e o que faz o placar
 	# inteiro e as saidas caberem sem cortar nenhum dos dois.
-	_texto.add_theme_constant_override("line_spacing", -3)
+	_texto.add_theme_constant_override("line_spacing", -3 * Hud.ESCALA)
 	# O rodape mora sempre no mesmo lugar, colado no pe da tela: e a unica
 	# linha que nunca muda de posicao entre as telas.
 	_rodape = _rotulo(8, Color(0.45, 0.5, 0.6))
@@ -182,7 +183,7 @@ func _ir_para(nova: int) -> void:
 			_rodape.text = "ENTER muda   ESC volta"
 		Tela.RESULTADO:
 			_posicionar(_texto, 8.0)
-			_texto.size = Vector2(Hud.W, 124)
+			_texto.size = Vector2(Hud.W, 124) * Hud.ESCALA
 			_texto.visible = true
 			_posicionar_itens(134.0)
 			_rodape.text = "ENTER escolhe"
@@ -210,7 +211,7 @@ func rotulos_da_tela() -> PackedStringArray:
 		Tela.CONFIGURACOES:
 			return PackedStringArray(
 				[
-					"PIXEL 320x180: %s" % _descreve(descreve_pixel),
+					"PIXEL 640x360: %s" % _descreve(descreve_pixel),
 					"CAMERA: %s" % _descreve(descreve_camera),
 					"PAINEL DE TUNING",
 					"VOLTAR",
@@ -289,18 +290,18 @@ func _posicionar_itens(topo: float) -> void:
 
 
 func _posicionar(rotulo: Label, y: float) -> void:
-	rotulo.position = Vector2(0, y)
-	rotulo.size = Vector2(Hud.W, 20)
+	rotulo.position = Vector2(0, y) * Hud.ESCALA
+	rotulo.size = Vector2(Hud.W, 20) * Hud.ESCALA
 
 
 func _rotulo(tamanho: int, cor: Color) -> Label:
 	var l := Label.new()
-	l.add_theme_font_size_override("font_size", tamanho)
+	l.add_theme_font_size_override("font_size", tamanho * Hud.ESCALA)
 	l.add_theme_color_override("font_color", cor)
 	# Contorno preto pelo mesmo motivo da Hud: texto claro some no asfalto
 	# claro do meio-dia, e aqui ele aparece por cima do mundo congelado.
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-	l.add_theme_constant_override("outline_size", 3)
+	l.add_theme_constant_override("outline_size", 3 * Hud.ESCALA)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_raiz.add_child(l)

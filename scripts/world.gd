@@ -14,6 +14,13 @@ const ROUTE_LENGTH: float = 3200.0
 ## moto num trecho onde a amostragem ja esta grampeada.
 const FINISH_MARGIN: float = 30.0
 
+## A semente do mundo. Fixa: pista, cenario, transito e rivais saem dela, e e o
+## que faz o banco de provas medir a mesma corrida toda vez.
+const SEMENTE: int = 20260831
+
+## O LUT de cor do dia (`arte/paleta.py`), importado como `Texture3D`.
+const LUT_DIA: Texture3D = preload("res://assets/visual/lut_dia.png")
+
 ## A cor de cada rival: bag e moto nela, jaqueta num tom escuro dela (ver
 ## `Entregador.pintar`). Todos sao o mesmo modelo, e e a cor que separa um do
 ## outro de longe. Nenhuma encosta no laranja do jogador (`PlayerBike.COR`).
@@ -52,7 +59,7 @@ var _spawn_cursor: float = 0.0
 var _position_event_timer: float = 0.0
 
 
-func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 20260831) -> void:
+func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = SEMENTE) -> void:
 	tuning = a_tuning
 	world_tuning = a_world_tuning
 	_rng.seed = world_seed
@@ -130,18 +137,44 @@ func grid_slot(index: int, base: float) -> Vector2:
 
 
 func _build_environment() -> void:
+	# Meio-dia de sol duro: e o que as referencias mostram, e o caso mais facil
+	# de iluminacao que existe. Um sol, e o resto e consequencia dele.
+	var ceu := ProceduralSkyMaterial.new()
+	ceu.sky_top_color = Color(0.16, 0.38, 0.82)
+	ceu.sky_horizon_color = Color(0.62, 0.74, 0.88)
+	ceu.ground_horizon_color = Color(0.55, 0.6, 0.62)
+	ceu.ground_bottom_color = Color(0.24, 0.26, 0.25)
+	# Desligado de proposito: debanding e dither de sub-pixel para ESCONDER a
+	# banda do degrade, e aqui a banda e o sotaque de epoca.
+	ceu.use_debanding = false
+	var sky := Sky.new()
+	sky.sky_material = ceu
+
 	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.11, 0.12, 0.19)
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.45, 0.48, 0.62)
-	env.ambient_light_energy = 1.05
-	# Neblina segurando o horizonte: a 320x180 o fade e o que da profundidade,
-	# e de quebra esconde o fim do mundo sem precisar de LOD.
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
+	# A luz ambiente vem do CEU, e nao de uma cor escolhida: a sombra fica azul
+	# porque o ceu e azul. E a diferenca entre cena iluminada e cena pintada.
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.ambient_light_energy = 0.5
+	# Neblina segurando o horizonte: em pixel grosso o fade e o que da
+	# profundidade, e de quebra esconde o fim do mundo sem precisar de LOD. Na
+	# cor do horizonte, para o predio do fundo sumir no ceu e nao num cinza.
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.13, 0.14, 0.22)
+	env.fog_light_color = ceu.sky_horizon_color
 	env.fog_density = 0.0045
+	env.fog_aerial_perspective = 0.5
 	env.fog_sky_affect = 0.0
+	# Tonemap antes do LUT, que e o ultimo passo do Environment: o sol de
+	# meio-dia estoura o branco em linear, e o filmic devolve o alto sem
+	# achatar a sombra.
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_white = 6.0
+	# A paleta: o LUT e o ponto unico onde o clima da tela se ajusta. Gerado
+	# por `arte/paleta.py`. Depois dele so vem a quantizacao com dither, que e
+	# do `main.gd` e e o ultimo passe de todos.
+	env.adjustment_enabled = true
+	env.adjustment_color_correction = LUT_DIA
 
 	var we := WorldEnvironment.new()
 	we.environment = env
@@ -149,9 +182,20 @@ func _build_environment() -> void:
 
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-42.0, 38.0, 0.0)
-	sun.light_energy = 1.1
-	sun.light_color = Color(1.0, 0.94, 0.85)
-	sun.shadow_enabled = false
+	sun.light_energy = 2.0
+	sun.light_color = Color(1.0, 0.96, 0.88)
+	# Sombra de contato e o que poe veiculo no chao: sem ela, tudo flutua. Os
+	# tres numeros dela, do DIRECAO_VISUAL.md:
+	# - 70 m de alcance, casando com a neblina, que ja apaga o mundo dali em
+	#   diante. Mais longe e sombra que ninguem enxerga;
+	# - duas divisoes bastam: tudo o que importa esta nos primeiros 20 m;
+	# - bias baixo, porque 70 m num atlas de 4096 e densidade de sobra, e bias
+	#   alto descola a sombra do pneu (peter-panning).
+	sun.shadow_enabled = true
+	sun.directional_shadow_max_distance = 70.0
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	sun.shadow_bias = 0.03
+	sun.shadow_normal_bias = 0.8
 	add_child(sun)
 
 
@@ -187,7 +231,10 @@ func _build_scenery() -> void:
 			var w := _rng.randf_range(6.0, 14.0)
 			var at := track.point(o, (edge + 6.0 + w * 0.5) * side) + Vector3.UP * (h * 0.5 - 1.0)
 			var shade := _rng.randf_range(0.2, 0.42)
-			var building := Greybox.box(Vector3(w, h, w), Color(shade, shade * 0.97, shade * 1.15))
+			# Concreto quente, de dia. Era azulado, de noite, e virava roxo sob o
+			# ceu. O sorteio continua o mesmo: mexer nele mudaria o transito.
+			var concreto := Color(shade * 1.45, shade * 1.38, shade * 1.25)
+			var building := Greybox.box(Vector3(w, h, w), concreto)
 			props.add_child(building)
 			building.global_position = at
 		o += _rng.randf_range(16.0, 30.0)

@@ -53,32 +53,12 @@ func _process(delta: float) -> void:
 	if target == null or tuning == null:
 		return
 
-	var speed_frac := clampf(target.speed / maxf(tuning.max_speed, 1.0), 0.0, 1.4)
-	fov = tuning.cam_fov + tuning.cam_fov_speed_gain * speed_frac
-
-	var heading := target.heading
-	var back := Vector3(-sin(heading), 0.0, -cos(heading))
-	var forward := -back
-
-	var distance := tuning.cam_distance
-	var height := tuning.cam_height
-	if mode == Mode.HOOD:
-		distance = 0.2
-		height = 1.15
-	elif mode == Mode.DEBUG_FREE:
-		distance = tuning.cam_distance * 2.6
-		height = tuning.cam_height * 4.0
-
-	var desired := target.global_position + back * distance + Vector3.UP * height
+	var alvo := _alvos()
 	# A camera persegue por posicao, nao por rotacao rigida. O atraso e o que
 	# faz a moto "escapar" da camera na saida de curva.
 	var t := 1.0 - exp(-tuning.cam_follow * delta)
-	_smoothed_position = _smoothed_position.lerp(desired, t)
-	# Mira longe: olhar 14 m a frente abaixa o horizonte e abre a pista. Mirar
-	# em cima da moto so mostra o para-lama.
-	_smoothed_look = _smoothed_look.lerp(
-		target.global_position + forward * 14.0 + Vector3.UP * 1.2, t
-	)
+	_smoothed_position = _smoothed_position.lerp(alvo[0], t)
+	_smoothed_look = _smoothed_look.lerp(alvo[1], t)
 
 	var pos := _smoothed_position
 	if _shake > 0.0:
@@ -89,10 +69,49 @@ func _process(delta: float) -> void:
 		)
 		_shake = maxf(_shake - delta * 1.6, 0.0)
 
-	look_at_from_position(pos, _smoothed_look, Vector3.UP)
-	# Um pingo da inclinacao da moto na camera. Muito disso embrulha o estomago;
-	# nada disso deixa a curva sem peso. E o giro PERSEGUE a inclinacao em vez
-	# de copia-la: ver `cam_lean_rate`.
+	# O giro PERSEGUE a inclinacao em vez de copia-la: ver `cam_lean_rate`.
 	var roll_alvo := -target.lean * tuning.cam_lean_follow
 	_roll = lerpf(_roll, roll_alvo, 1.0 - exp(-tuning.cam_lean_rate * delta))
+	_aplica(pos)
+
+
+## Poe a camera direto onde a perseguicao terminaria, sem atraso nem tremor.
+##
+## Existe para o quadro congelado da prova visual (`scripts/prova.gd`): o
+## atraso depende do tempo de cada quadro, e quadro que depende do relogio nao
+## se compara com o de ontem.
+func encaixar() -> void:
+	var alvo := _alvos()
+	_smoothed_position = alvo[0]
+	_smoothed_look = alvo[1]
+	_roll = -target.lean * tuning.cam_lean_follow
+	_shake = 0.0
+	_aplica(_smoothed_position)
+
+
+## Onde a camera quer estar e para onde quer olhar, sem suavizacao.
+func _alvos() -> Array[Vector3]:
+	var back := Vector3(-sin(target.heading), 0.0, -cos(target.heading))
+	var distance := tuning.cam_distance
+	var height := tuning.cam_height
+	if mode == Mode.HOOD:
+		distance = 0.2
+		height = 1.15
+	elif mode == Mode.DEBUG_FREE:
+		distance = tuning.cam_distance * 2.6
+		height = tuning.cam_height * 4.0
+	# Mira longe: olhar 14 m a frente abaixa o horizonte e abre a pista. Mirar
+	# em cima da moto so mostra o para-lama.
+	return [
+		target.global_position + back * distance + Vector3.UP * height,
+		target.global_position - back * 14.0 + Vector3.UP * 1.2,
+	]
+
+
+func _aplica(pos: Vector3) -> void:
+	var speed_frac := clampf(target.speed / maxf(tuning.max_speed, 1.0), 0.0, 1.4)
+	fov = tuning.cam_fov + tuning.cam_fov_speed_gain * speed_frac
+	look_at_from_position(pos, _smoothed_look, Vector3.UP)
+	# Um pingo da inclinacao da moto na camera. Muito disso embrulha o estomago;
+	# nada disso deixa a curva sem peso.
 	rotate_object_local(Vector3.FORWARD, _roll)
