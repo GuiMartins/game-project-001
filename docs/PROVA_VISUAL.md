@@ -224,6 +224,21 @@ Sai junto o `dev.py fps`, que o `DIRECAO_VISUAL.md` já propõe como Fase 0.
 *Aceite:* rodar duas vezes seguidas produz PNGs visualmente idênticos, e o
 comando roda nos três sistemas.
 
+**Estado (01/10/2026):** feito. Quatro quadros (`largada`, `curva`, `ladeira`,
+`reta`, com os três últimos escolhidos pela geometria da pista) e uma `folha.png`
+com os quatro, todos na resolução interna, sem HUD. O mundo roda 30 passos de
+física fixos depois da largada e congela; a câmera é encaixada, não perseguida.
+Duas rodadas seguidas: três quadros idênticos byte a byte, e o quarto com até 7
+pixels de 57.600 diferentes, arredondamento de física. Com um passo só saía
+tudo idêntico, mas o piloto aparecia com o pé no chão a 90 km/h.
+
+A cor de cada carro do trânsito vinha do sorteio global, sem semente. Agora o
+sorteio global é semeado em `main.gd` nos modos de medição, sem tocar na
+semente do mundo — nenhum número do banco andou.
+
+`dev.py fps`, linha de base na máquina de desenvolvimento, ainda em 320×180:
+p50 0,70 ms, p95 1,39 ms, pior quadro 3,12 ms. Rodado só no Windows até aqui.
+
 ### P1 — Resolução
 
 **Sem asset.** `PIXEL_SHRINK = 2`, `scale_mode = integer`, HUD reposicionada

@@ -27,7 +27,8 @@ construído, a seção Deriva diz o que mudou e por quê.
 
 ## Rodar
 
-Só é preciso ter Python 3.10+. A engine o script baixa:
+É preciso ter Python 3.10+ e o Git LFS instalado antes de clonar (o modelo e
+as texturas moram nele). A engine o script baixa:
 
 ```sh
 python tools/dev.py setup
