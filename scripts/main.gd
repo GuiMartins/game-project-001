@@ -3,8 +3,8 @@ extends Node
 ##
 ## O look pixel sai de um SubViewport de 640x360 com upscale INTEIRO de 2x pra
 ## 1280x720. Inteiro importa: 2.5x deixa pixel de tamanhos diferentes na mesma
-## tela e o serrilhado fica sujo em vez de proposital - e e por isso que o
-## `scale_mode` do `project.godot` e `integer`.
+## tela e o serrilhado fica sujo em vez de proposital. A janela escala o resto
+## (ver `scale_mode` no `project.godot`): 1920x1080 da 3x por pixel, exato.
 
 ## 1280x720 / 2 = 640x360 exato. O SubViewportContainer faz a conta sozinho
 ## via stretch_shrink - setar sub_viewport.size na mao nao funciona com stretch

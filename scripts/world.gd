@@ -157,6 +157,11 @@ func _build_environment() -> void:
 	# porque o ceu e azul. E a diferenca entre cena iluminada e cena pintada.
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.ambient_light_energy = 0.5
+	# Metade do ceu, metade cinza neutro. So com o ceu, a sombra de um predio no
+	# asfalto saia azul royal: na sombra a unica luz e a do ceu, e o LUT ainda
+	# satura por cima. A sombra continua fria, so que fria de cinza.
+	env.ambient_light_sky_contribution = 0.5
+	env.ambient_light_color = Color(0.62, 0.63, 0.65)
 	# Neblina segurando o horizonte: em pixel grosso o fade e o que da
 	# profundidade, e de quebra esconde o fim do mundo sem precisar de LOD. Na
 	# cor do horizonte, para o predio do fundo sumir no ceu e nao num cinza.

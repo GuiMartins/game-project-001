@@ -263,6 +263,13 @@ são a unidade de layout, de propósito.
   em 320×180. Quatro vezes mais fragmentos não aparecem nesta GPU.
 - **1600×900:** a janela desenha o jogo em 1280×720 com tarja em volta. Com
   `fractional`, o mesmo teste estica para 1600×900, 2,5× por pixel.
+- **Revertido no mesmo dia para `fractional`.** O `integer` arredonda a escala
+  sobre o viewport base (1280×720), e não sobre os 640×360 do mundo, como a
+  tabela do DIRECAO_VISUAL.md supõe. Em 1920×1080 (1,5×) ele caía para 1×: o
+  jogo ocupava 1280×720 no meio da janela, com tarja. O teste em 1600×900
+  mostrava exatamente isso, e foi lido como acerto. Fracionário preenche a
+  janela, é 3× exato em 1920×1080, e só fica irregular em tamanhos fora do
+  padrão.
 
 ### P2 — Luz, sombra e céu
 

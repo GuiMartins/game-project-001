@@ -37,10 +37,12 @@ window/size/window_width_override=1920
 window/size/window_height_override=1080
 window/stretch/mode="canvas_items"
 window/stretch/aspect="keep"
-; Escala sempre inteira, com tarja preta na sobra. 640x360 so nao divide
-; 1600x900 (2,5x), e ali "fractional" desenharia pixel de dois tamanhos na
-; mesma tela - num jogo cujo ponto e o pixel, a tarja ganha.
-window/stretch/scale_mode="integer"
+; Fracionario de proposito. "integer" foi tentado e saiu: ele arredonda a
+; escala sobre o viewport base de 1280x720, e nao sobre os 640x360 do mundo,
+; entao em 1920x1080 (1,5x) caia para 1x e o jogo ocupava metade da janela.
+; O preco do fracionario e pixel levemente irregular em janela de tamanho
+; fora do padrao; em 1280, 1920, 2560 e 3840 a escala por pixel e inteira.
+window/stretch/scale_mode="fractional"
 ; O painel de tuning e um no Window. Sem isto o Godot desenha subjanelas
 ; DENTRO da janela do jogo (embedded), que e exatamente o que a gente
 ; nao quer: o painel tapando o jogo que voce esta tentando ajustar.
