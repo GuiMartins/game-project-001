@@ -82,6 +82,11 @@ var _aggression: float = 0.5
 var _credito_jogador: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _visual: Node3D
+var _ator: Entregador
+## Se ele esta acelerando neste passo. So a pose le.
+var _acelerador: float = 0.0
+## Para que lado ele tomba na queda: o lado em que estava inclinado.
+var _lado_queda: float = -1.0
 var _hitbox: Area3D
 var _sensor: Area3D
 var _lean: float = 0.0
@@ -94,20 +99,13 @@ func _ready() -> void:
 
 	add_child(Greybox.box_shape(SIZE))
 
+	# No chao, como o do jogador: a moto inclina em volta do pneu.
 	_visual = Node3D.new()
+	_visual.position = Vector3(0.0, -SIZE.y * 0.5, 0.0)
 	add_child(_visual)
-	var chassis := Greybox.box(Vector3(0.6, 0.75, SIZE.z), Color(0.28, 0.29, 0.35))
-	chassis.position = Vector3(0.0, -0.5, 0.0)
-	_visual.add_child(chassis)
-	var rider := Greybox.box(Vector3(0.7, 1.0, 0.75), Color(0.62, 0.62, 0.66))
-	rider.position = Vector3(0.0, 0.35, 0.2)
-	_visual.add_child(rider)
-	# Rivais se diferenciam so pela cor da bag - exatamente o plano de arte:
-	# mesmo rig, paleta trocada.
-	var bag := Greybox.box(Vector3(0.85, 0.8, 0.5), bag_color)
-	bag.position = Vector3(0.0, 0.5, 0.72)
-	bag.name = "Bag"
-	_visual.add_child(bag)
+	_ator = Entregador.new()
+	_visual.add_child(_ator)
+	_ator.pintar(bag_color)
 
 	_hitbox = Area3D.new()
 	_hitbox.collision_layer = Layers.RIVAL_HIT
@@ -141,9 +139,8 @@ func setup(
 	player = a_player
 	bag_color = color
 	_rng.seed = seed_value
-	var bag: Node = _visual.get_node_or_null("Bag")
-	if bag is MeshInstance3D:
-		(bag as MeshInstance3D).material_override = Greybox.material(color)
+	# Mesmo modelo, paleta trocada: cada rival e uma cor, da bag a moto.
+	_ator.pintar(color)
 
 
 ## Poe o rival na largada e zera a corrida dele.
@@ -180,6 +177,7 @@ func _physics_process(delta: float) -> void:
 	if track == null or player == null:
 		return
 
+	_acelerador = 0.0
 	_update_hitbox(delta)
 	_punch_cooldown = maxf(_punch_cooldown - delta, 0.0)
 	# Corre em qualquer estado: o rival socado passa o cambaleio inteiro sem
@@ -190,25 +188,35 @@ func _physics_process(delta: float) -> void:
 		State.DOWN:
 			state_timer -= delta
 			speed = move_toward(speed, 0.0, 40.0 * delta)
-			_visual.rotation = Vector3(0.0, 0.0, deg_to_rad(85.0))
+			# Quem tomba e o ator; aqui so zera a inclinacao da curva.
+			_visual.rotation = Vector3.ZERO
 			if state_timer <= 0.0:
 				state = State.RACING
 				# Levanta abaixo do proprio ritmo: a queda tem que custar
 				# posicao, senao derrubar rival vira so um efeito bonito.
 				speed = tuning.max_speed * pace * 0.6
 			_advance(delta)
-			return
 		State.STAGGERED:
 			state_timer -= delta
 			if state_timer <= 0.0:
 				state = State.RACING
 			_advance(delta)
 			_check_wipeout()
-			return
 		State.RACING:
 			_drive(delta)
 			_advance(delta)
 			_check_wipeout()
+
+	# O esterco do rival e a propria inclinacao: ele nao tem polegar, e a
+	# inclinacao ja e o que a IA decidiu fazer com a moto.
+	_ator.atualizar(
+		delta,
+		speed,
+		_acelerador,
+		_lean / deg_to_rad(tuning.max_lean),
+		state == State.DOWN,
+		_lado_queda
+	)
 
 
 func _drive(delta: float) -> void:
@@ -240,6 +248,7 @@ func _drive(delta: float) -> void:
 		pace_speed *= 1.06  # o arranque de quem esta saindo de tras do carro
 	var band := clampf(gap * world_tuning.rival_rubber_band, -6.0, 12.0)
 	var target_speed := clampf(pace_speed + band, tuning.max_speed * 0.35, tuning.max_speed * 1.08)
+	_acelerador = 1.0 if target_speed > speed else 0.0
 	speed = move_toward(speed, target_speed, 18.0 * delta)
 
 	# Pra onde ir depende da intencao, mas o filtro do transito vale pra todas:
@@ -419,6 +428,7 @@ func _check_wipeout() -> void:
 func _go_down() -> void:
 	state = State.DOWN
 	state_timer = 2.6
+	_lado_queda = -1.0 if _lean <= 0.0 else 1.0
 	_punch_timer = -1.0
 	_punch_delay = -1.0
 	_hitbox.monitoring = false

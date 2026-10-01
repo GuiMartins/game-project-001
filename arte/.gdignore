@@ -1,0 +1,3 @@
+# O Godot importa .blend sozinho quando acha o Blender instalado. Aqui o
+# .blend e fonte de trabalho; o que o jogo usa e o .glb em assets/. Importar
+# os dois daria duas copias do mesmo modelo, e no CI, sem Blender, um erro.

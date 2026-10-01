@@ -6,7 +6,12 @@ registra os que já apareceram, porque vão voltar.
 
 ## Começar
 
-Só é preciso ter **Python 3.10+**. O resto o script baixa.
+É preciso ter **Python 3.10+** e o **Git LFS** instalado *antes* de clonar
+(`git lfs install`, uma vez por máquina). O resto o script baixa.
+
+Sem o LFS, o clone traz ponteiros de texto no lugar do modelo do entregador e
+das texturas, e o jogo não abre. Ver a armadilha do `valid=false` abaixo: o
+conserto não é só baixar os arquivos depois.
 
 ```bash
 python tools/dev.py setup     # engine + ferramentas Python (~100 MB)
@@ -45,6 +50,22 @@ diferente da fixada produz um número que não dá para comparar com o do CI, qu
 do sistema. Ninguém precisa de permissão de administrador para contribuir, e a
 versão do linter passa a ser a mesma em todas as máquinas. Linter que muda de
 opinião entre duas máquinas gera diff que ninguém pediu.
+
+## Blender (só para mexer no modelo)
+
+Jogar, testar e exportar não precisam de Blender: o jogo carrega o `.glb`
+versionado. Ele só entra para mudar o entregador, e aí o caminho é o script, não
+o `.blend`:
+
+```bash
+blender --background --factory-startup --python arte/entregador.py
+```
+
+Testado no Blender 5.2. O script apaga a cena, monta o modelo e regrava
+`arte/entregador.blend` e `assets/entregador/`. A saída é reprodutível byte a
+byte — mesma versão do Blender, mesmo `.glb` —, então regerar sem mudar nada
+não gera diff. O `--factory-startup` existe para isso: deixa de fora os add-ons
+e as preferências de quem roda.
 
 ## CI
 
@@ -121,3 +142,28 @@ sem imprimir nada. O `dev.py` roda o import antes de testar, sempre.
 
 **Screenshot não funciona em headless.** O driver dummy não rende: saem zero
 PNGs, sem erro. Regressão visual precisa de display real.
+
+**Asset importado como ponteiro do LFS não se reimporta sozinho.** Clonar sem
+o Git LFS traz o ponteiro de texto no lugar do `.glb`; o Godot falha ao
+importar e grava `valid=false` no `.import`, que é versionado. Quando o arquivo
+de verdade chega, ele **não** tenta de novo — nem com o conteúdo trocado, nem
+com `dev.py import`. O conserto: apagar as linhas `valid=false` e `source_md5`
+do `.import`, apagar `.godot/imported/<arquivo>-*` e rodar `python tools/dev.py
+import`. E nunca commitar um `.import` com `valid=false`.
+
+**O Godot importa `.blend` sozinho quando acha o Blender instalado.** Aqui o
+`.blend` é fonte de trabalho e o jogo usa o `.glb`: importar os dois daria duas
+cópias do mesmo modelo e, no CI, sem Blender, um erro. O `arte/.gdignore` tira
+a pasta do scan.
+
+**O `.glb` com textura embutida vira um PNG a mais.** O padrão do importador
+extrai a textura para `<glb>_<imagem>.png` ao lado do arquivo, uma cópia que
+ninguém pediu e que diverge da fonte na próxima regeração.
+`gltf/embedded_image_handling=3` no `.import` deixa embutida. Pela mesma
+família: todo PNG de arte leva `detect_3d/compress_to=0`, senão o editor o
+recomprime em VRAM, com perda, no primeiro uso em 3D, sem avisar.
+
+**A esfera do Blender muda a ordem das faces de uma execução para outra.** O
+exportador repassava isso para o índice do `.glb`, e regerar o modelo sem
+mexer em nada dava diff de arquivo inteiro. O `arte/entregador.py` triangula e
+ordena as faces antes de exportar.

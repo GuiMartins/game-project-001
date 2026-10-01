@@ -16,8 +16,10 @@ gás na subida e devolve na descida. O corredor entre os carros é o jogo — e 
 prazo e a bag da entrega pesam na nota final, nunca na classificação.
 
 Ele existe para responder uma pergunta e só uma: **acelerar, inclinar, se
-enfiar no corredor e bater está gostoso?** Nada de arte, áudio ou menu até
-essa resposta ser sim.
+enfiar no corredor e bater está gostoso?** Nada de arte nem áudio até essa
+resposta ser sim. As exceções são o menu, que é só o caminho de entrar e sair
+de uma corrida, e o entregador: moto e piloto são um modelo 3D animado pelo
+estado da física, num mundo que continua de caixas.
 
 O briefing original, escrito antes de existir uma linha de código, está
 congelado em [docs/GDD.md](docs/GDD.md). Onde ele já não bate com o que foi
