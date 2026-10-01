@@ -30,6 +30,11 @@ sinal (roda, tombo), alcance (pé no chão, mão na manopla com o guidão virado
 direção (joelho que fecha com a velocidade) e a sincronia entre as cores de
 `Entregador` e a textura que o `arte/entregador.py` escreve.
 
+E `test_chase_camera.gd` põe uma moto e a câmera na árvore para medir o giro
+da câmera, que o banco de provas nem vê — ele roda sem câmera. Inclinação
+segurada chega inteira; correção de polegar, três vezes por segundo, chega
+com menos de 40% — com a câmera copiando a inclinação direto, ele reprova.
+
 Existem por uma razão específica: há uma classe de erro que o banco de provas
 não pega, e é justamente a que se introduz sem perceber. "Só aumentei um pouco
 o multiplicador do combo" não move nenhuma das dez medidas do banco — e o
