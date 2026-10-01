@@ -35,8 +35,9 @@ jogador faz a projeção, e mesmo assim com busca local em janela (`RoadTrack.pr
 não com `get_closest_offset()`, que varre todos os pontos bakeados.
 
 **640×360 com upscale inteiro de 2×.** Via `SubViewportContainer.stretch_shrink = 2`,
-com `scale_mode = integer` no `project.godot` para a janela também só escalar em
-número inteiro. Setar `SubViewport.size` na mão **não funciona** com `stretch`
+e a janela escalando o resto em modo fracionário: 1920×1080 dá 3× por pixel,
+exato. O modo `integer` foi tentado e saiu — ele arredonda sobre o viewport
+base de 1280×720, e em 1920×1080 desenhava o jogo em metade da janela. Setar `SubViewport.size` na mão **não funciona** com `stretch`
 ligado — o container sobrescreve e você renderiza em 1280×720 achando que está
 em 640×360. Foi 320×180 (`stretch_shrink = 4`) até a P1 da prova visual: a
 320×180 o piloto tem uns 37 px no talo, e não cabe nele o que faz um ator ler
