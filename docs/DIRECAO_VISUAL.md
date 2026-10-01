@@ -332,16 +332,24 @@ Esta lista importa tanto quanto a de cima, porque são as opções que parecem
 Sombra direcional tem três parâmetros que decidem se ela parece sombra ou
 parece bug, e nenhum dos três tem valor óbvio:
 
-- **`directional_shadow_max_distance`.** A neblina já apaga o mundo; a sombra
-  não precisa ir mais longe que ela. Ponto de partida: **70 m**, casando com
-  `fog_density = 0.0045`. Além disso, sombra desperdiçada.
-- **`directional_shadow_mode`.** `SHADOW_PARALLEL_2_SPLITS` deve bastar com
-  70 m de alcance. 4 splits é gasto sem retorno numa cena onde tudo o que
-  importa está nos primeiros 20 m.
+- **`directional_shadow_max_distance`.** A sombra não precisa ir mais longe
+  que a neblina. O ponto de partida foi **70 m**, e a conta estava errada: com
+  `fog_density = 0.0045` a neblina a 70 m cobre só 27% (`1 - e^(-0,0045·70)`).
+  Enquanto o mundo era de caixas baixas ninguém notou; com prédio de 58 m, a
+  sombra acabava numa linha no meio da avenida. Hoje são **250 m**, onde a
+  neblina já cobre dois terços, e o `shadow_fade_start` padrão (0,8) dissolve
+  a sombra a partir de 200 m em vez de cortar.
+- **`directional_shadow_mode`.** `SHADOW_PARALLEL_4_SPLITS`, com as divisões
+  em 7,5 m, 25 m e 75 m (`split_1/2/3` = 0,03 / 0,1 / 0,3). A primeira tem o
+  tamanho da primeira divisão dos 70 m antigos com 2 splits (10% de 70), então
+  a sombra do pneu não perdeu resolução: o alcance novo saiu de graça perto da
+  câmera. Com `blend_splits` ligado, para a troca de resolução não virar uma
+  linha andando no asfalto. Custo medido com `dev.py fps`: +0,1 ms por quadro
+  na mediana.
 - **`shadow_normal_bias` / `shadow_bias`.** É aqui que aparece o acne e o
   *peter-panning* (a sombra descolando do pé do objeto). Com o atlas
-  direcional em 4096 (já é o padrão do projeto, verificado) sobre 70 m, a
-  densidade é alta e o bias pode ser baixo.
+  direcional em 4096 (já é o padrão do projeto, verificado) e a primeira
+  divisão em 7,5 m, a densidade é alta e o bias pode ser baixo.
 
 E uma armadilha específica deste projeto: **a pista não deve projetar sombra.**
 Ela é plana, não tem nada para projetar, e é o mesh maior da cena. `RoadMesh`

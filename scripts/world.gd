@@ -190,15 +190,26 @@ func _build_environment() -> void:
 	sun.light_energy = 2.0
 	sun.light_color = Color(1.0, 0.96, 0.88)
 	# Sombra de contato e o que poe veiculo no chao: sem ela, tudo flutua. Os
-	# tres numeros dela, do DIRECAO_VISUAL.md:
-	# - 70 m de alcance, casando com a neblina, que ja apaga o mundo dali em
-	#   diante. Mais longe e sombra que ninguem enxerga;
-	# - duas divisoes bastam: tudo o que importa esta nos primeiros 20 m;
-	# - bias baixo, porque 70 m num atlas de 4096 e densidade de sobra, e bias
-	#   alto descola a sombra do pneu (peter-panning).
+	# numeros dela, do DIRECAO_VISUAL.md:
+	# - 250 m de alcance. Eram 70, contando que a neblina apagava o mundo dali
+	#   em diante - so que a 70 m ela cobre 27%, e com predio de 58 m a sombra
+	#   acabava numa linha bem no meio da avenida. A 250 m a neblina ja cobre
+	#   dois tercos, e o `shadow_fade_start` padrao (0,8) dissolve a sombra de
+	#   200 m em diante em vez de cortar;
+	# - quatro divisoes, com a primeira em 7,5 m: e o mesmo tamanho da primeira
+	#   divisao dos 70 m antigos (10% de 70), entao a sombra do pneu nao perde
+	#   resolucao. As outras vao a 25 m e 75 m, onde moram carro e predio;
+	# - divisoes misturadas na emenda: com quatro, a troca de resolucao vira
+	#   uma linha andando no asfalto junto com a camera;
+	# - bias baixo, porque 7,5 m num quarto do atlas de 4096 e densidade de
+	#   sobra, e bias alto descola a sombra do pneu (peter-panning).
 	sun.shadow_enabled = true
-	sun.directional_shadow_max_distance = 70.0
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	sun.directional_shadow_max_distance = 250.0
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	sun.directional_shadow_split_1 = 0.03
+	sun.directional_shadow_split_2 = 0.1
+	sun.directional_shadow_split_3 = 0.3
+	sun.directional_shadow_blend_splits = true
 	sun.shadow_bias = 0.03
 	sun.shadow_normal_bias = 0.8
 	add_child(sun)
