@@ -21,9 +21,9 @@ igual a de sem LUT.
 """
 
 import os
-import struct
 import sys
-import zlib
+
+from _png import grava
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SAIDA = os.path.join(RAIZ, "assets", "visual", "lut_dia.png")
@@ -75,30 +75,6 @@ def neutro(r, g, b):
     return (r, g, b)
 
 
-# --- PNG sem dependencia ------------------------------------------------------
-
-
-def _png(caminho, largura, altura, pixels):
-    """Grava RGB8. Cabecalho, um bloco de dados comprimido e o fim: o minimo.
-
-    Sem carimbo de data nem metadado de programa, entao a mesma receita sempre
-    da o mesmo arquivo, byte a byte.
-    """
-
-    def bloco(tipo, dados):
-        corpo = tipo + dados
-        return struct.pack(">I", len(dados)) + corpo + struct.pack(">I", zlib.crc32(corpo))
-
-    linhas = b"".join(
-        b"\x00" + bytes(pixels[y * largura * 3 : (y + 1) * largura * 3]) for y in range(altura)
-    )
-    with open(caminho, "wb") as f:
-        f.write(b"\x89PNG\r\n\x1a\n")
-        f.write(bloco(b"IHDR", struct.pack(">IIBBBBB", largura, altura, 8, 2, 0, 0, 0)))
-        f.write(bloco(b"IDAT", zlib.compress(linhas, 9)))
-        f.write(bloco(b"IEND", b""))
-
-
 def main():
     receita = neutro if "--neutro" in sys.argv else dia
     largura, altura = N * N, N
@@ -109,8 +85,7 @@ def main():
                 cor = receita(vermelho / (N - 1), verde / (N - 1), azul / (N - 1))
                 k = (verde * largura + azul * N + vermelho) * 3
                 pixels[k : k + 3] = [round(c * 255) for c in cor]
-    os.makedirs(os.path.dirname(SAIDA), exist_ok=True)
-    _png(SAIDA, largura, altura, pixels)
+    grava(SAIDA, largura, altura, pixels)
     print("lut: %s (%s)" % (SAIDA, receita.__name__))
 
 
