@@ -1,14 +1,19 @@
 extends Node
 ## Pipeline de render e teclas globais.
 ##
-## O look pixel sai de um SubViewport de 320x180 com upscale INTEIRO de 4x pra
-## 1280x720. Inteiro importa: 3.7x deixa pixel de tamanhos diferentes na mesma
-## tela e o serrilhado fica sujo em vez de proposital.
+## O look pixel sai de um SubViewport de 640x360 com upscale INTEIRO de 2x pra
+## 1280x720. Inteiro importa: 2.5x deixa pixel de tamanhos diferentes na mesma
+## tela e o serrilhado fica sujo em vez de proposital - e e por isso que o
+## `scale_mode` do `project.godot` e `integer`.
 
-## 1280x720 / 4 = 320x180 exato. O SubViewportContainer faz a conta sozinho
+## 1280x720 / 2 = 640x360 exato. O SubViewportContainer faz a conta sozinho
 ## via stretch_shrink - setar sub_viewport.size na mao nao funciona com stretch
 ## ligado, o container sobrescreve.
-const PIXEL_SHRINK: int = 4
+##
+## Era 4 (320x180). Subiu na P1 da prova visual: a 320x180 o piloto tem uns
+## 37 px de altura no talo, e nao cabe nele o que faz um ator ler como foto em
+## vez de boneco. A conta esta no `docs/DIRECAO_VISUAL.md`.
+const PIXEL_SHRINK: int = 2
 
 var sub_viewport: SubViewport
 var container: SubViewportContainer
@@ -152,7 +157,7 @@ func _on_tela_mudou(tela: int) -> void:
 	# A Hud some em qualquer tela que nao seja a corrida, o resultado incluso.
 	# Deixa-la por baixo do placar parecia dar contexto e na pratica so
 	# embaralhou: sao dois textos claros, do mesmo tamanho, no mesmo lugar da
-	# tela de 320x180 - o "6/6" da corrida bem em cima do "6o LUGAR de 6".
+	# tela - o "6/6" da corrida bem em cima do "6o LUGAR de 6".
 	hud.visible = correndo
 
 

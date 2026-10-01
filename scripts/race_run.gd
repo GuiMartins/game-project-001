@@ -10,8 +10,8 @@ extends RefCounted
 ## Existiu aqui uma "integridade da bag" em porcentagem, que caia a cada queda,
 ## raspada e pancada. Saiu porque media a mesma coisa que o resto do painel ja
 ## media - quem cai e apanha tambem chega tarde e sem estilo - e cobrava por
-## isso uma barra permanente na HUD de 320x180, onde nao sobra espaco pra
-## numero redundante. O custo de raspar virou estilo, que e onde ele ja doia.
+## isso uma barra permanente na HUD, que entao era de 320x180 e onde nao sobrava
+## espaco pra numero redundante. O custo de raspar virou estilo, que e onde ele ja doia.
 
 enum Phase { RACING, FINISHED }
 
@@ -220,8 +220,9 @@ func stars() -> int:
 
 ## Colocacao em texto pra HUD e relatorio: "3/6".
 ##
-## Sem o ordinal de proposito - "3o/6" a 320x180 le como "30/6", e o unico
-## numero que o jogador olha o tempo todo nao pode ser ambiguo.
+## Sem o ordinal de proposito - em fonte de pixel "3o/6" le como "30/6" (visto
+## a 320x180), e o unico numero que o jogador olha o tempo todo nao pode ser
+## ambiguo.
 func position_text() -> String:
 	return "%d/%d" % [position, racers]
 

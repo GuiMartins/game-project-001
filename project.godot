@@ -31,12 +31,16 @@ gdscript/warnings/untyped_declaration=2
 window/size/viewport_width=1280
 window/size/viewport_height=720
 ; A janela abre maior que o viewport base. O viewport segue 1280x720 pra
-; PIXEL_SHRINK=4 continuar dando 320x180 exato; o stretch canvas_items
-; escala o resto. 320 -> 1920 e 6x inteiro, entao o pixel segue quadrado.
+; PIXEL_SHRINK=2 continuar dando 640x360 exato; o stretch canvas_items
+; escala o resto. 640 -> 1920 e 3x inteiro, entao o pixel segue quadrado.
 window/size/window_width_override=1920
 window/size/window_height_override=1080
 window/stretch/mode="canvas_items"
 window/stretch/aspect="keep"
+; Escala sempre inteira, com tarja preta na sobra. 640x360 so nao divide
+; 1600x900 (2,5x), e ali "fractional" desenharia pixel de dois tamanhos na
+; mesma tela - num jogo cujo ponto e o pixel, a tarja ganha.
+window/stretch/scale_mode="integer"
 ; O painel de tuning e um no Window. Sem isto o Godot desenha subjanelas
 ; DENTRO da janela do jogo (embedded), que e exatamente o que a gente
 ; nao quer: o painel tapando o jogo que voce esta tentando ajustar.

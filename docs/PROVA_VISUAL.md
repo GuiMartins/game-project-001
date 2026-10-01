@@ -248,6 +248,22 @@ no mesmo commit com o motivo.
 *Aceite:* portão verde; `fps` registrado; janela em 1600×900 com tarja em vez
 de pixel irregular.
 
+**Estado (01/10/2026):** feito. `PIXEL_SHRINK = 2` e `scale_mode = "integer"`.
+A HUD e as telas do fluxo continuam escritas em unidades de 320×180 e passam por
+`Hud.ESCALA = 2` em toda posição, tamanho e fonte: multiplicar ~35 números à mão
+seria um erro por número esperando acontecer, e o redesenho é a P8. A prosa foi
+revisada nos 13 arquivos; as menções que sobraram a 320×180 são históricas ou
+são a unidade de layout, de propósito.
+
+- **Portão:** verde, banco sem variação.
+- **Baseline visual:** mantido. Andou dentro do ruído (famílias de cor −2,7%,
+  céu −1,4%, luminância −0,1%), porque as medidas são da janela, e a janela
+  continua 1280×720.
+- **`fps`:** p50 0,66 ms, p95 1,39 ms, pior 1,45 ms, contra 0,70 / 1,39 / 3,12
+  em 320×180. Quatro vezes mais fragmentos não aparecem nesta GPU.
+- **1600×900:** a janela desenha o jogo em 1280×720 com tarja em volta. Com
+  `fractional`, o mesmo teste estica para 1600×900, 2,5× por pixel.
+
 ### P2 — Luz, sombra e céu
 
 **Sem asset** (`ProceduralSkyMaterial` é procedural; a textura de nuvem entra na

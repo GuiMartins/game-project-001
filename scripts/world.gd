@@ -140,7 +140,7 @@ func _build_environment() -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.45, 0.48, 0.62)
 	env.ambient_light_energy = 1.05
-	# Neblina segurando o horizonte: a 320x180 o fade e o que da profundidade,
+	# Neblina segurando o horizonte: em pixel grosso o fade e o que da profundidade,
 	# e de quebra esconde o fim do mundo sem precisar de LOD.
 	env.fog_enabled = true
 	env.fog_light_color = Color(0.13, 0.14, 0.22)

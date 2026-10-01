@@ -16,8 +16,8 @@ signal door_opened
 const SIZE := Vector3(1.8, 1.5, 4.4)
 const DOOR_SIZE := Vector3(1.1, 1.0, 1.6)
 
-## Greybox com cor, nao greybox cinza. A 320x180 duas caixas cinzas coladas nao
-## se separam, e o corredor deixa de ser legivel.
+## Greybox com cor, nao greybox cinza. Em pixel grosso duas caixas cinzas
+## coladas nao se separam, e o corredor deixa de ser legivel.
 const CAR_COLORS: Array[Color] = [
 	Color(0.62, 0.64, 0.70),
 	Color(0.72, 0.45, 0.40),
@@ -94,7 +94,7 @@ func _ready() -> void:
 	var cs := Greybox.box_shape(SIZE)
 	add_child(cs)
 
-	# Teto mais claro: a 320x180 a leitura de silhueta e tudo.
+	# Teto mais claro: em pixel grosso a leitura de silhueta e tudo.
 	var roof := Greybox.box(Vector3(SIZE.x * 0.82, 0.7, SIZE.z * 0.5), Color(0.72, 0.73, 0.78))
 	roof.position = Vector3(0.0, SIZE.y * 0.5 + 0.3, -0.2)
 	add_child(roof)

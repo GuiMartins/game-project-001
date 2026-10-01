@@ -82,7 +82,7 @@ jogo continua rodando, só errado. Estão explicados em `docs/PROTOTIPO.md`.
   inteira some e o mundo vira caixas flutuando.
 - **`stretch_shrink`, nunca `SubViewport.size`.** Com `stretch` ligado o
   container sobrescreve o tamanho, e você renderiza em 1280×720 achando que
-  está em 320×180.
+  está em 640×360.
 - **A HUD mora dentro do SubViewport.** HUD nítida sobre mundo pixelado é o
   visual de remaster preguiçoso.
 - **Semente fixa no banco de provas** — ela mora em `World.setup` (20260831) e

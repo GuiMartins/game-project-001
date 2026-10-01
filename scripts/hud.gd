@@ -1,13 +1,19 @@
 class_name Hud
 extends CanvasLayer
-## HUD desenhada DENTRO do SubViewport de 320x180.
+## HUD desenhada DENTRO do SubViewport, na resolucao interna do mundo.
 ##
 ## De proposito: se a interface renderizar em resolucao nativa e o mundo em
-## 320x180, o resultado e aquele visual meio-termo de remaster preguicoso. Texto
-## pequeno e serrilhado faz parte do look.
+## pixel grosso, o resultado e aquele visual meio-termo de remaster preguicoso.
+## Texto pequeno e serrilhado faz parte do look.
 
+## O layout e escrito em unidades de uma tela de 320x180, a resolucao em que a
+## HUD nasceu, e `ESCALA` leva para a resolucao interna de verdade, 640x360
+## (`PIXEL_SHRINK` no `main.gd`). Toda posicao, tamanho e fonte passa por ela:
+## multiplicar os ~35 numeros a mao seria um erro por numero esperando
+## acontecer. Redesenhar para 640x360 de verdade e a P8 da prova visual.
 const W: int = 320
 const H: int = 180
+const ESCALA: int = 2
 
 var run: RaceRun
 var player: PlayerBike
@@ -44,15 +50,15 @@ func _ready() -> void:
 	# velocidade: o jogo e uma corrida, e a pergunta que o jogador faz o tempo
 	# todo e "em que lugar eu estou?".
 	_position_label = _label(root, Vector2(W * 0.5 - 40.0, 2), 16, Color(1, 1, 1))
-	_position_label.size = Vector2(80, 20)
+	_position_label.size = Vector2(80, 20) * ESCALA
 	_position_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var position_caption := _label(root, Vector2(W * 0.5 - 40.0, 20), 8, Color(0.7, 0.75, 0.85))
-	position_caption.size = Vector2(80, 10)
+	position_caption.size = Vector2(80, 10) * ESCALA
 	position_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	position_caption.text = "POSICAO"
 
 	_stars_label = _label(root, Vector2(W - 70, 4), 16, Color(1.0, 0.85, 0.25))
-	_stars_label.size = Vector2(64, 20)
+	_stars_label.size = Vector2(64, 20) * ESCALA
 	_stars_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 	_speed_label = _label(root, Vector2(6, H - 26), 16, Color(1, 1, 1))
@@ -67,17 +73,17 @@ func _ready() -> void:
 	# "POSICAO" porque "ultrapassou" e "perdeu posicao", que ele anuncia, sao
 	# sobre aquele numero.
 	_event_label = _label(root, Vector2(0, 32), 8, Color(1, 1, 1))
-	_event_label.size = Vector2(W, 12)
+	_event_label.size = Vector2(W, 12) * ESCALA
 	_event_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	_combo_label = _label(root, Vector2(0, 44), 16, Color(1.0, 0.9, 0.4))
-	_combo_label.size = Vector2(W, 20)
+	_combo_label.size = Vector2(W, 20) * ESCALA
 	_combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	# Mesmo lugar do combo: os dois quase nunca coincidem, e quando coincidem a
 	# contramao ganha (ver `_process`).
 	_wrong_way_label = _label(root, Vector2(0, 44), 16, Color(1.0, 0.35, 0.3))
-	_wrong_way_label.size = Vector2(W, 20)
+	_wrong_way_label.size = Vector2(W, 20) * ESCALA
 	_wrong_way_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_wrong_way_label.text = "CONTRAMAO"
 	_wrong_way_label.visible = false
@@ -106,12 +112,12 @@ static func carimbo_versao() -> String:
 
 func _label(parent: Control, pos: Vector2, size: int, color: Color) -> Label:
 	var l := Label.new()
-	l.position = pos
-	l.add_theme_font_size_override("font_size", size)
+	l.position = pos * ESCALA
+	l.add_theme_font_size_override("font_size", size * ESCALA)
 	l.add_theme_color_override("font_color", color)
 	# Contorno preto: sem ele o texto claro some no asfalto claro do meio-dia.
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-	l.add_theme_constant_override("outline_size", 3)
+	l.add_theme_constant_override("outline_size", 3 * ESCALA)
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(l)
 	return l
@@ -119,14 +125,14 @@ func _label(parent: Control, pos: Vector2, size: int, color: Color) -> Label:
 
 func _bar(parent: Control, rect: Rect2, color: Color) -> ColorRect:
 	var back := ColorRect.new()
-	back.position = rect.position
-	back.size = rect.size
+	back.position = rect.position * ESCALA
+	back.size = rect.size * ESCALA
 	back.color = Color(0, 0, 0, 0.55)
 	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(back)
 	var fill := ColorRect.new()
-	fill.position = rect.position
-	fill.size = rect.size
+	fill.position = rect.position * ESCALA
+	fill.size = rect.size * ESCALA
 	fill.color = color
 	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(fill)
@@ -174,7 +180,7 @@ func _process(delta: float) -> void:
 
 	_speed_label.text = "%3.0f" % player.speed_kmh()
 	_stars_label.text = "*".repeat(run.stars())
-	_adrenaline_fill.size.x = 62.0 * (player.adrenaline / 100.0)
+	_adrenaline_fill.size.x = 62.0 * ESCALA * (player.adrenaline / 100.0)
 	_adrenaline_fill.color = Color(1.0, 0.9, 0.3) if player.boosting else Color(0.3, 0.85, 1.0)
 
 	if run.combo >= 2:
