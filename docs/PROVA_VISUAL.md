@@ -281,6 +281,24 @@ o portão reprovar um commit de markdown.
 *Aceite:* a moto tem sombra de contato que acompanha a ladeira; variância
 medida e registrada; tempo do job `regressao-visual` no CI anotado.
 
+**Estado (01/10/2026):** feito, com o sol onde já estava, em `(-42, 38, 0)`.
+`ProceduralSkyMaterial` com `use_debanding` desligado, ambiente vindo do céu,
+neblina na cor do horizonte com `fog_aerial_perspective`, e sombra do sol em
+70 m, duas divisões, bias baixo. A pista já não projetava sombra.
+
+- **Sombra:** toda moto tem sombra de contato, inclusive no quadro da ladeira.
+- **A medida de céu teve de mudar.** "Pixel da cor do fundo" não serve com céu
+  em degradê, nem depois de LUT e dither. Céu passou a ser o pixel igual ao de
+  um quadro de referência desenhado sem geometria (ver `docs/TESTES.md`). Com
+  a pista escondida, `fracao_ceu` sobe 89%; a luminância sozinha não pegaria
+  mais (−6%).
+- **Ruído:** quatro rodadas do mesmo código, menos de 1% nas três medidas, na
+  máquina de desenvolvimento. Baseline regravado: céu 0,165 → 0,355,
+  luminância 0,197 → 0,385, famílias de cor 32,8 → 32,1.
+- **`fps`:** p50 0,70 ms, p95 1,39 ms, pior 1,41 ms. A sombra não aparece
+  nesta GPU.
+- **Tempo do job no CI:** anotado no PR.
+
 ### P3 — Paleta
 
 **Assets:** `lut_dia.png`, `bayer4.png`.

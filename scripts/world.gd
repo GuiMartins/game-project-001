@@ -134,17 +134,33 @@ func grid_slot(index: int, base: float) -> Vector2:
 
 
 func _build_environment() -> void:
+	# Meio-dia de sol duro: e o que as referencias mostram, e o caso mais facil
+	# de iluminacao que existe. Um sol, e o resto e consequencia dele.
+	var ceu := ProceduralSkyMaterial.new()
+	ceu.sky_top_color = Color(0.16, 0.38, 0.82)
+	ceu.sky_horizon_color = Color(0.62, 0.74, 0.88)
+	ceu.ground_horizon_color = Color(0.55, 0.6, 0.62)
+	ceu.ground_bottom_color = Color(0.24, 0.26, 0.25)
+	# Desligado de proposito: debanding e dither de sub-pixel para ESCONDER a
+	# banda do degrade, e aqui a banda e o sotaque de epoca.
+	ceu.use_debanding = false
+	var sky := Sky.new()
+	sky.sky_material = ceu
+
 	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.11, 0.12, 0.19)
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.45, 0.48, 0.62)
-	env.ambient_light_energy = 1.05
-	# Neblina segurando o horizonte: em pixel grosso o fade e o que da profundidade,
-	# e de quebra esconde o fim do mundo sem precisar de LOD.
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
+	# A luz ambiente vem do CEU, e nao de uma cor escolhida: a sombra fica azul
+	# porque o ceu e azul. E a diferenca entre cena iluminada e cena pintada.
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.ambient_light_energy = 0.7
+	# Neblina segurando o horizonte: em pixel grosso o fade e o que da
+	# profundidade, e de quebra esconde o fim do mundo sem precisar de LOD. Na
+	# cor do horizonte, para o predio do fundo sumir no ceu e nao num cinza.
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.13, 0.14, 0.22)
+	env.fog_light_color = ceu.sky_horizon_color
 	env.fog_density = 0.0045
+	env.fog_aerial_perspective = 0.5
 	env.fog_sky_affect = 0.0
 
 	var we := WorldEnvironment.new()
@@ -153,9 +169,20 @@ func _build_environment() -> void:
 
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-42.0, 38.0, 0.0)
-	sun.light_energy = 1.1
-	sun.light_color = Color(1.0, 0.94, 0.85)
-	sun.shadow_enabled = false
+	sun.light_energy = 1.35
+	sun.light_color = Color(1.0, 0.96, 0.88)
+	# Sombra de contato e o que poe veiculo no chao: sem ela, tudo flutua. Os
+	# tres numeros dela, do DIRECAO_VISUAL.md:
+	# - 70 m de alcance, casando com a neblina, que ja apaga o mundo dali em
+	#   diante. Mais longe e sombra que ninguem enxerga;
+	# - duas divisoes bastam: tudo o que importa esta nos primeiros 20 m;
+	# - bias baixo, porque 70 m num atlas de 4096 e densidade de sobra, e bias
+	#   alto descola a sombra do pneu (peter-panning).
+	sun.shadow_enabled = true
+	sun.directional_shadow_max_distance = 70.0
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	sun.shadow_bias = 0.03
+	sun.shadow_normal_bias = 0.8
 	add_child(sun)
 
 

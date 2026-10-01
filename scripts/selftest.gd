@@ -76,6 +76,9 @@ var _shots_next: float = 0.0
 var _shots_taken: int = 0
 ## Soma das medidas de cada frame capturado, para tirar a media no fim.
 var _frame_sky: float = 0.0
+## O ceu sozinho, sem nenhuma geometria, capturado antes do primeiro quadro.
+## Ver `_capture`.
+var _ceu_referencia: Image
 var _frame_luma: float = 0.0
 var _frame_colors: float = 0.0
 var _asphalt_speed: float = 0.0
@@ -849,48 +852,40 @@ func _set_action(action_name: String, pressed: bool) -> void:
 ## o mundo virava caixas flutuando no vazio. Nenhum numero do banco de provas
 ## se mexia - todos medem fisica, e a fisica nao sabe que a pista sumiu.
 func _capture(path: String) -> void:
+	if _ceu_referencia == null:
+		await _captura_ceu()
 	await RenderingServer.frame_post_draw
 	var image := get_viewport().get_texture().get_image()
 	image.save_png(path)
 	_measure_frame(image)
 
 
-## Tres proporcoes da imagem, amostradas de 4 em 4 pixels.
+## Um quadro com a camera sem desenhar geometria nenhuma: so o ceu.
 ##
-## A amostragem existe porque isto roda a cada 2,5 s de simulacao e um viewport
-## inteiro sao 900 mil leituras de pixel em GDScript. De 4 em 4 sao 57 mil, e a
-## proporcao nao muda.
+## "Onde nao ha mundo" era "onde a cor e a do fundo", e o fundo era uma cor
+## chapada. Com ceu de verdade o fundo e um degrade, e depois de tonemap, LUT
+## e dither nenhuma cor fixa diz mais o que e ceu. A referencia passa pelo
+## mesmo pos-processamento que o quadro medido, entao ceu e o pixel igual ao
+## da referencia na mesma posicao - e pista sumida vira "ceu" de novo, porque
+## o ceu tambem desenha o chao abaixo do horizonte.
+func _captura_ceu() -> void:
+	var camera := _world.camera
+	var mascara := camera.cull_mask
+	camera.cull_mask = 0
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_ceu_referencia = get_viewport().get_texture().get_image()
+	camera.cull_mask = mascara
+
+
+## As tres proporcoes do quadro (`MedidaDeQuadro`), somadas para a media.
 func _measure_frame(image: Image) -> void:
-	var w := image.get_width()
-	var h := image.get_height()
-	if w == 0 or h == 0:
+	var medida := MedidaDeQuadro.medir(image, _ceu_referencia)
+	if medida.is_empty():
 		return
-
-	# A cor de fundo do projeto. Pixel parecido com ela e ceu - ou seja,
-	# lugar onde NAO ha mundo desenhado.
-	var sky := Color(0.13, 0.14, 0.2)
-	var sky_hits := 0
-	var luma := 0.0
-	var seen := {}
-	var total := 0
-
-	for y in range(0, h, 4):
-		for x in range(0, w, 4):
-			var c := image.get_pixel(x, y)
-			total += 1
-			luma += c.get_luminance()
-			if absf(c.r - sky.r) < 0.06 and absf(c.g - sky.g) < 0.06 and absf(c.b - sky.b) < 0.06:
-				sky_hits += 1
-			# Cor quantizada em 5 niveis por canal: conta quantas familias de
-			# cor a cena tem, sem contar ruido de sombreamento como cor nova.
-			var key := (int(c.r * 4.0) << 6) | (int(c.g * 4.0) << 3) | int(c.b * 4.0)
-			seen[key] = true
-
-	if total == 0:
-		return
-	_frame_sky += float(sky_hits) / float(total)
-	_frame_luma += luma / float(total)
-	_frame_colors += float(seen.size())
+	_frame_sky += medida["ceu"]
+	_frame_luma += medida["luminancia"]
+	_frame_colors += medida["familias"]
 
 
 ## --- Relatorio ------------------------------------------------------------

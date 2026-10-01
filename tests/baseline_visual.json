@@ -6,9 +6,9 @@
 		"visual_frames": 0.0
 	},
 	"valores": {
-		"visual_familias_de_cor": 32.842105,
-		"visual_fracao_ceu": 0.165445,
+		"visual_familias_de_cor": 32.105263,
+		"visual_fracao_ceu": 0.355143,
 		"visual_frames": 19.0,
-		"visual_luminancia": 0.196582
+		"visual_luminancia": 0.384761
 	}
 }
