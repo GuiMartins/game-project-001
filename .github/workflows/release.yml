@@ -22,7 +22,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Com LFS: sem isto o export empacota o ponteiro de texto no lugar de
+      # cada .png e .glb, e o zip publicado sai sem os assets. Ver ci.yml.
       - uses: actions/checkout@v5
+        with:
+          lfs: true
 
       - uses: ./.github/actions/setup-godot
         with:
