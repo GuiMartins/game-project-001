@@ -14,6 +14,10 @@ const ROUTE_LENGTH: float = 3200.0
 ## moto num trecho onde a amostragem ja esta grampeada.
 const FINISH_MARGIN: float = 30.0
 
+## A semente do mundo. Fixa: pista, cenario, transito e rivais saem dela, e e o
+## que faz o banco de provas medir a mesma corrida toda vez.
+const SEMENTE: int = 20260831
+
 ## A cor de cada rival: bag e moto nela, jaqueta num tom escuro dela (ver
 ## `Entregador.pintar`). Todos sao o mesmo modelo, e e a cor que separa um do
 ## outro de longe. Nenhuma encosta no laranja do jogador (`PlayerBike.COR`).
@@ -52,7 +56,7 @@ var _spawn_cursor: float = 0.0
 var _position_event_timer: float = 0.0
 
 
-func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 20260831) -> void:
+func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = SEMENTE) -> void:
 	tuning = a_tuning
 	world_tuning = a_world_tuning
 	_rng.seed = world_seed

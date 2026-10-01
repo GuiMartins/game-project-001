@@ -27,6 +27,8 @@ var _pixel_mode: bool = true
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	var selftest_mode := args.has("--selftest") or OS.has_environment("RUSHFOOD_SELFTEST")
+	var prova_mode := args.has("--prova")
+	var medindo := selftest_mode or prova_mode
 
 	## O banco de provas roda nos defaults do repositorio, nao no user://.
 	##
@@ -34,7 +36,7 @@ func _ready() -> void:
 	## tuning tinha ficado de fora: bastava alguem clicar em Salvar pra
 	## "regrediu" e "voce mexeu num slider ontem" virarem a mesma coisa. Com
 	## --selftest-user voce mede os seus ajustes, quando e isso que quer.
-	var use_saved := not selftest_mode or args.has("--selftest-user")
+	var use_saved := not medindo or args.has("--selftest-user")
 	tuning = BikeTuning.load_or_default() if use_saved else BikeTuning.new()
 	world_tuning = WorldTuning.load_or_default() if use_saved else WorldTuning.new()
 	tuning_source = "user:// (ajustes salvos)" if use_saved else "defaults do repositorio"
@@ -55,6 +57,12 @@ func _ready() -> void:
 	sub_viewport.handle_input_locally = false
 	container.add_child(sub_viewport)
 
+	# A cor de cada carro do transito sai do sorteio global, e nao da semente
+	# do mundo. Semear o global aqui, antes de o mundo nascer, fixa a cor sem
+	# mexer na sequencia da semente - que e de onde saem pista e transito, e
+	# mexer nela mudaria todo numero do banco de provas.
+	if medindo:
+		seed(World.SEMENTE)
 	world = World.new()
 	world.name = "World"
 	sub_viewport.add_child(world)
@@ -90,12 +98,16 @@ func _ready() -> void:
 	# O banco de provas larga direto na corrida. Menu esperando ENTER num
 	# processo headless e teste que trava em vez de falhar - e travado nao tem
 	# codigo de saida pra CI ler.
-	fluxo.iniciar(selftest_mode)
+	fluxo.iniciar(medindo)
 
 	if selftest_mode:
 		var selftest: Node = load("res://scripts/selftest.gd").new()
 		add_child(selftest)
 		selftest.call("setup", self)
+	elif prova_mode:
+		var prova: Node = load("res://scripts/prova.gd").new()
+		add_child(prova)
+		prova.call("setup", self)
 
 
 func _apply_pixel_mode() -> void:

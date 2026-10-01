@@ -90,6 +90,11 @@ var _last_progress: float = 0.0
 var _heading_at_mark: float = 0.0
 var _lateral_at_mark: float = 0.0
 var _speed_at_mark: float = 0.0
+## `--fps`: so a corrida solta, com tela e sem vsync, medindo cada quadro.
+## Mede a corrida solta porque e o pior caso que o banco ja sabe montar:
+## pelotao inteiro, transito em volta e o piloto automatico no corredor.
+var _fps: bool = OS.get_cmdline_user_args().has("--fps")
+var _quadros_ms: PackedFloat32Array = []
 
 
 func setup(main: Node) -> void:
@@ -102,6 +107,14 @@ func setup(main: Node) -> void:
 	# dela. Sem isso "regrediu" e "deu azar" viram a mesma coisa.
 	_bench_begin()
 	_read_phase_arg()
+	if _fps:
+		_phase = PHASE_NAMES.find("corrida")
+		_stop_after = _phase
+		# Sem vsync e sem teto: com eles, todo quadro mede 16,7 ms e o numero
+		# diz a taxa do monitor, nao o custo do jogo.
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+		Engine.max_fps = 0
+		print("fps: so a corrida solta, sem vsync")
 	print("\n=== RUSHFOOD SELFTEST ===")
 	print("tuning: %s" % _main.get("tuning_source"))
 	print(
@@ -165,6 +178,13 @@ func _physics_process(delta: float) -> void:
 			_phase_freerun(delta)
 		8:
 			_phase_sprint(delta)
+
+
+func _process(delta: float) -> void:
+	# O primeiro segundo fica de fora: e compilacao de shader e cache frio, que
+	# o jogador paga uma vez e a media pagaria a corrida inteira.
+	if _fps and _phase == PHASE_NAMES.find("corrida") and _t > 1.0:
+		_quadros_ms.append(delta * 1000.0)
 
 
 func _next_phase() -> void:
@@ -922,6 +942,7 @@ func _write_metrics() -> void:
 
 func _finish() -> void:
 	set_physics_process(false)
+	_relata_fps()
 	_write_frame_metrics()
 	_write_metrics()
 	print("\n--- medidas ---")
@@ -936,3 +957,28 @@ func _finish() -> void:
 			print("  ! " + line)
 		print("")
 		get_tree().quit(1)
+
+
+## Tempo de quadro da corrida solta: mediana, p95 e o pior.
+##
+## A mediana diz o custo normal; o p95 e o pior diz o tranco que se sente. Nao
+## entra no baseline: depende da GPU de quem roda, e no CI e renderizacao por
+## software. E numero para comparar na mesma maquina, antes e depois.
+func _relata_fps() -> void:
+	if not _fps or _quadros_ms.is_empty():
+		return
+	var ordenados := _quadros_ms.duplicate()
+	ordenados.sort()
+	var n := ordenados.size()
+	var p50 := ordenados[n / 2]
+	var p95 := ordenados[mini(int(n * 0.95), n - 1)]
+	var pior := ordenados[n - 1]
+	_metric("fps_p50_ms", p50)
+	_metric("fps_p95_ms", p95)
+	_metric("fps_pior_ms", pior)
+	_report.append(
+		(
+			"tempo de quadro      p50 %.2f ms (%.0f fps), p95 %.2f ms, pior %.2f ms, %d quadros"
+			% [p50, 1000.0 / p50, p95, pior, n]
+		)
+	)

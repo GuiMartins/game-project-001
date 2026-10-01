@@ -30,6 +30,8 @@ qual binário usar, e no Windows escolhe a variante que não engole a saída.
 | `python tools/dev.py selftest` | Banco de provas: roda a moto de verdade e compara com o baseline. ~110 s. |
 | `python tools/dev.py selftest --fase curva` | Só até aquela fase. ~32 s, para iterar. |
 | `python tools/dev.py shots` | Regressão visual: roda com tela e mede o frame. |
+| `python tools/dev.py prova` | Os mesmos quatro quadros congelados, em `.dev/prova/`, para comparar visual antes e depois. |
+| `python tools/dev.py fps` | Tempo de quadro da corrida solta, com tela e sem vsync. Compara a mesma máquina. |
 | `python tools/dev.py lint` / `format` | gdlint e gdformat. |
 | `python tools/dev.py run` | Abre o jogo. |
 | `python tools/dev.py export` | Exporta as três plataformas. |
