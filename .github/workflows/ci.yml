@@ -42,7 +42,14 @@ jobs:
     name: provas (${{ matrix.os }})
 
     steps:
+      # Com LFS: os .png e .glb do jogo moram no Git LFS (ver .gitattributes).
+      # Sem isto o checkout traz o ponteiro de texto no lugar do arquivo, o
+      # Godot falha ao importar e - o pior - nao derruba nada enquanto nenhuma
+      # cena usa o asset. No dia em que uma usa, quebra aqui, e so aqui: na
+      # maquina de quem desenvolve o LFS esta instalado e tudo passa.
       - uses: actions/checkout@v5
+        with:
+          lfs: true
 
       - uses: ./.github/actions/setup-godot
 
@@ -65,7 +72,12 @@ jobs:
   regressao-visual:
     runs-on: ubuntu-latest
     steps:
+      # Com LFS pelo mesmo motivo do job de provas, e aqui pesa mais: e o
+      # unico job que olha a tela, e ponteiro no lugar de textura vira modelo
+      # sumido no frame.
       - uses: actions/checkout@v5
+        with:
+          lfs: true
 
       - uses: ./.github/actions/setup-godot
 

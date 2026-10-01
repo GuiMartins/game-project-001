@@ -67,6 +67,14 @@ A action de setup não baixa nada por conta própria — chama `tools/dev.py
 setup`, o mesmo comando local. Enquanto eram dois caminhos, "passa aqui e
 quebra lá" era questão de tempo.
 
+Todo job que abre o jogo faz checkout **com Git LFS** (`lfs: true`): provas,
+regressão visual e release. Os `.png` e `.glb` moram no LFS, e sem isso o
+checkout traz o ponteiro de texto no lugar do arquivo. O Godot falha ao
+importar e não derruba nada enquanto nenhuma cena usa o asset — o import sai
+com código 0 —, então o buraco só aparece no dia em que uma cena usa, e só no
+CI, porque na máquina de quem desenvolve o LFS está instalado. O job de
+qualidade fica sem LFS: lint e format só leem `.gd`.
+
 ## Release
 
 A tag é o gatilho, e precisa bater com `config/version` no `project.godot`:
