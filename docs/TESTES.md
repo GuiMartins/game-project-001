@@ -22,6 +22,14 @@ milissegundos, não depende de mundo nem de trânsito, e a regra que ele mede �
 por quanto tempo um soco responde pela queda do rival — é a diferença entre
 derrubar rival ser conquista ou ser acidente de trânsito.
 
+A outra é `test_entregador.gd`, que põe o modelo na árvore e avança a pose na
+mão. O que ele guarda não aparece em nenhum outro lugar: a física anda igual com
+a roda girando para trás, o pé enterrado no asfalto ou a mão a um palmo do
+guidão, e a regressão visual só pega a tela errada por inteiro. Os casos são
+sinal (roda, tombo), alcance (pé no chão, mão na manopla com o guidão virado),
+direção (joelho que fecha com a velocidade) e a sincronia entre as cores de
+`Entregador` e a textura que o `arte/entregador.py` escreve.
+
 Existem por uma razão específica: há uma classe de erro que o banco de provas
 não pega, e é justamente a que se introduz sem perceber. "Só aumentei um pouco
 o multiplicador do combo" não move nenhuma das dez medidas do banco — e o
@@ -137,6 +145,10 @@ Saber disto faz parte do contrato. Nenhum destes é pego por nada automatizado:
   soma os 150 —, porque encaixar o rival numa lataria de propósito custaria uma
   fase inteira do banco. E 1,5 s de crédito é um número de polegar: ele cobre o
   cambaleio com folga, mas ninguém mediu se é o corte certo.
+- **"A pose do entregador convence?"** Os unitários provam que a roda gira
+  para o lado certo e que mão e pé chegam onde devem. Se o joelho abre o
+  quanto devia, se o tronco deita o bastante e se o tombo lê como queda é
+  olho, e foi conferido em captura, não em teste.
 - **"A corrida está disputada?"** O banco prova que ela termina e que o placar
   bate com a ordem de chegada. Se o pelotão está no ritmo certo é outra
   pergunta, e o piloto automático não serve de referência: ele faz uns 24 m/s

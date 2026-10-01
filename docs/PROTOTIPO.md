@@ -153,11 +153,11 @@ houve. Hoje tem aviso na HUD.
 
 Deliberadamente fora do escopo até o feel fechar:
 
-- **Sprites pré-renderizados.** Tudo é caixa. Quando entrarem, entram como
-  `Sprite3D` com `billboard = Y-Billboard`, `texture_filter = Nearest` e
-  **`alpha_cut = Discard` em todos** — sem isso o depth sorting quebra e o
-  entregador some atrás do carro errado. O ponto de troca é o nó `Visual` de
-  `player_bike.gd` / `rival_bike.gd`.
+- **Arte do mundo.** Prédio, carro, poste e pista são caixa. A exceção é o
+  entregador, que é modelo 3D (ver *O entregador*). Sprite pré-renderizado,
+  se entrar no cenário, entra como `Sprite3D` com `billboard = Y-Billboard`,
+  `texture_filter = Nearest` e **`alpha_cut = Discard` em todos** — sem isso o
+  depth sorting quebra e o sprite some atrás do carro errado.
 - **Semáforo, engarrafamento e bifurcação.** Existiram e foram removidos:
   estavam custando complexidade no `world.gd` antes de o feel da moto estar
   fechado, que é a única pergunta que este protótipo existe pra responder.
@@ -325,6 +325,71 @@ conferência pegou exatamente um erro: o placar de dez linhas passava por cima
 das duas saídas, porque a entrelinha padrão da fonte de 8px estoura 150 px
 numa tela de 180. É o tipo de coisa que nenhum número pega.
 
+## O entregador
+
+O contrato mandava arte para depois do feel, e o entregador entrou antes, por
+decisão de 30/09/2026 registrada no `CLAUDE.md`. O mundo continua de caixas; o
+que mudou é o ator. Moto e piloto são um modelo 3D low-poly de 1380 triângulos
+([`assets/entregador/`](../assets/entregador)), gerado por script no Blender
+([`arte/entregador.py`](../arte/entregador.py)) e posado a cada passo de
+física por [`scripts/entregador.gd`](../scripts/entregador.gd), no nó `Visual`
+de `player_bike.gd` e `rival_bike.gd`.
+
+Cinco decisões que não são óbvias:
+
+**A pose sai do estado, não de clipe.** Quatro números por passo — velocidade,
+acelerador, esterço e se caiu — e o resto é conta: a roda gira na velocidade
+da moto, o joelho fecha conforme ela ganha velocidade, o tronco deita no gás,
+o pé esquerdo desce quando ela para abaixo de 1 m/s, e na queda a moto tomba
+para o lado em que estava inclinada. Clipe de animação desencontra da física
+no primeiro passo em que os dois discordam; pose lida do estado não tem como.
+
+**Moto e piloto são árvores separadas, de peças rígidas.** Cada peça tem a
+origem na articulação e nenhuma rotação em repouso. Braço e perna são cadeias
+de dois ossos resolvidas por IK — é o que põe a mão na manopla quando o guidão
+vira e o pé no chão quando a moto para —, e o comprimento de cada osso é lido
+do próprio modelo. Não há rig nem skin: o que o jogo anima é transformação de
+nó.
+
+**O `Visual` desceu para o chão.** Ele ficava no centro da cápsula de colisão,
+0,875 m acima do asfalto, e a moto inclinava em volta desse ponto. Com caixa
+não se via; com roda, nos 38° de fábrica o pneu escorregaria 54 cm para fora
+da curva. Agora a moto inclina em volta do pneu, e o tombo pivota na lateral que
+bate no chão — em volta do centro, meia moto afundaria no asfalto.
+
+**O tronco acompanha metade do esterço.** Devagar e com o guidão no batente, a
+manopla de fora sai do alcance do braço: o `test_entregador.gd` pegou a mão
+4 cm curta. Girar os ombros para o lado da curva é o que todo piloto faz, e é
+o que deixa o IK chegar. O guidão também vira pouco (20° parado, 4° a partir de
+50 km/h), porque no `PlayerBike` a curva sai da inclinação, e guidão girando
+muito em velocidade mentiria sobre isso.
+
+**Uma cor por corredor.** Bag e moto na cor, jaqueta num tom escuro dela,
+trocadas por shader com a máscara do modelo (R = bag, G = jaqueta, B =
+pintura). De longe, o que separa um entregador do outro é a mancha de cor, e
+"passei o amarelo" só funciona se o amarelo for amarelo da bag ao paralama. O
+jogador é laranja, como a bag do primeiro cubo.
+
+### O que está medido, e o que não está
+
+Os sete casos do `test_entregador.gd` cobrem o que a física não enxerga e que
+nasce de um sinal trocado: a roda girando para a frente, o pé no chão e de
+volta na pedaleira, as mãos nas manoplas com o guidão virado, o joelho que
+fecha, o tombo para o lado pedido sem o pé atravessar o asfalto e as cores de
+fábrica batendo com a textura. Com o erro plantado — roda de sinal invertido,
+cor da bag fora da textura — eles reprovam.
+
+O banco de provas não andou: o ator não toca na física, e as medidas ficaram
+idênticas. O baseline visual foi regravado depois de olhar os frames —
+luminância +9,9%, céu +3,8%, famílias de cor −1,6% —, porque, mesmo dentro dos
+20% de tolerância, a mudança de propósito comia metade da margem de um teste
+cujo ruído medido chega a 13,5%.
+
+O que **não** está feito: o piloto não se solta da moto na queda (os dois
+tombam juntos, embora o modelo já tenha as árvores separadas para isso), e a
+cadência travada da animação, que faria o ator ler como digitalizado em vez de
+3D, não existe.
+
 ## A porta do carro
 
 Porta só abre em **carro encostado**: parado de verdade (velocidade zero) e
@@ -441,7 +506,9 @@ ser a velocidade máxima, e slider que mente é slider que ninguém ajusta.
    média. Dá pra entregar dirigindo limpo; 5 estrelas exige o corredor, e agora
    exige também chegar na frente — metade da nota é posição. É a intenção, mas
    não foi verificada com um humano no controle.
-6. **Só então** modelar o entregador low-poly e começar o batch de render.
+6. **O entregador low-poly** entrou antes desta lista acabar, por decisão
+   (ver *O entregador*). O que continua para depois do feel é o resto da arte:
+   mundo, céu, partículas.
 
 ## Nota de marca
 
