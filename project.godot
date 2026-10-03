@@ -9,7 +9,7 @@ config_version=5
 config/name="RushFood - Prototipo"
 ; Subir esta versao e o que publica: o merge na master de uma versao que
 ; ainda nao tem tag vira release. Use `python tools/dev.py versao patch`.
-config/version="0.0.5"
+config/version="0.0.6"
 config/description="Prototipo greybox para validar os pilares: feel da moto, o corredor, combate lateral e o loop de entrega."
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.4", "Forward Plus")
