@@ -61,6 +61,37 @@ const MARGEM_CALCADA: float = 0.4
 ## o pneu nao sair da faixa central.
 const TAXA_LATERAL: float = 3.0
 
+## Quanto dura uma troca de lado, em segundos, com `smoothstep`: nunca um
+## degrau. No video cada troca leva ~1 s, sem corte.
+const DURACAO_TROCA: float = 1.2
+## De quanto em quanto tempo o cinegrafista troca de lado, em segundos. No
+## video, de 2 a 12 s; o centro e so passagem, e dura pouco.
+const INTERVALO_LADO := Vector2(6.0, 12.0)
+const INTERVALO_CENTRO := Vector2(2.0, 3.0)
+## Chance de a troca ir para o outro lado; o resto vai para o centro.
+const CHANCE_OUTRO_LADO: float = 2.0 / 3.0
+
+## Um carro a menos que isto, na lateral, do ponto da camera ocupa o ponto. Com
+## meia largura de carro de 0,9 m, sobram 0,3 m entre a lente e a lataria.
+const LATERAL_CARRO: float = 1.2
+## Metade do comprimento do carro (`TrafficCar.SIZE.z`).
+const MEIO_CARRO: float = 2.2
+## Metade da largura do carro (`TrafficCar.SIZE.x`).
+const MEIA_LARGURA_CARRO: float = 0.9
+## Carro mais perto que isto da lateral do jogador nao passa por ele: ou o
+## jogador desvia (e a lateral dele muda), ou bate (e ele para). So carro que
+## pode passar ao lado da moto chega na camera - sem isto, seguir um carro na
+## mesma faixa mandava o cinegrafista para o centro sem motivo.
+const LATERAL_PASSA: float = 1.25
+## Com quanto tempo de antecedencia o cinegrafista sai do caminho de um carro,
+## em segundos. A troca leva 1,2 s, mas na metade dela a lente ja saiu da
+## faixa do carro.
+const ANTECEDENCIA: float = 0.8
+## Quanto o cinegrafista recua quando os dois lados estao ocupados, em metros.
+## No centro ele fica atras da moto, e mais longe o carro que passa ao lado
+## nao entra no quadro pela lente.
+const RECUO_BLOQUEADO: float = 1.0
+
 
 ## O que o cinegrafista enxerga do jogador num quadro.
 ##
@@ -81,6 +112,8 @@ class Leitura:
 	## Para onde a moto aponta, horizontal e unitario.
 	var frente: Vector3 = Vector3.FORWARD
 	var caido: bool = false
+	## Carros do transito: `(s, l, velocidade)` de cada um.
+	var carros: Array[Vector3] = []
 
 
 var tuning: BikeTuning
@@ -98,22 +131,43 @@ var mira: Vector3 = Vector3.ZERO
 var _iniciado: bool = false
 var _s_jogador: float = 0.0
 
+## O lado, de -1 (esquerda) a +1 (direita), com o centro em 0. Durante a troca
+## ele anda de `_lado_de` para `_lado_para` em `DURACAO_TROCA`.
+var _lado: float = 1.0
+var _lado_de: float = 1.0
+var _lado_para: float = 1.0
+var _troca_t: float = DURACAO_TROCA
+var _ate_trocar: float = 0.0
+var _recuo: float = 0.0
+## RNG proprio, semeado da semente do mundo: a mesma corrida, a mesma camera.
+var _rng := RandomNumberGenerator.new()
 
-func _init(a_tuning: BikeTuning, a_track: RoadTrack) -> void:
+
+func _init(a_tuning: BikeTuning, a_track: RoadTrack, semente: int = 0) -> void:
 	tuning = a_tuning
 	track = a_track
+	_rng.seed = semente
+	# Comeca a direita, rente ao meio-fio, como a abertura do video.
+	_ate_trocar = _rng.randf_range(INTERVALO_LADO.x, INTERVALO_LADO.y)
 
 
 ## Le a moto do jogador. So vale com ela na arvore: usa a posicao global.
-static func ler(moto: PlayerBike) -> Leitura:
+static func ler(moto: PlayerBike, transito: Array[TrafficCar] = []) -> Leitura:
 	var leitura := Leitura.new()
 	var frente := Vector3(sin(moto.heading), 0.0, cos(moto.heading))
 	leitura.s = moto.track_offset - EIXO_TRASEIRO
 	leitura.l = moto.track_lateral
-	# A velocidade que importa e a que anda na pista: de lado no corredor a
-	# moto anda menos curva que o velocimetro diz, e na contramao anda para tras.
-	var pista := -moto.track.sample_basis(moto.track_offset).z
-	leitura.velocidade = moto.speed * frente.dot(pista)
+	# A velocidade que importa e a de metros de PISTA, que e a moeda do
+	# cinegrafista: de lado a moto anda menos pista que o velocimetro diz, na
+	# contramao anda para tras, e no lado de fora de uma curva cada metro de
+	# pista e mais que um metro de asfalto. Com o velocimetro puro, a 50 m/s
+	# num curvao a camera ganhava 1 m/s por segundo e ficava colada na trava.
+	# Tudo no plano: a moto anda na horizontal, e a ladeira so encurtaria a conta.
+	var antes := moto.track.point(moto.track_offset - 0.5, moto.track_lateral)
+	var depois := moto.track.point(moto.track_offset + 0.5, moto.track_lateral)
+	var passo := Vector3(depois.x - antes.x, 0.0, depois.z - antes.z)
+	var metros_por_metro := maxf(passo.length(), 0.01)
+	leitura.velocidade = moto.speed * frente.dot(passo / metros_por_metro) / metros_por_metro
 	leitura.inclinacao = moto.lean
 	# O visual da moto fica no chao (`PlayerBike._visual`), e e em volta do
 	# chao que ela inclina: o contato nao anda com a inclinacao.
@@ -122,7 +176,14 @@ static func ler(moto: PlayerBike) -> Leitura:
 	)
 	leitura.frente = frente
 	leitura.caido = moto.state == PlayerBike.State.CRASHED
+	for carro in transito:
+		leitura.carros.append(Vector3(carro.offset, carro.lateral, carro.speed))
 	return leitura
+
+
+## Para que lado o cinegrafista esta indo: -1, 0 ou +1.
+func lado() -> float:
+	return _lado_para
 
 
 ## Distancia de pista do cinegrafista ao contato traseiro, em metros.
@@ -143,6 +204,9 @@ func reiniciar(leitura: Leitura) -> void:
 ## Poe o cinegrafista direto onde ele terminaria, sem respiro. Para o quadro
 ## congelado da prova visual: atraso que depende do relogio nao se compara.
 func encaixar(leitura: Leitura) -> Transform3D:
+	_lado = _lado_para
+	_lado_de = _lado_para
+	_troca_t = DURACAO_TROCA
 	s_c = leitura.s - tuning.garupa_distancia
 	v_c = leitura.velocidade
 	l_c = _lateral_alvo(leitura)
@@ -156,11 +220,93 @@ func passo(delta: float, leitura: Leitura) -> Transform3D:
 	if not _iniciado or absf(leitura.s - esperado) > SALTO:
 		reiniciar(leitura)
 	_s_jogador = leitura.s
+	_escolhe_lado(delta, leitura)
 	_anda(delta, leitura)
 	var alvo := _lateral_alvo(leitura)
 	l_c = lerpf(l_c, alvo, 1.0 - exp(-TAXA_LATERAL * delta))
-	l_c = _na_calcada(l_c)
+	l_c = _fora_dos_carros(_na_calcada(l_c), leitura)
 	return _pose(leitura)
+
+
+## O passo 2 do documento: tres quartos, e troca.
+##
+## A camera nao fica atras da roda: de lado, o fundo da rua aparece ao lado do
+## piloto, que de outro jeito taparia exatamente o que vem pela frente.
+func _escolhe_lado(delta: float, leitura: Leitura) -> void:
+	_troca_t += delta
+	_ate_trocar -= delta
+	var t := clampf(_troca_t / DURACAO_TROCA, 0.0, 1.0)
+	_lado = lerpf(_lado_de, _lado_para, smoothstep(0.0, 1.0, t))
+
+	var livre_direita := _livre(1.0, leitura)
+	var livre_esquerda := _livre(-1.0, leitura)
+	_recuo = 0.0 if livre_direita or livre_esquerda else RECUO_BLOQUEADO
+
+	# Carro no caminho, ou o lado caiu fora da calcada: troca na hora.
+	if _lado_para != 0.0 and not _livre(_lado_para, leitura):
+		if _livre(-_lado_para, leitura):
+			_troca(-_lado_para)
+		else:
+			_troca(0.0)
+		return
+	if _ate_trocar > 0.0:
+		return
+
+	var livres: Array[float] = []
+	if livre_esquerda:
+		livres.append(-1.0)
+	if livre_direita:
+		livres.append(1.0)
+	if _lado_para == 0.0:
+		if livres.is_empty():
+			# Os dois lados ocupados: segura o centro e olha de novo logo.
+			_ate_trocar = 0.5
+		else:
+			_troca(livres[_rng.randi_range(0, livres.size() - 1)])
+	elif _rng.randf() < CHANCE_OUTRO_LADO and livres.has(-_lado_para):
+		_troca(-_lado_para)
+	else:
+		_troca(0.0)
+
+
+## Comeca uma troca do lado de agora - mesmo no meio de outra - para `para`.
+func _troca(para: float) -> void:
+	_lado_de = _lado
+	_lado_para = para
+	_troca_t = 0.0
+	var intervalo := INTERVALO_CENTRO if para == 0.0 else INTERVALO_LADO
+	_ate_trocar = _rng.randf_range(intervalo.x, intervalo.y)
+
+
+## O lado `lado` cabe na calcada e nenhum carro vai passar por ali.
+func _livre(lado: float, leitura: Leitura) -> bool:
+	var l := leitura.l + lado * tuning.garupa_lado
+	if absf(l) > RoadTrack.sidewalk_limit() - MARGEM_CALCADA:
+		return false
+	for carro in leitura.carros:
+		if absf(carro.y - leitura.l) < LATERAL_PASSA or absf(carro.y - l) >= LATERAL_CARRO:
+			continue
+		# Onde o carro esta em relacao a lente, e ate onde ele chega antes de
+		# a troca tirar a lente do caminho.
+		var fecha := maxf(v_c - carro.z, 0.0)
+		var tras := carro.x - MEIO_CARRO - s_c
+		var frente := carro.x + MEIO_CARRO - s_c
+		if frente > -0.5 and tras < fecha * ANTECEDENCIA + 0.5:
+			return false
+	return true
+
+
+## A ultima trava: a lente nunca dentro de um carro. Com `near = 0,1`, a tela
+## viraria o interior da caixa. A troca de lado ja tira a camera do caminho
+## com antecedencia; isto so pega o carro que trocou de faixa em cima dela.
+func _fora_dos_carros(l: float, leitura: Leitura) -> float:
+	var folga := MEIA_LARGURA_CARRO + 0.3
+	for carro in leitura.carros:
+		if absf(carro.x - s_c) > MEIO_CARRO + 0.3 or absf(l - carro.y) >= folga:
+			continue
+		var lado := 1.0 if l >= carro.y else -1.0
+		l = carro.y + lado * folga
+	return l
 
 
 ## O passo 1 do documento: a distancia, pela velocidade propria.
@@ -182,7 +328,7 @@ func _anda(delta: float, leitura: Leitura) -> void:
 
 	# Caido, o jogador para na hora e o cinegrafista nao: ele recua devagar ate
 	# o longe e fica olhando. Na volta, a aproximacao refaz a abertura.
-	var alvo := DISTANCIA_LONGE if leitura.caido else tuning.garupa_distancia
+	var alvo := DISTANCIA_LONGE if leitura.caido else tuning.garupa_distancia + _recuo
 	var folga := (leitura.s - s_c) - alvo
 	var v_desejada := v_j + minf(folga * GANHO_FOLGA, tuning.garupa_aproximacao)
 	v_c += clampf(v_desejada - v_c, -tuning.garupa_freio * delta, tuning.garupa_acel * delta)
@@ -191,9 +337,8 @@ func _anda(delta: float, leitura: Leitura) -> void:
 	v_c = maxf(v_c, minf(v_j, 0.0) - tuning.garupa_aproximacao)
 
 
-## O lado da camera: por enquanto sempre a direita do jogador.
 func _lateral_alvo(leitura: Leitura) -> float:
-	return _na_calcada(leitura.l + tuning.garupa_lado)
+	return _na_calcada(leitura.l + _lado * tuning.garupa_lado)
 
 
 func _na_calcada(l: float) -> float:

@@ -39,7 +39,7 @@ func cycle_mode() -> void:
 	# Entrando na garupa, o cinegrafista larga do longe e encosta: a troca de
 	# modo vira a abertura do video, e nao um corte para um estado velho.
 	if _na_garupa():
-		_garupa.reiniciar(CameraGarupa.ler(target))
+		_garupa.reiniciar(CameraGarupa.ler(target, _transito()))
 
 
 ## Nome do modo atual, pra tela de configuracoes. Mora aqui e nao la porque o
@@ -64,7 +64,7 @@ func _process(delta: float) -> void:
 		return
 
 	if _na_garupa():
-		var pose := _garupa.passo(delta, CameraGarupa.ler(target))
+		var pose := _garupa.passo(delta, CameraGarupa.ler(target, _transito()))
 		pose.origin += _tremor_de_batida(delta)
 		_aplica_garupa(pose)
 		return
@@ -92,7 +92,7 @@ func _process(delta: float) -> void:
 func encaixar() -> void:
 	_shake = 0.0
 	if _na_garupa():
-		_aplica_garupa(_garupa.encaixar(CameraGarupa.ler(target)))
+		_aplica_garupa(_garupa.encaixar(CameraGarupa.ler(target, _transito())))
 		return
 	var alvo := _alvos()
 	_smoothed_position = alvo[0]
@@ -118,8 +118,17 @@ func _na_garupa() -> bool:
 	if mode != Mode.GARUPA or target == null or target.track == null:
 		return false
 	if _garupa == null or _garupa.track != target.track:
-		_garupa = CameraGarupa.new(tuning, target.track)
+		_garupa = CameraGarupa.new(tuning, target.track, World.SEMENTE)
 	return true
+
+
+## Os carros do mundo, para o cinegrafista sair do caminho. A camera e filha do
+## `World`, e le a frota direto dele, sem o mundo precisar saber da garupa.
+func _transito() -> Array[TrafficCar]:
+	var mundo := get_parent() as World
+	if mundo == null:
+		return []
+	return mundo.traffic
 
 
 func _aplica_garupa(pose: Transform3D) -> void:

@@ -160,3 +160,102 @@ func test_f2_cicla_os_quatro_modos() -> void:
 	assert_array(nomes).is_equal(
 		["PERSEGUICAO", "GARUPA", "CAPACETE", "DIAGNOSTICO", "PERSEGUICAO"]
 	)
+
+
+func test_troca_de_lado_e_suave() -> void:
+	var tuning := BikeTuning.new()
+	var garupa := CameraGarupa.new(tuning, _reta(), 7)
+	var parado := _leitura(50.0, 0.0, 1.0)
+	garupa.encaixar(parado)
+	# O pico da derivada do `smoothstep` numa troca de um lado ao outro, com
+	# 10% de folga: qualquer degrau passaria disso num quadro so.
+	var teto := 2.0 * tuning.garupa_lado * 1.5 / CameraGarupa.DURACAO_TROCA * PASSO * 1.1
+	var antes := garupa.l_c
+	var pior := 0.0
+	var lados := {}
+	for i in int(40.0 / PASSO):
+		garupa.passo(PASSO, parado)
+		pior = maxf(pior, absf(garupa.l_c - antes))
+		antes = garupa.l_c
+		lados[garupa.lado()] = true
+	assert_float(pior).is_less_equal(teto)
+	# E trocou mesmo: 40 s parado e o cinegrafista passou pelos dois lados.
+	assert_bool(lados.has(1.0) and lados.has(-1.0)).is_true()
+
+
+func test_mesma_semente_mesma_camera() -> void:
+	var tuning := BikeTuning.new()
+	var pista := _reta()
+	var sequencias: Array = []
+	for semente: int in [World.SEMENTE, World.SEMENTE, World.SEMENTE + 1]:
+		var garupa := CameraGarupa.new(tuning, pista, semente)
+		var s := 50.0
+		garupa.encaixar(_leitura(s, 30.0))
+		var lados: Array[float] = [garupa.lado()]
+		for i in int(90.0 / PASSO):
+			s += 30.0 * PASSO
+			garupa.passo(PASSO, _leitura(s, 30.0))
+			if garupa.lado() != lados.back():
+				lados.append(garupa.lado())
+		sequencias.append(lados)
+	assert_int(sequencias[0].size()).is_greater(5)
+	assert_array(sequencias[1]).is_equal(sequencias[0])
+	assert_array(sequencias[2]).is_not_equal(sequencias[0])
+
+
+func test_carro_no_caminho_tira_a_camera_do_lado() -> void:
+	var tuning := BikeTuning.new()
+	var garupa := CameraGarupa.new(tuning, _reta())
+	var s := 50.0
+	garupa.encaixar(_leitura(s, 30.0))
+	assert_float(garupa.lado()).is_equal(1.0)
+	# Um carro parado logo a frente, a 1,5 m a direita: o jogador passa raspando
+	# por ele, e a camera, a 0,7 m a direita do jogador, entraria na lataria.
+	var carro := Vector3(s + 25.0, 1.5, 0.0)
+	var dentro := false
+	for i in int(2.0 / PASSO):
+		s += 30.0 * PASSO
+		var leitura := _leitura(s, 30.0)
+		leitura.carros = [carro]
+		garupa.passo(PASSO, leitura)
+		var na_caixa := (
+			absf(garupa.s_c - carro.x) < CameraGarupa.MEIO_CARRO
+			and absf(garupa.l_c - carro.y) < CameraGarupa.MEIA_LARGURA_CARRO
+		)
+		dentro = dentro or na_caixa
+	assert_bool(dentro).is_false()
+	assert_float(garupa.lado()).is_equal(-1.0)
+
+
+func test_dois_carros_mandam_para_o_centro_e_recuam() -> void:
+	var tuning := BikeTuning.new()
+	var garupa := CameraGarupa.new(tuning, _reta())
+	var s := 50.0
+	garupa.encaixar(_leitura(s, 30.0))
+	# O corredor: uma fila de carros parados de cada lado do jogador.
+	var carros: Array[Vector3] = []
+	for k in 6:
+		carros.append(Vector3(s + 10.0 + float(k) * 6.0, 1.6, 0.0))
+		carros.append(Vector3(s + 10.0 + float(k) * 6.0, -1.6, 0.0))
+	var mais_longe := 0.0
+	for i in int(1.5 / PASSO):
+		s += 30.0 * PASSO
+		var leitura := _leitura(s, 30.0)
+		leitura.carros = carros
+		garupa.passo(PASSO, leitura)
+		mais_longe = maxf(mais_longe, garupa.distancia())
+	assert_float(garupa.lado()).is_equal(0.0)
+	assert_float(mais_longe).is_greater(tuning.garupa_distancia + 0.5)
+
+
+func test_lado_que_cai_fora_da_calcada_troca() -> void:
+	var tuning := BikeTuning.new()
+	var garupa := CameraGarupa.new(tuning, _reta())
+	# O jogador colado na beirada direita da calcada: a direita dele nao ha rua.
+	var beirada := RoadTrack.sidewalk_limit() - 0.3
+	var leitura := _leitura(50.0, 0.0, beirada)
+	garupa.encaixar(leitura)
+	for i in int(2.0 / PASSO):
+		garupa.passo(PASSO, leitura)
+	assert_float(garupa.lado()).is_equal(-1.0)
+	assert_float(garupa.l_c).is_less(beirada)
