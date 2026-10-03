@@ -35,6 +35,15 @@ da câmera, que o banco de provas nem vê — ele roda sem câmera. Inclinação
 segurada chega inteira; correção de polegar, três vezes por segundo, chega
 com menos de 40% — com a câmera copiando a inclinação direto, ele reprova.
 
+E `test_camera_garupa.gd` dirige o cinegrafista do modo `GARUPA`
+(`CameraGarupa`, `RefCounted`) sem árvore, numa reta montada à mão, e só põe a
+câmera de verdade na árvore para o pino. O banco de provas e a prova visual
+rodam na perseguição, então nada deste modo aparece em outro lugar: a
+distância que converge, respira e nunca atravessa a moto (nem freando, nem na
+queda), a aproximação lenta, a troca de lado suave e reproduzível pela
+semente, o desvio de carro, o giro que segue a curva e não o polegar, o tremor
+de banda (não ruído branco) e a roda traseira parada no meio da tela.
+
 Existem por uma razão específica: há uma classe de erro que o banco de provas
 não pega, e é justamente a que se introduz sem perceber. "Só aumentei um pouco
 o multiplicador do combo" não move nenhuma das dez medidas do banco — e o
