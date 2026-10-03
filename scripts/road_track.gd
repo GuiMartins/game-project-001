@@ -135,7 +135,12 @@ func _smooth_tangents() -> void:
 	for i in range(count):
 		var prev := curve.get_point_position(maxi(i - 1, 0))
 		var next := curve.get_point_position(mini(i + 1, count - 1))
-		var tangent := (next - prev) * 0.25
+		# Um sexto e o Catmull-Rom: com os pontos a 12 m, curva de raio
+		# constante sai de raio constante. Ja foi um quarto, e a alca longa
+		# demais concentrava a virada entre os pontos - o curvao sorteado em
+		# 0.3 grau/m ondulava de 0.02 a 0.74 a cada 12 m, e a moto em curva
+		# guinava num tremido de 4 Hz que ninguem tinha pedido.
+		var tangent := (next - prev) / 6.0
 		curve.set_point_in(i, -tangent)
 		curve.set_point_out(i, tangent)
 
