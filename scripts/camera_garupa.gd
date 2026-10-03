@@ -92,6 +92,31 @@ const ANTECEDENCIA: float = 0.8
 ## nao entra no quadro pela lente.
 const RECUO_BLOQUEADO: float = 1.0
 
+## Quao rapido o giro persegue a fracao da inclinacao do jogador (1/s): a
+## moto do cinegrafista faz a mesma curva, com atraso. E a logica do
+## `cam_lean_rate` da perseguicao, que tambem engole o tremor do polegar.
+const TAXA_GIRO: float = 2.0
+## A deriva do horizonte: "a mao nao e tripe". Duas senoides lentas, em Hz e
+## graus, que nao se repetem juntas tao cedo: +-2,5 graus de pico.
+const DERIVA_HZ := Vector2(0.23, 0.41)
+const DERIVA_GRAUS := Vector2(1.5, 1.0)
+
+## O tremor de quem segura o celular: uma senoide por banda medida no video
+## (2-5, 5-10, 10-15 Hz), com frequencias que nao se repetem juntas. Ruido
+## branco - um sorteio por quadro - le como camera digital chacoalhando; isto
+## tem ritmo de braco e corpo em cima de uma moto.
+const TREMOR_HZ: Array[float] = [2.7, 4.3, 7.1, 11.9]
+## Amplitudes relativas de cada banda. Somam ~1 de valor eficaz
+## (sqrt(sum(a^2) / 2) = 0,995), entao `garupa_tremor` e o tremor eficaz em
+## graus - a mesma unidade dos 0,5-0,8 graus medidos no video.
+const TREMOR_PESO: Array[float] = [1.0, 0.8, 0.5, 0.3]
+## O sobe-e-desce da lente, em metros por grau de `garupa_tremor`: 1 cm nos
+## 0,3 graus de partida. Zerar o tremor no F3 zera os dois.
+const TREMOR_POSICAO: float = 0.01 / 0.3
+## Velocidade (m/s) em que o tremor e o do slider. Parado quase nao treme
+## (piso de 30%), no talo treme mais (teto de 130%).
+const TREMOR_VELOCIDADE: float = 30.0
+
 
 ## O que o cinegrafista enxerga do jogador num quadro.
 ##
@@ -127,6 +152,10 @@ var l_c: float = 0.0
 var v_c: float = 0.0
 ## Para onde a camera olha, no mundo. Exposto para teste e diagnostico.
 var mira: Vector3 = Vector3.ZERO
+## O giro que persegue a inclinacao do jogador, em radianos, sem a deriva.
+var giro: float = 0.0
+## O tremor de agora, em radianos: guinada, arfagem e giro.
+var tremor: Vector3 = Vector3.ZERO
 
 var _iniciado: bool = false
 var _s_jogador: float = 0.0
@@ -141,6 +170,9 @@ var _ate_trocar: float = 0.0
 var _recuo: float = 0.0
 ## RNG proprio, semeado da semente do mundo: a mesma corrida, a mesma camera.
 var _rng := RandomNumberGenerator.new()
+## Relogio da deriva e do tremor, em segundos.
+var _t: float = 0.0
+var _sobe_desce: float = 0.0
 
 
 func _init(a_tuning: BikeTuning, a_track: RoadTrack, semente: int = 0) -> void:
@@ -212,6 +244,10 @@ func encaixar(leitura: Leitura) -> Transform3D:
 	l_c = _lateral_alvo(leitura)
 	_s_jogador = leitura.s
 	_iniciado = true
+	giro = _giro_alvo(leitura)
+	tremor = Vector3.ZERO
+	_sobe_desce = 0.0
+	_t = 0.0
 	return _pose(leitura)
 
 
@@ -225,7 +261,43 @@ func passo(delta: float, leitura: Leitura) -> Transform3D:
 	var alvo := _lateral_alvo(leitura)
 	l_c = lerpf(l_c, alvo, 1.0 - exp(-TAXA_LATERAL * delta))
 	l_c = _fora_dos_carros(_na_calcada(l_c), leitura)
+	_treme(delta, leitura)
 	return _pose(leitura)
+
+
+## Os passos 6 e 7 do documento: o horizonte gira e a imagem treme.
+func _treme(delta: float, leitura: Leitura) -> void:
+	_t += delta
+	giro = lerpf(giro, _giro_alvo(leitura), 1.0 - exp(-TAXA_GIRO * delta))
+	var escala := (
+		tuning.garupa_tremor * clampf(absf(leitura.velocidade) / TREMOR_VELOCIDADE, 0.3, 1.3)
+	)
+	# Fases diferentes por eixo, senao os tres tremem juntos e a imagem so
+	# anda na diagonal. Os passos de fase sao irracionais (razao aurea e raiz
+	# de 2) para nenhuma banda de um eixo cair em fase com a de outro.
+	tremor = (Vector3(_banda(0.0), _banda(0.618), _banda(1.414)) * deg_to_rad(escala))
+	_sobe_desce = _banda(2.236) * escala * TREMOR_POSICAO
+
+
+## A soma das bandas do tremor num eixo, com valor eficaz ~1.
+func _banda(fase: float) -> float:
+	var soma := 0.0
+	for i in TREMOR_HZ.size():
+		soma += TREMOR_PESO[i] * sin(TAU * (TREMOR_HZ[i] * _t + fase * float(i + 1)))
+	return soma
+
+
+## Uma fracao da inclinacao do jogador: o horizonte gira, mas nao copia a moto.
+func _giro_alvo(leitura: Leitura) -> float:
+	return -leitura.inclinacao * tuning.garupa_giro
+
+
+## A deriva lenta do horizonte, em radianos. Fica FORA do filtro do giro: o
+## filtro de 2/s comeria 40% dela, e ela e da mao, nao da curva.
+func deriva() -> float:
+	return deg_to_rad(
+		DERIVA_GRAUS.x * sin(TAU * DERIVA_HZ.x * _t) + DERIVA_GRAUS.y * sin(TAU * DERIVA_HZ.y * _t)
+	)
 
 
 ## O passo 2 do documento: tres quartos, e troca.
@@ -351,7 +423,7 @@ func _pose(leitura: Leitura) -> Transform3D:
 	# de uma ladeira ele sobe e desce no tempo dele, e a moto some e volta no
 	# horizonte. E feel, e e de graca.
 	var chao := track.point(s_c, l_c)
-	var posicao := chao + Vector3.UP * tuning.garupa_altura
+	var posicao := chao + Vector3.UP * (tuning.garupa_altura + _sobe_desce)
 	var chao_a_frente := track.point(s_c + 1.0, l_c).y
 	posicao.y = maxf(posicao.y, maxf(chao.y, chao_a_frente) + ALTURA_MINIMA)
 
@@ -363,4 +435,12 @@ func _pose(leitura: Leitura) -> Transform3D:
 		leitura.contato + leitura.frente * MIRA_A_FRENTE + Vector3.UP * tuning.garupa_mira_altura
 	)
 	var base := Basis.looking_at(mira - posicao, Vector3.UP)
+	# O tremor e o giro vem depois da mira, por cima dela: tremem a imagem,
+	# nao o pino. O giro gira em volta do eixo de visao, como na perseguicao.
+	base = (
+		base
+		* Basis(Vector3.UP, tremor.x)
+		* Basis(Vector3.RIGHT, tremor.y)
+		* Basis(Vector3.FORWARD, giro + deriva() + tremor.z)
+	)
 	return Transform3D(base, posicao)

@@ -165,6 +165,15 @@ const SAVE_PATH: String = "user://tuning.tres"
 ## Velocidade maxima de fechamento, m/s. Faz a aproximacao lenta da abertura
 ## do video (~1,2 m/s ali) em vez de um teletransporte.
 @export_range(0.5, 10.0, 0.25) var garupa_aproximacao: float = 2.5
+## Fracao da inclinacao do jogador que vai para o horizonte. A 38 graus de
+## inclinacao da ~11 de giro, os picos de 10-15 graus do video. E maior que o
+## `cam_lean_follow` da perseguicao (0,2): aqui a camera e de gente, e gira.
+@export_range(0.0, 0.6, 0.02) var garupa_giro: float = 0.3
+## Tremor eficaz, em graus, de banda (2-12 Hz). O video tem 0,5-0,8; a 0,6
+## sao 2-3 pixels de tremor continuo, e isso cansa antes de vender numa
+## corrida de minutos. O valor do video fica perto do teto do slider. Zero
+## desliga, para quem enjoa.
+@export_range(0.0, 1.0, 0.05) var garupa_tremor: float = 0.3
 
 ## --- Calcada ---------------------------------------------------------------
 @export_group("Calcada")
