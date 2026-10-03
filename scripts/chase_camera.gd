@@ -6,7 +6,8 @@ extends Camera3D
 ## quando a arte pre-renderizada chegar (so vistas traseiras e 3/4). Mudar isso
 ## depois custa caro, entao ja fica travado no prototipo.
 
-enum Mode { CHASE, HOOD, DEBUG_FREE }
+## GARUPA logo depois de CHASE: no F2 a camera nova fica a um toque do padrao.
+enum Mode { CHASE, GARUPA, HOOD, DEBUG_FREE }
 
 var tuning: BikeTuning
 var target: PlayerBike
@@ -18,6 +19,9 @@ var _smoothed_look: Vector3
 var _roll: float = 0.0
 var _shake: float = 0.0
 var _rng := RandomNumberGenerator.new()
+## O cinegrafista do modo GARUPA. Nasce na primeira vez que o modo roda: a
+## pista so existe depois do `setup` da moto.
+var _garupa: CameraGarupa
 
 
 func setup(a_tuning: BikeTuning, a_target: PlayerBike) -> void:
@@ -31,13 +35,19 @@ func setup(a_tuning: BikeTuning, a_target: PlayerBike) -> void:
 
 
 func cycle_mode() -> void:
-	mode = (mode + 1) % 3
+	mode = (mode + 1) % Mode.size()
+	# Entrando na garupa, o cinegrafista larga do longe e encosta: a troca de
+	# modo vira a abertura do video, e nao um corte para um estado velho.
+	if _na_garupa():
+		_garupa.reiniciar(CameraGarupa.ler(target, _transito()))
 
 
 ## Nome do modo atual, pra tela de configuracoes. Mora aqui e nao la porque o
 ## nome e do enum: quem acrescentar um modo mexe num arquivo so.
 func mode_name() -> String:
 	match mode:
+		Mode.GARUPA:
+			return "GARUPA"
 		Mode.HOOD:
 			return "CAPACETE"
 		Mode.DEBUG_FREE:
@@ -53,6 +63,12 @@ func _process(delta: float) -> void:
 	if target == null or tuning == null:
 		return
 
+	if _na_garupa():
+		var pose := _garupa.passo(delta, CameraGarupa.ler(target, _transito()))
+		pose.origin += _tremor_de_batida(delta)
+		_aplica_garupa(pose)
+		return
+
 	var alvo := _alvos()
 	# A camera persegue por posicao, nao por rotacao rigida. O atraso e o que
 	# faz a moto "escapar" da camera na saida de curva.
@@ -60,14 +76,7 @@ func _process(delta: float) -> void:
 	_smoothed_position = _smoothed_position.lerp(alvo[0], t)
 	_smoothed_look = _smoothed_look.lerp(alvo[1], t)
 
-	var pos := _smoothed_position
-	if _shake > 0.0:
-		pos += (
-			Vector3(_rng.randfn(0.0, 1.0), _rng.randfn(0.0, 1.0), _rng.randfn(0.0, 1.0))
-			* _shake
-			* 0.35
-		)
-		_shake = maxf(_shake - delta * 1.6, 0.0)
+	var pos := _smoothed_position + _tremor_de_batida(delta)
 
 	# O giro PERSEGUE a inclinacao em vez de copia-la: ver `cam_lean_rate`.
 	var roll_alvo := -target.lean * tuning.cam_lean_follow
@@ -81,12 +90,54 @@ func _process(delta: float) -> void:
 ## atraso depende do tempo de cada quadro, e quadro que depende do relogio nao
 ## se compara com o de ontem.
 func encaixar() -> void:
+	_shake = 0.0
+	if _na_garupa():
+		_aplica_garupa(_garupa.encaixar(CameraGarupa.ler(target, _transito())))
+		return
 	var alvo := _alvos()
 	_smoothed_position = alvo[0]
 	_smoothed_look = alvo[1]
 	_roll = -target.lean * tuning.cam_lean_follow
-	_shake = 0.0
 	_aplica(_smoothed_position)
+
+
+## O tranco de batida (`add_shake`): vale em todos os modos, por cima do resto.
+func _tremor_de_batida(delta: float) -> Vector3:
+	if _shake <= 0.0:
+		return Vector3.ZERO
+	var tranco := (
+		Vector3(_rng.randfn(0.0, 1.0), _rng.randfn(0.0, 1.0), _rng.randfn(0.0, 1.0)) * _shake * 0.35
+	)
+	_shake = maxf(_shake - delta * 1.6, 0.0)
+	return tranco
+
+
+## A garupa precisa da pista para andar; sem ela (moto fora de corrida, como
+## no teste do giro) o modo cai na perseguicao.
+func _na_garupa() -> bool:
+	if mode != Mode.GARUPA or target == null or target.track == null:
+		return false
+	if _garupa == null or _garupa.track != target.track:
+		_garupa = CameraGarupa.new(tuning, target.track, World.SEMENTE)
+	return true
+
+
+## Os carros do mundo, para o cinegrafista sair do caminho. A camera e filha do
+## `World`, e le a frota direto dele, sem o mundo precisar saber da garupa.
+func _transito() -> Array[TrafficCar]:
+	var mundo := get_parent() as World
+	if mundo == null:
+		return []
+	return mundo.traffic
+
+
+func _aplica_garupa(pose: Transform3D) -> void:
+	fov = tuning.garupa_fov
+	global_transform = pose
+	# A perseguicao continua de onde a garupa parou: saindo dela no F2, a
+	# camera sai daqui, e nao de um ponto esquecido la atras na pista.
+	_smoothed_position = pose.origin
+	_smoothed_look = _garupa.mira
 
 
 ## Onde a camera quer estar e para onde quer olhar, sem suavizacao.
