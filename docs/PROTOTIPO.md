@@ -21,9 +21,9 @@ Os cinco pilares e onde cada um vive no código:
 
 **Mundo 3D real, não pseudo-3D por scanlines.** A pista é uma `Curve3D` gerada
 com curvatura e inclinação sorteadas (`scripts/road_track.gd`); ladeira e curva
-saem de graça. Confirmado na prática: o salto na crista da ladeira não tem uma
-linha de código de rampa — cai fora do fato de a moto herdar a subida da pista
-e a gravidade cuidar do resto.
+saem de graça. O salto na crista da ladeira não tem uma linha de código de
+rampa — cai fora do fato de a moto herdar a subida da pista e a gravidade
+cuidar do resto.
 
 **O chão não tem colisor.** Altura e direção são amostradas analiticamente da
 curva. A 50 m/s um `CharacterBody3D` atravessaria um trimesh de pista. Colisor
@@ -458,6 +458,14 @@ Duas coisas caem de graça da arquitetura:
 - **O salto na crista.** A moto herda a subida da pista ao chegar no topo
   (`_integrate`), então rampa que troca de sinal em poucos metros cospe a moto
   no ar. Não há código de rampa nenhum — quem controla isso é o `GRADE_BLEND`.
+  A conta é `v² · (−dgrade/ds) > g`: decola onde a crista curva mais forte que
+  a gravidade. Na rota da semente fixa isso só acontece numa crista (~300 m) e
+  acima de ~180 km/h — salto é prêmio de boost, não evento de toda ladeira.
+
+  Até a 0.0.5 parecia muito mais comum, e era bug: a moto herdava só a subida
+  **positiva**, pousava na descida com vertical zero e quicava 40 cm a cada
+  12 m até a ladeira acabar. Se o salto fizer falta, ele volta com crista mais
+  seca (`GRADE_BLEND`) ou com rampa de verdade — não reabrindo o `maxf`.
 - **O sorteio se corrige.** Sem puxar os sinais de volta pro nível do mar, a
   sequência é um passeio aleatório e a rota de 3 km termina 200 m acima de onde
   começou. Com a correção, o desnível total ficou em 40 m.

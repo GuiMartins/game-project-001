@@ -201,7 +201,14 @@ func project(world_pos: Vector3, hint_offset: float) -> Vector2:
 			best_offset = o
 
 	best_offset = clampf(best_offset, 0.0, length)
+	# Um passo ao longo da tangente tira o degrau de 0.2 m da busca fina. Sem
+	# ele o offset anda 0.6, 0.9, 0.7 m por frame a velocidade constante, e a
+	# subida que o jogador deriva dele oscila o bastante pra quicar a moto
+	# ate em ladeira mansa.
 	var b := sample_basis(best_offset)
+	var along := -(world_pos - sample_position(best_offset)).dot(b.z)
+	best_offset = clampf(best_offset + along, 0.0, length)
+	b = sample_basis(best_offset)
 	var lateral := (world_pos - sample_position(best_offset)).dot(b.x)
 	return Vector2(best_offset, lateral)
 
