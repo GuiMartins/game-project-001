@@ -131,6 +131,41 @@ const SAVE_PATH: String = "user://tuning.tres"
 ## 2.5, uma correcao de 3 Hz chega na camera com um oitavo da amplitude.
 @export_range(0.5, 20.0, 0.25) var cam_lean_rate: float = 2.5
 
+## --- Camera garupa --------------------------------------------------------
+## O modo GARUPA do F2: um cinegrafista em outra moto, colado no jogador. Os
+## numeros de partida e o porque de cada um estao em
+## docs/REFERENCIA_CAMERA_GARUPA.md; a medida que decide e jogar.
+@export_group("Camera garupa")
+
+## Da lente ao contato do pneu traseiro, em metros de pista. No video e 1 m; a
+## tela aqui e deitada, e a 1 m com 80 graus de FOV o capacete sai pelo topo.
+@export_range(0.8, 4.0, 0.05) var garupa_distancia: float = 1.5
+## Mais perto que isto, nunca - nem freando no talo. A camera dentro da moto e
+## o erro mais visivel deste modo, e o video de referencia comete.
+@export_range(0.5, 2.0, 0.05) var garupa_distancia_min: float = 0.9
+## Altura da lente sobre o chao embaixo dela, em metros. Na cintura do piloto:
+## poe o horizonte a ~37% do topo, como no video.
+@export_range(0.6, 2.0, 0.05) var garupa_altura: float = 1.25
+## Altura da mira sobre o contato traseiro, em metros: o banco. Mais alto sobe
+## o piloto na tela e desce o horizonte.
+@export_range(0.4, 1.4, 0.05) var garupa_mira_altura: float = 0.85
+## FOV vertical, em graus, fixo. Da ~112 na horizontal em 16:9. Sem abrir com
+## a velocidade: aqui ela vem da proximidade, e FOV abrindo a um metro do
+## piloto encolhe ele justo quando deveria pesar.
+@export_range(60.0, 100.0, 1.0) var garupa_fov: float = 80.0
+## Quanto a camera fica de lado, em metros: tres quartos a ~21 graus. E o que
+## deixa o fundo da rua aparecer ao lado do piloto. Zero = sempre atras.
+@export_range(0.0, 1.5, 0.05) var garupa_lado: float = 0.7
+## Aceleracao do cinegrafista, m/s^2. Menor que a do jogador (16): no talo ele
+## fica para tras e volta pela aproximacao - e o que faz a distancia respirar.
+@export_range(4.0, 30.0, 0.5) var garupa_acel: float = 10.0
+## Freio do cinegrafista, m/s^2. Menor que o do jogador (30): na freada a
+## camera encosta, ate a trava de `garupa_distancia_min`.
+@export_range(5.0, 40.0, 0.5) var garupa_freio: float = 20.0
+## Velocidade maxima de fechamento, m/s. Faz a aproximacao lenta da abertura
+## do video (~1,2 m/s ali) em vez de um teletransporte.
+@export_range(0.5, 10.0, 0.25) var garupa_aproximacao: float = 2.5
+
 ## --- Calcada ---------------------------------------------------------------
 @export_group("Calcada")
 
