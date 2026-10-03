@@ -268,8 +268,14 @@ func _integrate(delta: float) -> void:
 		# No chao: cola na pista e herda a subida dela. Na crista de uma
 		# ladeira isso vira velocidade vertical de sobra - e o salto sai de
 		# graca, sem nenhum codigo de rampa.
+		#
+		# Herda TAMBEM a descida. Ja foi `maxf(road_climb, 0.0)`: na ladeira
+		# abaixo a moto pousava com vertical zero, a pista fugia por baixo e
+		# ela caia em queda livre ate alcancar, pousava, zerava de novo - 40 cm
+		# de quique a cada 12 m enquanto durasse a descida. Com o sinal
+		# inteiro, so decola onde a crista curva mais forte que a gravidade.
 		airborne = false
-		_vertical_speed = maxf(road_climb, 0.0)
+		_vertical_speed = road_climb
 		velocity = Vector3(
 			horizontal.x, (road_y - global_position.y) / maxf(delta, 0.0001), horizontal.z
 		)
