@@ -268,9 +268,30 @@ def ensure_venv(*, quiet: bool = False) -> pathlib.Path:
 
 
 def _gd_files() -> list[str]:
-    """Todo .gd versionado. O addons/ fica de fora: e codigo de terceiro."""
-    return sorted(str(p.relative_to(PROJECT)) for p in PROJECT.rglob("*.gd")
-                  if "addons" not in p.parts and ".dev" not in p.parts)
+    """Todo .gd do repositorio. O addons/ fica de fora: e codigo de terceiro.
+
+    Quem decide o que e do repositorio e o git, nao a arvore de pastas: uma
+    worktree de outra sessao em .claude/worktrees/ e ignorada pelo git, mas o
+    rglob entrava nela, o lint reprovava por arquivo alheio e o format
+    reescrevia o trabalho de outra pessoa. O --others pega o .gd novo que
+    ainda nao levou git add, que e justamente o que se quer lintar; o
+    --exclude-standard deixa o ignorado de fora. O -z evita que o git ponha
+    entre aspas caminho com acento.
+
+    Sem git (fonte baixada em zip, git fora do PATH), cai no rglob pulando
+    toda pasta oculta, que e onde moram .git, .godot, .dev e .claude.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--",
+             "*.gd"], cwd=PROJECT, capture_output=True, check=True)
+        names = [pathlib.Path(n) for n in out.stdout.decode("utf-8").split("\0") if n]
+    except (OSError, subprocess.SubprocessError):
+        names = [p.relative_to(PROJECT) for p in PROJECT.rglob("*.gd")]
+        names = [p for p in names if not any(part.startswith(".") for part in p.parts)]
+    # O ls-files --cached ainda lista o arquivo apagado e nao commitado.
+    return sorted(str(p) for p in names
+                  if p.parts[0] != "addons" and (PROJECT / p).is_file())
 
 
 def cmd_lint(_: argparse.Namespace) -> int:
