@@ -68,6 +68,19 @@ const MEIA_MOTO: float = 0.375
 ## dobraram sem onibus nenhum. 15 cm e a sobra que a moto de 0,75 m tem, de
 ## cada lado, entre um onibus e um seda.
 const FOLGA_MOTO: float = 0.15
+## Raio de curva para a margem dos carros compridos, em metros: o mais fechado
+## que a pista faz em velocidade de corrida (o banco de provas mede 78 m no
+## talo).
+##
+## O carro e uma caixa reta, e a pista curva: numa curva de raio R, a ponta de
+## uma caixa de comprimento L sai L^2/8R da faixa - 3 cm no seda, 24 cm no
+## onibus. Quem pensa em faixa, o rival, raspava na ponta do onibus achando
+## que passava com folga. A margem entra na conta dele como largura a mais.
+##
+## Por que margem, e nao o colisor seguindo a curva: em gomos, a moto recebia
+## varias colisoes do mesmo onibus por quadro, numa ordem que muda de sistema
+## para sistema, e o banco de provas do Linux media outra corrida.
+const RAIO_DE_CURVA: float = 80.0
 ## Abaixo desta velocidade passar entre carros nao e coragem, e manobra.
 const NEAR_MISS_MIN_SPEED: float = 17.0
 
@@ -556,11 +569,18 @@ func path_clearance(
 ## precisa da margem para o erro dela.
 func _faixa_de(car: TrafficCar, quem: Node) -> float:
 	if quem is RivalBike:
-		return car.meia_largura() + MEIA_MOTO + FOLGA_MOTO
+		return _meia_largura_na_curva(car) + MEIA_MOTO + FOLGA_MOTO
 	var outro := 0.0
 	if quem is TrafficCar:
 		outro = (quem as TrafficCar).meia_largura() - MEIA_LARGURA_CARRO
 	return 1.6 + car.meia_largura() - MEIA_LARGURA_CARRO + outro
+
+
+## Meia largura de `car` contando o quanto a ponta dele sai da faixa na curva
+## mais fechada (ver `RAIO_DE_CURVA`).
+static func _meia_largura_na_curva(car: TrafficCar) -> float:
+	var comprimento := car.meio_comprimento() * 2.0
+	return car.meia_largura() + comprimento * comprimento / (8.0 * RAIO_DE_CURVA)
 
 
 ## O meio do vao de verdade no corredor `corredor`, olhando `span` a frente.
@@ -581,10 +601,11 @@ func _meio_do_vao(from_offset: float, span: float, corredor: float) -> float:
 		var ao_longo := car.offset - from_offset
 		if ao_longo > span + car.meio_comprimento() or ao_longo < -car.meio_comprimento() - 2.0:
 			continue
+		var meia := _meia_largura_na_curva(car)
 		if lado < 0.0:
-			esquerda = maxf(esquerda, car.lateral + car.meia_largura())
+			esquerda = maxf(esquerda, car.lateral + meia)
 		else:
-			direita = minf(direita, car.lateral - car.meia_largura())
+			direita = minf(direita, car.lateral - meia)
 	return (esquerda + direita) * 0.5
 
 
