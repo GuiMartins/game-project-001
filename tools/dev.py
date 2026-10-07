@@ -256,7 +256,15 @@ def ensure_venv(*, quiet: bool = False) -> pathlib.Path:
     if not python.is_file():
         if not quiet:
             print(f"  criando venv em {DEV_DIR / 'venv'}")
-        subprocess.run([sys.executable, "-m", "venv", str(DEV_DIR / "venv")], check=True)
+        # --clear porque "nao tem python" nao quer dizer "nao tem venv". O
+        # cache do CI guarda o .dev inteiro, e um venv criado com um Python que
+        # o runner ja nao tem volta com o bin/python apontando para o nada:
+        # `is_file()` diz que nao existe, e o `venv` por cima dele morre com
+        # Errno 2 tentando usar esse mesmo link. Foi o que reprovou o Ubuntu
+        # quando o setup-python passou para a 3.12.15.
+        subprocess.run(
+            [sys.executable, "-m", "venv", "--clear", str(DEV_DIR / "venv")], check=True
+        )
     if not quiet:
         print("  instalando tools/requirements.txt")
     subprocess.run([str(python), "-m", "pip", "install", "--quiet", "--upgrade", "pip"],
