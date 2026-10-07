@@ -30,6 +30,14 @@ sinal (roda, tombo), alcance (pé no chão, mão na manopla com o guidão virado
 direção (joelho que fecha com a velocidade) e a sincronia entre as cores de
 `Entregador` e a textura que o `arte/entregador.py` escreve.
 
+`test_carro.gd` faz o mesmo com os carros do trânsito: monta cada modelo na
+árvore e avança a pose na mão. Sinal (roda para a frente, nariz que mergulha
+na freada e sobe na arrancada, rolagem para fora da troca de faixa, volante
+virando para o lado da roda), alcance (mãos no aro com o volante virado,
+cabeça de quem dirige dentro da cabine), sentido (porta de carro abre para
+fora, folha de ônibus dobra para dentro), luz (lanterna na freada, alerta
+encostado) e as cores de fábrica contra a textura do `arte/carros.py`.
+
 E `test_chase_camera.gd` põe uma moto e a câmera na árvore para medir o giro
 da câmera, que o banco de provas nem vê — ele roda sem câmera. Inclinação
 segurada chega inteira; correção de polegar, três vezes por segundo, chega
@@ -163,6 +171,10 @@ Saber disto faz parte do contrato. Nenhum destes é pego por nada automatizado:
   para o lado certo e que mão e pé chegam onde devem. Se o joelho abre o
   quanto devia, se o tronco deita o bastante e se o tombo lê como queda é
   olho, e foi conferido em captura, não em teste.
+- **"O carro convence?"** Os unitários provam o sentido de cada movimento —
+  roda, mola, porta, volante —, não a medida. Se o mergulho de 0,55° por m/s²
+  lê como freada a 20 m, se a rolagem anuncia a troca de faixa a tempo e se o
+  vidro deixa ver quem dirige sem virar buraco é olho, conferido em captura.
 - **"A corrida está disputada?"** O banco prova que ela termina e que o placar
   bate com a ordem de chegada. Se o pelotão está no ritmo certo é outra
   pergunta, e o piloto automático não serve de referência: ele faz uns 24 m/s

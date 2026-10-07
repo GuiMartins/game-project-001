@@ -243,31 +243,9 @@ func _posa() -> void:
 
 ## IK de dois ossos: dobra `raiz` e `meio` para a `ponta` alcancar o `alvo`.
 ##
-## `polo` diz para que lado a articulacao do meio aponta. Os ossos sao as
-## posicoes de repouso dos filhos, entao comprimento de braco e de perna vem do
-## modelo, e nao de um numero copiado para ca. Alvo fora do alcance estica o
-## membro reto na direcao dele em vez de quebrar.
+## Os ossos sao as posicoes de repouso dos filhos (ver `Ik.dois_ossos`).
 func _ik(raiz: Node3D, meio: Node3D, ponta: Node3D, alvo: Vector3, polo: Vector3) -> void:
-	var osso_a := _repouso[meio].origin
-	var osso_b := _repouso[ponta].origin
-	var la := osso_a.length()
-	var lb := osso_b.length()
-	var origem := raiz.global_position
-	var falta := alvo - origem
-	var eixo := falta.normalized()
-	var dist := clampf(falta.length(), absf(la - lb) + 0.001, la + lb - 0.001)
-	var ao_longo := (la * la - lb * lb + dist * dist) / (2.0 * dist)
-	var afasta := sqrt(maxf(la * la - ao_longo * ao_longo, 0.0))
-	var lado := (polo - eixo * polo.dot(eixo)).normalized()
-	var junta := origem + eixo * ao_longo + lado * afasta
-	var fim := origem + eixo * dist
-
-	var pai := (raiz.get_parent() as Node3D).global_basis
-	var de := (pai * osso_a).normalized()
-	raiz.global_basis = Basis(Quaternion(de, (junta - origem).normalized())) * pai
-	var base_raiz := raiz.global_basis
-	var de_b := (base_raiz * osso_b).normalized()
-	meio.global_basis = Basis(Quaternion(de_b, (fim - junta).normalized())) * base_raiz
+	Ik.dois_ossos(raiz, meio, _repouso[meio].origin, _repouso[ponta].origin, alvo, polo)
 
 
 func _suave(t: float) -> float:

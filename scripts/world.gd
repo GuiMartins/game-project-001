@@ -37,11 +37,20 @@ const RIVAL_COLORS: Array[Color] = [
 ## isto o aviso vira estroboscopio em cima da pista.
 const POSITION_EVENT_COOLDOWN: float = 1.2
 
-## Distancia lateral (centro a centro) que ainda conta como raspada.
-const NEAR_MISS_LATERAL: float = 2.6
-## Piso da janela: meia largura do carro (0.90) + meia largura da moto (0.38).
-## Abaixo disso nao foi raspada, foi batida - e batida ja tem o proprio efeito.
-const NEAR_MISS_MIN_LATERAL: float = 1.30
+## Folga lateral, da lataria ao centro da moto, que ainda conta como raspada.
+## Com o carro de 1,8 m do greybox isso era 2,6 m centro a centro.
+const NEAR_MISS_LATERAL: float = 1.70
+## Piso da janela: meia largura da moto (0.38) e dois dedos. Abaixo disso nao
+## foi raspada, foi batida - e batida ja tem o proprio efeito.
+const NEAR_MISS_MIN_LATERAL: float = 0.40
+## Quanto alem da ponta do carro a moto ainda conta como passando por ele.
+const NEAR_MISS_ALONG: float = 0.40
+## O carro do greybox: 4,4 x 1,8 m. As distancias de `path_clearance` - o vao
+## de seguir (`traffic_follow_gap`), os 4 m de emparelhado e os 1,6 m de faixa
+## - foram afinadas com ele. O que um modelo tem a mais ou a menos que isso
+## entra como correcao, e a regra continua a mesma para o hatch e o onibus.
+const MEIO_CARRO: float = 2.2
+const MEIA_LARGURA_CARRO: float = 0.9
 ## Abaixo desta velocidade passar entre carros nao e coragem, e manobra.
 const NEAR_MISS_MIN_SPEED: float = 17.0
 
@@ -329,6 +338,31 @@ func _place_car(car: TrafficCar, at_offset: float) -> void:
 		)
 	else:
 		car.recycle(at_offset, _pick_lane(), false, false)
+	_desencosta(car)
+
+
+## Empurra para a frente o carro que nasceu em cima de outro na mesma faixa.
+##
+## Com caixa de 4,4 m e espacamento minimo de 5 m isso quase nao acontecia, e
+## quando acontecia eram dois carros andando e o de tras freava ate soltar. Com
+## onibus de 12 m e carro encostado - que nunca anda - vira um carro dentro do
+## outro para sempre. Para a frente, e sem sorteio: o sorteio do mundo continua
+## o mesmo, so a posicao anda.
+func _desencosta(car: TrafficCar) -> void:
+	for tentativa in 8:
+		var empurra := 0.0
+		for outro in traffic:
+			if outro == car:
+				continue
+			var largura := outro.meia_largura() + car.meia_largura() + 0.3
+			if absf(outro.lateral - car.lateral) >= largura:
+				continue
+			var minimo := outro.meio_comprimento() + car.meio_comprimento() + 0.5
+			if absf(car.offset - outro.offset) < minimo:
+				empurra = maxf(empurra, outro.offset + minimo - car.offset)
+		if empurra <= 0.0:
+			return
+		car.posicionar(car.offset + empurra)
 
 
 ## Reconcilia a frota de rivais com o tuning, sem mexer em quem ja existe.
@@ -436,12 +470,13 @@ func _score_corridor() -> void:
 		return
 	for car in traffic:
 		var along := car.offset - player.track_offset
-		if along < -9.0:
+		var meio := car.meio_comprimento()
+		if along < -(meio + 6.8):
 			car.near_missed = false
 			continue
-		if car.near_missed or absf(along) > 2.6:
+		if car.near_missed or absf(along) > meio + NEAR_MISS_ALONG:
 			continue
-		var side := absf(car.lateral - player.track_lateral)
+		var side := absf(car.lateral - player.track_lateral) - car.meia_largura()
 		# Perto o bastante pra assustar, longe o bastante pra nao ser colisao.
 		if side > NEAR_MISS_MIN_LATERAL and side < NEAR_MISS_LATERAL:
 			car.near_missed = true
@@ -455,14 +490,20 @@ func _score_corridor() -> void:
 ## pista tem a frente sem se enxergar parado a zero metro de si mesmo.
 func path_clearance(from_offset: float, span: float, lateral: float, exclude: Node = null) -> float:
 	var nearest := span
+	# Carro perguntando: o que ele tem de nariz a mais que o padrao come pista.
+	var proprio := 0.0
+	if exclude is TrafficCar:
+		proprio = (exclude as TrafficCar).meio_comprimento() - MEIO_CARRO
 	for car in traffic:
 		if car == exclude:
 			continue
-		var gap := car.offset - from_offset
-		# -4 m atras: um carro emparelhado ainda bloqueia a faixa.
-		if gap < -4.0 or gap > span:
+		var a_mais := car.meio_comprimento() - MEIO_CARRO
+		var gap := car.offset - from_offset - a_mais - proprio
+		# -4 m atras: um carro emparelhado ainda bloqueia a faixa. Contado da
+		# frente dele, porque o onibus emparelha com o centro 8 m atras.
+		if car.offset + car.meio_comprimento() - from_offset < MEIO_CARRO - 4.0 or gap > span:
 			continue
-		if absf(car.lateral - lateral) < 1.6:
+		if absf(car.lateral - lateral) < 1.6 + car.meia_largura() - MEIA_LARGURA_CARRO:
 			nearest = minf(nearest, maxf(gap, 0.0))
 	return nearest
 

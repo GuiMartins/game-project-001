@@ -71,18 +71,19 @@ const INTERVALO_CENTRO := Vector2(2.0, 3.0)
 ## Chance de a troca ir para o outro lado; o resto vai para o centro.
 const CHANCE_OUTRO_LADO: float = 2.0 / 3.0
 
-## Um carro a menos que isto, na lateral, do ponto da camera ocupa o ponto. Com
-## meia largura de carro de 0,9 m, sobram 0,3 m entre a lente e a lataria.
-const LATERAL_CARRO: float = 1.2
-## Metade do comprimento do carro (`TrafficCar.SIZE.z`).
+## Folga entre a lente e a lataria: um carro mais perto que a meia largura
+## dele mais isto, na lateral, ocupa o ponto da camera.
+const FOLGA_CARRO: float = 0.3
+## Metade do comprimento e da largura do carro quando a leitura nao traz o
+## tamanho dele: o carro de 4,4 x 1,8 m do greybox.
 const MEIO_CARRO: float = 2.2
-## Metade da largura do carro (`TrafficCar.SIZE.x`).
 const MEIA_LARGURA_CARRO: float = 0.9
-## Carro mais perto que isto da lateral do jogador nao passa por ele: ou o
-## jogador desvia (e a lateral dele muda), ou bate (e ele para). So carro que
-## pode passar ao lado da moto chega na camera - sem isto, seguir um carro na
-## mesma faixa mandava o cinegrafista para o centro sem motivo.
-const LATERAL_PASSA: float = 1.25
+## Carro mais perto que a meia largura dele mais isto, da lateral do jogador,
+## nao passa por ele: ou o jogador desvia (e a lateral dele muda), ou bate (e
+## ele para). So carro que pode passar ao lado da moto chega na camera - sem
+## isto, seguir um carro na mesma faixa mandava o cinegrafista para o centro
+## sem motivo.
+const FOLGA_PASSA: float = 0.35
 ## Com quanto tempo de antecedencia o cinegrafista sai do caminho de um carro,
 ## em segundos. A troca leva 1,2 s, mas na metade dela a lente ja saiu da
 ## faixa do carro.
@@ -139,6 +140,9 @@ class Leitura:
 	var caido: bool = false
 	## Carros do transito: `(s, l, velocidade)` de cada um.
 	var carros: Array[Vector3] = []
+	## Meio comprimento e meia largura de cada um, na mesma ordem. Vazio vale
+	## o carro do greybox: e o que os testes montam a mao.
+	var tamanhos: Array[Vector2] = []
 
 
 var tuning: BikeTuning
@@ -210,6 +214,7 @@ static func ler(moto: PlayerBike, transito: Array[TrafficCar] = []) -> Leitura:
 	leitura.caido = moto.state == PlayerBike.State.CRASHED
 	for carro in transito:
 		leitura.carros.append(Vector3(carro.offset, carro.lateral, carro.speed))
+		leitura.tamanhos.append(Vector2(carro.meio_comprimento(), carro.meia_largura()))
 	return leitura
 
 
@@ -355,14 +360,18 @@ func _livre(lado: float, leitura: Leitura) -> bool:
 	var l := leitura.l + lado * tuning.garupa_lado
 	if absf(l) > RoadTrack.sidewalk_limit() - MARGEM_CALCADA:
 		return false
-	for carro in leitura.carros:
-		if absf(carro.y - leitura.l) < LATERAL_PASSA or absf(carro.y - l) >= LATERAL_CARRO:
+	for k in leitura.carros.size():
+		var carro := leitura.carros[k]
+		var tamanho := _tamanho(leitura, k)
+		if absf(carro.y - leitura.l) < tamanho.y + FOLGA_PASSA:
+			continue
+		if absf(carro.y - l) >= tamanho.y + FOLGA_CARRO:
 			continue
 		# Onde o carro esta em relacao a lente, e ate onde ele chega antes de
 		# a troca tirar a lente do caminho.
 		var fecha := maxf(v_c - carro.z, 0.0)
-		var tras := carro.x - MEIO_CARRO - s_c
-		var frente := carro.x + MEIO_CARRO - s_c
+		var tras := carro.x - tamanho.x - s_c
+		var frente := carro.x + tamanho.x - s_c
 		if frente > -0.5 and tras < fecha * ANTECEDENCIA + 0.5:
 			return false
 	return true
@@ -372,13 +381,21 @@ func _livre(lado: float, leitura: Leitura) -> bool:
 ## viraria o interior da caixa. A troca de lado ja tira a camera do caminho
 ## com antecedencia; isto so pega o carro que trocou de faixa em cima dela.
 func _fora_dos_carros(l: float, leitura: Leitura) -> float:
-	var folga := MEIA_LARGURA_CARRO + 0.3
-	for carro in leitura.carros:
-		if absf(carro.x - s_c) > MEIO_CARRO + 0.3 or absf(l - carro.y) >= folga:
+	for k in leitura.carros.size():
+		var carro := leitura.carros[k]
+		var tamanho := _tamanho(leitura, k)
+		var folga := tamanho.y + FOLGA_CARRO
+		if absf(carro.x - s_c) > tamanho.x + FOLGA_CARRO or absf(l - carro.y) >= folga:
 			continue
 		var lado := 1.0 if l >= carro.y else -1.0
 		l = carro.y + lado * folga
 	return l
+
+
+static func _tamanho(leitura: Leitura, k: int) -> Vector2:
+	if k < leitura.tamanhos.size():
+		return leitura.tamanhos[k]
+	return Vector2(MEIO_CARRO, MEIA_LARGURA_CARRO)
 
 
 ## O passo 1 do documento: a distancia, pela velocidade propria.
