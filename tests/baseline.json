@@ -18,7 +18,7 @@
 		"calcada_lateral_max_m": 8.8,
 		"calcada_velocidade_asfalto_ms": 33.281425,
 		"calcada_velocidade_calcada_ms": 13.802046,
-		"combate_empurrao_m": 1.05,
+		"combate_empurrao_m": 2.1,
 		"corrida_atras_do_lider_m": 133.503919,
 		"corrida_distancia_m": 1248.851196,
 		"corrida_pancadas_tomadas": 0.0,

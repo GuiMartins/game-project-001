@@ -100,8 +100,12 @@ const SAVE_PATH: String = "user://tuning.tres"
 @export_range(0.03, 0.4, 0.01) var punch_active: float = 0.13
 ## Tempo total ate poder socar de novo, em segundos.
 @export_range(0.1, 1.5, 0.05) var punch_cooldown: float = 0.45
-## Empurrao lateral aplicado no alvo, em m/s.
-@export_range(1.0, 20.0, 0.25) var punch_shove: float = 7.5
+## Empurrao lateral aplicado no alvo, em m/s. Vale pros dois lados: no rival
+## vira 0,14 s disso de deslocamento (15 -> 2,1 m, dois tercos de faixa), e no
+## jogador vira velocidade lateral. Era 7,5, e o 1 m que isso dava so jogava o
+## rival no carro se o carro ja estivesse encostado nele - o golpe do Road Rash
+## e empurrar alguem do corredor pra dentro da faixa do lado.
+@export_range(1.0, 20.0, 0.25) var punch_shove: float = 15.0
 ## Segundos que o alvo fica sem controle depois de apanhar.
 @export_range(0.1, 2.0, 0.05) var punch_stagger: float = 0.7
 
