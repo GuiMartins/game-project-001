@@ -62,12 +62,6 @@ func _ready() -> void:
 	sub_viewport.handle_input_locally = false
 	container.add_child(sub_viewport)
 
-	# A cor de cada carro do transito sai do sorteio global, e nao da semente
-	# do mundo. Semear o global aqui, antes de o mundo nascer, fixa a cor sem
-	# mexer na sequencia da semente - que e de onde saem pista e transito, e
-	# mexer nela mudaria todo numero do banco de provas.
-	if medindo:
-		seed(World.SEMENTE)
 	world = World.new()
 	world.name = "World"
 	sub_viewport.add_child(world)

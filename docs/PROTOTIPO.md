@@ -159,8 +159,9 @@ houve. Hoje tem aviso na HUD.
 
 Deliberadamente fora do escopo até o feel fechar:
 
-- **Arte do mundo.** Prédio, carro, poste e pista são caixa. A exceção é o
-  entregador, que é modelo 3D (ver *O entregador*). Sprite pré-renderizado,
+- **Arte do mundo.** Poste e pista são caixa. As exceções são o entregador e
+  os carros, que são modelo 3D (ver *O entregador* e *Os carros*), e os
+  prédios. Sprite pré-renderizado,
   se entrar no cenário, entra como `Sprite3D` com `billboard = Y-Billboard`,
   `texture_filter = Nearest` e **`alpha_cut = Discard` em todos** — sem isso o
   depth sorting quebra e o sprite some atrás do carro errado.
@@ -396,6 +397,69 @@ tombam juntos, embora o modelo já tenha as árvores separadas para isso), e a
 cadência travada da animação, que faria o ator ler como digitalizado em vez de
 3D, não existe.
 
+## Os carros
+
+O trânsito saiu da caixa pelo mesmo motivo que o entregador: o que o carro
+mostra é o que o jogador lê para decidir se entra no corredor. São cinco
+modelos ([`assets/carros/`](../assets/carros)), gerados por
+[`arte/carros.py`](../arte/carros.py) e posados a cada passo por
+[`scripts/carro.gd`](../scripts/carro.gd), filho de cada `TrafficCar`:
+
+| modelo | medida | na rua |
+| --- | --- | --- |
+| hatch de duas portas | 3,9 × 1,7 m | 25% |
+| sedã | 4,4 × 1,7 m | 25% |
+| SUV | 4,3 × 1,8 m | 18% |
+| táxi do Rio, amarelo com faixa azul e luminoso | 4,4 × 1,7 m | 18% |
+| ônibus urbano, porta dupla à direita | 12,2 × 2,5 m | 14% |
+
+O que se mexe, e por que cada um é aviso e não enfeite:
+
+- **Lanterna** acesa de dia, como no vídeo, e mais forte na freada — e parado
+  no trânsito, com o pé no freio. É o primeiro sinal de que o corredor da
+  frente vai fechar.
+- **Carroceria na mola.** Mergulha na freada, levanta na arrancada e rola para
+  fora na troca de faixa, com o balanço de uma suspensão de 1,3 Hz (o ônibus,
+  0,85 Hz, rola mais). Exagerada de propósito: 0,55° por m/s² contra uns 0,35
+  de verdade, porque o carro é visto de trás a 20 m.
+- **Guinada e esterço.** Na troca de faixa o nariz aponta para onde o carro
+  vai, as rodas da frente esterçam e o volante gira — com as mãos de quem
+  dirige indo junto, por IK, como o piloto na manopla. A seta acende durante a
+  troca, não antes: o trânsito daqui muda de faixa sem avisar, e a seta diz
+  "está vindo", não "vai vir".
+- **Pisca-alerta** no carro encostado, que é o único que abre porta. Não diz
+  qual vai abrir — nem todo encostado abre, e o lado continua sorteado.
+- **Porta de verdade.** Gira na dobradiça, passa um pouco do ponto e volta (o
+  tranco do limitador), e bate balançando a carroceria. O colisor da porta
+  segue a porta do modelo enquanto ela gira, e só liga depois de 15% da
+  abertura: a fresta não derruba ninguém. O ônibus abre as folhas para dentro,
+  e por isso não tem colisor de porta.
+- **Vidro e gente.** O vidro é transparente de frente e espelho de raspão
+  (`scripts/vidro.gdshader`), e dentro há banco, painel, motorista e às vezes
+  passageiro — no táxi, quase sempre, no banco de trás. Porta aberta mostra a
+  perna de quem dirige, e não um bloco.
+
+Três decisões que não são óbvias:
+
+**O colisor é a lataria.** A caixa de bater sai do AABB do modelo, e não de um
+número: o hatch bate 25 cm antes do sedã, o ônibus ocupa 12 m de faixa. As
+contas que foram afinadas para a caixa de 4,4 × 1,8 m do greybox — o vão de
+seguir do `path_clearance`, a janela da raspada, a folga da câmera de garupa —
+recebem o tamanho de cada carro como correção sobre aquele padrão, e a regra
+continua a mesma para todos.
+
+**Ninguém nasce dentro de ninguém.** Com caixa de 4,4 m e 5 m de espaçamento
+mínimo isso quase não acontecia, e quando acontecia o de trás freava até
+soltar. Com ônibus de 12 m e carro encostado, que nunca anda, virava um carro
+dentro do outro para sempre. O `World._desencosta` empurra para a frente quem
+nasceu em cima de outro, sem sorteio: o sorteio do mundo é o mesmo, só a
+posição anda.
+
+**O modelo sai de um sorteio à parte.** Cada carro tem um segundo gerador,
+semeado da semente dele, só para modelo, cor e quem está dentro. Tirar isso do
+gerador do carro mudaria a hora de cada troca de faixa e cada porta, e o
+banco de provas mediria outra corrida por causa de uma cor.
+
 ## A porta do carro
 
 Porta só abre em **carro encostado**: parado de verdade (velocidade zero) e
@@ -521,8 +585,8 @@ ser a velocidade máxima, e slider que mente é slider que ninguém ajusta.
    exige também chegar na frente — metade da nota é posição. É a intenção, mas
    não foi verificada com um humano no controle.
 6. **O entregador low-poly** entrou antes desta lista acabar, por decisão
-   (ver *O entregador*). O que continua para depois do feel é o resto da arte:
-   mundo, céu, partículas.
+   (ver *O entregador*), e os carros foram atrás (ver *Os carros*). O que
+   continua para depois do feel é o resto da arte: céu, partículas, poste.
 
 ## Nota de marca
 

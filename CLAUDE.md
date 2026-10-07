@@ -6,13 +6,15 @@ aqui não funcionar na sua máquina, isso é um bug do contrato, não seu.
 O projeto é um protótipo *greybox* de Road Rash com entregadores de app, em
 Godot. Ele existe para responder **uma** pergunta: *acelerar, inclinar, se
 enfiar no corredor e bater está gostoso?* Nada de arte nem áudio até a resposta
-ser sim, com duas exceções. **Menu existe**, mas só o fluxo de entrar e sair de
+ser sim, com três exceções. **Menu existe**, mas só o fluxo de entrar e sair de
 uma corrida (`scripts/race_flow.gd`): o zip da release precisa ser jogável por
 quem não leu este repositório, senão ninguém responde a pergunta. **O
 entregador é modelo 3D** (`scripts/entregador.gd`), moto e piloto posados a
 cada passo pelo estado da física: roda, joelho, pé no chão e tombo mostram o
-que a moto está fazendo, e isso é feel, não enfeite. O mundo continua de
-caixas. Contexto e decisões de design em [docs/PROTOTIPO.md](docs/PROTOTIPO.md).
+que a moto está fazendo, e isso é feel, não enfeite. **Os carros também**
+(`scripts/carro.gd`), pelo mesmo motivo: a lanterna que acende, a carroceria
+que mergulha e rola e a porta que gira são o aviso de que o corredor vai
+fechar. Contexto e decisões de design em [docs/PROTOTIPO.md](docs/PROTOTIPO.md).
 
 Desenvolvido nos três sistemas — Windows, macOS e Linux. Toda ferramenta daqui
 funciona nos três, e o CI roda nos três.
@@ -226,6 +228,9 @@ saber onde **não** há rede faz parte do contrato.
 | `scripts/entregador.gd` | O ator: moto e piloto, posados pelo estado da física. |
 | `arte/entregador.py` | Gera o modelo no Blender. É a fonte: o `.blend` e o `assets/entregador/` são build. |
 | `assets/entregador/` | O modelo e as texturas que o jogo carrega. Não edite à mão: regere pelo script. |
+| `scripts/carro.gd` | Os carros do trânsito por dentro: roda, mola, porta, luz e quem dirige. |
+| `arte/carros.py` | Gera hatch, sedã, SUV, táxi e ônibus no Blender. Fonte do `assets/carros/`, que é build. |
+| `scripts/ik.gd` | IK de dois ossos, dos braços do piloto e de quem dirige. |
 | `arte/chao.py` | Gera as texturas de asfalto e calçada (`assets/visual/`). As regras de "visto a 180 km/h" estão no topo dele. |
 | `arte/paleta.py` | Gera o LUT de cor do dia (`assets/visual/lut_dia.png`). O clima da tela se ajusta ali. |
 | `scripts/paleta.gdshader` | Quantização e dither: o último passe do mundo, abaixo da HUD. |
