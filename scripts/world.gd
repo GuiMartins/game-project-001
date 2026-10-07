@@ -56,6 +56,18 @@ const FOLGA_TROCA_TEMPO: float = 1.5
 ## entra como correcao, e a regra continua a mesma para o hatch e o onibus.
 const MEIO_CARRO: float = 2.2
 const MEIA_LARGURA_CARRO: float = 0.9
+## Meia largura da moto, para a conta de quem pilota: rival e piloto
+## automatico. Do `PlayerBike.SIZE`, o mesmo do `RivalBike`.
+const MEIA_MOTO: float = 0.375
+## Sobra minima entre a moto e a lataria para o corredor contar como aberto.
+##
+## Era um numero so, 1,6 m centro a centro, afinado para o carro de 1,8 m: com
+## o corredor a 1,65 m do centro da faixa, sobravam 5 cm. Qualquer carro mais
+## largo - o SUV com a moldura, 1,9 m - fechava o corredor na cabeca da IA, e
+## rival que acha tudo fechado escolhe mal e bate: as quedas no transito
+## dobraram sem onibus nenhum. 15 cm e a sobra que a moto de 0,75 m tem, de
+## cada lado, entre um onibus e um seda.
+const FOLGA_MOTO: float = 0.15
 ## Abaixo desta velocidade passar entre carros nao e coragem, e manobra.
 const NEAR_MISS_MIN_SPEED: float = 17.0
 
@@ -529,9 +541,63 @@ func path_clearance(
 			continue
 		if not emparelhado and car.offset < from_offset:
 			continue
-		if absf(car.lateral - lateral) < 1.6 + car.meia_largura() - MEIA_LARGURA_CARRO:
+		if absf(car.lateral - lateral) < _faixa_de(car, exclude):
 			nearest = minf(nearest, maxf(gap, 0.0))
 	return nearest
+
+
+## Ate que distancia lateral, centro a centro, `car` atrapalha quem pergunta.
+##
+## Rival ve a conta fisica - lataria, moto e a sobra minima -, porque ele
+## anda na lateral exata que escolhe: e parametrico, nao tem guidao para errar.
+## O resto segue a regra de sempre, afinada para o carro de 1,8 m e corrigida
+## pela largura: o carro, que so precisa saber quem segue quem na faixa, e o
+## piloto automatico do banco de provas, que pilota uma moto de verdade e
+## precisa da margem para o erro dela.
+func _faixa_de(car: TrafficCar, quem: Node) -> float:
+	if quem is RivalBike:
+		return car.meia_largura() + MEIA_MOTO + FOLGA_MOTO
+	var outro := 0.0
+	if quem is TrafficCar:
+		outro = (quem as TrafficCar).meia_largura() - MEIA_LARGURA_CARRO
+	return 1.6 + car.meia_largura() - MEIA_LARGURA_CARRO + outro
+
+
+## O meio do vao de verdade no corredor `corredor`, olhando `span` a frente.
+##
+## O corredor e o meio entre duas faixas, e com dois carros de 1,8 m dos lados
+## o vao livre fica centrado nele. Com um onibus de 2,5 m de um lado, o vao
+## anda 18 cm para o outro: mirar no meio das faixas e mirar a 2 cm do
+## onibus. Sem carro largo por perto, isto devolve o proprio corredor.
+func _meio_do_vao(from_offset: float, span: float, corredor: float) -> float:
+	var esquerda := corredor - RoadTrack.LANE_WIDTH * 0.5 + MEIA_LARGURA_CARRO
+	var direita := corredor + RoadTrack.LANE_WIDTH * 0.5 - MEIA_LARGURA_CARRO
+	for car in traffic:
+		var lado := car.lateral - corredor
+		# So os vizinhos do corredor. Quem esta em cima dele fecha o corredor
+		# pelo `path_clearance`, e nao tem lado.
+		if absf(lado) >= RoadTrack.LANE_WIDTH or absf(lado) < car.meia_largura():
+			continue
+		var ao_longo := car.offset - from_offset
+		if ao_longo > span + car.meio_comprimento() or ao_longo < -car.meio_comprimento() - 2.0:
+			continue
+		if lado < 0.0:
+			esquerda = maxf(esquerda, car.lateral + car.meia_largura())
+		else:
+			direita = minf(direita, car.lateral - car.meia_largura())
+	return (esquerda + direita) * 0.5
+
+
+## Algum carro ocupa o ponto `(offset, lateral)` de pista, para um corpo de
+## meia medida `meio` (x = meia largura, z = meio comprimento)?
+func ocupado(offset: float, lateral: float, meio: Vector3) -> bool:
+	for car in traffic:
+		if (
+			absf(car.offset - offset) < car.meio_comprimento() + meio.z
+			and absf(car.lateral - lateral) < car.meia_largura() + meio.x
+		):
+			return true
+	return false
 
 
 ## A faixa em `lateral` esta livre para `car` entrar?
@@ -574,7 +640,9 @@ func free_lateral(
 	for lane in range(RoadTrack.LANE_COUNT):
 		for i in range(2):
 			var candidate := (
-				RoadTrack.lane_center(lane) if i == 0 else RoadTrack.corridor_center(lane)
+				RoadTrack.lane_center(lane)
+				if i == 0
+				else _meio_do_vao(from_offset, span, RoadTrack.corridor_center(lane))
 			)
 			if absf(candidate) > RoadTrack.half_width() - 0.8:
 				continue

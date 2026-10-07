@@ -25,6 +25,14 @@ const FROTA: Array[float] = [0.25, 0.25, 0.18, 0.18, 0.14]
 ## faixa e cada porta, e o banco de provas mediria outra corrida.
 const SEMENTE_VISUAL: int = 0x5EED
 
+## Comprimento maximo de um gomo do colisor, em metros. Acima disto a lataria
+## vira gomos que seguem a curva da pista.
+##
+## Caixa reta de 12 m numa curva de raio 100 m sai 15 cm da faixa na ponta, e
+## quem pensa em faixa - o rival, o piloto automatico - raspa nela achando que
+## passou com folga. O carro de passeio cabe num gomo so.
+const GOMO_MAX: float = 5.0
+
 ## Valores de fallback, usados so pelo carro que nao pertence a frota - o que
 ## fica largado dentro de um atalho. Esse nunca dirige, entao ele nunca leu
 ## slider nenhum. Quem esta na avenida usa o WorldTuning, que sai no F3.
@@ -82,9 +90,13 @@ var _rng := RandomNumberGenerator.new()
 var _rng_visual := RandomNumberGenerator.new()
 ## O modelo, com tudo o que se mexe dentro dele.
 var _carro: Carro
-## Caixa da lataria, no espaco do carro: e o que bate e o que conta de
-## tamanho na pista (`meio_comprimento`, `meia_largura`).
-var _shape: CollisionShape3D
+## A lataria em gomos ao longo do comprimento: um no carro, tres no onibus.
+var _gomos: Array[CollisionShape3D] = []
+## Quanto cada gomo esta a frente do carro, em metros de pista.
+var _gomo_ao_longo: Array[float] = []
+## Caixa da lataria, no espaco do carro: e o que conta de tamanho na pista
+## (`meio_comprimento`, `meia_largura`).
+var _caixa := AABB(Vector3(-0.9, 0.0, -2.2), Vector3(1.8, 1.5, 4.4))
 ## A porta aberta. Segue a porta do modelo enquanto ela gira.
 var _door_shape: CollisionShape3D
 var _lateral_antes: float = 0.0
@@ -99,8 +111,8 @@ func _ready() -> void:
 	_carro.name = "Carro"
 	add_child(_carro)
 
-	_shape = Greybox.box_shape(Vector3.ONE)
-	add_child(_shape)
+	_gomos.append(Greybox.box_shape(Vector3.ONE))
+	add_child(_gomos[0])
 	_door_shape = Greybox.box_shape(Vector3.ONE)
 	_door_shape.disabled = true
 	add_child(_door_shape)
@@ -108,12 +120,12 @@ func _ready() -> void:
 
 ## Metade do comprimento da lataria, em metros de pista.
 func meio_comprimento() -> float:
-	return (_shape.shape as BoxShape3D).size.z * 0.5
+	return _caixa.size.z * 0.5
 
 
 ## Metade da largura da lataria, sem retrovisor.
 func meia_largura() -> float:
-	return (_shape.shape as BoxShape3D).size.x * 0.5
+	return _caixa.size.x * 0.5
 
 
 func modelo() -> Carro.Modelo:
@@ -146,9 +158,26 @@ func _monta() -> void:
 		sorteio -= FROTA[qual]
 		qual += 1
 	_carro.montar(qual as Carro.Modelo, _rng_visual)
-	var caixa := _carro.caixa()
-	(_shape.shape as BoxShape3D).size = caixa.size
-	_shape.position = caixa.get_center()
+	_caixa = _carro.caixa()
+	var n := maxi(1, ceili(_caixa.size.z / GOMO_MAX))
+	while _gomos.size() < n:
+		_gomos.append(Greybox.box_shape(Vector3.ONE))
+		add_child(_gomos[-1])
+	var comprimento := _caixa.size.z / float(n)
+	_gomo_ao_longo.clear()
+	for k in _gomos.size():
+		_gomos[k].set_deferred("disabled", k >= n)
+		if k >= n:
+			continue
+		# Uma fresta de 5 cm de sobreposicao entre gomos: emendados no fio, a
+		# moto acharia a junta na curva.
+		(_gomos[k].shape as BoxShape3D).size = Vector3(
+			_caixa.size.x, _caixa.size.y, comprimento + 0.05
+		)
+		var z := _caixa.position.z + comprimento * (float(k) + 0.5)
+		_gomos[k].position = Vector3(_caixa.get_center().x, _caixa.get_center().y, z)
+		# Para a frente e -Z: o gomo de z negativo esta a frente na pista.
+		_gomo_ao_longo.append(-z)
 
 
 func _physics_process(delta: float) -> void:
@@ -283,7 +312,16 @@ func destino() -> float:
 ## A origem do carro e o chao, embaixo do meio dele: a lataria e o colisor ja
 ## estao em cima dela.
 func _apply_transform() -> void:
-	global_transform = track.transform_at(offset, lateral)
+	var t := track.transform_at(offset, lateral)
+	global_transform = t
+	if _gomo_ao_longo.size() < 2:
+		return
+	# Cada gomo no ponto da faixa onde ele esta, e nao na reta do carro.
+	var inversa := t.affine_inverse()
+	var altura := Vector3(_caixa.get_center().x, _caixa.get_center().y, 0.0)
+	for k in _gomo_ao_longo.size():
+		var no_gomo := track.transform_at(offset + _gomo_ao_longo[k], lateral)
+		_gomos[k].transform = inversa * no_gomo.translated_local(altura)
 
 
 ## Leva o carro para outro `offset` sem mexer no resto. E o que o `World` usa

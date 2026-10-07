@@ -484,6 +484,19 @@ seguir do `path_clearance`, a janela da raspada, a folga da câmera de garupa �
 recebem o tamanho de cada carro como correção sobre aquele padrão, e a regra
 continua a mesma para todos.
 
+**O ônibus é colisor em três gomos, e o rival mira o vão de verdade.** Caixa
+reta de 12 m numa curva de raio 100 m sai 15 cm da faixa na ponta, e o rival,
+que pensa em faixa, raspava nela. Os gomos seguem a curva. E o corredor, que é
+o meio entre duas faixas, deixa de ser o meio do vão quando um dos vizinhos é
+largo: ao lado do ônibus o vão anda 18 cm, e o rival mira no meio dele
+(`World._meio_do_vao`), com 15 cm de sobra contados da lataria de cada carro.
+Antes disso o limiar era 1,6 m centro a centro, afinado para o carro de
+1,8 m, e qualquer carro mais largo fechava o corredor na cabeça da IA. Medido
+em 20 sementes de 45 s, quedas de rival sozinho no trânsito por corrida:
+1,65 nas caixas, 8,05 com os carros e esse limiar, 1,70 agora. O piloto
+automático do banco continua com a regra antiga: ele pilota uma moto de
+verdade e precisa da margem para o erro dela.
+
 **Ninguém nasce dentro de ninguém.** Com caixa de 4,4 m e 5 m de espaçamento
 mínimo isso quase não acontecia, e quando acontecia o de trás freava até
 soltar. Com ônibus de 12 m e carro encostado, que nunca anda, virava um carro
