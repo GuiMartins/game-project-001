@@ -156,7 +156,7 @@ func _physics_process(delta: float) -> void:
 			_acelerador = throttle
 			_esterco = steer
 
-	_ator.atualizar(delta, speed, _acelerador, _esterco, state == State.CRASHED, _lado_queda)
+	_ator.atualizar(delta, speed, _acelerador, _esterco, state == State.CRASHED, _lado_queda, lean)
 
 
 ## --- Nucleo do feel -------------------------------------------------------
@@ -407,6 +407,7 @@ func _try_punch() -> void:
 func _start_punch(side: int) -> void:
 	_punch_side = side
 	_punch_timer = tuning.punch_cooldown
+	_ator.socar(side, tuning.punch_windup, tuning.punch_active, tuning.punch_cooldown)
 
 
 func _update_hitboxes(delta: float) -> void:
@@ -466,6 +467,7 @@ func receive_hit(from_side: int, shove: float, stagger: float) -> void:
 	var basis := track.sample_basis(track_offset)
 	velocity += basis.x * float(from_side) * shove
 	speed *= 0.88
+	_ator.levar_golpe(from_side)
 	took_hit.emit()
 
 
