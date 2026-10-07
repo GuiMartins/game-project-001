@@ -17,10 +17,6 @@ const BATIDAS: PackedStringArray = ["traseira", "parado", "quina", "moto"]
 const TEMPO_DA_BATIDA: float = 1.6
 const KMH: float = 3.6
 
-## O que o `Selftest` le no fim: medidas para o baseline e o que deu errado.
-var medidas: Dictionary = {}
-var falhas: Array[String] = []
-
 var _mundo: World
 var _moto: PlayerBike
 var _batida: int = -1
@@ -30,15 +26,25 @@ var _batida_v0: float = 0.0
 var _batida_lateral0: float = 0.0
 var _batida_obstaculo: Node3D
 var _relato: PackedStringArray = []
+## As medidas, falhas e linhas de relatorio do `Selftest`. Sao as dele, por
+## referencia: a prova escreve direto, como qualquer outra fase.
+var _medidas: Dictionary
+var _falhas: Array[String]
+var _relatorio: Array[String]
 
 
-func _init(mundo: World, moto: PlayerBike) -> void:
+func _init(
+	mundo: World,
+	moto: PlayerBike,
+	medidas: Dictionary,
+	falhas: Array[String],
+	relatorio: Array[String]
+) -> void:
 	_mundo = mundo
 	_moto = moto
-
-
-func relato() -> String:
-	return ", ".join(_relato)
+	_medidas = medidas
+	_falhas = falhas
+	_relatorio = relatorio
 
 
 ## Um passo de fisica. Devolve true quando as quatro batidas terminaram.
@@ -67,6 +73,7 @@ func passo(delta: float) -> bool:
 	if _batida < BATIDAS.size():
 		_monta_batida()
 		return false
+	_relatorio.append("batida               " + ", ".join(_relato))
 	return true
 
 
@@ -207,12 +214,12 @@ func _confere_batida() -> void:
 
 
 func _medida(chave: String, valor: float) -> void:
-	medidas[chave] = valor
+	_medidas[chave] = valor
 
 
 func _confere(condicao: bool, mensagem: String) -> void:
 	if not condicao:
-		falhas.append(mensagem)
+		_falhas.append(mensagem)
 
 
 func _set_action(nome: String, apertado: bool) -> void:

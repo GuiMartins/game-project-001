@@ -45,6 +45,11 @@ const NEAR_MISS_LATERAL: float = 1.70
 const NEAR_MISS_MIN_LATERAL: float = 0.40
 ## Quanto alem da ponta do carro a moto ainda conta como passando por ele.
 const NEAR_MISS_ALONG: float = 0.40
+## Folga minima, em metros, entre um carro trocando de faixa e quem ja esta na
+## faixa de destino, mais 1,5 s da diferenca de velocidade: e o tempo da troca
+## ate a lataria chegar na faixa nova.
+const FOLGA_TROCA: float = 2.0
+const FOLGA_TROCA_TEMPO: float = 1.5
 ## O carro do greybox: 4,4 x 1,8 m. As distancias de `path_clearance` - o vao
 ## de seguir (`traffic_follow_gap`), os 4 m de emparelhado e os 1,6 m de faixa
 ## - foram afinadas com ele. O que um modelo tem a mais ou a menos que isso
@@ -357,12 +362,26 @@ func _desencosta(car: TrafficCar) -> void:
 			var largura := outro.meia_largura() + car.meia_largura() + 0.3
 			if absf(outro.lateral - car.lateral) >= largura:
 				continue
-			var minimo := outro.meio_comprimento() + car.meio_comprimento() + 0.5
-			if absf(car.offset - outro.offset) < minimo:
-				empurra = maxf(empurra, outro.offset + minimo - car.offset)
+			# Nao basta nao nascer encostado: o de tras precisa de chao para
+			# frear ate a velocidade do da frente, senao entra nele logo depois.
+			var juntos := outro.meio_comprimento() + car.meio_comprimento() + 0.5
+			var na_frente := juntos + _frenagem(outro.speed - car.speed)
+			var atras := juntos + _frenagem(car.speed - outro.speed)
+			var d := car.offset - outro.offset
+			if (d >= 0.0 and d < na_frente) or (d < 0.0 and -d < atras):
+				empurra = maxf(empurra, outro.offset + na_frente - car.offset)
 		if empurra <= 0.0:
 			return
 		car.posicionar(car.offset + empurra)
+
+
+## Metros que um carro do transito precisa para tirar `fecha` m/s de
+## diferenca, freando no talo, mais o atraso da consulta a pista
+## (`TrafficCar.PROBE_EVERY`, ~0,07 s) com folga.
+func _frenagem(fecha: float) -> float:
+	if fecha <= 0.0:
+		return 0.0
+	return fecha * fecha / (2.0 * world_tuning.traffic_brake) + fecha * 0.2
 
 
 ## Reconcilia a frota de rivais com o tuning, sem mexer em quem ja existe.
@@ -488,7 +507,12 @@ func _score_corridor() -> void:
 ## Devolve `span` quando nao ha nada no caminho.
 ## `exclude` tira um carro da conta - e como o proprio carro pergunta quanta
 ## pista tem a frente sem se enxergar parado a zero metro de si mesmo.
-func path_clearance(from_offset: float, span: float, lateral: float, exclude: Node = null) -> float:
+##
+## `emparelhado` conta o carro ao lado, ate 4 m atras, como bloqueio. Sem ele,
+## so conta quem esta a frente.
+func path_clearance(
+	from_offset: float, span: float, lateral: float, exclude: Node = null, emparelhado: bool = true
+) -> float:
 	var nearest := span
 	# Carro perguntando: o que ele tem de nariz a mais que o padrao come pista.
 	var proprio := 0.0
@@ -503,9 +527,37 @@ func path_clearance(from_offset: float, span: float, lateral: float, exclude: No
 		# frente dele, porque o onibus emparelha com o centro 8 m atras.
 		if car.offset + car.meio_comprimento() - from_offset < MEIO_CARRO - 4.0 or gap > span:
 			continue
+		if not emparelhado and car.offset < from_offset:
+			continue
 		if absf(car.lateral - lateral) < 1.6 + car.meia_largura() - MEIA_LARGURA_CARRO:
 			nearest = minf(nearest, maxf(gap, 0.0))
 	return nearest
+
+
+## A faixa em `lateral` esta livre para `car` entrar?
+##
+## Conta quem esta nela e quem esta indo para ela: dois carros escolhendo a
+## mesma faixa do meio no mesmo instante e o caso classico. A folga cresce com
+## a diferenca de velocidade - o de tras mais rapido chega antes de a troca
+## acabar.
+func faixa_livre(car: TrafficCar, lateral: float) -> bool:
+	for outro in traffic:
+		if outro == car:
+			continue
+		var largura := outro.meia_largura() + car.meia_largura() + 0.3
+		if absf(outro.lateral - lateral) >= largura and absf(outro.destino() - lateral) >= largura:
+			continue
+		var frente := outro.offset - car.offset
+		var fecha := car.speed - outro.speed if frente > 0.0 else outro.speed - car.speed
+		var folga := (
+			outro.meio_comprimento()
+			+ car.meio_comprimento()
+			+ FOLGA_TROCA
+			+ maxf(fecha, 0.0) * FOLGA_TROCA_TEMPO
+		)
+		if absf(frente) < folga:
+			return false
+	return true
 
 
 ## Melhor lateral pra seguir: a que tem mais pista livre a frente, com desempate

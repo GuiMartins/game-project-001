@@ -136,7 +136,15 @@ const SAVE_PATH: String = "user://tuning.tres"
 ## FOV parado, em graus. O texto de arquitetura pede ~50 (lente longa).
 @export_range(30.0, 90.0, 1.0) var cam_fov: float = 50.0
 ## Quantos graus de FOV a mais na velocidade maxima (sensacao de velocidade).
-@export_range(0.0, 40.0, 0.5) var cam_fov_speed_gain: float = 16.0
+## Era 16: abrir a lente encolhe a moto, e de 50 a 66 graus ela perdia mais de
+## um quarto do tamanho no talo - lia como a camera se afastando. O video de
+## referencia nao encolhe nada a 128 km/h (docs/REFERENCIA_VIDEO.md); 8 deixa
+## um pingo de velocidade na borda da tela e a moto do mesmo tamanho a olho.
+@export_range(0.0, 40.0, 0.5) var cam_fov_speed_gain: float = 8.0
+## Metros a mais de distancia na velocidade maxima. Zero = distancia fixa.
+## Existe para testar no F3 um respiro pequeno na aceleracao; o atraso de
+## posicao que fazia isso sozinho chegava a 7 m e foi o que se tirou.
+@export_range(0.0, 3.0, 0.1) var cam_recuo: float = 0.0
 ## Quanto da inclinacao da moto a camera copia (0 = fixa, 1 = acompanha tudo).
 ## Era 0.3: a 38 graus de inclinacao a camera girava 11, e na entrada de curva
 ## isso pesava mais que a propria curva.

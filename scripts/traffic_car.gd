@@ -172,7 +172,10 @@ func _physics_process(delta: float) -> void:
 			var dir := 1.0 if _rng.randf() < 0.5 else -1.0
 			var candidate := _target_lateral + RoadTrack.LANE_WIDTH * dir
 			var limit := RoadTrack.half_width() - RoadTrack.LANE_WIDTH * 0.5
-			if absf(candidate) <= limit:
+			# Sem olhar para a moto, que e o susto do corredor; olhando para os
+			# outros carros, que e o que impede um de entrar no outro. Faixa
+			# ocupada e troca cancelada, e o sorteio da proxima ja saiu acima.
+			if absf(candidate) <= limit and _faixa_livre(candidate):
 				_target_lateral = candidate
 
 	# `_opens_door` so e verdade em carro encostado, entao carro em movimento
@@ -247,7 +250,34 @@ func _approach_speed(distance: float) -> float:
 func _gap_ahead(follow_gap: float) -> float:
 	if world == null or not world.has_method("path_clearance"):
 		return INF
-	return world.path_clearance(offset, follow_gap + 24.0, lateral, self)
+	var livre: float = world.path_clearance(offset, follow_gap + 24.0, lateral, self)
+	# No meio da troca o carro ocupa as duas faixas, e o da frente na faixa
+	# nova tambem e o da frente. So quem esta a frente: o que vem atras na
+	# faixa nova e quem tem que frear, e contar ele aqui parava os dois.
+	if not is_equal_approx(_target_lateral, lateral):
+		livre = minf(
+			livre, world.path_clearance(offset, follow_gap + 24.0, _target_lateral, self, false)
+		)
+	return livre
+
+
+func _faixa_livre(alvo: float) -> bool:
+	if world == null or not world.has_method("faixa_livre"):
+		return true
+	return world.faixa_livre(self, alvo)
+
+
+## Este carro esta dentro de `outro`? Folga de 10 cm nas duas direcoes:
+## encostar nao e sobrepor.
+func sobrepoe(outro: TrafficCar) -> bool:
+	var largura := meia_largura() + outro.meia_largura() - 0.1
+	var comprimento := meio_comprimento() + outro.meio_comprimento() - 0.1
+	return absf(lateral - outro.lateral) < largura and absf(offset - outro.offset) < comprimento
+
+
+## Para onde o carro esta indo: a lateral da faixa de destino.
+func destino() -> float:
+	return _target_lateral
 
 
 ## A origem do carro e o chao, embaixo do meio dele: a lataria e o colisor ja

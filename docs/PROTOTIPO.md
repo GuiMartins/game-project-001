@@ -576,10 +576,12 @@ teto de socos da corrida solta reprovou. O soco do jogador tem o mesmo defeito
 e continua com ele: consertar muda o empurrão do combate, que é feel e merece
 conversa própria.
 
-Na corrida solta, as quedas foram de 4 para 0, a distância de 1249 para
-1350 m e a distância do líder de 134 para 56 m. As raspadas (passar perto de
-carro) caíram de 7 para 4: sem cair, o piloto automático não volta a nascer
-no meio do trânsito, e segue colado no pelotão, quicando na traseira dos rivais.
+Na corrida solta, as quedas foram de 3 para 0 e a distância do líder de 86
+para 48 m: de pé, o piloto automático corre no pelotão, quicando na traseira
+dos rivais. A distância percorrida ficou em 1346 m, a posição caiu de 5 para 6
+e as seis quedas de rival contra o ônibus parado sumiram. É o mesmo efeito de
+outro lado: o trânsito é reciclado em volta da moto, e uma moto que não fica
+para trás muda o trânsito que o pelotão encontra.
 
 ## Próximos passos, em ordem de risco
 

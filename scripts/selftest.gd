@@ -94,6 +94,7 @@ var _last_progress: float = 0.0
 var _heading_at_mark: float = 0.0
 var _lateral_at_mark: float = 0.0
 var _speed_at_mark: float = 0.0
+var _sobreposicoes := VigiaDeSobreposicao.new()
 ## `--fps`: so a corrida solta, com tela e sem vsync, medindo cada quadro.
 ## Mede a corrida solta porque e o pior caso que o banco ja sabe montar:
 ## pelotao inteiro, transito em volta e o piloto automatico no corredor.
@@ -634,6 +635,8 @@ func _phase_freerun(_delta: float) -> void:
 			)
 		)
 
+	_sobreposicoes.conta(_world.traffic)
+
 	if not is_finite(_player.global_position.x) or not is_finite(_player.speed):
 		_check(false, "posicao ou velocidade viraram NaN")
 		_finish()
@@ -702,6 +705,8 @@ func _phase_freerun(_delta: float) -> void:
 			)
 		)
 		_check(_player.global_position.y > -50.0, "a moto caiu pra fora do mundo")
+		var sobreposicoes := _sobreposicoes.total
+		_check(sobreposicoes == 0, "%d vez(es) um carro entrou em outro" % sobreposicoes)
 		# O piloto automatico nao da um soco em 45 s. Entao toda queda de rival
 		# nesta fase e do transito, e nenhuma pode virar estilo do jogador - era
 		# exatamente assim que ficar parado na largada rendia boost cheio e um
@@ -802,13 +807,9 @@ func _phase_sprint(_delta: float) -> void:
 ## Fase 9 - batida: as quatro montagens moram em `ProvaDeBatida` ----------
 func _phase_crash(delta: float) -> void:
 	if _prova_de_batida == null:
-		_prova_de_batida = ProvaDeBatida.new(_world, _player)
-	if not _prova_de_batida.passo(delta):
-		return
-	_metrics.merge(_prova_de_batida.medidas)
-	_failures.append_array(_prova_de_batida.falhas)
-	_report.append("batida               " + _prova_de_batida.relato())
-	_next_phase()
+		_prova_de_batida = ProvaDeBatida.new(_world, _player, _metrics, _failures, _report)
+	if _prova_de_batida.passo(delta):
+		_next_phase()
 
 
 ## Le `--fase <nome>` da linha de comando.
