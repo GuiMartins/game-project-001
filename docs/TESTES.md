@@ -86,8 +86,8 @@ de coisa que faz alguém procurar variação no lugar errado.
 
 ### Fases
 
-Nove, nesta ordem: `aceleracao`, `freada`, `inclinacao`, `curva`, `soco`,
-`calcada`, `combate`, `corrida`, `disputa`.
+Dez, nesta ordem: `aceleracao`, `freada`, `inclinacao`, `curva`, `soco`,
+`calcada`, `combate`, `corrida`, `disputa`, `batida`.
 
 ```bash
 python tools/dev.py selftest --fase curva    # 32 s em vez de 110 s
@@ -122,11 +122,29 @@ redundantes: o baseline aponta que o número **andou**, o `_check` aponta que el
 andou para o lado que importa — e continua valendo depois que alguém atualizar o
 baseline, que é justamente quando uma regressão de agressividade passaria batida.
 
+`combate` mede o empurrão do soco do jogador no rival emparelhado, e **só
+enquanto ele cambaleia**: de volta a RACING, a IA dele volta a dirigir, e o que
+ele andar de lado dali em diante é perseguição. Já mediu errado duas vezes. Na
+primeira contava qualquer deslocamento e passava sem o soco acertar; na segunda
+o rival chegava caído das fases anteriores, o soco "acertava" sem empurrar, e
+os 3,3 m do baseline eram ele indo embora ao levantar. Mora em
+`scripts/selftest_combate.gd`, pelo mesmo limite de linhas da `batida`.
+
 `disputa` é a mais nova e a mais barata pelo que cobre: larga o grid a 260 m da
 chegada em vez de pagar os 3,2 km da rota, e é a única prova de que a corrida
 **termina**. Além de medir a colocação final, ela confere que quem cruzou a
 linha antes do jogador está na frente dele no resultado — se a ordenação do
 pelotão quebrar, o jogo continua rodando e o placar passa a mentir em silêncio.
+
+`batida` é a última de propósito: ela mexe no trânsito e nos rivais à mão, e
+depois dela não sobra corrida para contaminar. Monta quatro batidas a 15 m, uma
+de cada vez, com o resto do mundo longe, e confere o desfecho de cada uma —
+traseira de carro lento a 72 km/h **quica**, carro parado a 126 km/h
+**derruba**, quina a 126 km/h **desvia** e traseira de moto a 126 km/h
+**quica**. A corrida solta conta quedas, mas não diz quais; foi olhando só a
+contagem que "toda batida derruba" passou despercebido. Mora em
+`scripts/selftest_batida.gd` porque o `selftest.gd` já encostava no limite de
+mil linhas do gdlint.
 
 ## Baseline
 
