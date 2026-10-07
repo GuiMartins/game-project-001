@@ -513,6 +513,15 @@ func _phase_combat(_delta: float) -> void:
 	if not _punch_connected:
 		rival.lateral = _player.track_lateral + _tuning.punch_range
 		_rival_lateral_before = rival.lateral
+		# De pe, ate o soco sair. O `rivals[0]` chega das fases anteriores
+		# caido, e mesmo levantado ele caia de novo no primeiro passo: a
+		# lista do sensor de queda e de um passo de fisica atras, e nele o
+		# rival ainda estava no fim da pista, onde `_bench_begin` empilhou o
+		# transito. `receive_hit` ignora rival no chao, entao o soco acertava
+		# e nao empurrava nada - e a medida registrava o rival indo embora
+		# depois de levantar, 3,3 m que nao eram do soco.
+		rival.state = RivalBike.State.RACING
+		rival.state_timer = 0.0
 	_set_action("ride_throttle", true)
 
 	# Soca assim que o rival esta posicionado, e nao depois de meio segundo.
@@ -535,9 +544,13 @@ func _phase_combat(_delta: float) -> void:
 	# Só conta depois de o soco ter ACERTADO, avisado pelo proprio sinal do
 	# jogador. Antes disso, qualquer estado ou deslocamento do rival e coisa
 	# dele, nao efeito do soco.
-	if _punch_connected:
-		if rival.state == RivalBike.State.STAGGERED or rival.state == RivalBike.State.DOWN:
-			_rival_staggered = true
+	#
+	# E so enquanto ele cambaleia: de volta a RACING, a IA dele volta a
+	# dirigir, e o que ele andar de lado dai em diante e perseguicao, nao
+	# empurrao. Medindo os tres segundos inteiros, o numero subia para 7,5 m
+	# com um empurrao de 1 m.
+	if _punch_connected and rival.state != RivalBike.State.RACING:
+		_rival_staggered = true
 		_rival_shove = maxf(_rival_shove, absf(rival.lateral - _rival_lateral_before))
 
 	if _t >= 3.0:

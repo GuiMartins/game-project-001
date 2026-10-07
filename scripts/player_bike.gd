@@ -51,6 +51,10 @@ var find_clear_lateral: Callable = Callable()
 var _vertical_speed: float = 0.0
 var _punch_timer: float = -1.0
 var _punch_side: int = 0  ## -1 esquerda, +1 direita, 0 nenhum.
+## Este soco ja acertou. Desligar a hitbox no acerto nao bastava: o passo
+## seguinte religava ela, ainda dentro da janela ativa, e um soco so emitia
+## `punch_landed` quatro vezes, empurrando o rival quatro vezes.
+var _punch_landed: bool = false
 var _hitboxes: Dictionary = {}
 var _visual: Node3D
 var _ator: Entregador
@@ -407,6 +411,7 @@ func _try_punch() -> void:
 func _start_punch(side: int) -> void:
 	_punch_side = side
 	_punch_timer = tuning.punch_cooldown
+	_punch_landed = false
 
 
 func _update_hitboxes(delta: float) -> void:
@@ -418,7 +423,9 @@ func _update_hitboxes(delta: float) -> void:
 	area.position = Vector3(tuning.punch_range * float(_punch_side), 0.0, -0.2)
 
 	var active := (
-		elapsed >= tuning.punch_windup and elapsed < tuning.punch_windup + tuning.punch_active
+		not _punch_landed
+		and elapsed >= tuning.punch_windup
+		and elapsed < tuning.punch_windup + tuning.punch_active
 	)
 	if active and not area.monitoring:
 		area.monitoring = true
@@ -434,6 +441,7 @@ func _update_hitboxes(delta: float) -> void:
 		punch_landed.emit(body)
 		# Um alvo por soco: acertar dois rivais com uma cotovelada e comico,
 		# mas destroi a leitura do combate.
+		_punch_landed = true
 		area.monitoring = false
 		return
 
