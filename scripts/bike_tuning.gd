@@ -168,22 +168,32 @@ const SAVE_PATH: String = "user://tuning.tres"
 ## docs/REFERENCIA_CAMERA_GARUPA.md; a medida que decide e jogar.
 @export_group("Camera garupa")
 
-## Da lente ao contato do pneu traseiro, em metros de pista. No video e 1 m; a
-## tela aqui e deitada, e a 1 m com 80 graus de FOV o capacete sai pelo topo.
-@export_range(0.8, 4.0, 0.05) var garupa_distancia: float = 1.5
+## Da lente ao contato do pneu traseiro, em metros de pista. No video e 1 m.
+## Comecou em 1,5 m, com a lente na cintura; subindo a lente para ver por cima
+## do bau, a 1,5 m o piloto fica embaixo dela e a camera olha a moto de cima.
+## A 2,4 m ele continua ocupando ~40% da altura da tela: segue sendo colado.
+@export_range(0.8, 4.0, 0.05) var garupa_distancia: float = 2.4
 ## Mais perto que isto, nunca - nem freando no talo. A camera dentro da moto e
 ## o erro mais visivel deste modo, e o video de referencia comete.
 @export_range(0.5, 2.0, 0.05) var garupa_distancia_min: float = 0.9
-## Altura da lente sobre o chao embaixo dela, em metros. Na cintura do piloto:
-## poe o horizonte a ~37% do topo, como no video.
-@export_range(0.6, 2.0, 0.05) var garupa_altura: float = 1.25
-## Altura da mira sobre o contato traseiro, em metros: o banco. Mais alto sobe
-## o piloto na tela e desce o horizonte.
-@export_range(0.4, 1.4, 0.05) var garupa_mira_altura: float = 0.85
-## FOV vertical, em graus, fixo. Da ~112 na horizontal em 16:9. Sem abrir com
-## a velocidade: aqui ela vem da proximidade, e FOV abrindo a um metro do
-## piloto encolhe ele justo quando deveria pesar.
-@export_range(60.0, 100.0, 1.0) var garupa_fov: float = 80.0
+## Altura da lente sobre o chao embaixo dela, em metros. O video filma da
+## cintura (1,2 m), e a 1,25 m o bau e o capacete ficavam acima do horizonte,
+## bem na frente do corredor: dava para ver o piloto e nao o que vinha. A 2 m
+## - o braco esticado de quem vai na garupa - o capacete cai abaixo do
+## horizonte e a rua inteira aparece por cima dele.
+@export_range(0.6, 2.6, 0.05) var garupa_altura: float = 2.0
+## Altura da mira sobre o contato traseiro, em metros. Continua na vertical
+## que sobe do pneu traseiro - o pino do enquadramento -, so que no ombro, e
+## nao no banco: com a lente a 2 m, mirar no banco apontava a camera para o
+## asfalto e subia o horizonte para o terco de cima. Mais alto desce o
+## horizonte e poe o piloto mais embaixo na tela.
+@export_range(0.4, 2.0, 0.05) var garupa_mira_altura: float = 1.6
+## FOV vertical, em graus, fixo. Da ~107 na horizontal em 16:9: ainda
+## ultra-angular, mas o carro a 30 m nao vira um ponto. A 80 graus o corredor
+## la na frente cabia em meia duzia de pixels. Sem abrir com a velocidade:
+## aqui ela vem da proximidade, e FOV abrindo perto do piloto encolhe ele
+## justo quando deveria pesar.
+@export_range(60.0, 100.0, 1.0) var garupa_fov: float = 74.0
 ## Quanto a camera fica de lado, em metros: tres quartos a ~21 graus. E o que
 ## deixa o fundo da rua aparecer ao lado do piloto. Zero = sempre atras.
 @export_range(0.0, 1.5, 0.05) var garupa_lado: float = 0.7

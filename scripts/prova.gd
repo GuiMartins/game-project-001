@@ -35,6 +35,10 @@ func setup(main: Node) -> void:
 	# pose de todos sair igual, a de repouso.
 	_world.process_mode = Node.PROCESS_MODE_DISABLED
 	(main.get("hud") as CanvasLayer).visible = false
+	# `dev.py prova --garupa`: os mesmos quadros pela camera nova, para ajustar
+	# a garupa contra um quadro fixo, e nao contra a lembranca.
+	if OS.get_environment("RUSHFOOD_PROVA_CAMERA") == "garupa":
+		_world.camera.mode = ChaseCamera.Mode.GARUPA
 	_roda.call_deferred()
 
 
