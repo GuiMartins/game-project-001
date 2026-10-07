@@ -215,7 +215,8 @@ func _physics_process(delta: float) -> void:
 		_acelerador,
 		_lean / deg_to_rad(tuning.max_lean),
 		state == State.DOWN,
-		_lado_queda
+		_lado_queda,
+		_lean
 	)
 
 
@@ -326,6 +327,7 @@ func _aim_punch(delta: float) -> void:
 	_punch_delay = -1.0
 	_punch_side = int(signf(side_gap))
 	_punch_timer = tuning.punch_cooldown
+	_ator.socar(_punch_side, tuning.punch_windup, tuning.punch_active, tuning.punch_cooldown)
 	# Respiro depois do soco, somado ao cooldown da hitbox. O cooldown era
 	# DIVIDIDO pela agressividade, o que punha o rival briguento socando a cada
 	# 0,47 s: numa briga que dura tres segundos isso e seis socos, e o jogador
@@ -462,6 +464,7 @@ func receive_hit(from_side: int, shove: float, stagger: float) -> void:
 	lateral += float(from_side) * shove * 0.14
 	_target_lateral = lateral
 	speed *= 0.85
+	_ator.levar_golpe(from_side)
 	_lean = deg_to_rad(tuning.max_lean) * float(from_side) * 0.9
 	_apply_transform()
 	_check_wipeout()

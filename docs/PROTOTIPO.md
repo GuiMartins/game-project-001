@@ -335,67 +335,103 @@ numa tela de 180 (a resolução da época; o layout da HUD ainda é escrito nela
 ## O entregador
 
 O contrato mandava arte para depois do feel, e o entregador entrou antes, por
-decisão de 30/09/2026 registrada no `CLAUDE.md`. O mundo continua de caixas; o
-que mudou é o ator. Moto e piloto são um modelo 3D low-poly de 1380 triângulos
+decisão de 30/09/2026 registrada no `CLAUDE.md`. O ator é uma **Honda CG 160**
+e quem pilota: modelo 3D de ~6.900 triângulos
 ([`assets/entregador/`](../assets/entregador)), gerado por script no Blender
 ([`arte/entregador.py`](../arte/entregador.py)) e posado a cada passo de
 física por [`scripts/entregador.gd`](../scripts/entregador.gd), no nó `Visual`
 de `player_bike.gd` e `rival_bike.gd`.
 
-Cinco decisões que não são óbvias:
+A CG porque é ela a moto de entrega brasileira: motor aletado, garfo
+telescópico, balança com dois amortecedores, protetor de perna e bagageiro. As
+medidas são da ficha da Titan (caster de 27°, aro 18, banco a 0,80 m); o entre
+eixos ficou em 1,32 m, e não 1,31, porque o `camera_garupa.gd` mede a partir
+do eixo traseiro em 0,66 m.
 
-**A pose sai do estado, não de clipe.** Quatro números por passo — velocidade,
-acelerador, esterço e se caiu — e o resto é conta: a roda gira na velocidade
-da moto, o joelho fecha conforme ela ganha velocidade, o tronco deita no gás,
-o pé esquerdo desce quando ela para abaixo de 1 m/s, e na queda a moto tomba
-para o lado em que estava inclinada. Clipe de animação desencontra da física
-no primeiro passo em que os dois discordam; pose lida do estado não tem como.
+Oito decisões que não são óbvias:
+
+**A pose sai do estado, não de clipe.** Velocidade, acelerador, esterço,
+inclinação e se caiu, a cada passo — e o resto é conta: a roda gira na
+velocidade da moto, o joelho fecha conforme ela ganha velocidade, o tronco
+deita no gás, o pé esquerdo desce quando ela para abaixo de 1 m/s. Clipe de
+animação desencontra da física no primeiro passo em que os dois discordam;
+pose lida do estado não tem como. O que não é estado contínuo — o soco que
+saiu, a pancada que chegou — entra por evento (`socar`, `levar_golpe`), no
+mesmo passo em que o corpo abre a hitbox ou recebe o empurrão.
+
+**O ator mede o próprio movimento.** Aceleração longitudinal, vertical e da
+inclinação saem de diferenças finitas da velocidade, da altura e do ângulo,
+com filtro de 60 ms e teleporte (largada, respawn) descartado. Medir lá, e não
+receber do corpo, é o que deixa o jogador (com física) e o rival (paramétrico
+na curva) usarem o mesmo ator sem um caminho para cada.
+
+**As rodas nunca saem do chão; quem se mexe é o resto.** Dois números por
+passo — quanto a frente e a traseira afundam — vêm de molas de ~2 Hz puxadas
+pela freada, pela arrancada, pelo peso extra da curva (1/cos da inclinação) e
+pelo pouso. Daí o quanto a bainha corre no garfo e o ângulo da balança saem de
+conta, exata, para os eixos continuarem na altura de repouso; o corpo do
+amortecedor mira na mola, e a mola mira nele e encolhe. O mergulho passa por
+`tanh`: o freio do jogo é de 30 m/s², três vezes o de uma CG, e linear ele
+batia o garfo no batente a cada freada.
+
+**O tronco é uma massa presa por mola no quadril.** A freada joga ele para a
+frente, a arrancada para trás, o pouso para baixo, e a troca brusca de lado
+deixa ele para trás um instante (a aceleração da inclinação, na altura dos
+ombros). As mãos continuam na manopla pelo IK, então os cotovelos dobram e
+esticam sozinhos. A cabeça desfaz 35% da inclinação, procurando o horizonte, e
+olha para dentro da curva.
+
+**O soco tem o tempo da hitbox.** O braço do lado solta a manopla, arma na
+frente do peito durante `punch_windup`, abre para o lado na altura do capacete
+de quem está emparelhado em 60% de `punch_active` e volta para a manopla até o
+`punch_cooldown`. O tronco gira para trás armando e para o lado batendo, e a
+cabeça vira para o alvo antes de a mão sair: é o que diz para quem joga de que
+lado vem o golpe. Quem apanha joga o tronco com o empurrão, vira a cabeça para
+longe do punho e o guidão treme meio segundo.
+
+**Na queda o piloto larga a moto.** Ela tomba de lado em volta da lateral que
+bate no chão; ele sai com 40% da velocidade (até 9 m/s), dá cambalhota, quica,
+arrasta e assenta deitado — de costas ou de bruços, porque de lado o braço de
+baixo escorava o corpo meio metro acima do asfalto. O voo é no espaço do
+`Visual`, que anda com o corpo: o do jogador para no lugar da batida, o do
+rival continua deslizando, e o voo desconta a velocidade dele. O teto de 9 m/s
+é o que mantém o corpo na tela: a 25 m/s ele para a uns 12 m da moto.
 
 **Moto e piloto são árvores separadas, de peças rígidas.** Cada peça tem a
 origem na articulação e nenhuma rotação em repouso. Braço e perna são cadeias
-de dois ossos resolvidas por IK — é o que põe a mão na manopla quando o guidão
-vira e o pé no chão quando a moto para —, e o comprimento de cada osso é lido
-do próprio modelo. Não há rig nem skin: o que o jogo anima é transformação de
-nó.
+de dois ossos resolvidas por IK, e o comprimento de cada osso é lido do
+próprio modelo. O piloto é filho da raiz, e não da moto: montado, ele segue a
+massa suspensa por conta; caído, o voo é dele.
 
-**O `Visual` desceu para o chão.** Ele ficava no centro da cápsula de colisão,
-0,875 m acima do asfalto, e a moto inclinava em volta desse ponto. Com caixa
-não se via; com roda, nos 38° de fábrica o pneu escorregaria 54 cm para fora
-da curva. Agora a moto inclina em volta do pneu, e o tombo pivota na lateral que
-bate no chão — em volta do centro, meia moto afundaria no asfalto.
-
-**O tronco acompanha metade do esterço.** Devagar e com o guidão no batente, a
-manopla de fora sai do alcance do braço: o `test_entregador.gd` pegou a mão
-4 cm curta. Girar os ombros para o lado da curva é o que todo piloto faz, e é
-o que deixa o IK chegar. O guidão também vira pouco (20° parado, 4° a partir de
-50 km/h), porque no `PlayerBike` a curva sai da inclinação, e guidão girando
-muito em velocidade mentiria sobre isso.
-
-**Uma cor por corredor.** Bag e moto na cor, jaqueta num tom escuro dela,
-trocadas por shader com a máscara do modelo (R = bag, G = jaqueta, B =
-pintura). De longe, o que separa um entregador do outro é a mancha de cor, e
-"passei o amarelo" só funciona se o amarelo for amarelo da bag ao paralama. O
-jogador é laranja, como a bag do primeiro cubo.
+**O `Visual` mora no chão, e uma cor por corredor.** A moto inclina em volta
+do pneu, não do centro da cápsula (nos 38° de fábrica o pneu escorregaria 54 cm
+para fora da curva). Bag e moto vão na cor do corredor e a jaqueta num tom
+escuro dela, trocadas por shader com a máscara do modelo (R = bag, G =
+jaqueta, B = pintura): de longe, o que separa um entregador do outro é a
+mancha de cor. O jogador é laranja, como a bag do primeiro cubo.
 
 ### O que está medido, e o que não está
 
-Os sete casos do `test_entregador.gd` cobrem o que a física não enxerga e que
+Os treze casos do `test_entregador.gd` cobrem o que a física não enxerga e que
 nasce de um sinal trocado: a roda girando para a frente, o pé no chão e de
 volta na pedaleira, as mãos nas manoplas com o guidão virado, o joelho que
-fecha, o tombo para o lado pedido sem o pé atravessar o asfalto e as cores de
-fábrica batendo com a textura. Com o erro plantado — roda de sinal invertido,
-cor da bag fora da textura — eles reprovam.
+fecha, as rodas que não saem do chão enquanto a moto afunda e levanta, o garfo
+que afunda e o capacete que vai para a frente na freada, a mola presa no
+amortecedor, o soco que sai do lado pedido e volta para a manopla, a pancada
+que joga o tronco com o empurrão, o tombo para o lado pedido, o arremesso para
+a frente sem nada atravessar o asfalto e as cores de fábrica batendo com a
+textura. Com o erro plantado — garfo correndo para o lado errado, sinal da
+freada, do soco ou da pancada invertido — eles reprovam.
 
 O banco de provas não andou: o ator não toca na física, e as medidas ficaram
-idênticas. O baseline visual foi regravado depois de olhar os frames —
-luminância +9,9%, céu +3,8%, famílias de cor −1,6% —, porque, mesmo dentro dos
-20% de tolerância, a mudança de propósito comia metade da margem de um teste
-cujo ruído medido chega a 13,5%.
+idênticas.
 
-O que **não** está feito: o piloto não se solta da moto na queda (os dois
-tombam juntos, embora o modelo já tenha as árvores separadas para isso), e a
-cadência travada da animação, que faria o ator ler como digitalizado em vez de
-3D, não existe.
+O que **não** está feito: a moto caída não desliza (para onde o corpo parou),
+o voo do piloto não sabe de carro nenhum (a 9 m/s ele pode atravessar o que
+estiver logo à frente) e o chão do voo é o plano do `Visual`, não a pista —
+numa ladeira o corpo afunda ou flutua alguns centímetros. A cadência travada
+da animação, que faria o ator ler como digitalizado em vez de 3D, também não
+existe.
 
 ## Os carros
 
