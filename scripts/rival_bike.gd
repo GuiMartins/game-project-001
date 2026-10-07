@@ -48,6 +48,9 @@ const CREDITO_DO_SOCO: float = 1.5
 ##
 ## 4,5 m e folga em cima do encosto real: meia diagonal do sensor (0,95 m) mais
 ## meio carro (2,2 m) da 3,4 m, e um frame de aproximacao a 33 m/s soma 0,55 m.
+## Contra carro do transito o meio carro e o do modelo (`_alcance`): com os
+## 4,5 m fixos, a ponta do onibus de 12 m ficava a 6 m do centro dele, e o
+## rival atravessava a traseira do onibus sem cair.
 const WIPEOUT_ALCANCE: float = 4.5
 
 var track: RoadTrack
@@ -288,6 +291,16 @@ func _drive(delta: float) -> void:
 
 	var move := _target_lateral - lateral
 	var lateral_speed := clampf(move * 3.0, -9.0, 9.0)
+	# O alvo e escolhido pela pista livre la na frente, e o caminho ate ele
+	# pode cruzar um carro que esta do lado agora. Segura a lateral em vez de
+	# deslizar para dentro dele: o carro fica para tras, e o caminho abre.
+	if world.has_method("ocupado"):
+		var proxima := lateral + lateral_speed * delta
+		if (
+			world.ocupado(offset, proxima, SIZE * 0.5)
+			and not world.ocupado(offset, lateral, SIZE * 0.5)
+		):
+			lateral_speed = 0.0
 	lateral += lateral_speed * delta
 	_lean = lerpf(
 		_lean,
@@ -432,9 +445,15 @@ func _check_wipeout() -> void:
 	if state == State.DOWN:
 		return
 	for body: Node3D in _sensor.get_overlapping_bodies():
-		if global_position.distance_to(body.global_position) <= WIPEOUT_ALCANCE:
+		if global_position.distance_to(body.global_position) <= _alcance(body):
 			_go_down()
 			return
+
+
+func _alcance(body: Node3D) -> float:
+	if body is TrafficCar:
+		return WIPEOUT_ALCANCE + (body as TrafficCar).meio_comprimento() - World.MEIO_CARRO
+	return WIPEOUT_ALCANCE
 
 
 func _go_down() -> void:

@@ -85,6 +85,7 @@ var _carro: Carro
 ## Caixa da lataria, no espaco do carro: e o que bate e o que conta de
 ## tamanho na pista (`meio_comprimento`, `meia_largura`).
 var _shape: CollisionShape3D
+var _caixa := AABB(Vector3(-0.9, 0.0, -2.2), Vector3(1.8, 1.5, 4.4))
 ## A porta aberta. Segue a porta do modelo enquanto ela gira.
 var _door_shape: CollisionShape3D
 var _lateral_antes: float = 0.0
@@ -108,12 +109,12 @@ func _ready() -> void:
 
 ## Metade do comprimento da lataria, em metros de pista.
 func meio_comprimento() -> float:
-	return (_shape.shape as BoxShape3D).size.z * 0.5
+	return _caixa.size.z * 0.5
 
 
 ## Metade da largura da lataria, sem retrovisor.
 func meia_largura() -> float:
-	return (_shape.shape as BoxShape3D).size.x * 0.5
+	return _caixa.size.x * 0.5
 
 
 func modelo() -> Carro.Modelo:
@@ -146,9 +147,9 @@ func _monta() -> void:
 		sorteio -= FROTA[qual]
 		qual += 1
 	_carro.montar(qual as Carro.Modelo, _rng_visual)
-	var caixa := _carro.caixa()
-	(_shape.shape as BoxShape3D).size = caixa.size
-	_shape.position = caixa.get_center()
+	_caixa = _carro.caixa()
+	(_shape.shape as BoxShape3D).size = _caixa.size
+	_shape.position = _caixa.get_center()
 
 
 func _physics_process(delta: float) -> void:
