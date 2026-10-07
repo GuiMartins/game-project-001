@@ -539,6 +539,48 @@ F3): subida come o gás que você não tinha sobrando, descida devolve. Ele entr
 como aceleração e **não** como teto — mexer no teto faria `max_speed` deixar de
 ser a velocidade máxima, e slider que mente é slider que ninguém ajusta.
 
+## A batida
+
+Toda batida derrubava. A regra era uma pergunta só — velocidade da moto acima
+de 58 km/h e ângulo acima de 38 graus — e no corredor isso é quase toda
+encostada: na traseira de um carro a 25 km/h, a 100 km/h você caía como se
+tivesse entrado num muro. Agora cada batida vira uma de quatro coisas, nesta
+ordem (`PlayerBike._resolve_collisions`):
+
+1. **Raspada**, de lado (ângulo abaixo de `crash_angle`). Como sempre foi.
+2. **Quina**, quando menos de `corner_fraction` (60%) da moto pegou a face
+   batida. A moto desvia para fora do canto, até `corner_deflect` (8°), e
+   segue mais lenta. A caixa de colisão devolve a normal da face que entrou, e
+   na quina essa face é a traseira — por isso a medida é quanto da moto ficou
+   em cima da lataria, e não a normal nem o ponto de contato (que, face contra
+   face, é quase sempre a borda).
+3. **Quique**, de frente mas devagar, ou em qualquer moto. Fica com a
+   velocidade do que estava na frente menos um tranco, e perde o guidão por
+   0,25 s. **Moto não derruba moto**, a qualquer velocidade.
+4. **Queda**, só quando a velocidade de **aproximação** passa de
+   `crash_min_speed` (22 m/s, 80 km/h). É a diferença entre as duas, e não a da
+   moto: o carro a 25 km/h só derruba quem chega a mais de 105.
+
+A queda também deixou de ser sempre igual. Ela tomba para onde a batida
+empurrou (somado à inclinação que a moto já tinha), gira deitada para longe do
+que bateu e desliza o que sobrou da velocidade depois da lataria, a 12 m/s². A
+batida reta, que não empurra para lado nenhum, desempata num sorteio de
+semente fixa — sem ele ela caía sempre para a direita, alinhada com a pista. A
+moto levanta onde parou de deslizar, 6 m para trás, como antes.
+
+Mexer nisso tirou de baixo do tapete um bug do rival: a hitbox do soco dele
+religava no passo seguinte ao acerto, e um soco só acertava o jogador três
+vezes. Enquanto o piloto automático caía quatro vezes em 45 s, ele ficava para
+trás do pelotão e ninguém socava. De pé, ele passou a correr no meio dele, e o
+teto de socos da corrida solta reprovou. O soco do jogador tem o mesmo defeito
+e continua com ele: consertar muda o empurrão do combate, que é feel e merece
+conversa própria.
+
+Na corrida solta, as quedas foram de 4 para 0, a distância de 1249 para
+1350 m e a distância do líder de 134 para 56 m. As raspadas (passar perto de
+carro) caíram de 7 para 4: sem cair, o piloto automático não volta a nascer
+no meio do trânsito, e segue colado no pelotão, quicando na traseira dos rivais.
+
 ## Próximos passos, em ordem de risco
 
 1. **Sentar e jogar com o F3 aberto.** Os números do banco dizem que a moto é

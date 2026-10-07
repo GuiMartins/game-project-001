@@ -37,7 +37,8 @@ const PHASE_NAMES: PackedStringArray = [
 	"calcada",
 	"combate",
 	"corrida",
-	"disputa"
+	"disputa",
+	"batida"
 ]
 
 var _main: Node
@@ -97,6 +98,7 @@ var _speed_at_mark: float = 0.0
 ## Mede a corrida solta porque e o pior caso que o banco ja sabe montar:
 ## pelotao inteiro, transito em volta e o piloto automatico no corredor.
 var _fps: bool = OS.get_cmdline_user_args().has("--fps")
+var _prova_de_batida: ProvaDeBatida
 var _quadros_ms: PackedFloat32Array = []
 
 
@@ -181,6 +183,8 @@ func _physics_process(delta: float) -> void:
 			_phase_freerun(delta)
 		8:
 			_phase_sprint(delta)
+		9:
+			_phase_crash(delta)
 
 
 func _process(delta: float) -> void:
@@ -792,7 +796,19 @@ func _phase_sprint(_delta: float) -> void:
 				% [rivals_ahead, _world.run.position]
 			)
 		)
-	_finish()
+	_next_phase()
+
+
+## Fase 9 - batida: as quatro montagens moram em `ProvaDeBatida` ----------
+func _phase_crash(delta: float) -> void:
+	if _prova_de_batida == null:
+		_prova_de_batida = ProvaDeBatida.new(_world, _player)
+	if not _prova_de_batida.passo(delta):
+		return
+	_metrics.merge(_prova_de_batida.medidas)
+	_failures.append_array(_prova_de_batida.falhas)
+	_report.append("batida               " + _prova_de_batida.relato())
+	_next_phase()
 
 
 ## Le `--fase <nome>` da linha de comando.

@@ -77,6 +77,9 @@ const TRONCO_SEGUE_GUIDAO: float = 0.5
 const QUEDA: float = 85.0
 const QUEDA_PIVO: float = 0.3
 const TEMPO_DA_QUEDA: float = 0.3
+## Segundos que a moto leva girando deitada ate parar de rodar. Mais que o
+## tombo: ela cai de uma vez e o giro vem do deslize, que demora a morrer.
+const TEMPO_DO_GIRO: float = 0.9
 
 var _modelo: Node3D
 var _material: ShaderMaterial
@@ -105,6 +108,8 @@ var _deitado: float = 0.0
 var _pe: float = 1.0
 var _queda: float = 0.0
 var _lado_queda: float = 1.0
+var _giro_queda: float = 0.0
+var _girado: float = 0.0
 
 
 func _ready() -> void:
@@ -151,15 +156,18 @@ func pintar(cor: Color) -> void:
 
 
 ## Um passo de pose. `velocidade` em m/s; `acelerador` de 0 a 1; `esterco` de
-## -1 (esquerda) a 1 (direita); `lado_queda` so conta enquanto `caido`, e diz
-## para que lado a moto tomba: -1 esquerda, 1 direita.
+## -1 (esquerda) a 1 (direita). `lado_queda` e `giro_queda` so contam enquanto
+## `caido`, e so no primeiro passo da queda: para que lado a moto tomba (-1
+## esquerda, 1 direita) e quanto ela gira deitada, em radianos (positivo para a
+## esquerda, como a guinada).
 func atualizar(
 	delta: float,
 	velocidade: float,
 	acelerador: float,
 	esterco: float,
 	caido: bool,
-	lado_queda: float = 1.0
+	lado_queda: float = 1.0,
+	giro_queda: float = 0.0
 ) -> void:
 	var v := absf(velocidade)
 	_giro = wrapf(_giro + velocidade / _raio_roda * delta, 0.0, TAU)
@@ -169,11 +177,14 @@ func atualizar(
 	if caido:
 		if is_zero_approx(_queda):
 			_lado_queda = -1.0 if lado_queda < 0.0 else 1.0
+			_giro_queda = giro_queda
 		_queda = move_toward(_queda, 1.0, delta / TEMPO_DA_QUEDA)
+		_girado = move_toward(_girado, 1.0, delta / TEMPO_DO_GIRO)
 	else:
 		# Levantar e instantaneo de proposito: quem levanta a moto do jogador
 		# e o respawn, que ja teleporta ela para a pista.
 		_queda = 0.0
+		_girado = 0.0
 
 	var esterco_max := lerpf(ESTERCO_DEVAGAR, ESTERCO_RAPIDO, clampf(v / 14.0, 0.0, 1.0))
 	_esterco = lerpf(_esterco, esterco * esterco_max, 1.0 - exp(-10.0 * delta))
@@ -195,7 +206,10 @@ func _posa() -> void:
 		# -X, a esquerda. A mesma convencao do `lean` do `PlayerBike`.
 		angulo = -_lado_queda * deg_to_rad(QUEDA) * _suave(_queda)
 	var tombo := Basis(Vector3.BACK, angulo)
-	_modelo.transform = Transform3D(tombo, pivo - tombo * pivo)
+	# O giro por fora do tombo: a moto ja deitada roda em volta da vertical,
+	# rapido no comeco e morrendo com o atrito.
+	var giro := Basis(Vector3.UP, _giro_queda * (1.0 - pow(1.0 - _girado, 2.0)))
+	_modelo.transform = Transform3D(giro, Vector3.ZERO) * Transform3D(tombo, pivo - tombo * pivo)
 
 	# Rodando para a frente, o topo da roda vai para -Z: rotacao NEGATIVA em X.
 	for roda in _rodas:

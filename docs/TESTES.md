@@ -86,8 +86,8 @@ de coisa que faz alguém procurar variação no lugar errado.
 
 ### Fases
 
-Nove, nesta ordem: `aceleracao`, `freada`, `inclinacao`, `curva`, `soco`,
-`calcada`, `combate`, `corrida`, `disputa`.
+Dez, nesta ordem: `aceleracao`, `freada`, `inclinacao`, `curva`, `soco`,
+`calcada`, `combate`, `corrida`, `disputa`, `batida`.
 
 ```bash
 python tools/dev.py selftest --fase curva    # 32 s em vez de 110 s
@@ -127,6 +127,16 @@ chegada em vez de pagar os 3,2 km da rota, e é a única prova de que a corrida
 **termina**. Além de medir a colocação final, ela confere que quem cruzou a
 linha antes do jogador está na frente dele no resultado — se a ordenação do
 pelotão quebrar, o jogo continua rodando e o placar passa a mentir em silêncio.
+
+`batida` é a última de propósito: ela mexe no trânsito e nos rivais à mão, e
+depois dela não sobra corrida para contaminar. Monta quatro batidas a 15 m, uma
+de cada vez, com o resto do mundo longe, e confere o desfecho de cada uma —
+traseira de carro lento a 72 km/h **quica**, carro parado a 126 km/h
+**derruba**, quina a 126 km/h **desvia** e traseira de moto a 126 km/h
+**quica**. A corrida solta conta quedas, mas não diz quais; foi olhando só a
+contagem que "toda batida derruba" passou despercebido. Mora em
+`scripts/selftest_batida.gd` porque o `selftest.gd` já encostava no limite de
+mil linhas do gdlint.
 
 ## Baseline
 
