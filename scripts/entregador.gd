@@ -199,10 +199,13 @@ const CABECA_AMORTECE: float = 0.3
 const QUEDA: float = 85.0
 const QUEDA_PIVO: float = 0.3
 const TEMPO_DA_QUEDA: float = 0.3
+## Segundos que a moto leva girando deitada ate parar de rodar. Mais que o
+## tombo: ela cai de uma vez e o giro vem do deslize, que demora a morrer.
+const TEMPO_DO_GIRO: float = 0.9
 ## O piloto e arremessado por cima do guidao: esta fracao da velocidade vai
 ## com ele, ate o teto, mais um impulso para cima e para o lado do tombo. O
-## teto e o que segura o corpo dentro da tela: o corpo fisico para no lugar da
-## batida, e a camera fica com ele.
+## teto e o que segura o corpo dentro da tela: a camera fica com a moto, que
+## desliza bem menos que isso.
 const ARREMESSO: float = 0.4
 const ARREMESSO_MAX: float = 9.0
 const ARREMESSO_CIMA: float = 3.5
@@ -260,6 +263,8 @@ var _inclinacao: float = 0.0
 var _pe: float = 1.0
 var _queda: float = 0.0
 var _lado_queda: float = 1.0
+var _giro_queda: float = 0.0
+var _girado: float = 0.0
 var _relogio: float = 0.0
 var _passo: float = 1.0 / 60.0
 var _rodado: float = 0.0
@@ -411,10 +416,11 @@ func socando() -> bool:
 
 
 ## Um passo de pose. `velocidade` em m/s; `acelerador` de 0 a 1; `esterco` de
-## -1 (esquerda) a 1 (direita); `lado_queda` so conta enquanto `caido`, e diz
-## para que lado a moto tomba: -1 esquerda, 1 direita. `inclinacao` e a da
-## moto na curva, em radianos, positiva para a direita - a mesma que o corpo
-## aplica no `Visual`.
+## -1 (esquerda) a 1 (direita). `inclinacao` e a da moto na curva, em
+## radianos, positiva para a direita - a mesma que o corpo aplica no `Visual`.
+## `lado_queda` e `giro_queda` so contam enquanto `caido`, e so no primeiro
+## passo da queda: para que lado a moto tomba (-1 esquerda, 1 direita) e quanto
+## ela gira deitada, em radianos (positivo para a esquerda, como a guinada).
 func atualizar(
 	delta: float,
 	velocidade: float,
@@ -422,7 +428,8 @@ func atualizar(
 	esterco: float,
 	caido: bool,
 	lado_queda: float = 1.0,
-	inclinacao: float = 0.0
+	inclinacao: float = 0.0,
+	giro_queda: float = 0.0
 ) -> void:
 	if delta <= 0.0:
 		return
@@ -439,12 +446,15 @@ func atualizar(
 	if caido:
 		if is_zero_approx(_queda):
 			_lado_queda = -1.0 if lado_queda < 0.0 else 1.0
+			_giro_queda = giro_queda
 			_solta(velocidade)
 		_queda = move_toward(_queda, 1.0, delta / TEMPO_DA_QUEDA)
+		_girado = move_toward(_girado, 1.0, delta / TEMPO_DO_GIRO)
 	else:
 		# Levantar e instantaneo de proposito: quem levanta a moto do jogador
 		# e o respawn, que ja teleporta ela para a pista.
 		_queda = 0.0
+		_girado = 0.0
 		_voando = false
 		_v_de_pe = v
 
@@ -560,7 +570,11 @@ func _posa() -> void:
 		# -X, a esquerda. A mesma convencao do `lean` do `PlayerBike`.
 		angulo = -_lado_queda * deg_to_rad(QUEDA) * _suave(_queda)
 	var tombo := Basis(Vector3.BACK, angulo)
-	_moto.transform = Transform3D(tombo, pivo - tombo * pivo)
+	# O giro por fora do tombo: a moto ja deitada roda em volta da vertical,
+	# rapido no comeco e morrendo com o atrito. So a moto: o piloto ja largou
+	# ela e voa por conta propria.
+	var giro := Basis(Vector3.UP, _giro_queda * (1.0 - pow(1.0 - _girado, 2.0)))
+	_moto.transform = Transform3D(giro, Vector3.ZERO) * Transform3D(tombo, pivo - tombo * pivo)
 
 	_posa_suspensao()
 
@@ -751,9 +765,10 @@ func _solta(velocidade: float) -> void:
 
 ## Um passo do voo: balistico no ar, arrastando no chao.
 ##
-## O voo e no espaco deste no, que anda junto com o corpo. O corpo do jogador
-## para no lugar da batida, e o do rival continua deslizando: por isso o voo
-## desconta a `velocidade` dele, e o piloto se afasta da moto na diferenca.
+## O voo e no espaco deste no, que anda junto com o corpo, e o corpo caido
+## continua deslizando - o do jogador pelo que sobrou da batida, o do rival na
+## velocidade dele. Por isso o voo desconta a `velocidade`, e o piloto se
+## afasta da moto na diferenca.
 func _voa(delta: float, velocidade: float) -> void:
 	_voo_t += delta
 	_voo_v.y -= GRAVIDADE * delta

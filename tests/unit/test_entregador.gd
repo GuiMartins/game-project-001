@@ -225,6 +225,21 @@ func _nada_no_subsolo(ator: Entregador) -> void:
 		assert_float(_no(ator, nome).global_position.y).is_greater(0.0)
 
 
+func test_a_queda_gira_deitada_para_o_lado_pedido() -> void:
+	for giro: float in [-1.0, 1.0]:
+		var ator := _ator()
+		for i in int(1.5 / PASSO):
+			ator.atualizar(PASSO, 0.0, 0.0, 0.0, true, 1.0, 0.0, giro)
+		# O tombo e em volta do eixo da moto, entao a reta de uma roda a outra
+		# so muda com o giro. Positivo gira para a esquerda, como a guinada: a
+		# frente (-Z) vai para -X.
+		var eixo := (
+			_no(ator, "Roda_Dianteira").global_position - _no(ator, "Roda_Traseira").global_position
+		)
+		assert_float(eixo.x * giro).is_less(0.0)
+		assert_float(absf(atan2(-eixo.x, -eixo.z))).is_equal_approx(1.0, 0.02)
+
+
 func test_cores_de_fabrica_batem_com_a_textura() -> void:
 	# Le o PNG que o gerador escreveu, nao a textura importada: e ele que o
 	# `arte/entregador.py` regera quando a paleta muda.

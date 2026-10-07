@@ -393,8 +393,9 @@ longe do punho e o guidão treme meio segundo.
 bate no chão; ele sai com 40% da velocidade (até 9 m/s), dá cambalhota, quica,
 arrasta e assenta deitado — de costas ou de bruços, porque de lado o braço de
 baixo escorava o corpo meio metro acima do asfalto. O voo é no espaço do
-`Visual`, que anda com o corpo: o do jogador para no lugar da batida, o do
-rival continua deslizando, e o voo desconta a velocidade dele. O teto de 9 m/s
+`Visual`, que anda com o corpo: os dois continuam deslizando depois de cair
+(o do jogador pelo que sobrou da batida, ver "A batida"), e o voo desconta a
+velocidade dele. O teto de 9 m/s
 é o que mantém o corpo na tela: a 25 m/s ele para a uns 12 m da moto.
 
 **Moto e piloto são árvores separadas, de peças rígidas.** Cada peça tem a
@@ -426,8 +427,7 @@ freada, do soco ou da pancada invertido — eles reprovam.
 O banco de provas não andou: o ator não toca na física, e as medidas ficaram
 idênticas.
 
-O que **não** está feito: a moto caída não desliza (para onde o corpo parou),
-o voo do piloto não sabe de carro nenhum (a 9 m/s ele pode atravessar o que
+O que **não** está feito: o voo do piloto não sabe de carro nenhum (a 9 m/s ele pode atravessar o que
 estiver logo à frente) e o chão do voo é o plano do `Visual`, não a pista —
 numa ladeira o corpo afunda ou flutua alguns centímetros. A cadência travada
 da animação, que faria o ator ler como digitalizado em vez de 3D, também não
@@ -574,6 +574,50 @@ O que a ladeira cobra da moto é o `slope_pull` (16 m/s² por 100% de rampa, no
 F3): subida come o gás que você não tinha sobrando, descida devolve. Ele entra
 como aceleração e **não** como teto — mexer no teto faria `max_speed` deixar de
 ser a velocidade máxima, e slider que mente é slider que ninguém ajusta.
+
+## A batida
+
+Toda batida derrubava. A regra era uma pergunta só — velocidade da moto acima
+de 58 km/h e ângulo acima de 38 graus — e no corredor isso é quase toda
+encostada: na traseira de um carro a 25 km/h, a 100 km/h você caía como se
+tivesse entrado num muro. Agora cada batida vira uma de quatro coisas, nesta
+ordem (`PlayerBike._resolve_collisions`):
+
+1. **Raspada**, de lado (ângulo abaixo de `crash_angle`). Como sempre foi.
+2. **Quina**, quando menos de `corner_fraction` (60%) da moto pegou a face
+   batida. A moto desvia para fora do canto, até `corner_deflect` (8°), e
+   segue mais lenta. A caixa de colisão devolve a normal da face que entrou, e
+   na quina essa face é a traseira — por isso a medida é quanto da moto ficou
+   em cima da lataria, e não a normal nem o ponto de contato (que, face contra
+   face, é quase sempre a borda).
+3. **Quique**, de frente mas devagar, ou em qualquer moto. Fica com a
+   velocidade do que estava na frente menos um tranco, e perde o guidão por
+   0,25 s. **Moto não derruba moto**, a qualquer velocidade.
+4. **Queda**, só quando a velocidade de **aproximação** passa de
+   `crash_min_speed` (22 m/s, 80 km/h). É a diferença entre as duas, e não a da
+   moto: o carro a 25 km/h só derruba quem chega a mais de 105.
+
+A queda também deixou de ser sempre igual. Ela tomba para onde a batida
+empurrou (somado à inclinação que a moto já tinha), gira deitada para longe do
+que bateu e desliza o que sobrou da velocidade depois da lataria, a 12 m/s². A
+batida reta, que não empurra para lado nenhum, desempata num sorteio de
+semente fixa — sem ele ela caía sempre para a direita, alinhada com a pista. A
+moto levanta onde parou de deslizar, 6 m para trás, como antes.
+
+Mexer nisso tirou de baixo do tapete um bug do rival: a hitbox do soco dele
+religava no passo seguinte ao acerto, e um soco só acertava o jogador três
+vezes. Enquanto o piloto automático caía quatro vezes em 45 s, ele ficava para
+trás do pelotão e ninguém socava. De pé, ele passou a correr no meio dele, e o
+teto de socos da corrida solta reprovou. O soco do jogador tem o mesmo defeito
+e continua com ele: consertar muda o empurrão do combate, que é feel e merece
+conversa própria.
+
+Na corrida solta, as quedas foram de 3 para 0 e a distância do líder de 86
+para 48 m: de pé, o piloto automático corre no pelotão, quicando na traseira
+dos rivais. A distância percorrida ficou em 1346 m, a posição caiu de 5 para 6
+e as seis quedas de rival contra o ônibus parado sumiram. É o mesmo efeito de
+outro lado: o trânsito é reciclado em volta da moto, e uma moto que não fica
+para trás muda o trânsito que o pelotão encontra.
 
 ## Próximos passos, em ordem de risco
 

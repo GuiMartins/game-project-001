@@ -74,6 +74,10 @@ var _target_lateral: float = 0.0
 var _punch_cooldown: float = 0.0
 var _punch_timer: float = -1.0
 var _punch_side: int = 0
+## Este soco ja acertou. Desligar a hitbox no acerto nao bastava: o passo
+## seguinte religava ela, ainda dentro da janela ativa, e um soco so acertava o
+## jogador tres vezes, um passo de fisica sim, outro nao.
+var _punch_landed: bool = false
 ## Segundos que faltam medindo o jogador antes do proximo soco; -1 = nao esta
 ## mirando. Ver `_aim_punch`.
 var _punch_delay: float = -1.0
@@ -327,6 +331,7 @@ func _aim_punch(delta: float) -> void:
 	_punch_delay = -1.0
 	_punch_side = int(signf(side_gap))
 	_punch_timer = tuning.punch_cooldown
+	_punch_landed = false
 	_ator.socar(_punch_side, tuning.punch_windup, tuning.punch_active, tuning.punch_cooldown)
 	# Respiro depois do soco, somado ao cooldown da hitbox. O cooldown era
 	# DIVIDIDO pela agressividade, o que punha o rival briguento socando a cada
@@ -405,7 +410,9 @@ func _update_hitbox(delta: float) -> void:
 	var elapsed := tuning.punch_cooldown - _punch_timer
 	_hitbox.position = Vector3(tuning.punch_range * float(_punch_side), 0.0, 0.0)
 	var active := (
-		elapsed >= tuning.punch_windup and elapsed < tuning.punch_windup + tuning.punch_active
+		not _punch_landed
+		and elapsed >= tuning.punch_windup
+		and elapsed < tuning.punch_windup + tuning.punch_active
 	)
 	_hitbox.monitoring = active
 	if not active:
@@ -414,6 +421,7 @@ func _update_hitbox(delta: float) -> void:
 		if body is PlayerBike:
 			(body as PlayerBike).receive_hit(_punch_side, tuning.punch_shove, tuning.punch_stagger)
 			hit_player.emit()
+			_punch_landed = true
 			_hitbox.monitoring = false
 			return
 
