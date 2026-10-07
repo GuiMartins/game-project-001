@@ -419,7 +419,9 @@ func _update_hitbox(delta: float) -> void:
 		return
 	for body: Node3D in _hitbox.get_overlapping_bodies():
 		if body is PlayerBike:
-			(body as PlayerBike).receive_hit(_punch_side, tuning.punch_shove, tuning.punch_stagger)
+			(body as PlayerBike).receive_hit(
+				_punch_side, world_tuning.rival_punch_shove, tuning.punch_stagger
+			)
 			hit_player.emit()
 			_punch_landed = true
 			_hitbox.monitoring = false
