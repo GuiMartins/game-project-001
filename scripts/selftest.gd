@@ -93,6 +93,7 @@ var _last_progress: float = 0.0
 var _heading_at_mark: float = 0.0
 var _lateral_at_mark: float = 0.0
 var _speed_at_mark: float = 0.0
+var _sobreposicoes := VigiaDeSobreposicao.new()
 ## `--fps`: so a corrida solta, com tela e sem vsync, medindo cada quadro.
 ## Mede a corrida solta porque e o pior caso que o banco ja sabe montar:
 ## pelotao inteiro, transito em volta e o piloto automatico no corredor.
@@ -630,6 +631,8 @@ func _phase_freerun(_delta: float) -> void:
 			)
 		)
 
+	_sobreposicoes.conta(_world.traffic)
+
 	if not is_finite(_player.global_position.x) or not is_finite(_player.speed):
 		_check(false, "posicao ou velocidade viraram NaN")
 		_finish()
@@ -698,6 +701,8 @@ func _phase_freerun(_delta: float) -> void:
 			)
 		)
 		_check(_player.global_position.y > -50.0, "a moto caiu pra fora do mundo")
+		var sobreposicoes := _sobreposicoes.total
+		_check(sobreposicoes == 0, "%d vez(es) um carro entrou em outro" % sobreposicoes)
 		# O piloto automatico nao da um soco em 45 s. Entao toda queda de rival
 		# nesta fase e do transito, e nenhuma pode virar estilo do jogador - era
 		# exatamente assim que ficar parado na largada rendia boost cheio e um
