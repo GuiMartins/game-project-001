@@ -122,6 +122,14 @@ redundantes: o baseline aponta que o número **andou**, o `_check` aponta que el
 andou para o lado que importa — e continua valendo depois que alguém atualizar o
 baseline, que é justamente quando uma regressão de agressividade passaria batida.
 
+`combate` mede o empurrão do soco do jogador no rival emparelhado, e **só
+enquanto ele cambaleia**: de volta a RACING, a IA dele volta a dirigir, e o que
+ele andar de lado dali em diante é perseguição. Já mediu errado duas vezes. Na
+primeira contava qualquer deslocamento e passava sem o soco acertar; na segunda
+o rival chegava caído das fases anteriores, o soco "acertava" sem empurrar, e
+os 3,3 m do baseline eram ele indo embora ao levantar. Mora em
+`scripts/selftest_combate.gd`, pelo mesmo limite de linhas da `batida`.
+
 `disputa` é a mais nova e a mais barata pelo que cobre: larga o grid a 260 m da
 chegada em vez de pagar os 3,2 km da rota, e é a única prova de que a corrida
 **termina**. Além de medir a colocação final, ela confere que quem cruzou a

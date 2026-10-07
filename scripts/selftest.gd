@@ -85,11 +85,6 @@ var _frame_colors: float = 0.0
 var _asphalt_speed: float = 0.0
 var _sidewalk_speed: float = 0.0
 var _max_lateral: float = 0.0
-var _rival_lateral_before: float = 0.0
-var _rival_shove: float = 0.0
-var _rival_staggered: bool = false
-var _punch_thrown: bool = false
-var _punch_connected: bool = false
 var _last_progress: float = 0.0
 var _heading_at_mark: float = 0.0
 var _lateral_at_mark: float = 0.0
@@ -100,6 +95,7 @@ var _sobreposicoes := VigiaDeSobreposicao.new()
 ## pelotao inteiro, transito em volta e o piloto automatico no corredor.
 var _fps: bool = OS.get_cmdline_user_args().has("--fps")
 var _prova_de_batida: ProvaDeBatida
+var _prova_de_combate: ProvaDeCombate
 var _quadros_ms: PackedFloat32Array = []
 
 
@@ -471,102 +467,13 @@ func _phase_sidewalk(_delta: float) -> void:
 		_next_phase()
 
 
-## Fase 6 - combate: o soco que derruba rival ----------------------------
-##
-## O pilar do combate lateral era o unico "jogavel" do PROTOTIPO.md sem uma
-## medida sequer. Isto mede a cadeia inteira, do jeito que o jogador a usa:
-## hitbox do soco -> punch_landed -> World -> receive_hit -> empurrao lateral.
-func _phase_combat(_delta: float) -> void:
-	var rival: RivalBike = _world.rivals[0] if not _world.rivals.is_empty() else null
-	if rival == null:
-		_report.append("combate              nenhum rival na rota")
-		_check(false, "nenhum rival existe - o pilar do combate nao tem como ser medido")
-		_next_phase()
-		return
-
-	if _t < 0.02:
-		_player.road_bounds_enabled = false
-		_player.collision_mask = Layers.WORLD | Layers.RIVAL
-		_player.place_on_track(400.0, RoadTrack.lane_center(1), 26.0)
-		# De pe, explicitamente. `place_on_track` recoloca a moto mas nao mexe
-		# no estado, e a fase anterior termina com ela batendo na parede da
-		# calcada - ou seja, chegando aqui capotada. `_try_punch` so roda em
-		# RIDING, entao o soco nunca saia e o teste media um rival que nunca
-		# foi socado.
-		_player.state = PlayerBike.State.RIDING
-		# Emparelhado a um alcance de soco de distancia - nao a uma faixa
-		# inteira. Duas motos lado a lado no corredor ficam a pouco mais de um
-		# metro; 3,3 m e o centro da faixa vizinha, e la o soco nao alcanca
-		# ninguem. Sai do tuning pra o teste acompanhar quem mexer no alcance.
-		rival.offset = _player.track_offset + 0.6
-		rival.lateral = _player.track_lateral + _tuning.punch_range
-		rival.speed = _player.speed
-		if not rival.went_down.is_connected(_on_rival_down):
-			rival.went_down.connect(_on_rival_down)
-		if not _player.punch_landed.is_connected(_on_punch_landed):
-			_player.punch_landed.connect(_on_punch_landed)
-
-	# Segura o rival emparelhado ATE o soco sair - inclusive na lateral.
-	#
-	# Sem prender a lateral, a IA dele desvia sozinha e sai do alcance do soco,
-	# e o teste passa a depender do humor do frame. Pior: o deslocamento que a
-	# perseguicao dele produz parecia empurrao, entao a medida passava sem o
-	# soco ter acertado. Foi o que aconteceu ao baixar a densidade do transito
-	# - a medida era de correlacao, nao de causa.
-	rival.offset = _player.track_offset + 0.6
-	rival.speed = _player.speed
-	if not _punch_connected:
-		rival.lateral = _player.track_lateral + _tuning.punch_range
-		_rival_lateral_before = rival.lateral
-	_set_action("ride_throttle", true)
-
-	# Soca assim que o rival esta posicionado, e nao depois de meio segundo.
-	#
-	# A IA do rival entra em duelo com gap abaixo de 2,2 m, e o rival esta
-	# emparelhado a um alcance de soco - ou seja, dentro dela. Esperando, ele
-	# socava primeiro, o jogador ficava STAGGERED, e `_try_punch` so roda em
-	# RIDING: o soco do jogador nunca saia e o teste media um rival que nunca
-	# foi socado.
-	#
-	# Segura o botao por alguns frames antes de soltar, porque `_try_punch` le
-	# `is_action_just_pressed` - so verdadeiro no processamento seguinte ao
-	# press, entao soltar no frame de depois perde o soco.
-	if _t > 0.06 and not _punch_thrown:
-		_punch_thrown = true
-		Input.action_press("hit_right")
-	elif _punch_thrown and _t > 0.16:
-		_set_action("hit_right", false)
-
-	# Só conta depois de o soco ter ACERTADO, avisado pelo proprio sinal do
-	# jogador. Antes disso, qualquer estado ou deslocamento do rival e coisa
-	# dele, nao efeito do soco.
-	if _punch_connected:
-		if rival.state == RivalBike.State.STAGGERED or rival.state == RivalBike.State.DOWN:
-			_rival_staggered = true
-		_rival_shove = maxf(_rival_shove, absf(rival.lateral - _rival_lateral_before))
-
-	if _t >= 3.0:
-		_metric("combate_empurrao_m", _rival_shove)
-		_report.append(
-			(
-				"combate              soco %s, rival empurrado %.2f m, %s"
-				% [
-					"acertou" if _punch_connected else "ERROU",
-					_rival_shove,
-					"cambaleou" if _rival_staggered else "NAO reagiu"
-				]
-			)
+## Fase 6 - combate: a montagem mora em `ProvaDeCombate` -----------------
+func _phase_combat(delta: float) -> void:
+	if _prova_de_combate == null:
+		_prova_de_combate = ProvaDeCombate.new(
+			_world, _player, _tuning, _metrics, _failures, _report
 		)
-		_check(_punch_connected, "o soco passou pelo rival emparelhado sem acertar")
-		_check(
-			_rival_staggered, "o soco acertou e o rival nao cambaleou - a cadeia do combate quebrou"
-		)
-		# O empurrao e o combate: sem deslocamento lateral nao da pra jogar o
-		# rival dentro de um carro parado, que e o golpe do Road Rash.
-		_check(
-			_rival_shove > 0.1,
-			"o rival mal saiu do lugar (%.2f m): o soco vira cosmetico" % _rival_shove
-		)
+	if _prova_de_combate.passo(delta):
 		_next_phase()
 
 
@@ -835,18 +742,6 @@ func _read_phase_arg() -> void:
 		return
 	_stop_after = indice_fase
 	print("fase: parando depois de '%s'" % pedida)
-
-
-## So pra a fase de combate saber que o rival caiu de verdade.
-func _on_rival_down(_pelo_jogador: bool) -> void:
-	_rival_staggered = true
-
-
-## O soco do jogador encostou em alguem. E a unica prova de causa que existe:
-## dai pra frente, o que acontecer com o rival e efeito do soco.
-func _on_punch_landed(target: Node3D) -> void:
-	if target is RivalBike:
-		_punch_connected = true
 
 
 func _set_action(action_name: String, pressed: bool) -> void:
