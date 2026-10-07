@@ -142,6 +142,15 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## briga.
 @export_range(0.0, 6.0, 0.1) var rival_punch_rest: float = 2.6
 
+## Empurrao lateral do soco do rival no jogador, em m/s.
+##
+## Separado do `punch_shove` do jogador porque os dois lados nao pesam igual. O
+## do jogador subiu para 15 pra jogar rival na faixa do lado; no jogador, esse
+## mesmo numero vira velocidade lateral numa moto que ele esta tentando
+## controlar, e apanhar com o dobro tira o corredor da mao dele. 7,5 e o que o
+## soco do rival sempre deu.
+@export_range(1.0, 20.0, 0.25) var rival_punch_shove: float = 7.5
+
 ## Quanto da distancia pro jogador vira velocidade do rival, em (m/s) por metro.
 ##
 ## E o slider de "quanto de corrida, quanto de briga". Zero e corrida honesta:

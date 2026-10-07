@@ -645,7 +645,7 @@ def _write_visual_baseline(visual: dict) -> None:
 PROVA_DIR = DEV_DIR / "prova"
 
 
-def cmd_prova(_: argparse.Namespace) -> int:
+def cmd_prova(args: argparse.Namespace) -> int:
     """O quadro congelado da prova visual: os mesmos quatro quadros, sempre.
 
     Mesma semente, mesmo trecho de pista, camera encaixada e mundo congelado
@@ -661,6 +661,11 @@ def cmd_prova(_: argparse.Namespace) -> int:
     for antigo in PROVA_DIR.glob("*.png"):
         antigo.unlink()
     os.environ["RUSHFOOD_PROVA_DIR"] = str(PROVA_DIR)
+    # O padrao e a perseguicao, e e contra ela que se compara visual. A garupa
+    # e para mexer na propria garupa: sem quadro congelado, cada ajuste dela
+    # vira "parece melhor" contra a lembranca de ontem.
+    if args.garupa:
+        os.environ["RUSHFOOD_PROVA_CAMERA"] = "garupa"
     code = _godot(binary, "--", "--prova")
     pngs = sorted(PROVA_DIR.glob("*.png"))
     if code != 0:
@@ -798,7 +803,10 @@ def main() -> int:
     p_shots.add_argument("--out", metavar="PASTA", help="onde gravar os PNGs")
     p_shots.add_argument("--update", action="store_true",
                          help="regrava o baseline visual (olhe os PNGs antes)")
-    sub.add_parser("prova", help="prova visual: os mesmos quadros congelados, para comparar")
+    p_prova = sub.add_parser("prova",
+                             help="prova visual: os mesmos quadros congelados, para comparar")
+    p_prova.add_argument("--garupa", action="store_true",
+                         help="os mesmos quadros pela camera GARUPA, e nao pela perseguicao")
     sub.add_parser("fps", help="tempo de quadro da corrida solta, com tela e sem vsync")
     sub.add_parser("run", help="abre o jogo")
     sub.add_parser("export", help="exporta as tres plataformas")

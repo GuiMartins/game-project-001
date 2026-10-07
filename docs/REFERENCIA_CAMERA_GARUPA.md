@@ -538,3 +538,32 @@ Cada etapa é jogável sozinha e passa pelo portão.
   Três quartos a ~21° e câmera a 1,25 m de altura pedem vistas que esse
   *sheet* não teria. Enquanto o entregador for modelo 3D, isso não custa
   nada; se a arte virar sprite, o `GARUPA` é o primeiro modo a pagar.
+
+## Depois de jogar: a lente subiu (07/10/2026)
+
+O risco de cima aconteceu. Com a lente a 1,25 m mirando no banco, o horizonte
+ficava a ~40% do topo, o baú e o capacete por cima dele, e mais da metade da
+tela era asfalto a dois metros da moto. Os três quartos não salvavam: o
+corredor inteiro, de 20 a 80 m, cabia numa faixa de uns 12 pixels atrás das
+costas do piloto. Dava para ver o piloto, e não o carro que ia fechar.
+
+A alavanca que resolve é a altura, e não o lado: o que tapa a frente é o
+capacete estar **acima** do horizonte. Com a lente acima dele, a linha de
+visada passa por cima do baú e o piloto desce para baixo do horizonte, onde
+só tapa asfalto.
+
+| | Antes | Agora | Por quê |
+| --- | --- | --- | --- |
+| `garupa_altura` | 1,25 m | **2,0 m** | Acima do capacete: o braço esticado de quem vai na garupa |
+| `garupa_mira_altura` | 0,85 m | **1,6 m** | Mirando no banco, a lente alta apontava para o asfalto |
+| `garupa_distancia` | 1,5 m | **2,4 m** | A 1,5 m a lente ficava em cima do piloto, olhando a moto de cima |
+| `garupa_fov` | 80° | **74°** | ~107° na horizontal: ainda ultra-angular, mas o carro a 30 m tem tamanho |
+
+O que **não** mudou é o que faz a câmera ser esta: o cinegrafista com
+velocidade própria, os três quartos com troca de lado, a mira sem suavização
+na vertical que sobe do pneu traseiro (o pino continua, só subiu do banco
+para o ombro), o giro e o tremor de banda. O piloto segue ocupando ~40% da
+altura da tela, contra ~29% na perseguição.
+
+Para comparar um ajuste com outro, `python tools/dev.py prova --garupa` tira
+os mesmos quatro quadros congelados da prova visual pela câmera de garupa.

@@ -80,8 +80,27 @@ const SAVE_PATH: String = "user://tuning.tres"
 
 ## Acima deste angulo (graus) entre a moto e a superficie batida, e capotagem.
 @export_range(10.0, 80.0, 1.0) var crash_angle: float = 38.0
-## Abaixo desta velocidade (m/s) nunca capota, so raspa.
-@export_range(2.0, 40.0, 0.5) var crash_min_speed: float = 16.0
+## Velocidade de APROXIMACAO (m/s) abaixo da qual nunca capota, so quica.
+##
+## E a diferenca entre as duas velocidades, nao a da moto: a 100 km/h na
+## traseira de um carro a 25 km/h voce chega a 75, e nao a 100. Ja foi a
+## velocidade da moto, 16 m/s, e com ela toda encostada no transito acima de
+## 58 km/h derrubava - quase toda batida. 22 m/s sao 80 km/h de diferenca: so
+## cai quem chega muito mais rapido que o que esta na frente.
+@export_range(2.0, 40.0, 0.5) var crash_min_speed: float = 22.0
+## Abaixo desta fracao da moto em cima da lataria, a batida e na quina.
+##
+## Pegar o canto de um carro desvia a moto em vez de derrubar. A caixa de
+## colisao da a normal da FACE que entrou, e na quina essa face costuma ser a
+## traseira: sem esta regra, raspar o para-choque com o guidao valia o mesmo que
+## entrar de frente no porta-malas. Fracao, e nao metros: o poste e mais fino
+## que a moto, e em metros todo poste seria quina.
+@export_range(0.0, 1.0, 0.05) var corner_fraction: float = 0.6
+## Maior desvio (graus) que uma quina da na moto, quando ela chega a
+## `crash_min_speed`. Parece pouco, mas a assistencia de alinhamento leva quase
+## um segundo para desfazer: a 126 km/h, 8 graus sao uns 4 m de lado - uma
+## faixa. Com 18 eram quase 9, e a quina jogava a moto em cima do carro do lado.
+@export_range(0.0, 45.0, 1.0) var corner_deflect: float = 8.0
 ## Fracao da velocidade perdida ao raspar em carro/guard-rail.
 @export_range(0.0, 1.0, 0.01) var scrape_speed_loss: float = 0.16
 ## Desaceleracao continua (m/s^2) enquanto raspa no guard-rail.
@@ -100,8 +119,12 @@ const SAVE_PATH: String = "user://tuning.tres"
 @export_range(0.03, 0.4, 0.01) var punch_active: float = 0.13
 ## Tempo total ate poder socar de novo, em segundos.
 @export_range(0.1, 1.5, 0.05) var punch_cooldown: float = 0.45
-## Empurrao lateral aplicado no alvo, em m/s.
-@export_range(1.0, 20.0, 0.25) var punch_shove: float = 7.5
+## Empurrao lateral do soco do jogador no rival, em m/s; vira 0,14 s disso de
+## deslocamento (15 -> 2,1 m, dois tercos de faixa). Era 7,5, e o 1 m que isso
+## dava so jogava o rival no carro se o carro ja estivesse encostado nele - o
+## golpe do Road Rash e empurrar alguem do corredor pra dentro da faixa do lado.
+## O soco do rival no jogador tem slider proprio, `rival_punch_shove`.
+@export_range(1.0, 20.0, 0.25) var punch_shove: float = 15.0
 ## Segundos que o alvo fica sem controle depois de apanhar.
 @export_range(0.1, 2.0, 0.05) var punch_stagger: float = 0.7
 
@@ -145,22 +168,32 @@ const SAVE_PATH: String = "user://tuning.tres"
 ## docs/REFERENCIA_CAMERA_GARUPA.md; a medida que decide e jogar.
 @export_group("Camera garupa")
 
-## Da lente ao contato do pneu traseiro, em metros de pista. No video e 1 m; a
-## tela aqui e deitada, e a 1 m com 80 graus de FOV o capacete sai pelo topo.
-@export_range(0.8, 4.0, 0.05) var garupa_distancia: float = 1.5
+## Da lente ao contato do pneu traseiro, em metros de pista. No video e 1 m.
+## Comecou em 1,5 m, com a lente na cintura; subindo a lente para ver por cima
+## do bau, a 1,5 m o piloto fica embaixo dela e a camera olha a moto de cima.
+## A 2,4 m ele continua ocupando ~40% da altura da tela: segue sendo colado.
+@export_range(0.8, 4.0, 0.05) var garupa_distancia: float = 2.4
 ## Mais perto que isto, nunca - nem freando no talo. A camera dentro da moto e
 ## o erro mais visivel deste modo, e o video de referencia comete.
 @export_range(0.5, 2.0, 0.05) var garupa_distancia_min: float = 0.9
-## Altura da lente sobre o chao embaixo dela, em metros. Na cintura do piloto:
-## poe o horizonte a ~37% do topo, como no video.
-@export_range(0.6, 2.0, 0.05) var garupa_altura: float = 1.25
-## Altura da mira sobre o contato traseiro, em metros: o banco. Mais alto sobe
-## o piloto na tela e desce o horizonte.
-@export_range(0.4, 1.4, 0.05) var garupa_mira_altura: float = 0.85
-## FOV vertical, em graus, fixo. Da ~112 na horizontal em 16:9. Sem abrir com
-## a velocidade: aqui ela vem da proximidade, e FOV abrindo a um metro do
-## piloto encolhe ele justo quando deveria pesar.
-@export_range(60.0, 100.0, 1.0) var garupa_fov: float = 80.0
+## Altura da lente sobre o chao embaixo dela, em metros. O video filma da
+## cintura (1,2 m), e a 1,25 m o bau e o capacete ficavam acima do horizonte,
+## bem na frente do corredor: dava para ver o piloto e nao o que vinha. A 2 m
+## - o braco esticado de quem vai na garupa - o capacete cai abaixo do
+## horizonte e a rua inteira aparece por cima dele.
+@export_range(0.6, 2.6, 0.05) var garupa_altura: float = 2.0
+## Altura da mira sobre o contato traseiro, em metros. Continua na vertical
+## que sobe do pneu traseiro - o pino do enquadramento -, so que no ombro, e
+## nao no banco: com a lente a 2 m, mirar no banco apontava a camera para o
+## asfalto e subia o horizonte para o terco de cima. Mais alto desce o
+## horizonte e poe o piloto mais embaixo na tela.
+@export_range(0.4, 2.0, 0.05) var garupa_mira_altura: float = 1.6
+## FOV vertical, em graus, fixo. Da ~107 na horizontal em 16:9: ainda
+## ultra-angular, mas o carro a 30 m nao vira um ponto. A 80 graus o corredor
+## la na frente cabia em meia duzia de pixels. Sem abrir com a velocidade:
+## aqui ela vem da proximidade, e FOV abrindo perto do piloto encolhe ele
+## justo quando deveria pesar.
+@export_range(60.0, 100.0, 1.0) var garupa_fov: float = 74.0
 ## Quanto a camera fica de lado, em metros: tres quartos a ~21 graus. E o que
 ## deixa o fundo da rua aparecer ao lado do piloto. Zero = sempre atras.
 @export_range(0.0, 1.5, 0.05) var garupa_lado: float = 0.7
