@@ -73,6 +73,8 @@ var _combo_flash: float = 0.0
 var _combo_texto: String = ""
 var _hint_time: float = 0.0
 var _last_position: int = 0
+var _fps_texto: String = ""
+var _fps_time: float = 0.0
 
 
 func _ready() -> void:
@@ -143,6 +145,11 @@ func show_event(text: String, color: Color) -> void:
 
 
 func _process(delta: float) -> void:
+	# Meio segundo entre leituras: numero que troca a cada quadro nao se le.
+	_fps_time -= delta
+	if _fps_time <= 0.0:
+		_fps_time = 0.5
+		_fps_texto = "%d FPS" % roundi(Engine.get_frames_per_second())
 	# Com o pixel desligado o SubViewport cresce para a resolucao da janela.
 	# A HUD acompanha em multiplo inteiro, para o pixel da fonte continuar
 	# quadrado, e o layout continua sendo o de 640x360.
@@ -256,6 +263,11 @@ func _desenha() -> void:
 		carimbo,
 		Color(0.8, 0.83, 0.9, 0.75)
 	)
+
+	# O fps, no rodape do meio, pequeno e apagado como o carimbo: cada coisa
+	# que entra no mundo cobra quadro, e quem joga o zip ve na hora se a
+	# maquina dele aguenta - sem ter que rodar o `dev.py fps`.
+	_centralizado(fonte_miuda, tela.y - MARGEM.y + 4, _fps_texto, Color(0.8, 0.83, 0.9, 0.75))
 
 	# --- Centro alto: avisos que aparecem e somem. Nao no meio da tela: ali e
 	# onde a pista a frente aparece, e texto em cima do corredor tapa o carro
