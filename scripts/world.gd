@@ -360,14 +360,21 @@ func _pick_lane() -> float:
 ## So encostado abre porta - e nem todo encostado abre. Se encostar fosse
 ## sinonimo de porta, a faixa da ponta viraria regra decorada em vez de aposta,
 ## e o jogador aprenderia a nunca chegar perto em vez de calcular o risco.
+##
+## Um sorteio so para os dois tipos de porta, como era quando havia um tipo:
+## sorteio a mais aqui empurraria todo o resto da corrida do banco de provas.
 func _place_car(car: TrafficCar, at_offset: float) -> void:
 	if _rng.randf() < world_tuning.parked_chance:
 		var curb := 0 if _rng.randf() < 0.5 else RoadTrack.LANE_COUNT - 1
-		car.recycle(
-			at_offset, RoadTrack.lane_center(curb), true, _rng.randf() < world_tuning.door_chance
-		)
+		var sorteio := _rng.randf()
+		var porta := TrafficCar.Porta.NENHUMA
+		if sorteio < world_tuning.door_open_chance:
+			porta = TrafficCar.Porta.ABERTA
+		elif sorteio < world_tuning.door_open_chance + world_tuning.door_ambush_chance:
+			porta = TrafficCar.Porta.NA_CARA
+		car.recycle(at_offset, RoadTrack.lane_center(curb), true, porta)
 	else:
-		car.recycle(at_offset, _pick_lane(), false, false)
+		car.recycle(at_offset, _pick_lane(), false)
 	_desencosta(car)
 
 
