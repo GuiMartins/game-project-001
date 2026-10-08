@@ -43,15 +43,5 @@
 		"soco_janela_s": 0.133333,
 		"velocidade_22s_kmh": 183.647097
 	},
-	"valores_por_sistema": {
-		"linux": {
-			"corrida_atras_do_lider_m": 27.169012,
-			"corrida_distancia_m": 1374.557495,
-			"corrida_posicao": 4.0,
-			"corrida_raspadas": 9.0,
-			"corrida_ritmo_lider_kmh": 110.060619,
-			"disputa_posicao": 6.0,
-			"disputa_rivais_na_linha": 5.0
-		}
-	}
+	"valores_por_sistema": {}
 }
