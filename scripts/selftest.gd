@@ -785,11 +785,25 @@ func _set_action(action_name: String, pressed: bool) -> void:
 ## o mundo virava caixas flutuando no vazio. Nenhum numero do banco de provas
 ## se mexia - todos medem fisica, e a fisica nao sabe que a pista sumiu.
 func _capture(path: String) -> void:
+	# Congela o mundo e o banco no passo que pediu o quadro, e encaixa a
+	# camera. A captura espera tres quadros desenhados (dois do ceu, um do
+	# mundo), e com tudo rodando eles eram tres quadros de jogo a mais: no CI,
+	# a 3 fps e oito passos de fisica por quadro, a moto andava 7 m entre o
+	# pedido e a foto, e com predio colado na calcada isso mexia 28% no ceu.
+	# A camera persegue a moto com o tempo do quadro desenhado, que e relogio
+	# de maquina, entao ela vai encaixada - como na prova visual. Congelado,
+	# o quadro e o mesmo passo em qualquer maquina, e o banco tambem para: os
+	# segundos da corrida solta continuam sendo segundos de mundo.
+	_world.process_mode = Node.PROCESS_MODE_DISABLED
+	process_mode = Node.PROCESS_MODE_DISABLED
+	_world.camera.encaixar()
 	await _captura_ceu()
 	await RenderingServer.frame_post_draw
 	var image := get_viewport().get_texture().get_image()
 	image.save_png(path)
 	_measure_frame(image)
+	process_mode = Node.PROCESS_MODE_INHERIT
+	_world.process_mode = Node.PROCESS_MODE_INHERIT
 
 
 ## Um quadro com a camera sem desenhar geometria nenhuma: so o ceu.
