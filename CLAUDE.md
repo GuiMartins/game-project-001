@@ -137,9 +137,18 @@ sessão — e ninguém consegue ler o diff de algo que não foi empurrado. A seg
 então a pior consequência de uma branch empurrada é uma branch a mais no
 remoto.
 
-O que **continua** precisando de aval: abrir PR, fazer merge, subir a versão,
-criar tag, publicar release. Empurrar a branch é para o trabalho ficar visível; decidir
+O que **continua** precisando de aval: abrir PR, subir a versão, criar tag,
+publicar release. Empurrar a branch é para o trabalho ficar visível; decidir
 que ele entra é outra coisa.
+
+**PR aberto já nasce com auto-merge em squash** (`gh pr merge <n> --auto
+--squash`), sem pedir de novo. O aval de abrir o PR é o aval de juntar: o que
+faltava era esperar o verde, e isso o GitHub faz melhor que alguém lembrando
+de voltar ao PR. Continua seguro porque a `master` exige os dois checks, e
+vermelho não entra. Se o `gh` responder `clean status`, os checks do PR ainda
+não começaram: espere alguns segundos e repita. Não troque isso por uma action
+que liga o auto-merge sozinha: merge feito com o `GITHUB_TOKEN` não dispara o
+`release.yml`, e o bump de versão entraria sem publicar.
 
 **Merge exige check verde conferido — não basta o aval humano.** São duas
 perguntas diferentes, e cada uma tem a sua resposta:
