@@ -31,9 +31,13 @@ jobs:
     steps:
       # Com LFS: sem isto o export empacota o ponteiro de texto no lugar de
       # cada .png e .glb, e o zip publicado sai sem os assets. Ver ci.yml.
+      #
+      # Histórico inteiro e tags: o changelog é o log desde a release anterior,
+      # e o checkout raso padrão só traz o commit do merge.
       - uses: actions/checkout@v5
         with:
           lfs: true
+          fetch-depth: 0
 
       # A tag e o config/version precisam contar a mesma história. Divergência
       # aqui publica um binário que se apresenta com outra versão que a do
@@ -110,7 +114,14 @@ jobs:
           set -euo pipefail
           TAG="${{ steps.versao.outputs.tag }}"
 
+          # O que mudou vem primeiro: é o que quem já jogou a anterior procura.
+          CHANGELOG="$(python3 tools/dev.py changelog "$TAG")"
+
           NOTES="$(cat <<NOTAS
+          $CHANGELOG
+
+          ---
+
           Protótipo greybox do RushFood, build de \`${GITHUB_SHA:0:7}\`.
 
           | Arquivo | Plataforma |

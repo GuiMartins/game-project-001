@@ -12,6 +12,7 @@ da maioria das maquinas e ninguem sabe qual versao usar. Quem chega no projeto
     python tools/dev.py run        # abre o jogo
     python tools/dev.py export     # exporta as tres plataformas
     python tools/dev.py versao patch  # sobe a versao: o merge dela publica
+    python tools/dev.py changelog  # o que mudou desde a release anterior
 
 A versao vem de `.godot-version`, que e a fonte unica: o CI le o mesmo arquivo.
 Bumpar a engine e editar uma linha, nao cacar constantes em tres workflows.
@@ -789,6 +790,85 @@ def cmd_versao(args: argparse.Namespace) -> int:
     return 0
 
 
+# O que cada tipo de commit vira no corpo da release. Quem baixa o zip quer
+# saber o que mudou na corrida, nao que o CI ganhou um cache: novidade,
+# correcao e desempenho ficam a vista, o resto vai para um bloco recolhido.
+# Classifica pelo tipo do conventional, e nao pelo emoji, porque o mesmo
+# emoji chega com e sem o seletor de variacao (U+FE0F) conforme o teclado.
+SECOES_CHANGELOG = (
+    ("Novidades", ("feat",)),
+    ("Correções", ("fix",)),
+    ("Desempenho", ("perf",)),
+)
+ASSUNTO_CONVENCIONAL = re.compile(r"^(?:\S+\s+)?(\w+)(?:\([^)]*\))?!?:\s*(.+)$")
+
+
+def _git(*args: str) -> str:
+    return subprocess.run(["git", *args], cwd=PROJECT, check=True,
+                          capture_output=True, text=True, encoding="utf-8").stdout
+
+
+def tag_anterior(tag: str) -> str | None:
+    """A ultima tag de versao alcancavel do HEAD, sem contar a propria `tag`.
+
+    Na pipeline o HEAD e o commit do merge: no push para a master a tag nova
+    ainda nao existe, e no push de tag ela aponta para o proprio HEAD. Os dois
+    casos caem aqui sem `if`, porque a tag nova e descartada pelo nome.
+    """
+    def chave(nome: str) -> tuple[int, ...]:
+        return tuple(int(p) for p in nome[1:].split("."))
+
+    tags = [t for t in _git("tag", "--merged", "HEAD", "--list", "v*").split()
+            if re.fullmatch(r"v\d+\.\d+\.\d+", t) and t != tag]
+    return max(tags, key=chave) if tags else None
+
+
+def changelog(tag: str) -> str:
+    """O markdown do que mudou desde a release anterior, agrupado por tipo.
+
+    `--first-parent` porque a master so recebe squash: cada commit dela e um
+    PR, e o assunto ja traz o `(#N)` que o GitHub transforma em link. Sem
+    isso, os merges de antes do squash despejariam os commits internos de
+    cada branch na lista.
+    """
+    anterior = tag_anterior(tag)
+    faixa = f"{anterior}..HEAD" if anterior else "HEAD"
+    secoes: dict[str, list[str]] = {nome: [] for nome, _ in SECOES_CHANGELOG}
+    por_dentro: list[str] = []
+    for assunto in _git("log", "--first-parent", "--format=%s", faixa).splitlines():
+        casou = ASSUNTO_CONVENCIONAL.match(assunto)
+        tipo, texto = (casou.group(1), casou.group(2)) if casou else ("", assunto)
+        # O commit do bump e a propria release: lista-lo seria dizer
+        # "esta versao trouxe esta versao".
+        if tipo == "chore" and re.match(r"(sobe a )?vers[aã]o", texto, re.IGNORECASE):
+            continue
+        linha = f"- {texto[:1].upper()}{texto[1:]}"
+        destino = next((nome for nome, tipos in SECOES_CHANGELOG if tipo in tipos), None)
+        (secoes[destino] if destino else por_dentro).append(linha)
+
+    partes: list[str] = []
+    for nome, linhas in secoes.items():
+        if linhas:
+            partes.append(f"### {nome}\n\n" + "\n".join(linhas))
+    if por_dentro:
+        partes.append("<details>\n<summary>Por dentro do projeto</summary>\n\n"
+                      + "\n".join(por_dentro) + "\n\n</details>")
+    if not partes:
+        partes.append("Nenhuma mudança desde a release anterior.")
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    if anterior and repo:
+        servidor = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
+        partes.append(f"Diff completo: [{anterior}...{tag}]({servidor}/{repo}/compare/"
+                      f"{anterior}...{tag})")
+    return "\n\n".join(partes) + "\n"
+
+
+def cmd_changelog(args: argparse.Namespace) -> int:
+    tag = args.tag or f"v{project_version()}"
+    sys.stdout.write(changelog(tag))
+    return 0
+
+
 def cmd_export(_: argparse.Namespace) -> int:
     version = godot_version()
     binary = require_godot(version)
@@ -839,6 +919,10 @@ def main() -> int:
     p_versao = sub.add_parser("versao", help="mostra ou sobe a versao; o merge da versao nova publica")
     p_versao.add_argument("nova", nargs="?", metavar="X.Y.Z|patch",
                           help="a versao nova, ou `patch` para subir o ultimo numero")
+    p_changelog = sub.add_parser("changelog",
+                                 help="o que mudou desde a release anterior, em markdown")
+    p_changelog.add_argument("tag", nargs="?", metavar="vX.Y.Z",
+                             help="a tag da release (padrao: a do config/version)")
     p_test = sub.add_parser("test", help="testes unitarios (GdUnit4), rapidos")
     p_test.add_argument("caminho", nargs="?", default="tests/unit",
                         help="pasta ou arquivo de teste (padrao: tests/unit)")
@@ -855,6 +939,7 @@ def main() -> int:
         "shots": cmd_shots,
         "prova": cmd_prova,
         "versao": cmd_versao,
+        "changelog": cmd_changelog,
         "fps": cmd_fps,
     }[args.comando]
     return handler(args)
