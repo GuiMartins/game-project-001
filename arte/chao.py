@@ -20,7 +20,7 @@ tres regras, que valem para as duas texturas:
 
 1. **Detalhe fino corre ao longo da pista, nunca atravessado.** O grao do
    asfalto e quatro vezes mais comprido que largo, a marca de pneu e uma faixa
-   longitudinal, a onda da calcada e longa. Detalhe longitudinal parece rastro
+   longitudinal, a junta da calcada corre junto com ela. Detalhe longitudinal parece rastro
    de velocidade em vez de piscar - e e o que o borrao da P7 vai esticar mais.
 2. **Contraste alto so no que e grande.** Grao fino tem amplitude baixa, para
    o mipmap engolir de longe sem deixar padrao; quem tem contraste e a marca de
@@ -29,8 +29,8 @@ tres regras, que valem para as duas texturas:
    calcada): a repeticao do proprio tile fica bem acima de 1,7 m.
 
 O mapeamento esta em `road_track.gd`: no asfalto o U cobre uma faixa de
-rolamento (3,3 m) e o V 6,6 m; na calcada o U vai do meio-fio (U = 0) ate a
-borda de fora, e o V cobre 4,4 m. A cor de base e neutra e um pouco escura de
+rolamento (3,3 m) e o V 6,6 m; na calcada o U cobre 2,2 m e repete do
+meio-fio ate a fachada, e o V cobre 4,4 m. A cor de base e neutra e um pouco escura de
 proposito: quem da a cor de meio-dia e o LUT (`arte/paleta.py`), como em todo o
 resto do mundo.
 """
@@ -167,64 +167,50 @@ def asfalto(rng):
 
 # --- Calcada -------------------------------------------------------------------
 #
-# 128x256: U sao os 2,2 m da calcada (58 px/m), do meio-fio (U = 0) para fora; V
-# sao 4,4 m (58 px/m). Texel quadrado, e 4,4 m de periodo ao longo da pista.
+# 128x256: U sao 2,2 m de calcada (58 px/m) e V sao 4,4 m (58 px/m). Texel
+# quadrado, e o tile repete nos dois eixos: a calcada vai do meio-fio ate a
+# fachada, e o meio-fio e geometria propria no `road_track.gd`.
+#
+# Cimentado, e nao pedra portuguesa. A onda de Copacabana e calcadao de praia;
+# a calcada de avenida das referencias (`docs/referencias/video_01`) e lisa,
+# clara, sem desenho - quem da o ritmo nela e o que esta em cima: poste,
+# arvore, gente.
 
 CALCADA_U = 128
 CALCADA_V = 256
-# Meio-fio: 20 cm de concreto. Sem junta transversal (regra 1): a de verdade
-# vem a cada metro, e a cada metro e exatamente o periodo que pisca.
-MEIO_FIO = 12
-MEIO_FIO_COR = (178, 174, 166)
-# Pedra portuguesa: pedrinhas de ~5 cm, 3x3 texels com rejunte de 1.
-PEDRA = 4
-CREME = (198, 189, 170)
-PRETA = (92, 90, 88)
-REJUNTE = -34
-# A onda de Copacabana, correndo ao longo da pista. Um comprimento de onda por
-# tile (4,4 m): a 180 km/h a onda passa de lado a lado em mais de 5 quadros,
-# entao ela desliza em vez de tremer.
-ONDA_CENTRO = 0.6
-ONDA_AMPLITUDE = 0.2
-ONDA_LARGURA = 0.11
+CIMENTO = (168, 164, 156)
+# Manchas de metro, de chuva e de sujeira: quase sem contraste (regra 2).
+MANCHA = 16
+# Grao do cimento: 1x3 texels, comprido ao longo da pista (regra 1).
+GRAO_CIMENTO = 7
+# Junta de dilatacao so longitudinal, uma por tile (2,2 m). A transversal de
+# verdade vem a cada 1,5 m, e 1,5 m e exatamente o periodo que pisca.
+JUNTA = -26
+# Chiclete e pingo de oleo: pontos escuros soltos, o que faz o liso ler como
+# chao pisado, e nao como plastico.
+PINGO = (0.012, -30)
 
 
 def calcada(rng):
-    tom = [Ruido(rng, 2, 4), Ruido(rng, 4, 8)]
+    mancha = [Ruido(rng, 2, 4), Ruido(rng, 4, 8), Ruido(rng, 8, 16)]
+    grao = [[rng.random() for _ in range(CALCADA_U)] for _ in range(CALCADA_V // 3 + 1)]
+    pingo = [[rng.random() for _ in range(CALCADA_U // 2)] for _ in range(CALCADA_V // 2)]
     pixels = [0] * (CALCADA_U * CALCADA_V * 3)
-    jitter = {}
     for y in range(CALCADA_V):
         v = y / CALCADA_V
         for x in range(CALCADA_U):
             k = (y * CALCADA_U + x) * 3
             u = (x + 0.5) / CALCADA_U
-            if x < MEIO_FIO:
-                cor = list(MEIO_FIO_COR)
-                # Aresta de cima pega sol; o pe do meio-fio, no lado do
-                # asfalto, e sombra. Le como degrau sem geometria nenhuma.
-                ajuste = 14 if x < 2 else (-10 if x == MEIO_FIO - 1 else 0)
-                ajuste += (rng.random() - 0.5) * 6
-                cor = [c + ajuste for c in cor]
-            else:
-                # Fileiras alternadas meia pedra, como a pedra assentada a mao.
-                linha = y // PEDRA
-                desloca = (PEDRA // 2) if linha % 2 else 0
-                coluna = (x - MEIO_FIO + desloca) // PEDRA
-                chave = (linha, coluna)
-                if chave not in jitter:
-                    jitter[chave] = (rng.random() - 0.5) * 18
-                # A onda e decidida por pedra, nao por texel: a borda da faixa
-                # preta segue as pedras, serrilhada, como na calcada.
-                cu = (MEIO_FIO + coluna * PEDRA - desloca + PEDRA / 2) / CALCADA_U
-                cv = (linha * PEDRA + PEDRA / 2) / CALCADA_V
-                onda = ONDA_CENTRO + ONDA_AMPLITUDE * math.sin(2 * math.pi * cv)
-                base = PRETA if abs(cu - onda) < ONDA_LARGURA else CREME
-                ajuste = jitter[chave] + (fbm(tom, u, v) - 0.5) * 14
-                rejunte = (x - MEIO_FIO + desloca) % PEDRA == PEDRA - 1 or y % PEDRA == PEDRA - 1
-                if rejunte:
-                    ajuste += REJUNTE * (0.6 if base is PRETA else 1.0)
-                cor = [c + ajuste for c in base]
-            pixels[k : k + 3] = [_limita(c) for c in cor]
+            ajuste = (fbm(mancha, u, v) - 0.5) * 2 * MANCHA
+            ajuste += (grao[y // 3][x] - 0.5) * GRAO_CIMENTO
+            if pingo[y // 2][x // 2] < PINGO[0]:
+                ajuste += PINGO[1]
+            if x == 0:
+                ajuste += JUNTA
+            elif x == 1:
+                # A borda da placa do lado de la pega sol.
+                ajuste += 8
+            pixels[k : k + 3] = [_limita(c + ajuste) for c in CIMENTO]
     return pixels
 
 

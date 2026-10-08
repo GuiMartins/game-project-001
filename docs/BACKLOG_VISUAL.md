@@ -202,7 +202,7 @@ e no `git log`.
 
 ### A rua
 
-- [ ] **V09** — Calçada larga até a fachada
+- [x] **V09** — Calçada larga até a fachada
 
   O item em que o vídeo está mais longe do jogo. Lá a calçada tem 5–8 m e dá
   espaço para poste, árvore, lixeira e gente. Aqui ela é um friso de 2,2 m e,
@@ -217,6 +217,12 @@ e no `git log`.
     em `edge + 6.0`).
   - **Aceite:** do meio-fio à fachada é calçada, sem grama. `selftest` sem
     variação, se o andável não mudou.
+
+  - **Feito**, com um desvio: a calçada é cimentado liso (a onda de
+    Copacabana é calçadão de praia, não avenida), e o andável não ficou onde
+    estava. A pedido do Guilherme o guard-rail saiu: a moto vai até a fachada
+    e bate no prédio, que tem colisor (`scripts/cidade.gd`). A faixa de
+    serviço está desenhada, mas não bloqueia — quem bloqueia é o que mora nela.
 
 - [ ] **V10** — Faixa de pedestres e linha de bordo
 
@@ -249,6 +255,11 @@ e no `git log`.
   - **O que fazer:** colocação em sequência no `world.gd`; térreo com loja e
     toldo em todos os tipos de rua (não nas torres do fundo), em
     `arte/predios.py`; mais um ou dois tipos se a sequência repetir à vista.
+  - **Em andamento:** a colocação em sequência está feita
+    (`scripts/cidade.gd`): prédio colado em prédio, junta de até meio metro, e
+    ruas transversais a cada 70–160 m, com semáforo e fila parada nas de
+    acesso. Falta o térreo com loja nos outros tipos e a alternância avenida
+    aberta / corredor fechado.
   - **Aceite:** num trecho de corredor não se vê céu entre prédios no nível
     da rua; `fps` medido, porque é aqui que a conta de desenho aperta.
 

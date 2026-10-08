@@ -7,7 +7,7 @@ extends Node3D
 ##
 ## O chao NAO tem colisor. Altura e direcao sao amostradas analiticamente da
 ## curva - a 50 m/s um CharacterBody3D atravessaria um trimesh. Colisores
-## existem so pro que importa: carros, postes e guard-rail.
+## existem so pro que importa: carros, postes, semaforos e predios.
 
 ## Rampa mais forte que a pista chega a ter, em altura por metro percorrido.
 ## 0.14 e ladeira de bairro alto: ingreme o bastante pra a moto perder folego
@@ -40,6 +40,12 @@ const ASFALTO: Texture2D = preload("res://assets/visual/asfalto_albedo.png")
 const ASFALTO_TILE: float = 6.6
 const CALCADA: Texture2D = preload("res://assets/visual/calcada_albedo.png")
 const CALCADA_TILE: float = 4.4
+## Quanto da calcada cabe num tile de lado: a junta longitudinal fica a cada 2,2 m.
+const CALCADA_LARGURA: float = 2.2
+## O meio-fio, 20 cm de concreto mais claro que o cimentado.
+const MEIO_FIO: float = 0.2
+## A tira de servico depois do andavel, com os postes (que ficam a 0,8 m).
+const FAIXA_SERVICO: float = 1.6
 
 var curve: Curve3D
 var length: float = 0.0
@@ -227,14 +233,21 @@ static func half_width() -> float:
 	return float(LANE_COUNT) * LANE_WIDTH * 0.5
 
 
-## Ate onde da pra andar, contando a calcada.
-##
-## O acostamento ja e uma faixa visualmente distinta no mesh e o terreno cai
-## 0.35 m logo depois dele - entao o limite cai num lugar que o jogador ve.
-## Antes o guard-rail ficava em half_width + SHOULDER*0.6, no MEIO do
-## acostamento: parede invisivel no meio de uma coisa com cara de andavel.
+## Ate onde a calcada e livre: dali para fora vem a faixa de servico, a tira
+## mais escura onde ficam os postes, e depois a fachada. A moto passa, mas e
+## ali que mora o que derruba - e a camera de garupa, que nao tem colisor, nao
+## passa.
 static func sidewalk_limit() -> float:
 	return half_width() + SHOULDER
+
+
+## A unica parede analitica que sobrou: o fim do chao. Ate aqui quem segura a
+## moto sao os colisores - predio, poste, carro parado. Ja foi o
+## `sidewalk_limit`, um guard-rail invisivel na beira da calcada, e a rua
+## virava um tubo: nao dava para bater na fachada nem entrar na transversal.
+## Meio metro antes da borda, para a roda nao ficar pendurada no vazio.
+static func limite_do_mundo() -> float:
+	return half_width() + SHOULDER + GROUND - 0.5
 
 
 ## --- Mesh -----------------------------------------------------------------
@@ -248,8 +261,10 @@ func _build_mesh() -> void:
 	asphalt.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var shoulder := SurfaceTool.new()
 	shoulder.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var ground := SurfaceTool.new()
-	ground.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var curb := SurfaceTool.new()
+	curb.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var servico := SurfaceTool.new()
+	servico.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var paint := SurfaceTool.new()
 	paint.begin(Mesh.PRIMITIVE_TRIANGLES)
 
@@ -266,10 +281,21 @@ func _build_mesh() -> void:
 		# no meio-fio e 1 na borda de fora, dos dois lados.
 		var faixas := road_w / LANE_WIDTH
 		_quad(asphalt, o0, o1, -road_w, road_w, lift, Vector2(-faixas, faixas), ASFALTO_TILE)
-		_quad(shoulder, o0, o1, -road_w - SHOULDER, -road_w, 0.0, Vector2(1, 0), CALCADA_TILE)
-		_quad(shoulder, o0, o1, road_w, road_w + SHOULDER, 0.0, Vector2(0, 1), CALCADA_TILE)
-		_quad(ground, o0, o1, -edge - carpet, -edge, lift - 0.35)
-		_quad(ground, o0, o1, edge, edge + carpet, lift - 0.35)
+		# Calcada do meio-fio ate o fim do terreno, sem grama: avenida de
+		# cidade e cimento ate a fachada, e e debaixo dos predios e nas ruas que
+		# cruzam que o resto aparece. Andavel continua so o `SHOULDER`.
+		var fora := edge + carpet
+		var tiles := (fora - road_w) / CALCADA_LARGURA
+		_quad(shoulder, o0, o1, -fora, -road_w, 0.0, Vector2(tiles, 0), CALCADA_TILE)
+		_quad(shoulder, o0, o1, road_w, fora, 0.0, Vector2(0, tiles), CALCADA_TILE)
+		# O meio-fio e uma tira propria: na textura ele repetiria a cada tile.
+		_quad(curb, o0, o1, -road_w - MEIO_FIO, -road_w, 0.03)
+		_quad(curb, o0, o1, road_w, road_w + MEIO_FIO, 0.03)
+		# Faixa de servico: onde moram os postes, e onde a moto para. Antes o
+		# terreno caia ali e mostrava o limite; com cimento ate a fachada, e
+		# esta tira que mostra.
+		_quad(servico, o0, o1, -edge - FAIXA_SERVICO, -edge, 0.02)
+		_quad(servico, o0, o1, edge, edge + FAIXA_SERVICO, 0.02)
 
 		# Faixas divisorias tracejadas: alem de ler a pista, elas sao a
 		# referencia visual do corredor entre as filas de carro.
@@ -283,12 +309,13 @@ func _build_mesh() -> void:
 	# O asfalto tem que ficar claramente mais claro que o fundo, senao a pista
 	# desaparece e o jogador nao ve pra onde esta indo. Cores de meio-dia, e
 	# neutras ou quentes de proposito: as de antes eram de noite, puxadas pro
-	# azul, e com o ceu iluminando tudo de azul o asfalto virava violeta. O
-	# fundo e mato seco; a calcada, concreto claro.
-	_commit(ground, mesh, _flat_material(Color(0.24, 0.27, 0.17)))
-	_commit(asphalt, mesh, _textured_material(ASFALTO))
-	_commit(shoulder, mesh, _textured_material(CALCADA))
-	_commit(paint, mesh, _flat_material(Color(0.88, 0.86, 0.68)))
+	# azul, e com o ceu iluminando tudo de azul o asfalto virava violeta. A
+	# calcada e cimento claro.
+	_commit(asphalt, mesh, material_texturizado(ASFALTO))
+	_commit(shoulder, mesh, material_texturizado(CALCADA))
+	_commit(curb, mesh, material_liso(Color(0.70, 0.68, 0.65)))
+	_commit(servico, mesh, material_liso(Color(0.50, 0.49, 0.47)))
+	_commit(paint, mesh, material_liso(Color(0.88, 0.86, 0.68)))
 
 	_asphalt_mesh = MeshInstance3D.new()
 	_asphalt_mesh.name = "RoadMesh"
@@ -360,8 +387,8 @@ func _commit(st: SurfaceTool, mesh: ArrayMesh, mat: Material) -> void:
 	mesh.surface_set_material(mesh.get_surface_count() - 1, mat)
 
 
-func _textured_material(tex: Texture2D) -> StandardMaterial3D:
-	var mat := _flat_material(Color.WHITE)
+static func material_texturizado(tex: Texture2D) -> StandardMaterial3D:
+	var mat := material_liso(Color.WHITE)
 	mat.albedo_texture = tex
 	# Linear com mipmap e anisotropico, e nao "nearest": o chao e visto quase
 	# de lado e passando rapido. Com nearest, cada texel pula de pixel em pixel
@@ -372,7 +399,7 @@ func _textured_material(tex: Texture2D) -> StandardMaterial3D:
 	return mat
 
 
-func _flat_material(color: Color) -> StandardMaterial3D:
+static func material_liso(color: Color) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mat.roughness = 1.0
