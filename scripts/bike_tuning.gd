@@ -161,6 +161,11 @@ const SAVE_PATH: String = "user://tuning.tres"
 ## passar a curva de verdade, que segura a inclinacao, e engole o tremor: a
 ## 2.5, uma correcao de 3 Hz chega na camera com um oitavo da amplitude.
 @export_range(0.5, 20.0, 0.25) var cam_lean_rate: float = 2.5
+## Quanto a camera sacode na capotada, em metros de pico. Batida menor sacode
+## com o quadrado da forca: ver `ChaseCamera._tremor_de_batida`. Era 0,35 m
+## sorteado de um gaussiano a cada quadro, com pico perto de 1 m, e qualquer
+## raspada no carro tremia a tela inteira.
+@export_range(0.0, 0.5, 0.01) var cam_shake: float = 0.12
 
 ## --- Camera garupa --------------------------------------------------------
 ## O modo GARUPA do F2: um cinegrafista em outra moto, colado no jogador. Os
