@@ -413,22 +413,36 @@ func _phase_sidewalk(_delta: float) -> void:
 		_asphalt_speed = maxf(_asphalt_speed, _player.speed)
 		return
 
-	# Segundo trecho: encosta pra fora ate subir na calcada e achar a parede.
+	# Segundo trecho: sobe na calcada e anda no meio dela, com a mesma lei de
+	# direcao do piloto automatico. Velocidade ESTABILIZADA, nao o pico: ao
+	# subir, a moto ainda esta sendo puxada pro teto pelo sidewalk_drag, e
+	# medir o transiente mediria a descida da curva em vez do patamar.
+	if _t < 14.0:
+		var alvo := RoadTrack.half_width() + RoadTrack.SHOULDER * 0.5
+		var basis := _player.track.sample_basis(_player.track_offset)
+		var rumo := atan2((-basis.z).x, (-basis.z).z)
+		var steer := -wrapf(rumo - _player.heading, -PI, PI)
+		steer += clampf((alvo - _player.track_lateral) * 0.12, -0.35, 0.35)
+		_set_action("ride_right", steer > 0.02)
+		_set_action("ride_left", steer < -0.02)
+		if absf(_player.track_lateral) > RoadTrack.half_width() and _t > 11.0:
+			_sidewalk_speed = _player.speed
+		return
+
+	# Terceiro trecho: tudo para a direita, ate a fachada. Ja foi um
+	# guard-rail invisivel na beira da calcada; hoje quem segura e o colisor
+	# do predio (`Cidade`), e e ele que esta sendo medido.
+	_set_action("ride_left", false)
 	_set_action("ride_right", true)
-	# Velocidade ESTABILIZADA, nao o pico: ao subir, a moto ainda esta sendo
-	# puxada pro teto pelo sidewalk_drag, e medir o transiente mediria a
-	# descida da curva em vez do patamar em que ela para.
-	if absf(_player.track_lateral) > RoadTrack.half_width() and _t > 12.0:
-		_sidewalk_speed = _player.speed
 	_max_lateral = maxf(_max_lateral, absf(_player.track_lateral))
 
-	if _t >= 16.0:
+	if _t >= 18.0:
 		_metric("calcada_velocidade_asfalto_ms", _asphalt_speed)
 		_metric("calcada_velocidade_calcada_ms", _sidewalk_speed)
 		_metric("calcada_lateral_max_m", _max_lateral)
 		_report.append(
 			(
-				"calcada              %.1f m/s no asfalto, %.1f m/s na calcada, parede em %.2f m"
+				"calcada              %.1f m/s no asfalto, %.1f m/s na calcada, parou em %.2f m"
 				% [_asphalt_speed, _sidewalk_speed, _max_lateral]
 			)
 		)
@@ -455,13 +469,20 @@ func _phase_sidewalk(_delta: float) -> void:
 				% [_sidewalk_speed, _asphalt_speed]
 			)
 		)
-		# A parede nao pode vazar nem ficar aquem: aquem e parede invisivel no
-		# meio de uma coisa com cara de andavel.
+		# Passou da beira da calcada - a parede invisivel nao voltou - e nao
+		# passou do fim do chao. Onde ela para entre os dois depende do que
+		# estava na frente: neste trecho ela raspa na quina de um predio e
+		# entra na transversal ate o predio do fundo. Que o predio segura a
+		# moto e o `test_cidade.gd` que garante; aqui e o baseline que aponta
+		# se o caminho mudou.
 		_check(
-			absf(_max_lateral - RoadTrack.sidewalk_limit()) < 0.2,
 			(
-				"a moto parou em %.2f m e o limite andavel e %.2f m"
-				% [_max_lateral, RoadTrack.sidewalk_limit()]
+				_max_lateral > RoadTrack.sidewalk_limit() + 0.5
+				and _max_lateral < RoadTrack.limite_do_mundo() + 0.05
+			),
+			(
+				"a moto parou em %.2f m: devia passar de %.2f (calcada) e parar antes de %.2f"
+				% [_max_lateral, RoadTrack.sidewalk_limit(), RoadTrack.limite_do_mundo()]
 			)
 		)
 		_next_phase()

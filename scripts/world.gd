@@ -277,43 +277,24 @@ func _build_scenery() -> void:
 		props.add_child(pole)
 		pole.global_position = at
 
+	# Os sorteios dos predios do greybox continuam saindo do gerador do mundo,
+	# na mesma quantidade e na mesma ordem, e vao fora. Transito e rivais vem
+	# do mesmo gerador, depois daqui: tirar estes sorteios embaralharia a
+	# corrida inteira do banco de provas, que tem baseline por sistema
+	# operacional. A rua de verdade sai do `rua`, que e so dela.
 	o = 12.0
 	while o < track.length:
-		for side: float in [-1.0, 1.0]:
+		for _side in 2:
 			if _rng.randf() < 0.35:
 				continue
-			# Os tres sorteios sao os mesmos da caixa do greybox, na mesma ordem:
-			# mexer neles mudaria o transito e os rivais, que vem do mesmo
-			# gerador. So o que se faz com eles mudou.
-			var h := _rng.randf_range(6.0, 26.0)
-			var w := _rng.randf_range(6.0, 14.0)
-			var shade := _rng.randf_range(0.2, 0.42)
-			var tipo := _tipo_de_predio(h)
-			var building := Predio.criar(tipo, (w - 6.0) / 8.0, (shade - 0.2) / 0.22)
-			props.add_child(building)
-			# A fachada (-Z) olha para a pista, e a ponta dela fica a 6 m do
-			# acostamento. Base 1 m abaixo da pista: o terreno cai depois do
-			# acostamento, e na rampa o predio nao pode ficar com o pe no ar.
-			var lateral := (edge + 6.0 + Predio.frente(tipo)) * side
-			var base := track.transform_at(o, lateral)
-			building.global_transform = Transform3D(
-				Basis.looking_at(base.basis.x * -side, Vector3.UP), base.origin + Vector3.DOWN
-			)
+			_rng.randf()
+			_rng.randf()
+			_rng.randf()
 		o += _rng.randf_range(16.0, 30.0)
 
-
-## Qual dos quatro predios cabe na altura sorteada. A faixa de cada um e a
-## proporcao dele na avenida: um quarto de sobrado, o grosso de predio baixo
-## de comercio, e torre so de vez em quando - torre demais fecha o ceu, e o
-## ceu e metade da leitura de velocidade.
-static func _tipo_de_predio(altura: float) -> Predio.Tipo:
-	if altura < 11.0:
-		return Predio.Tipo.SOBRADO
-	if altura < 19.0:
-		return Predio.Tipo.COMERCIO
-	if altura < 23.0:
-		return Predio.Tipo.ESCRITORIO
-	return Predio.Tipo.TORRE
+	var rua := RandomNumberGenerator.new()
+	rua.seed = hash(_rng.seed + 1)
+	Cidade.new(track).montar(rua, props)
 
 
 ## Quanto o jogador ja andou da rota, em metros. E daqui que sai a colocacao -

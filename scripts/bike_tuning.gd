@@ -101,9 +101,9 @@ const SAVE_PATH: String = "user://tuning.tres"
 ## um segundo para desfazer: a 126 km/h, 8 graus sao uns 4 m de lado - uma
 ## faixa. Com 18 eram quase 9, e a quina jogava a moto em cima do carro do lado.
 @export_range(0.0, 45.0, 1.0) var corner_deflect: float = 8.0
-## Fracao da velocidade perdida ao raspar em carro/guard-rail.
+## Fracao da velocidade perdida ao raspar em carro ou no fim do chao.
 @export_range(0.0, 1.0, 0.01) var scrape_speed_loss: float = 0.16
-## Desaceleracao continua (m/s^2) enquanto raspa no guard-rail.
+## Desaceleracao continua (m/s^2) enquanto raspa no fim do chao.
 @export_range(0.0, 40.0, 0.5) var rail_friction: float = 16.0
 ## Segundos parado depois de capotar.
 @export_range(0.5, 5.0, 0.1) var crash_recover_time: float = 1.9

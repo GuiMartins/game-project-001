@@ -59,8 +59,8 @@ var airborne: bool = false
 ## True quando a moto aponta pro lado contrario da pista. Sem aviso, o jogador
 ## capota, se levanta virado e passa dez segundos sem entender o que houve.
 var wrong_way: bool = false
-## Desligado pelo banco de provas pra medir aceleracao e curva sem o guard-rail
-## no meio. Em jogo isso e sempre true.
+## Desligado pelo banco de provas pra medir aceleracao e curva sem a calcada
+## nem o fim do mundo no meio. Em jogo isso e sempre true.
 var road_bounds_enabled: bool = true
 ## Idem: o banco mede a MOTO, e 0-100 medido numa ladeira mede a ladeira.
 var slope_enabled: bool = true
@@ -480,12 +480,14 @@ func _clamp_to_road() -> void:
 		if speed > cap:
 			speed = maxf(speed - tuning.sidewalk_drag * get_physics_process_delta_time(), cap)
 
-	var limit := RoadTrack.sidewalk_limit()
+	var limit := RoadTrack.limite_do_mundo()
 	if absf(track_lateral) <= limit:
 		_off_road = false
 		return
 
-	# Guard-rail: em vez de um colisor por metro de pista, um empurrao analitico.
+	# Fim do chao: em vez de um colisor por metro de pista, um empurrao
+	# analitico. So chega aqui quem entrou numa rua e foi ate o fundo, ou
+	# passou por tras dos predios.
 	var outward := signf(track_lateral)
 	var over := absf(track_lateral) - limit
 	var basis := track.sample_basis(track_offset)
@@ -498,8 +500,8 @@ func _clamp_to_road() -> void:
 	if lateral_speed * outward > 0.0:
 		velocity -= basis.x * lateral_speed
 
-	# Enquanto raspa, o rail freia. Nao pode ser de graca: se andar colado no
-	# guard-rail for mais rapido e mais seguro que o corredor, o jogador nunca
+	# Enquanto raspa, a borda freia. Nao pode ser de graca: se andar colado
+	# nela for mais rapido e mais seguro que o corredor, o jogador nunca
 	# entra no transito e o pilar do jogo morre. E tambem nao pode ser
 	# multiplicativo por frame, senao prende a moto a 6 km/h pra sempre.
 	speed = maxf(speed - tuning.rail_friction * get_physics_process_delta_time(), 0.0)
@@ -561,8 +563,8 @@ func _process_crashed(delta: float) -> void:
 	_crash_grace = 1.2
 
 
-## A moto deitada arrasta no asfalto ate parar, colada no chao e presa entre
-## os guard-rails, como em pe.
+## A moto deitada arrasta no asfalto ate parar, colada no chao e presa no fim
+## do mundo, como em pe.
 func _desliza(delta: float) -> void:
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
 	horizontal = horizontal.move_toward(Vector3.ZERO, ATRITO_DO_TOMBO * delta)
@@ -578,7 +580,7 @@ func _desliza(delta: float) -> void:
 	move_and_slide()
 	velocity.y = 0.0
 
-	var limit := RoadTrack.sidewalk_limit()
+	var limit := RoadTrack.limite_do_mundo()
 	if not road_bounds_enabled or absf(track_lateral) <= limit:
 		return
 	var outward := signf(track_lateral)

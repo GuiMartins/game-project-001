@@ -571,26 +571,36 @@ Dá pra subir na calçada e continuar andando, com teto de velocidade — grama 
 Mario Kart. É a válvula de escape quando o trânsito fecha: você foge por ali,
 mas paga em tempo.
 
-O limite andável passou de `half_width + SHOULDER*0.6` (7,92 m) para
-`half_width + SHOULDER` (8,80 m). O número antigo caía no **meio** da faixa de
-acostamento, que o mesh já desenha numa cor distinta — parede invisível no meio
-de uma coisa com cara de andável. Agora o limite coincide com onde o terreno
-cai 0,35 m, que o jogador vê.
+**Não existe mais guard-rail.** Até a 0.0.6 havia uma parede analítica em
+`sidewalk_limit()` (8,80 m do eixo), e a rua era um tubo: a fachada, a rua
+transversal e o carro parado no semáforo eram cenário que não dava para tocar.
+Hoje a moto anda até onde o chão vai (`limite_do_mundo()`, o fim do
+`GROUND`), e o que a segura são colisores na camada `WORLD`: poste, semáforo,
+carro parado e prédio (`scripts/cidade.gd`). Bater em prédio segue a mesma
+regra de bater em carro — raspa, quina, quica ou cai, pelo ângulo e pela
+velocidade de chegada.
 
-Medido: 42,7 m/s no asfalto contra 18,6 m/s encostado na calçada, e a parede
-segurou exatamente em 8,80 sem vazar.
+A calçada vai do meio-fio à fachada (6 m de recuo depois dos 2,2 m de
+`SHOULDER`), cimentado liso, sem grama. O `sidewalk_limit()` continua
+existindo como o fim da calçada livre: dali para fora vem a faixa de serviço,
+a tira mais escura onde ficam os postes, e é até ali que a câmera de garupa
+vai.
 
-Duas ressalvas honestas:
+Medido: 33,3 m/s no asfalto contra 28,9 m/s na calçada, que é o teto do
+`sidewalk_speed_factor`. Os 13,8 m/s de antes não eram a calçada: eram a moto
+raspando no guard-rail, que freia por `rail_friction`.
 
-- **A faixa é estreita.** 2,2 m de calçada para uma moto de 0,76 m deixa ~1,4 m
-  de jogo antes de raspar o guard-rail. Funciona, mas exige linha. Alargar é
-  mexer em `SHOULDER` no `road_track.gd`, e o mesh acompanha sozinho.
-- **Hoje o banco de provas cobre isto**, numa fase própria. Ela sobe na
-  calçada de propósito, porque o piloto automático da corrida solta nunca
-  sobe: `free_lateral` só considera centros de faixa e de corredor, e por isso
-  os números da corrida ficaram idênticos quando o limite andável mudou. A
-  fase mede a velocidade estabilizada contra o teto que o `sidewalk_speed_factor`
-  declara, e confere que a parede segura exatamente no `sidewalk_limit()`.
+O que o banco de provas cobre, na fase própria: a velocidade estabilizada no
+meio da calçada contra o teto, e que a moto passa da beira da calçada e para
+antes do fim do chão. Onde ela para entre os dois depende do que estava na
+frente — no trecho da prova ela raspa na quina de um prédio e entra numa
+transversal até o prédio do fundo, e o baseline aponta se esse caminho mudou.
+Que o prédio tem colisor e que ele começa atrás do toldo é o `test_cidade.gd`.
+
+Uma ressalva: **dá para andar por trás dos prédios.** Entre os fundos da
+fileira e o fim do chão sobram uns 15 m, e a transversal leva até lá. É mais
+lento que a avenida (teto da calçada), então não é atalho — mas é um lugar
+onde o jogo não foi pensado para ser visto.
 
 ## Ladeira
 
