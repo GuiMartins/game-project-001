@@ -14,6 +14,15 @@ extends AnimatableBody3D
 ## Emitido quando a porta abre, pra HUD/audio avisarem o jogador.
 signal door_opened
 
+## O que a porta de um carro encostado faz. Sorteado ao encostar, no `World`.
+##
+## Sao dois perigos que se leem de jeitos opostos. A porta aberta de longe e
+## obstaculo que se ve chegando: fecha meia faixa e fica. A porta na cara e o
+## susto, e so e justa porque e rara. A antiga, que abria num cronometro
+## qualquer, saiu: abrir sem saber onde o jogador esta e sorte pura - ou ele
+## nunca via, ou via sem chance de reagir.
+enum Porta { NENHUMA, ABERTA, NA_CARA }
+
 ## Quanto de cada modelo sai na rua, na ordem do `Carro.Modelo`: hatch, seda,
 ## SUV, taxi e onibus. Carro de passeio e o grosso; taxi e onibus sao o que da
 ## cara de cidade, e um em sete e onibus porque ele e parede de 12 m - mais que
@@ -74,8 +83,8 @@ var _target_lateral: float = 0.0
 var _lane_change_timer: float = 0.0
 var _door_timer: float = 0.0
 var _door_open: bool = false
-## Este carro chega a abrir a porta em algum momento? Sorteado ao encostar.
-var _opens_door: bool = false
+## O que a porta deste carro faz. Sempre `NENHUMA` em carro no fluxo.
+var _porta: Porta = Porta.NENHUMA
 ## De que lado a porta abre: -1 esquerda, 1 direita.
 var _door_side: int = -1
 var _rng := RandomNumberGenerator.new()
@@ -127,7 +136,7 @@ func setup(
 	a_lateral: float,
 	seed_value: int,
 	a_parked: bool = false,
-	a_opens_door: bool = false
+	a_porta: Porta = Porta.NENHUMA
 ) -> void:
 	track = a_track
 	_rng.seed = seed_value
@@ -136,7 +145,7 @@ func setup(
 	# Consulta desencontrada: se todos perguntassem no mesmo frame, economizar
 	# tres frames em quatro so faria o pico ser quatro vezes maior.
 	_probe_in = _rng.randi_range(1, PROBE_EVERY)
-	_reset_at(a_offset, a_lateral, a_parked, a_opens_door)
+	_reset_at(a_offset, a_lateral, a_parked, a_porta)
 
 
 ## Sorteia o modelo pela `FROTA`, poe a lataria e o colisor no tamanho dele.
@@ -179,20 +188,51 @@ func _physics_process(delta: float) -> void:
 			if absf(candidate) <= limit and _faixa_livre(candidate):
 				_target_lateral = candidate
 
-	# `_opens_door` so e verdade em carro encostado, entao carro em movimento
-	# nunca chega aqui.
-	if _opens_door:
-		_door_timer -= delta
-		if _door_timer <= 0.0:
-			if _door_open:
+	# `NA_CARA` so existe em carro encostado, entao carro em movimento nunca
+	# chega aqui. A `ABERTA` ja abriu ao encostar e nao fecha mais.
+	if _porta == Porta.NA_CARA:
+		if _door_open:
+			_door_timer -= delta
+			if _door_timer <= 0.0:
 				_set_door(false)
-				_door_timer = _rng.randf_range(10.0, 35.0)
-			else:
-				_set_door(true)
-				_door_timer = _rng.randf_range(2.0, 4.0)
+				# Uma vez so: quem desceu do carro nao volta para abrir de novo.
+				_porta = Porta.NENHUMA
+		elif _jogador_chegando():
+			_set_door(true)
 
 	_apply_transform()
 	_pose(delta)
+
+
+## O jogador esta a menos de `door_ambush_time` segundos de alcancar este
+## carro, e perto o bastante de lado para a porta ser problema dele?
+##
+## Tempo e nao distancia: a 50 m/s, 20 m e meio segundo, e a 15 m/s a mesma
+## distancia e uma eternidade. Com tempo, a porta e igualmente justa nas duas.
+## O lado e decidido aqui, virado para o jogador - e isso que faz ela abrir
+## *nele*, e nao em quem passa na calcada.
+func _jogador_chegando() -> bool:
+	if world == null or world_tuning == null:
+		return false
+	var jogador: PlayerBike = world.get("player")
+	if jogador == null or jogador.speed < 1.0:
+		return false
+	var falta := (offset - meio_comprimento() - jogador.track_offset) / jogador.speed
+	if falta > world_tuning.door_ambush_time:
+		return false
+	# Passou da metade da janela sem abrir - o jogador entrou de lado no
+	# ultimo instante -, e ai ja nao abre: a porta que sai a meio segundo da
+	# moto e tiro, nao susto. Desiste de vez, para nao tentar de novo depois.
+	if falta < world_tuning.door_ambush_time * 0.5:
+		_porta = Porta.NENHUMA
+		return false
+	var de_lado := jogador.track_lateral - lateral
+	# Ate a faixa vizinha: mais longe que isso a porta abre no vazio, e o susto
+	# se gasta sem ninguem ver. Espera, que ele ainda pode chegar perto.
+	if absf(de_lado) > RoadTrack.LANE_WIDTH * 1.2:
+		return false
+	_door_side = 1 if de_lado > 0.0 else -1
+	return true
 
 
 ## Passa o movimento deste passo para o modelo, e poe o colisor da porta onde a
@@ -308,13 +348,13 @@ func _set_door(open: bool) -> void:
 
 ## Reposiciona o carro mais a frente em vez de instanciar outro.
 func recycle(
-	a_offset: float, a_lateral: float, a_parked: bool = false, a_opens_door: bool = false
+	a_offset: float, a_lateral: float, a_parked: bool = false, a_porta: Porta = Porta.NENHUMA
 ) -> void:
-	_reset_at(a_offset, a_lateral, a_parked, a_opens_door)
+	_reset_at(a_offset, a_lateral, a_parked, a_porta)
 
 
 ## Estado comum entre nascer e ser reciclado.
-func _reset_at(a_offset: float, a_lateral: float, a_parked: bool, a_opens_door: bool) -> void:
+func _reset_at(a_offset: float, a_lateral: float, a_parked: bool, a_porta: Porta) -> void:
 	offset = a_offset
 	lateral = a_lateral
 	_target_lateral = a_lateral
@@ -329,15 +369,33 @@ func _reset_at(a_offset: float, a_lateral: float, a_parked: bool, a_opens_door: 
 		)
 	speed = cruise_speed
 	_gap_cache = INF
-	_opens_door = a_parked and a_opens_door
+	_porta = a_porta if a_parked else Porta.NENHUMA
 	near_missed = false
 	_monta()
+	var meio_fio_esquerdo := RoadTrack.lane_center(0)
+	if a_parked and modelo() == Carro.Modelo.ONIBUS and is_equal_approx(lateral, meio_fio_esquerdo):
+		# Onibus para no ponto, e o ponto e na calcada da direita. Na esquerda
+		# ele vira parede de 12 m na faixa rapida, coisa que onibus nao faz.
+		# O modelo sai depois da faixa, entao a correcao e aqui; o `World`
+		# desencosta depois, e ja ve a faixa certa. So o meio-fio esquerdo:
+		# o banco de provas para carro no meio da pista de proposito.
+		lateral = RoadTrack.lane_center(RoadTrack.LANE_COUNT - 1)
+		_target_lateral = lateral
+	# A folha do onibus abre para a calcada e nao tem colisor: porta na cara
+	# de onibus seria um susto que nao acontece.
+	if modelo() == Carro.Modelo.ONIBUS and _porta == Porta.NA_CARA:
+		_porta = Porta.NENHUMA
 	_set_door(false)
 	_door_shape.set_deferred("disabled", true)
 	# Pista ou calcada, tanto faz - o que importa e voce nao poder decorar de
 	# que lado ela vem. Porta previsivel deixa de ser susto e vira pedagio.
 	_door_side = -1 if _rng.randf() < 0.5 else 1
-	_door_timer = _rng.randf_range(6.0, 30.0)
+	# Quanto a porta na cara fica aberta: o tempo de alguem descer do carro.
+	_door_timer = _rng.randf_range(2.0, 4.0)
 	_lateral_antes = lateral
 	_apply_transform()
 	_carro.reiniciar()
+	# Abre ja, fora de vista: quando o jogador chega, ela esta escancarada e
+	# parada, e da para ver de longe que a meia faixa esta fechada.
+	if _porta == Porta.ABERTA:
+		_set_door(true)

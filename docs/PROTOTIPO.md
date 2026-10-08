@@ -532,18 +532,30 @@ Porta só abre em **carro encostado**: parado de verdade (velocidade zero) e
 numa das duas faixas da ponta. Carro no fluxo nunca abre — porta abrindo a
 25 km/h no meio da pista é bug com cara de recurso.
 
-Duas coisas são sorteadas de propósito:
+**Ônibus encosta só na direita**, que é onde fica o ponto. Carro encosta nos
+dois lados. Ônibus parado na faixa da esquerda era parede de 12 m na faixa
+rápida, coisa que ônibus de verdade não faz.
 
-- **Nem todo encostado abre** (`door_chance`, 0.6). Se encostar fosse sinônimo
-  de porta, a faixa da ponta viraria regra decorada e o jogador aprenderia a
-  nunca chegar perto, em vez de calcular o risco.
-- **O lado é sorteado**, pista ou calçada. Porta previsível deixa de ser susto
-  e vira pedágio.
+A porta do encostado é de um de dois tipos, sorteado quando ele encosta:
 
-Medido em 120 s de simulação, 19 aberturas: nenhuma em carro em movimento,
-nenhuma fora das faixas da ponta, os dois lados usados. `parked_chance` (0.3)
-controla quantos carros encostam — é ele que decide se as faixas da ponta são
-uma aposta ou uma parede.
+- **Aberta de longe** (`door_open_chance`, 0.2). Abre fora de vista e fica
+  aberta. É obstáculo que se lê chegando: meia faixa fechada, parada. O lado é
+  sorteado, pista ou calçada.
+- **Na cara** (`door_ambush_chance`, 0.08). Abre uma vez quando o jogador está
+  a `door_ambush_time` (0,8 s) de alcançar o carro e até a faixa vizinha, do
+  lado em que ele está, e fecha 2 a 4 s depois. Tempo, e não distância: a
+  50 m/s, 20 m é meio segundo, e a 15 m/s é uma eternidade. Abaixo de 0,5 s
+  ela fica inevitável, e porta inevitável é tiro, não susto.
+
+O resto dos encostados não abre nada. Se encostar fosse sinônimo de porta, a
+faixa da ponta viraria regra decorada e o jogador aprenderia a nunca chegar
+perto, em vez de calcular o risco. Com 0.3 de encostados, dá um carro em cada
+dezessete de porta aberta e um em cada quarenta de porta na cara.
+
+Antes havia um tipo só, que abria num cronômetro (2 a 4 s aberta, 10 a 35 s
+fechada) sem saber onde o jogador estava: ou ele nunca via, ou via sem chance
+de reagir. `parked_chance` (0.3) controla quantos carros encostam — é ele que
+decide se as faixas da ponta são uma aposta ou uma parede.
 
 ## A calçada
 

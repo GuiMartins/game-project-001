@@ -72,12 +72,29 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## demais e elas viram parede, e o jogo perde duas das quatro faixas.
 @export_range(0.0, 1.0, 0.05) var parked_chance: float = 0.3
 
-## Fracao dos carros encostados que chega a abrir a porta em algum momento.
+## Fracao dos carros encostados que ja esta de porta aberta quando aparece, e
+## fica assim.
 ##
-## Abaixo de 1.0 encostar nao e sinonimo de perigo, e ai a faixa da ponta vira
-## uma aposta em vez de uma regra decorada. O lado que a porta abre tambem e
-## sorteado - pra pista ou pra calcada.
-@export_range(0.0, 1.0, 0.05) var door_chance: float = 0.6
+## E o obstaculo que se le de longe: meia faixa fechada, parada. Rara porque
+## e ela que soma a parede - com 0.3 de encostados, 0.2 aqui da um carro em
+## cada dezessete.
+@export_range(0.0, 1.0, 0.05) var door_open_chance: float = 0.2
+
+## Fracao dos carros encostados que abre a porta em cima do jogador, uma vez.
+##
+## O susto, e por isso a menor das duas: susto frequente vira regra decorada,
+## e o jogador aprende a nunca chegar perto da ponta em vez de calcular o
+## risco. Somada com `door_open_chance`, nao passa de 1. O lado e sempre o do
+## jogador.
+@export_range(0.0, 1.0, 0.01) var door_ambush_chance: float = 0.08
+
+## A quantos segundos de distancia o jogador esta quando a porta na cara abre.
+##
+## A porta leva uns 0,15 s para virar obstaculo (`Carro.PORTA_BATE`), e
+## reacao humana e uns 0,25 s: abaixo de 0.5 ela e inevitavel, e porta
+## inevitavel e tiro, nao susto. Acima de 1.5 e porta aberta de longe com
+## outro nome.
+@export_range(0.3, 2.0, 0.05) var door_ambush_time: float = 0.8
 
 @export_group("Rivais")
 

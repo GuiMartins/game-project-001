@@ -94,7 +94,7 @@ func _monta_batida() -> void:
 	match BATIDAS[_batida]:
 		"traseira":
 			# 72 km/h num carro a 25: 47 km/h de aproximacao, longe de cair.
-			carro.recycle(em + 15.0, faixa, false, false)
+			carro.recycle(em + 15.0, faixa, false)
 			carro.cruise_speed = 7.0
 			carro.speed = 7.0
 			# Sem troca de faixa no meio da prova: o timer vem do sorteio da
@@ -103,10 +103,10 @@ func _monta_batida() -> void:
 			velocidade = 20.0
 			_batida_obstaculo = carro
 		"parado":
-			carro.recycle(em + 15.0, faixa, true, false)
+			carro.recycle(em + 15.0, faixa, true)
 			_batida_obstaculo = carro
 		"quina":
-			carro.recycle(em + 15.0, faixa, true, false)
+			carro.recycle(em + 15.0, faixa, true)
 			# Um quarto da moto em cima da lataria: o guidao pega o canto.
 			lateral = faixa + carro.meia_largura() + PlayerBike.SIZE.x * 0.25
 			_batida_obstaculo = carro
