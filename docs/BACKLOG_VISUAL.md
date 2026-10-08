@@ -422,7 +422,7 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
 
 ### HUD
 
-- [x] **V25** 👤 — A HUD de arcade (08/10/2026, #PR)
+- [x] **V25** 👤 — A HUD de arcade (08/10/2026, #62)
 
   Mesmo vocabulário nas cinco referências: quatro cantos, centro vazio,
   legenda pequena itálica com degradê amarelo→laranja, valor grande branco com
