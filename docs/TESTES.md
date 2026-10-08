@@ -266,6 +266,11 @@ O ruído de CI, que é o que obrigou a tolerância de 20%, se mede lá.
 A medida mora em `scripts/medida_de_quadro.gd`, fora do banco: ele mede a moto,
 ela mede a tela.
 
+**A medida é do mundo, sem a HUD.** O pixel de HUD sai igual no quadro e no céu
+de referência, e contava como céu: a HUD de arcade (V25) sozinha subia a
+`fracao_ceu`. O banco esconde a HUD nos quadros medidos e salva o PNG no quadro
+seguinte, com ela de volta e o mundo congelado.
+
 A tolerância é larga (**20%**) de propósito: o CI roda em software rendering sem
 GPU contra um baseline gravado numa máquina com GPU, e — o que pesa mais — o
 instante do frame capturado flutua com a velocidade do render. Estreitar isso

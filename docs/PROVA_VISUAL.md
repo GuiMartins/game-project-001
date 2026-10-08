@@ -445,6 +445,10 @@ pequena amarela, número grande branco, contorno duro, barra segmentada.
 
 *Aceite:* legível a 640×360 sobre asfalto claro, que é o pior fundo.
 
+**Estado (08/10/2026):** feito na V25 do `BACKLOG_VISUAL.md`. Sem asset: a
+fonte é uma tabela de glifos em `scripts/fonte_hud.gd`, rasterizada na
+largada com contorno, sombra e degradê.
+
 ### P9 — O veredito
 
 Montar a folha de comparação: quadro do jogo ao lado da referência, e a

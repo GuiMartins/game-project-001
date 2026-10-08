@@ -797,11 +797,19 @@ func _capture(path: String) -> void:
 	_world.process_mode = Node.PROCESS_MODE_DISABLED
 	process_mode = Node.PROCESS_MODE_DISABLED
 	_world.camera.encaixar()
+	# A medida e do mundo, sem a HUD. Com ela, todo pixel de HUD sai igual no
+	# quadro e no ceu de referencia, e conta como ceu: a HUD de arcade (V25)
+	# sozinha subiria a `fracao_ceu` sem o mundo mudar nada. O PNG salvo e o
+	# quadro seguinte, com a HUD de volta e o mundo ainda congelado, porque e
+	# ele que alguem abre para ver o que o jogador viu.
+	var hud := _main.get("hud") as CanvasLayer
+	hud.visible = false
 	await _captura_ceu()
 	await RenderingServer.frame_post_draw
-	var image := get_viewport().get_texture().get_image()
-	image.save_png(path)
-	_measure_frame(image)
+	_measure_frame(get_viewport().get_texture().get_image())
+	hud.visible = true
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png(path)
 	process_mode = Node.PROCESS_MODE_INHERIT
 	_world.process_mode = Node.PROCESS_MODE_INHERIT
 
