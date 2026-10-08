@@ -252,3 +252,4 @@ saber onde **não** há rede faz parte do contrato.
 | `docs/PROTOTIPO.md` | Por que o jogo é assim. Leia antes de mexer no feel. |
 | `docs/GDD.md` | O briefing original, congelado. O que o jogo queria ser. |
 | `docs/DIRECAO_VISUAL.md` | Como sair do greybox: resolução, sprite, luz, partícula. Leia antes de mexer no visual. |
+| `docs/BACKLOG_VISUAL.md` | A fila do que falta para chegar nas referências visuais. "Próxima tarefa" é o primeiro item aberto; ao fechar, marca-se no mesmo PR. |
