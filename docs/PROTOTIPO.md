@@ -348,6 +348,18 @@ medidas são da ficha da Titan (caster de 27°, aro 18, banco a 0,80 m); o entre
 eixos ficou em 1,32 m, e não 1,31, porque o `camera_garupa.gd` mede a partir
 do eixo traseiro em 0,66 m.
 
+A segunda moto é a **Honda XRE 300** ([`arte/xre300.py`](../arte/xre300.py)),
+a de quem entrega na rua esburacada: alta, aro 21 na frente e 18 atrás,
+paralama alto, asas no tanque, protetor de mão. Ela tem a **mesma árvore de
+nós** da CG, e é isso que faz toda a pose acima valer para as duas sem um
+`if` por modelo: o ator lê do próprio modelo o raio de cada roda e a altura de
+cada eixo. O mono Pro-Link ocupa o par `Amortecedor_E`/`Mola_E`, e o `_D` é
+vazio. O jogador escolhe a moto no menu (guardada em `user://moto.cfg`, que o
+banco de provas ignora); cada rival sorteia a sua uma vez, com semente
+derivada da dele. A escolha é **só visual** — a física não sabe qual moto está
+montada, e o baseline não se mexe. Moto com física própria é outra pergunta
+de feel, e fica para quando a primeira tiver resposta.
+
 Oito decisões que não são óbvias:
 
 **A pose sai do estado, não de clipe.** Velocidade, acelerador, esterço,

@@ -20,6 +20,8 @@ signal corrida_pedida
 signal pixel_alternado
 signal camera_alternada
 signal painel_pedido
+## Pediram a proxima moto da lista (`passo` 1) ou a anterior (-1).
+signal moto_trocada(passo: int)
 ## A tela mudou. Quem ouve decide o que congelar e o que esconder - o fluxo nao
 ## conhece o mundo nem a Hud.
 signal tela_mudou(nova: int)
@@ -49,6 +51,7 @@ const COR_ITEM: Color = Color(0.82, 0.85, 0.92)
 ## e quem o liga. Mesmo padrao de `PlayerBike.find_clear_lateral`.
 var descreve_pixel: Callable
 var descreve_camera: Callable
+var descreve_moto: Callable
 
 var tela: int = Tela.MENU
 
@@ -137,6 +140,10 @@ func navegar(evento: InputEvent) -> bool:
 	elif evento.is_action_pressed("ui_up"):
 		_selecionado = (_selecionado - 1 + quantos) % quantos
 		_pintar_itens()
+	elif _na_moto() and evento.is_action_pressed("ui_right"):
+		_troca_moto(1)
+	elif _na_moto() and evento.is_action_pressed("ui_left"):
+		_troca_moto(-1)
 	elif evento.is_action_pressed("ui_accept"):
 		_escolher(_selecionado)
 	elif evento.is_action_pressed("ui_cancel"):
@@ -148,8 +155,9 @@ func navegar(evento: InputEvent) -> bool:
 
 func _process(_delta: float) -> void:
 	# A tela de configuracoes mostra estado que muda enquanto ela esta aberta
-	# (o pixel alterna na propria linha), entao o rotulo se refaz por frame.
-	if tela == Tela.CONFIGURACOES:
+	# (o pixel alterna na propria linha), entao o rotulo se refaz por frame. O
+	# menu tambem, pela linha da moto.
+	if tela == Tela.CONFIGURACOES or tela == Tela.MENU:
 		_pintar_itens()
 
 
@@ -205,8 +213,17 @@ func rotulos_da_tela() -> PackedStringArray:
 			# A primeira linha troca de nome, e nao de lugar: mexer no numero de
 			# itens moveria o indice que `_escolher` usa, e SAIR passaria a
 			# morar onde CONFIGURACOES morava.
+			#
+			# A moto mora no menu, e nao nas configuracoes, porque e escolha de
+			# antes de largar - e o mundo congelado atras do menu e a vitrine:
+			# a moto do jogador esta parada na largada, e troca ali na frente.
 			return PackedStringArray(
-				["CONTINUAR" if _corrida_pausada else "JOGAR", "CONFIGURACOES", "SAIR"]
+				[
+					"CONTINUAR" if _corrida_pausada else "JOGAR",
+					"MOTO: < %s >" % _descreve(descreve_moto),
+					"CONFIGURACOES",
+					"SAIR",
+				]
 			)
 		Tela.CONFIGURACOES:
 			return PackedStringArray(
@@ -233,8 +250,10 @@ func _escolher(indice: int) -> void:
 					else:
 						_correr()
 				1:
-					_ir_para(Tela.CONFIGURACOES)
+					_troca_moto(1)
 				2:
+					_ir_para(Tela.CONFIGURACOES)
+				3:
 					get_tree().quit()
 		Tela.CONFIGURACOES:
 			match indice:
@@ -251,6 +270,16 @@ func _escolher(indice: int) -> void:
 				_correr()
 			else:
 				_ir_para(Tela.MENU)
+
+
+## A linha selecionada e a da moto?
+func _na_moto() -> bool:
+	return tela == Tela.MENU and _selecionado == 1
+
+
+func _troca_moto(passo: int) -> void:
+	moto_trocada.emit(passo)
+	_pintar_itens()
 
 
 func _voltar() -> void:

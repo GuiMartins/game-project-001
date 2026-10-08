@@ -236,6 +236,7 @@ saber onde **não** há rede faz parte do contrato.
 | `scripts/bike_tuning.gd`, `world_tuning.gd` | Os sliders do F3. |
 | `scripts/entregador.gd` | O ator: moto e piloto, posados pelo estado da física. |
 | `arte/entregador.py` | Gera o modelo no Blender. É a fonte: o `.blend` e o `assets/entregador/` são build. |
+| `arte/xre300.py` | Gera a XRE 300 com a mesma árvore de nós da CG, reaproveitando peças e piloto do `entregador.py`. Nó novo ou renomeado numa moto tem que existir em todas: o ator não tem `if` por modelo. |
 | `assets/entregador/` | O modelo e as texturas que o jogo carrega. Não edite à mão: regere pelo script. |
 | `scripts/carro.gd` | Os carros do trânsito por dentro: roda, mola, porta, luz e quem dirige. |
 | `arte/carros.py` | Gera hatch, sedã, SUV, táxi e ônibus no Blender. Fonte do `assets/carros/`, que é build. |

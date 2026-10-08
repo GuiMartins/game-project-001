@@ -122,6 +122,16 @@ func _ready() -> void:
 	_rng_queda.seed = SEMENTE_DA_QUEDA
 
 
+## Monta a moto `modelo` (um `Entregador.Modelo`). So visual: a fisica e a
+## mesma em todas.
+func usar_modelo(modelo: int) -> void:
+	_ator.trocar_modelo(modelo)
+
+
+func modelo() -> int:
+	return _ator.modelo
+
+
 func _make_hitbox(side: int) -> Area3D:
 	var area := Area3D.new()
 	area.name = "Hit%s" % ("L" if side < 0 else "R")

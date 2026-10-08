@@ -79,7 +79,6 @@ import bpy
 from mathutils import Matrix, Vector
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BLEND = os.path.join(RAIZ, "arte", "entregador.blend")
 SAIDA = os.path.join(RAIZ, "assets", "entregador")
 
 # --- Paleta ------------------------------------------------------------------
@@ -820,25 +819,34 @@ def balanca(material, colecao, pai) -> bpy.types.Object:
     return b.objeto(material, colecao, pai)
 
 
+def amortecedor(material, colecao, suspenso, obj_balanca, sufixo, cima, baixo, mola=None) -> None:
+    """Corpo preso no quadro, mola presa na balanca, um mirando no outro.
+
+    `mola` = (raio, espiras, fio). As medidas de fabrica sao as da CG.
+    """
+    raio, espiras, fio = mola or (0.032, 7, 0.0065)
+    eixo = (baixo - cima).normalized()
+
+    a = Peca("Amortecedor_" + sufixo, cima)
+    a.tubo(cima - Vector((0.018, 0.0, 0.0)), cima + Vector((0.018, 0.0, 0.0)), 0.018, 0.018, "preto", lados=6)
+    a.tubo(cima, cima + eixo * 0.05, raio + 0.004, raio + 0.004, "preto", lados=8)
+    a.tubo(cima + eixo * 0.05, cima + eixo * 0.20, raio - 0.008, raio - 0.008, "preto", lados=8)
+    a.objeto(material, colecao, suspenso)
+
+    m = Peca("Mola_" + sufixo, baixo)
+    m.tubo(baixo - Vector((0.016, 0.0, 0.0)), baixo + Vector((0.016, 0.0, 0.0)), 0.017, 0.017, "preto", lados=6)
+    m.tubo(baixo, baixo - eixo * 0.30, 0.009, 0.009, "cromado", lados=6)
+    m.tubo(baixo - eixo * 0.03, baixo - eixo * 0.05, raio + 0.004, raio + 0.004, "preto", lados=8)
+    m.mola(baixo - eixo * 0.05, cima + eixo * 0.06, raio, espiras, fio, "metal")
+    m.objeto(material, colecao, obj_balanca)
+
+
 def amortecedores(material, colecao, suspenso, obj_balanca) -> None:
-    """Corpo preso no quadro, mola presa na balanca, um mirando no outro."""
+    """Os dois da CG, um de cada lado da roda."""
     for lado, sufixo in ((-1.0, "E"), (1.0, "D")):
         cima = Vector((lado * AMORTECEDOR_CIMA.x, AMORTECEDOR_CIMA.y, AMORTECEDOR_CIMA.z))
         baixo = Vector((lado * AMORTECEDOR_BAIXO.x, AMORTECEDOR_BAIXO.y, AMORTECEDOR_BAIXO.z))
-        eixo = (baixo - cima).normalized()
-
-        a = Peca("Amortecedor_" + sufixo, cima)
-        a.tubo(cima - Vector((0.018, 0.0, 0.0)), cima + Vector((0.018, 0.0, 0.0)), 0.018, 0.018, "preto", lados=6)
-        a.tubo(cima, cima + eixo * 0.05, 0.036, 0.036, "preto", lados=8)
-        a.tubo(cima + eixo * 0.05, cima + eixo * 0.20, 0.024, 0.024, "preto", lados=8)
-        a.objeto(material, colecao, suspenso)
-
-        m = Peca("Mola_" + sufixo, baixo)
-        m.tubo(baixo - Vector((0.016, 0.0, 0.0)), baixo + Vector((0.016, 0.0, 0.0)), 0.017, 0.017, "preto", lados=6)
-        m.tubo(baixo, baixo - eixo * 0.30, 0.009, 0.009, "cromado", lados=6)
-        m.tubo(baixo - eixo * 0.03, baixo - eixo * 0.05, 0.036, 0.036, "preto", lados=8)
-        m.mola(baixo - eixo * 0.05, cima + eixo * 0.06, 0.032, 7, 0.0065, "metal")
-        m.objeto(material, colecao, obj_balanca)
+        amortecedor(material, colecao, suspenso, obj_balanca, sufixo, cima, baixo)
 
 
 def moto(material, colecao, raiz) -> None:
@@ -870,7 +878,21 @@ def moto(material, colecao, raiz) -> None:
 # --- O piloto ----------------------------------------------------------------
 
 
-def piloto(material, colecao, raiz) -> None:
+def piloto(
+    material,
+    colecao,
+    raiz,
+    QUADRIL=QUADRIL,  # noqa: N803
+    INCLINACAO_TORSO=INCLINACAO_TORSO,  # noqa: N803
+    MANOPLA=MANOPLA,  # noqa: N803
+    PEDALEIRA=PEDALEIRA,  # noqa: N803
+) -> None:
+    """Quem pilota, sentado na moto dada pelo quadril, manopla e pedaleira.
+
+    O mesmo corpo em toda moto: muda so onde ele senta, o quanto o torso
+    deita e onde maos e pes pegam. Os nomes em caixa alta sao os da CG, que e
+    o padrao; a XRE (`arte/xre300.py`) passa os dela.
+    """
     base = vazio("Piloto", QUADRIL, colecao, raiz)
 
     eixo = Vector((0.0, math.sin(INCLINACAO_TORSO), math.cos(INCLINACAO_TORSO)))
@@ -1012,20 +1034,27 @@ def conta_tris(raiz) -> int:
     return total
 
 
-def main() -> None:
+def gera(nome: str, monta) -> None:
+    """Apaga a cena, monta com `monta(material, colecao, raiz)` e exporta.
+
+    Grava `arte/<nome>.blend` e `assets/entregador/<nome>.glb`. A raiz se
+    chama `Entregador` em todo modelo: e o no que o `entregador.gd` procura, e
+    o que deixa as motos trocarem sem o ator saber qual e qual.
+    """
     os.makedirs(SAIDA, exist_ok=True)
     limpa_cena()
 
     colecao = bpy.data.collections.new("Entregador")
     bpy.context.scene.collection.children.link(colecao)
 
+    # A paleta e uma so para todas as motos: o shader do jogo e um, e a
+    # mascara de quem pinta a bag e a moto tambem.
     albedo = textura("entregador_albedo", 0, "sRGB")
     textura("entregador_mascara", 1, "Non-Color")
     mat = material(albedo)
 
     raiz = vazio("Entregador", (0.0, 0.0, 0.0), colecao)
-    moto(mat, colecao, raiz)
-    piloto(mat, colecao, raiz)
+    monta(mat, colecao, raiz)
 
     # `bpy.data.objects`, e nao `view_layer.objects`: a view layer ainda guarda
     # vaga vazia dos objetos que `limpa_cena` acabou de apagar.
@@ -1034,9 +1063,9 @@ def main() -> None:
         obj.select_set(obj in arvore)
     bpy.context.view_layer.objects.active = raiz
 
-    bpy.ops.wm.save_as_mainfile(filepath=BLEND, relative_remap=True)
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(RAIZ, "arte", nome + ".blend"), relative_remap=True)
     bpy.ops.export_scene.gltf(
-        filepath=os.path.join(SAIDA, "entregador.glb"),
+        filepath=os.path.join(SAIDA, nome + ".glb"),
         export_format="GLB",
         use_selection=True,
         export_yup=True,
@@ -1047,7 +1076,15 @@ def main() -> None:
         export_all_vertex_colors=False,
         export_extras=False,
     )
-    print("entregador: %d tris" % conta_tris(raiz))
+    print("%s: %d tris" % (nome, conta_tris(raiz)))
 
 
-main()
+def monta_cg(mat, colecao, raiz) -> None:
+    moto(mat, colecao, raiz)
+    piloto(mat, colecao, raiz)
+
+
+# Guardado: o `arte/xre300.py` importa este arquivo pelas pecas e pelo piloto,
+# e importar nao pode regerar a CG.
+if __name__ == "__main__":
+    gera("entregador", monta_cg)

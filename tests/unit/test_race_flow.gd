@@ -41,7 +41,33 @@ func test_banco_de_provas_larga_direto_na_corrida() -> void:
 func test_jogo_abre_no_menu() -> void:
 	var fluxo := _fluxo()
 	assert_int(fluxo.tela).is_equal(RaceFlow.Tela.MENU)
-	assert_array(fluxo.rotulos_da_tela()).is_equal(["JOGAR", "CONFIGURACOES", "SAIR"])
+	fluxo.descreve_moto = func() -> String: return "CG 160"
+	assert_array(fluxo.rotulos_da_tela()).is_equal(
+		["JOGAR", "MOTO: < CG 160 >", "CONFIGURACOES", "SAIR"]
+	)
+
+
+func test_a_linha_da_moto_troca_sem_sair_do_menu() -> void:
+	var fluxo := _fluxo()
+	var passos: Array[int] = []
+	fluxo.moto_trocada.connect(func(passo: int) -> void: passos.append(passo))
+
+	fluxo.navegar(_tecla("ui_down"))
+	fluxo.navegar(_tecla("ui_accept"))
+	fluxo.navegar(_tecla("ui_right"))
+	fluxo.navegar(_tecla("ui_left"))
+
+	assert_array(passos).is_equal([1, 1, -1])
+	# Escolher moto nao larga a corrida: quem troca quer ver a moto antes.
+	assert_int(fluxo.tela).is_equal(RaceFlow.Tela.MENU)
+
+
+func test_seta_de_lado_fora_da_moto_nao_troca_nada() -> void:
+	var fluxo := _fluxo()
+	var passos: Array[int] = []
+	fluxo.moto_trocada.connect(func(passo: int) -> void: passos.append(passo))
+	assert_bool(fluxo.navegar(_tecla("ui_right"))).is_false()
+	assert_array(passos).is_empty()
 
 
 func test_sair_e_sempre_a_ultima_linha_do_menu() -> void:
@@ -109,6 +135,7 @@ func test_configuracoes_mostram_o_estado_de_quem_sabe() -> void:
 	fluxo.descreve_camera = func() -> String: return "CAPACETE"
 
 	fluxo.navegar(_tecla("ui_down"))
+	fluxo.navegar(_tecla("ui_down"))
 	fluxo.navegar(_tecla("ui_accept"))
 
 	assert_int(fluxo.tela).is_equal(RaceFlow.Tela.CONFIGURACOES)
@@ -120,6 +147,7 @@ func test_configuracoes_mostram_o_estado_de_quem_sabe() -> void:
 
 func test_esc_nas_configuracoes_volta_pro_menu() -> void:
 	var fluxo := _fluxo()
+	fluxo.navegar(_tecla("ui_down"))
 	fluxo.navegar(_tecla("ui_down"))
 	fluxo.navegar(_tecla("ui_accept"))
 	assert_int(fluxo.tela).is_equal(RaceFlow.Tela.CONFIGURACOES)
