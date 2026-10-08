@@ -763,12 +763,21 @@ func _set_action(action_name: String, pressed: bool) -> void:
 ## winding anti-horario, o Godot descartava as faces sem um erro no console, e
 ## o mundo virava caixas flutuando no vazio. Nenhum numero do banco de provas
 ## se mexia - todos medem fisica, e a fisica nao sabe que a pista sumiu.
+##
+## A medida e do mundo, sem a HUD. Com ela, todo pixel de HUD sai igual no
+## quadro e no ceu de referencia, e conta como ceu: a HUD de arcade (V25)
+## sozinha subiu a `fracao_ceu` em 25%, sem o mundo mudar nada. O PNG salvo e
+## o quadro seguinte, com a HUD de volta, porque e ele que alguem abre para
+## ver o que o jogador viu.
 func _capture(path: String) -> void:
+	var hud := _main.get("hud") as CanvasLayer
+	hud.visible = false
 	await _captura_ceu()
 	await RenderingServer.frame_post_draw
-	var image := get_viewport().get_texture().get_image()
-	image.save_png(path)
-	_measure_frame(image)
+	_measure_frame(get_viewport().get_texture().get_image())
+	hud.visible = true
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png(path)
 
 
 ## Um quadro com a camera sem desenhar geometria nenhuma: so o ceu.
