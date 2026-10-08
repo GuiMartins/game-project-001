@@ -146,8 +146,16 @@ func setup(
 	player = a_player
 	bag_color = color
 	_rng.seed = seed_value
-	# Mesmo modelo, paleta trocada: cada rival e uma cor, da bag a moto.
+	# Mesmo ator, paleta trocada: cada rival e uma cor, da bag a moto.
 	_ator.pintar(color)
+	# E a moto sorteada, uma vez so: rival e gente, e gente nao troca de moto
+	# entre uma corrida e outra. Sorteio num gerador a parte, e com semente
+	# derivada, e nao a mesma: tirar do `_rng` mudaria o ritmo e a agressividade
+	# de todo o pelotao, e a mesma semente crua faria a moto andar junto com o
+	# ritmo - toda XRE seria a do rival mais lento.
+	var sorteio := RandomNumberGenerator.new()
+	sorteio.seed = hash([seed_value, "moto"])
+	_ator.trocar_modelo(sorteio.randi() % Entregador.CENAS.size())
 
 
 ## Poe o rival na largada e zera a corrida dele.

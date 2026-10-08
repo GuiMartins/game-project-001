@@ -1,6 +1,6 @@
 class_name Entregador
 extends Node3D
-## O ator: a CG e quem pilota, de `assets/entregador`, posados a cada passo de
+## O ator: a moto e quem pilota, de `assets/entregador`, posados a cada passo de
 ## fisica.
 ##
 ## Mora no no `Visual` de `PlayerBike` e `RivalBike`, com a origem no chao,
@@ -18,8 +18,21 @@ extends Node3D
 ##
 ## O que nao e estado continuo chega por evento: `socar` e `levar_golpe`, que
 ## o corpo chama no mesmo passo em que abre a hitbox ou recebe o empurrao.
+##
+## A moto e uma de `Modelo`, e todas tem a mesma arvore de nos (ver o topo do
+## `arte/xre300.py`): o ator le do proprio modelo o que muda de uma para outra
+## - raio de cada roda, altura de cada eixo, onde ficam manopla e pedaleira -,
+## e a mesma pose serve para todas. A moto e so visual: a fisica do corpo nao
+## sabe qual esta montada.
 
-const CENA: PackedScene = preload("res://assets/entregador/entregador.glb")
+## As motos que existem. A ordem e a de `CENAS` e `NOMES`.
+enum Modelo { CG_160, XRE_300 }
+
+const CENAS: Array[PackedScene] = [
+	preload("res://assets/entregador/entregador.glb"),
+	preload("res://assets/entregador/xre300.glb"),
+]
+const NOMES: PackedStringArray = ["CG 160", "XRE 300"]
 const SHADER: Shader = preload("res://scripts/entregador.gdshader")
 const ALBEDO: Texture2D = preload("res://assets/entregador/entregador_albedo.png")
 const MASCARA: Texture2D = preload("res://assets/entregador/entregador_mascara.png")
@@ -47,8 +60,11 @@ const TEMPO_DO_PE: float = 0.25
 ## asfalto (a altura da bota). A perna de 0,88 m alcanca dali com 3 cm de
 ## folga, que e como entregador de verdade fica numa CG: na ponta do pe.
 const PE_NO_CHAO := Vector3(-0.40, 0.075, 0.05)
-## Quanto a moto deita para o lado do pe no chao, em graus.
-const INCLINA_PARADO: float = 7.0
+## Quanto a moto deita para o lado do pe no chao, em graus, por modelo. A XRE
+## tem o banco 6 cm mais alto, e quem para nela faz o que se faz de verdade:
+## deita mais a moto para o pe chegar no mesmo asfalto. Com 7 graus a perna
+## esticava inteira e a bota ficava pendurada a 5 cm do chao.
+const INCLINA_PARADO: Array[float] = [7.0, 10.0]
 
 ## Velocidade, em m/s, em que os joelhos terminam de fechar no tanque. 15 m/s
 ## sao 54 km/h, um terco do teto: joelho aberto e coisa de manobra, nao de reta.
@@ -218,6 +234,9 @@ const ATRITO_NO_CHAO: float = 8.0
 ## Quanto tempo o corpo leva para largar a moto e abrir os bracos.
 const TEMPO_DE_SOLTAR: float = 0.15
 
+## Qual moto esta montada. Troca por `trocar_modelo`.
+var modelo: int = Modelo.CG_160
+
 var _modelo: Node3D
 var _material: ShaderMaterial
 var _cores: Array[Color] = [BAG_FABRICA, JAQUETA_FABRICA, MOTO_FABRICA]
@@ -229,11 +248,15 @@ var _suspenso: Node3D
 var _balanca: Node3D
 var _garfo: Node3D
 var _piloto: Node3D
+## Traseira e dianteira, nessa ordem, e o raio e o giro de cada uma: na XRE a
+## da frente e aro 21 e a de tras 18, e com um raio so uma das duas giraria
+## mais devagar do que a moto anda.
 var _rodas: Array[Node3D] = []
-var _raio_roda: float = 0.3
-## Altura dos eixos em repouso, no espaco do `Moto`: e onde o eixo tem que
-## continuar, com a moto afundando ou nao.
-var _altura_eixo: float = 0.31
+var _raios: Array[float] = [0.3, 0.3]
+var _giros: Array[float] = [0.0, 0.0]
+## Altura de cada eixo em repouso, no espaco do `Moto`, na mesma ordem: e onde
+## o eixo tem que continuar, com a moto afundando ou nao.
+var _altura_eixo: Array[float] = [0.31, 0.31]
 var _entre_eixos: float = 1.32
 var _direcao: Node3D
 var _eixo_direcao: Vector3
@@ -254,7 +277,6 @@ var _pedaleiras: Array[Vector3] = []
 ## Pontos do corpo que nao podem entrar no asfalto, com o raio de cada um.
 var _contatos: Array[Array] = []
 
-var _giro: float = 0.0
 var _esterco: float = 0.0
 var _aperto: float = 0.0
 var _deitado: float = 0.0
@@ -312,10 +334,6 @@ var _no_chao_t: float = -1.0
 
 
 func _ready() -> void:
-	var cena := CENA.instantiate() as Node3D
-	add_child(cena)
-	_modelo = cena.get_node("Entregador") as Node3D
-
 	_material = ShaderMaterial.new()
 	_material.shader = SHADER
 	_material.set_shader_parameter("albedo", ALBEDO)
@@ -324,6 +342,43 @@ func _ready() -> void:
 	_material.set_shader_parameter("jaqueta_fabrica", JAQUETA_FABRICA)
 	_material.set_shader_parameter("moto_fabrica", MOTO_FABRICA)
 	_aplica_cores()
+	_monta()
+
+
+## Monta a moto `modelo` no lugar da que estiver aqui.
+##
+## Fora da arvore so anota: o `_ready` monta. Dentro, troca na hora, e a pose
+## continua de onde estava - a roda segue girando, a suspensao segue onde
+## estava -, porque o estado do ator e da moto andando, nao da malha.
+func trocar_modelo(novo: int) -> void:
+	novo = clampi(novo, 0, CENAS.size() - 1)
+	if novo == modelo and _modelo != null:
+		return
+	modelo = novo
+	if _material == null:
+		return
+	_monta()
+	_posa()
+
+
+func _monta() -> void:
+	if _modelo != null:
+		var velha := _modelo.get_parent()
+		remove_child(velha)
+		velha.free()
+	_repouso.clear()
+	_amortecedores.clear()
+	_molas.clear()
+	_eixos_amortecedor.clear()
+	_comprimentos_amortecedor.clear()
+	_bracos.clear()
+	_pernas.clear()
+	_manoplas.clear()
+	_pedaleiras.clear()
+
+	var cena := CENAS[modelo].instantiate() as Node3D
+	add_child(cena)
+	_modelo = cena.get_node("Entregador") as Node3D
 	_prepara(_modelo)
 
 	_moto = _no("Moto")
@@ -332,10 +387,11 @@ func _ready() -> void:
 	_garfo = _no("Garfo")
 	_piloto = _no("Piloto")
 	_rodas = [_no("Roda_Traseira"), _no("Roda_Dianteira")]
-	_raio_roda = (_rodas[0] as MeshInstance3D).get_aabb().size.y * 0.5
+	for i in 2:
+		_raios[i] = (_rodas[i] as MeshInstance3D).get_aabb().size.y * 0.5
 	var eixo_tras := _no_relativo(_rodas[0], _moto)
 	var eixo_frente := _no_relativo(_rodas[1], _moto)
-	_altura_eixo = eixo_tras.y
+	_altura_eixo = [eixo_tras.y, eixo_frente.y]
 	_entre_eixos = eixo_tras.z - eixo_frente.z
 	_direcao = _no("Direcao")
 	# O garfo inteiro gira em volta da reta que liga a cabeca do garfo ao eixo
@@ -436,7 +492,8 @@ func atualizar(
 	var v := absf(velocidade)
 	_relogio += delta
 	_passo = delta
-	_giro = wrapf(_giro + velocidade / _raio_roda * delta, 0.0, TAU)
+	for i in 2:
+		_giros[i] = wrapf(_giros[i] + velocidade / _raios[i] * delta, 0.0, TAU)
 	_rodado += v * delta
 	_inclinacao = inclinacao
 	_mede(delta, velocidade, inclinacao, caido)
@@ -563,7 +620,7 @@ func _corpo(delta: float) -> void:
 
 func _posa() -> void:
 	var pivo := Vector3.ZERO
-	var angulo := deg_to_rad(INCLINA_PARADO) * _suave(_pe)
+	var angulo := deg_to_rad(INCLINA_PARADO[modelo]) * _suave(_pe)
 	if _queda > 0.0:
 		pivo = Vector3(QUEDA_PIVO * _lado_queda, 0.0, 0.0)
 		# Negativo tomba para a direita: rotacao positiva em Z leva o topo para
@@ -579,8 +636,8 @@ func _posa() -> void:
 	_posa_suspensao()
 
 	# Rodando para a frente, o topo da roda vai para -Z: rotacao NEGATIVA em X.
-	for roda in _rodas:
-		roda.rotation.x = -_giro
+	for i in 2:
+		_rodas[i].rotation.x = -_giros[i]
 	if _voando:
 		_posa_voo()
 	else:
@@ -605,7 +662,7 @@ func _posa_suspensao() -> void:
 	var repouso_garfo := _repouso[_garfo].origin
 	var ao_longo := no_moto.basis * _eixo_direcao
 	var altura := (no_moto * repouso_garfo).y
-	var corre := (altura - _altura_eixo) / ao_longo.y
+	var corre := (altura - _altura_eixo[1]) / ao_longo.y
 	_garfo.position = repouso_garfo - _eixo_direcao * corre
 
 	# A balanca gira em volta do pivo ate o eixo traseiro voltar a altura de
@@ -615,7 +672,7 @@ func _posa_suspensao() -> void:
 	var fase := atan2(braco.z, braco.y)
 	var alcance := Vector2(braco.y, braco.z).length()
 	var pivo := corpo * _repouso[_balanca].origin
-	var cos_alvo := clampf((_altura_eixo + arfa - pivo.y) / alcance, -1.0, 1.0)
+	var cos_alvo := clampf((_altura_eixo[0] + arfa - pivo.y) / alcance, -1.0, 1.0)
 	_balanca.basis = Basis(Vector3.RIGHT, acos(cos_alvo) - fase - arfagem)
 
 	# O corpo do amortecedor mira na mola, e a mola mira no corpo e encolhe.

@@ -15,6 +15,11 @@ extends Node
 ## vez de boneco. A conta esta no `docs/DIRECAO_VISUAL.md`.
 const PIXEL_SHRINK: int = 2
 
+## Onde a moto escolhida no menu fica guardada entre uma sessao e outra. Num
+## arquivo so dela, e nao no `tuning.tres`: o tuning e o que o F3 salva quando
+## alguem aperta Salvar, e escolher moto nao e mexer em slider.
+const MOTO_SALVA: String = "user://moto.cfg"
+
 var sub_viewport: SubViewport
 var container: SubViewportContainer
 var world: World
@@ -27,6 +32,10 @@ var world_tuning: WorldTuning
 var tuning_source: String = ""
 
 var _pixel_mode: bool = true
+## Se a moto escolhida e lida e gravada no user://. Desligado no banco de
+## provas e na prova visual, pelo mesmo motivo do tuning: medida que depende
+## de qual moto alguem escolheu ontem nao compara com nada.
+var _moto_salva: bool = false
 
 
 func _ready() -> void:
@@ -66,6 +75,9 @@ func _ready() -> void:
 	world.name = "World"
 	sub_viewport.add_child(world)
 	world.setup(tuning, world_tuning)
+	_moto_salva = use_saved
+	if _moto_salva:
+		world.player.usar_modelo(_le_moto())
 
 	_monta_paleta()
 
@@ -82,6 +94,8 @@ func _ready() -> void:
 	sub_viewport.add_child(fluxo)
 	fluxo.descreve_pixel = func() -> String: return "LIGADO" if _pixel_mode else "DESLIGADO"
 	fluxo.descreve_camera = func() -> String: return world.camera.mode_name()
+	fluxo.descreve_moto = func() -> String: return Entregador.NOMES[world.player.modelo()]
+	fluxo.moto_trocada.connect(_trocar_moto)
 	fluxo.corrida_pedida.connect(_restart)
 	fluxo.pixel_alternado.connect(_toggle_pixel)
 	fluxo.camera_alternada.connect(world.camera.cycle_mode)
@@ -175,6 +189,24 @@ func _on_tela_mudou(tela: int) -> void:
 	# embaralhou: sao dois textos claros, do mesmo tamanho, no mesmo lugar da
 	# tela - o "6/6" da corrida bem em cima do "6o LUGAR de 6".
 	hud.visible = correndo
+
+
+func _trocar_moto(passo: int) -> void:
+	var total := Entregador.CENAS.size()
+	var nova := posmod(world.player.modelo() + passo, total)
+	world.player.usar_modelo(nova)
+	if not _moto_salva:
+		return
+	var arquivo := ConfigFile.new()
+	arquivo.set_value("jogador", "moto", nova)
+	arquivo.save(MOTO_SALVA)
+
+
+func _le_moto() -> int:
+	var arquivo := ConfigFile.new()
+	if arquivo.load(MOTO_SALVA) != OK:
+		return Entregador.Modelo.CG_160
+	return int(arquivo.get_value("jogador", "moto", Entregador.Modelo.CG_160))
 
 
 func _restart() -> void:
