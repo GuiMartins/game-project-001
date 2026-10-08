@@ -574,6 +574,12 @@ visível — que é a intenção. Duas regras, e ambas são armadilhas conhecida
 
 ## HUD
 
+> **Feito na V25** (`BACKLOG_VISUAL.md`). O que segue é o estudo; o que mudou
+> na execução: a fonte não é `FontFile` — fonte bitmap no Godot não tem
+> contorno nem degradê, então os dois são assados no glifo por
+> `scripts/fonte_hud.gd` —, e a adrenalina virou barra curta, não efeito de
+> borda.
+
 A HUD das referências é o mesmo vocabulário nas quatro imagens: legenda pequena
 em amarelo, número grande em branco, contorno preto duro, barra segmentada em
 degradê verde→amarelo→vermelho, tudo ancorado nos quatro cantos.

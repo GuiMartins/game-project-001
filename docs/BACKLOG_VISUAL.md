@@ -422,7 +422,7 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
 
 ### HUD
 
-- [ ] **V25** 👤 — A HUD de arcade
+- [x] **V25** 👤 — A HUD de arcade (08/10/2026, #PR)
 
   Mesmo vocabulário nas cinco referências: quatro cantos, centro vazio,
   legenda pequena itálica com degradê amarelo→laranja, valor grande branco com
@@ -439,6 +439,17 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
     layout desenhado para 640×360 em vez do `Hud.ESCALA = 2` sobre 320×180.
     Continua dentro do SubViewport e acima da quantização.
   - **Aceite:** legível a 640×360 sobre asfalto claro, que é o pior fundo.
+
+  **Resultado:** conteúdo da recomendação, decidido pelo Guilherme, com uma
+  troca: a adrenalina foi para a borda e voltou. A borda pontilhada lia como
+  moldura de outro jogo; ficou uma barrinha `BOOST` de 8 segmentos embaixo das
+  estrelas (ciano enchendo, amarela queimando). Fonte gerada em código
+  (`scripts/fonte_hud.gd`: itálico, negrito, contorno e degradê assados no
+  glifo), não `FontFile`, porque fonte bitmap no Godot não tem contorno nem
+  degradê. A medida do `shots` passou a ser **sem HUD** (a HUD nova sozinha
+  subia a `fracao_ceu`): `fracao_ceu` 0,139 → 0,104 e `familias_de_cor`
+  51,5 → 45,8, só por tirar a HUD velha da conta. `fps` igual ao do `master`
+  (p50 8,33 ms nos dois, mesma máquina).
 
 ### Fechamento
 
