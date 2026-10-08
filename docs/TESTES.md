@@ -167,6 +167,24 @@ em enfeite.
 As medidas da última rodada ficam em `.dev/metricas.json` — é de lá que se
 copiam os valores novos.
 
+### Número por sistema
+
+Cada sistema é determinístico sozinho: a mesma máquina repete a corrida até a
+última casa. Entre sistemas, não. Seno e cosseno saem da libm de cada um, e o
+Linux arredonda diferente do macOS e do Windows. Quase sempre isso some, mas
+num contato longo da física (a moto raspando a lateral de um carro por vários
+quadros) 8 mm de diferença num quadro separam a corrida solta inteira. Foi o
+que aconteceu no PR das portas: macOS e Windows bateram com o baseline, e o
+Linux terminou 86 m à frente, nas duas rodadas.
+
+`valores_por_sistema` no `baseline.json` sobrepõe `valores` só no sistema que
+roda (`linux`, `macos`, `windows`). Afrouxar a tolerância resolveria também,
+mas afrouxaria nos três, e a regressão de verdade passaria calada junto.
+
+O número de um sistema que você não tem sai do CI: o `selftest` reprovado no CI
+imprime as medidas inteiras no log. Só entra o que diverge de verdade, e entrada
+que voltou a ficar igual a `valores` sai.
+
 ## Onde **não** há rede
 
 Saber disto faz parte do contrato. Nenhum destes é pego por nada automatizado:

@@ -470,6 +470,15 @@ def _compare(medido: dict, dados: dict) -> tuple[int, list[str]]:
     return estouros, linhas
 
 
+def _sistema() -> str:
+    """O nome do sistema como o `valores_por_sistema` do baseline usa."""
+    if sys.platform == "win32":
+        return "windows"
+    if sys.platform == "darwin":
+        return "macos"
+    return "linux"
+
+
 def compare_baseline(medido: dict) -> tuple[int, list[str]]:
     """O baseline numerico do banco de provas.
 
@@ -477,10 +486,22 @@ def compare_baseline(medido: dict) -> tuple[int, list[str]]:
     ontem: a asercao do selftest so diz que o valor caiu dentro da faixa
     jogavel, que e larga de proposito. Andar de 2.75 s pra 3.40 s no 0-100
     passa nela e mesmo assim e outra moto.
+
+    `valores_por_sistema` sobrepoe `valores` no sistema que roda. Cada sistema
+    e deterministico sozinho, mas seno e cosseno saem da libm de cada um, e a
+    ultima casa decimal diferente num contato longo da fisica separa a corrida
+    solta inteira. Tolerancia mais larga esconderia regressao de verdade nos
+    tres; numero por sistema mantem a comparacao exata em cada um.
     """
     if not BASELINE.is_file():
         return 0, ["  (sem tests/baseline.json - nada pra comparar)"]
-    return _compare(medido, json.loads(BASELINE.read_text(encoding="utf-8")))
+    dados = json.loads(BASELINE.read_text(encoding="utf-8"))
+    proprios: dict = dados.get("valores_por_sistema", {}).get(_sistema(), {})
+    dados["valores"] = {**dados.get("valores", {}), **proprios}
+    estouros, linhas = _compare(medido, dados)
+    if proprios:
+        linhas.insert(0, f"  ({len(proprios)} valor(es) proprio(s) de {_sistema()})")
+    return estouros, linhas
 
 
 def cmd_selftest(args: argparse.Namespace) -> int:
@@ -519,6 +540,11 @@ def cmd_selftest(args: argparse.Namespace) -> int:
               f"  Se a mudanca era esperada, atualize {BASELINE.relative_to(PROJECT)} "
               f"no mesmo commit, dizendo no texto por que o numero andou.\n"
               f"  As medidas desta rodada estao em {METRICS_OUT.relative_to(PROJECT)}.")
+        # No CI o arquivo morre com a maquina, e e de la que sai o numero de
+        # um sistema que voce nao tem: vai inteiro pro log.
+        if os.environ.get("CI"):
+            print(f"\n--- medidas desta rodada ({_sistema()}) ---")
+            print(json.dumps(medido, indent="\t", sort_keys=True))
         return 1
     print()
     return 0
