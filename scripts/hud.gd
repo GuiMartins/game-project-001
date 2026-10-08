@@ -28,12 +28,14 @@ var _event_label: Label
 var _wrong_way_label: Label
 var _adrenaline_fill: ColorRect
 var _hint_label: Label
+var _fps_label: Label
 
 var _event_time: float = 0.0
 var _position_flash: float = 0.0
 var _combo_flash: float = 0.0
 var _hint_time: float = 0.0
 var _last_position: int = 0
+var _fps_time: float = 0.0
 
 
 func _ready() -> void:
@@ -92,6 +94,13 @@ func _ready() -> void:
 	_hint_label.text = "WASD   Q/E soco   SHIFT boost   R reinicia   ESC menu"
 
 	_label(root, Vector2(W - 96, H - 10), 8, Color(0.35, 0.38, 0.48)).text = carimbo_versao()
+
+	# Sempre na tela, pequeno e apagado como o carimbo: cada coisa que entra no
+	# mundo cobra quadro, e quem joga o zip ve na hora se a maquina dele aguenta
+	# - sem ter que rodar o `dev.py fps`.
+	_fps_label = _label(root, Vector2(W * 0.5 - 20.0, H - 10), 8, Color(0.35, 0.38, 0.48))
+	_fps_label.size = Vector2(40, 10) * ESCALA
+	_fps_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 
 ## Carimbo de versao, e se isto e o executavel ou o projeto rodando da fonte.
@@ -155,6 +164,12 @@ func show_event(text: String, color: Color) -> void:
 
 
 func _process(delta: float) -> void:
+	# Meio segundo entre leituras: numero que troca a cada quadro nao se le.
+	_fps_time -= delta
+	if _fps_time <= 0.0:
+		_fps_time = 0.5
+		_fps_label.text = "%d fps" % roundi(Engine.get_frames_per_second())
+
 	if run == null or player == null:
 		return
 
