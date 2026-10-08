@@ -360,6 +360,14 @@ derivada da dele. A escolha é **só visual** — a física não sabe qual moto 
 montada, e o baseline não se mexe. Moto com física própria é outra pergunta
 de feel, e fica para quando a primeira tiver resposta.
 
+A terceira é a **Honda PCX 160** ([`arte/pcx160.py`](../arte/pcx160.py)), a
+scooter do app: roda 14/13, carenagem inteira na cor da moto, escudo com farol
+em V, assoalho e piloto sentado reto. Mesma árvore de nós, com dois sentidos
+trocados: a `Balanca` é o **motor oscilante** (motor, variador e escapamento
+balançam com a roda), e a `Pedaleira` é o ponto do **assoalho** onde a bota
+apoia. Parada, ela deita 5°, menos que a CG: banco mais baixo, pé que chega
+no chão com o joelho dobrado.
+
 Oito decisões que não são óbvias:
 
 **A pose sai do estado, não de clipe.** Velocidade, acelerador, esterço,

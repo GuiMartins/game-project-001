@@ -26,13 +26,14 @@ extends Node3D
 ## sabe qual esta montada.
 
 ## As motos que existem. A ordem e a de `CENAS` e `NOMES`.
-enum Modelo { CG_160, XRE_300 }
+enum Modelo { CG_160, XRE_300, PCX_160 }
 
 const CENAS: Array[PackedScene] = [
 	preload("res://assets/entregador/entregador.glb"),
 	preload("res://assets/entregador/xre300.glb"),
+	preload("res://assets/entregador/pcx160.glb"),
 ]
-const NOMES: PackedStringArray = ["CG 160", "XRE 300"]
+const NOMES: PackedStringArray = ["CG 160", "XRE 300", "PCX 160"]
 const SHADER: Shader = preload("res://scripts/entregador.gdshader")
 const ALBEDO: Texture2D = preload("res://assets/entregador/entregador_albedo.png")
 const MASCARA: Texture2D = preload("res://assets/entregador/entregador_mascara.png")
@@ -63,8 +64,10 @@ const PE_NO_CHAO := Vector3(-0.40, 0.075, 0.05)
 ## Quanto a moto deita para o lado do pe no chao, em graus, por modelo. A XRE
 ## tem o banco 6 cm mais alto, e quem para nela faz o que se faz de verdade:
 ## deita mais a moto para o pe chegar no mesmo asfalto. Com 7 graus a perna
-## esticava inteira e a bota ficava pendurada a 5 cm do chao.
-const INCLINA_PARADO: Array[float] = [7.0, 10.0]
+## esticava inteira e a bota ficava pendurada a 5 cm do chao. A PCX e o
+## contrario: banco 4 cm mais baixo que o da CG, e scooter parada fica quase
+## em pe - a bota chega no asfalto com o joelho ainda dobrado.
+const INCLINA_PARADO: Array[float] = [7.0, 10.0, 5.0]
 
 ## Velocidade, em m/s, em que os joelhos terminam de fechar no tanque. 15 m/s
 ## sao 54 km/h, um terco do teto: joelho aberto e coisa de manobra, nao de reta.

@@ -60,6 +60,7 @@ o caminho é o script, não o `.blend`:
 ```bash
 blender --background --factory-startup --python arte/entregador.py
 blender --background --factory-startup --python arte/xre300.py
+blender --background --factory-startup --python arte/pcx160.py
 blender --background --factory-startup --python arte/predios.py
 blender --background --factory-startup --python arte/carros.py
 ```
