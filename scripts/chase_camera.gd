@@ -9,6 +9,18 @@ extends Camera3D
 ## GARUPA logo depois de CHASE: no F2 a camera nova fica a um toque do padrao.
 enum Mode { CHASE, GARUPA, HOOD, DEBUG_FREE }
 
+## Quantas vezes por segundo o tranco sorteia um lugar novo. Sorteando a cada
+## quadro, o tremor era ruido branco: a 60 fps a lente pulava de um lado para
+## o outro sem passar pelo meio, e a imagem estroboscava em vez de sacudir.
+const TRANCO_HZ: float = 18.0
+## Quanto do caminho ate o sorteado o tranco anda por segundo (1/s). Rapido o
+## bastante para chegar perto antes do proximo sorteio, lento o bastante para
+## nao virar degrau.
+const TRANCO_SEGUE: float = 40.0
+## Quanto o tranco morre por segundo, em unidades de `_shake`. Capotada (1,0)
+## sacode ~0,6 s; raspada (0,1-0,5) acaba antes de o jogador perceber o fim.
+const TRANCO_DECAI: float = 1.6
+
 var tuning: BikeTuning
 var target: PlayerBike
 var mode: int = Mode.CHASE
@@ -23,6 +35,11 @@ var _altura: float
 ## Giro atual da camera em volta do eixo de visao, em radianos.
 var _roll: float = 0.0
 var _shake: float = 0.0
+## O deslocamento do tranco agora e o sorteado que ele persegue: ver
+## `_tremor_de_batida`.
+var _tranco: Vector3 = Vector3.ZERO
+var _tranco_alvo: Vector3 = Vector3.ZERO
+var _tranco_relogio: float = 0.0
 var _rng := RandomNumberGenerator.new()
 ## O cinegrafista do modo GARUPA. Nasce na primeira vez que o modo roda: a
 ## pista so existe depois do `setup` da moto.
@@ -104,6 +121,7 @@ func _process(delta: float) -> void:
 ## se compara com o de ontem.
 func encaixar() -> void:
 	_shake = 0.0
+	_tranco = Vector3.ZERO
 	if _na_garupa():
 		_aplica_garupa(_garupa.encaixar(CameraGarupa.ler(target, _transito())))
 		return
@@ -118,11 +136,21 @@ func encaixar() -> void:
 ## O tranco de batida (`add_shake`): vale em todos os modos, por cima do resto.
 func _tremor_de_batida(delta: float) -> Vector3:
 	if _shake <= 0.0:
+		_tranco = Vector3.ZERO
 		return Vector3.ZERO
-	var tranco := (
-		Vector3(_rng.randfn(0.0, 1.0), _rng.randfn(0.0, 1.0), _rng.randfn(0.0, 1.0)) * _shake * 0.35
-	)
-	_shake = maxf(_shake - delta * 1.6, 0.0)
+	_tranco_relogio -= delta
+	if _tranco_relogio <= 0.0:
+		_tranco_relogio = 1.0 / TRANCO_HZ
+		# Uniforme e nao gaussiano: a cauda do gaussiano dava pico de 3x o
+		# slider, e era o pico que se via.
+		_tranco_alvo = Vector3(
+			_rng.randf_range(-1.0, 1.0), _rng.randf_range(-1.0, 1.0), _rng.randf_range(-1.0, 1.0)
+		)
+	_tranco = _tranco.lerp(_tranco_alvo, 1.0 - exp(-TRANCO_SEGUE * delta))
+	# Quadratico na forca: raspada de 0,3 sacode 9% do que sacode a capotada,
+	# e nao 30%. Linear, qualquer encostada tremia a tela inteira.
+	var tranco := _tranco * _shake * _shake * tuning.cam_shake
+	_shake = maxf(_shake - delta * TRANCO_DECAI, 0.0)
 	return tranco
 
 
