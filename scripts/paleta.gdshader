@@ -18,6 +18,10 @@ uniform sampler2D tela : hint_screen_texture, filter_nearest;
 // Niveis por canal. 16 sao 4 bits por canal, 4096 cores: o bastante para a
 // cena ler como foto, pouco o bastante para o ceu fazer banda.
 uniform float niveis : hint_range(2.0, 64.0, 1.0) = 16.0;
+// Amplitude do dither: 1 e o Bayer inteiro, 0 e arredondamento seco (banda
+// sem textura). Existe para a V03 do backlog visual pesar o quanto de padrao
+// a tela aguenta sem mexer na quantidade de cores.
+uniform float forca : hint_range(0.0, 1.0) = 1.0;
 
 // A matriz de Bayer como constante, e nao uma textura de 4x4: textura de arte
 // passa por importacao, compressao e mipmap, e cada um desses e uma armadilha
@@ -34,7 +38,7 @@ void fragment() {
 	vec3 cor = texture(tela, SCREEN_UV).rgb;
 	ivec2 p = ivec2(FRAGCOORD.xy) % 4;
 	// Limiar no meio de cada degrau: (0.5 .. 15.5) / 16.
-	float limiar = (BAYER[p.y * 4 + p.x] + 0.5) / 16.0;
+	float limiar = 0.5 + ((BAYER[p.y * 4 + p.x] + 0.5) / 16.0 - 0.5) * forca;
 	float passos = niveis - 1.0;
 	COLOR = vec4(floor(cor * passos + limiar) / passos, 1.0);
 }

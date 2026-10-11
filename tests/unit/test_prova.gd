@@ -42,3 +42,15 @@ func test_toda_prova_tem_referencia_de_video() -> void:
 	for nome: String in ["largada", "curva", "ladeira", "reta"]:
 		assert_bool(Prova.REFERENCIAS.has(nome)).is_true()
 		assert_bool((Prova.REFERENCIAS[nome][0] as String).begins_with("video_01/")).is_true()
+
+
+func test_lupa_amplia_sem_filtro() -> void:
+	# A lupa existe para mostrar o dither; filtro bilinear apagaria o padrao
+	# que ela esta ali para mostrar.
+	var imagem := _imagem(640, 360, Color.BLACK)
+	imagem.set_pixelv(Prova.LUPA.position, Color.WHITE)
+	var lupa := Prova.lupa([imagem, imagem])
+	var e := Prova.LUPA_ESCALA
+	assert_int(lupa.get_width()).is_equal(Prova.LUPA.size.x * e * 2)
+	assert_that(lupa.get_pixel(e - 1, e - 1)).is_equal(Color.WHITE)
+	assert_that(lupa.get_pixel(e, e)).is_equal(Color.BLACK)
