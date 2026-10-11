@@ -88,7 +88,7 @@ e no `git log`.
   - Não bloqueia os itens seguintes, só a folha de comparação (V02) e o
     veredito (V27). Se faltar, faz-se o resto e volta-se aqui.
 
-- [x] **V02** — Folha de comparação: o jogo ao lado da referência (11/10/2026)
+- [x] **V02** — Folha de comparação: o jogo ao lado da referência (11/10/2026, #65)
 
   `dev.py prova` hoje compara o jogo com ele mesmo. Falta pôr o quadro do jogo
   **ao lado da referência**, que é a pergunta do projeto inteiro e o aceite da
