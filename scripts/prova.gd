@@ -19,6 +19,28 @@ extends Node
 ## Quadros que o motor desenha antes da captura. O primeiro depois de mexer na
 ## cena pode sair com a cena antiga; tres e folga.
 const QUADROS_DE_ESPERA: int = 3
+## Para cada quadro da prova, a referencia de enquadramento mais parecido.
+## Escolhido a olho, quadro a quadro, e nao por medida: o que se compara e a
+## cara da tela, e a pista do jogo tem curva e ladeira que o video nao tem.
+##
+## - `largada`: avenida larga e reta, carro do lado - o `t0.0s` e isso.
+## - `curva`: o video nao faz curva; o `t3.8s` e o quadro com a moto mais
+##   deitada e a rua abrindo para um lado.
+## - `ladeira`: tambem nao ha ladeira; o `t1.0s` e o de horizonte mais alto.
+## - `reta`: corredor de predio fechando no ponto de fuga, como no `t5.0s`.
+##
+## As imagens paradas (V01 do backlog visual) entram ao lado quando existirem;
+## enquanto nao, ficam de fora sem reclamar, porque a folha continua servindo
+## so com o video.
+const REFERENCIAS: Dictionary = {
+	"largada": ["video_01/t0.0s.png", "01_centro.png"],
+	"curva": ["video_01/t3.8s.png", "04_vertical.png"],
+	"ladeira": ["video_01/t1.0s.png", "03_viaduto.png"],
+	"reta": ["video_01/t5.0s.png", "02_praca_maua.png"],
+}
+## Fundo do que sobra quando uma linha e mais curta que a mais longa. Cinza
+## medio, e nao preto: preto se confunde com o tunel e a sombra do jogo.
+const FUNDO := Color(0.5, 0.5, 0.5)
 ## Passos de fisica entre largar e congelar: meio segundo. Um so ja poria rival
 ## e carro no lugar, mas o piloto nasce parado e com o pe no chao, e em meio
 ## segundo a 25 m/s ele recolheu o pe - o quadro mostra a pose de quem anda.
@@ -63,6 +85,17 @@ func _roda() -> void:
 
 	_folha(imagens).save_png("%s/folha.png" % saida)
 	print("prova: %d quadros em %s" % [imagens.size(), saida])
+	# `dev.py prova --referencia`: o quadro ao lado do que ele quer parecer.
+	# E a pergunta da P9, e comparar o jogo so com ele mesmo nao a responde.
+	if OS.get_environment("RUSHFOOD_PROVA_REFERENCIA") == "1":
+		var linhas: Array[Array] = []
+		for i in imagens.size():
+			var nome: String = pontos(_world.track)[i]["nome"]
+			var linha: Array[Image] = [imagens[i]]
+			linha.append_array(_referencias(nome))
+			linhas.append(linha)
+		comparacao(linhas).save_png("%s/comparacao.png" % saida)
+		print("prova: comparacao com a referencia em %s/comparacao.png" % saida)
 	get_tree().quit(0)
 
 
@@ -146,4 +179,52 @@ static func _folha(imagens: Array[Image]) -> Image:
 	for i in imagens.size():
 		var pos := Vector2i((i % 2) * w, (i / 2) * h)
 		folha.blit_rect(imagens[i], Rect2i(0, 0, w, h), pos)
+	return folha
+
+
+## As referencias de um quadro que existem no disco, na ordem de `REFERENCIAS`.
+## Le o PNG direto, e nao como recurso: `docs/` tem `.gdignore`, e video de
+## referencia importado iria parar dentro do jogo exportado.
+static func _referencias(nome: String) -> Array[Image]:
+	var pasta := ProjectSettings.globalize_path("res://docs/referencias")
+	var achadas: Array[Image] = []
+	for arquivo: String in REFERENCIAS.get(nome, []):
+		var caminho := "%s/%s" % [pasta, arquivo]
+		if not FileAccess.file_exists(caminho):
+			continue
+		var imagem := Image.load_from_file(caminho)
+		if imagem != null:
+			achadas.append(imagem)
+	return achadas
+
+
+## Uma linha por quadro: o jogo e, a direita, cada referencia na altura dele.
+## A referencia e que se ajusta, nunca o jogo: o pixel do jogo e o que esta em
+## julgamento, e esticar ele com filtro esconderia justamente o bloco de pixel.
+static func comparacao(linhas: Array[Array]) -> Image:
+	var h: int = (linhas[0][0] as Image).get_height()
+	var formato := Image.FORMAT_RGBA8
+	var prontas: Array[Array] = []
+	var largura := 0
+	for linha in linhas:
+		var pronta: Array[Image] = []
+		var w := 0
+		for original: Image in linha:
+			var imagem := original.duplicate() as Image
+			imagem.convert(formato)
+			if imagem.get_height() != h:
+				var nova_w := roundi(imagem.get_width() * float(h) / imagem.get_height())
+				imagem.resize(nova_w, h, Image.INTERPOLATE_BILINEAR)
+			pronta.append(imagem)
+			w += imagem.get_width()
+		prontas.append(pronta)
+		largura = maxi(largura, w)
+	var folha := Image.create(largura, h * linhas.size(), false, formato)
+	folha.fill(FUNDO)
+	for i in prontas.size():
+		var x := 0
+		for imagem: Image in prontas[i]:
+			var tamanho := Rect2i(Vector2i.ZERO, imagem.get_size())
+			folha.blit_rect(imagem, tamanho, Vector2i(x, i * h))
+			x += imagem.get_width()
 	return folha
