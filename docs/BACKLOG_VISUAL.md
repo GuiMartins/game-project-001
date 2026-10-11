@@ -88,7 +88,7 @@ e no `git log`.
   - Não bloqueia os itens seguintes, só a folha de comparação (V02) e o
     veredito (V27). Se faltar, faz-se o resto e volta-se aqui.
 
-- [ ] **V02** — Folha de comparação: o jogo ao lado da referência
+- [x] **V02** — Folha de comparação: o jogo ao lado da referência (11/10/2026, #65)
 
   `dev.py prova` hoje compara o jogo com ele mesmo. Falta pôr o quadro do jogo
   **ao lado da referência**, que é a pergunta do projeto inteiro e o aceite da
@@ -100,6 +100,12 @@ e no `git log`.
     existirem), na mesma altura.
   - **Aceite:** um comando, uma imagem, e ela sai igual nos três sistemas.
   - É ferramenta: daqui em diante todo item anexa a comparação no PR.
+  - **Resultado:** `dev.py prova --referencia` monta a folha no próprio Godot
+    (`prova.gd`, sem Pillow), então sai igual nos três sistemas. O jogo fica
+    em 640×360 e a referência é que se ajusta à altura dele. Pares escolhidos
+    a olho em `Prova.REFERENCIAS`: largada↔`t0.0s`, curva↔`t3.8s`,
+    ladeira↔`t1.0s`, reta↔`t5.0s`. As quatro imagens da V01 já estão
+    mapeadas e entram sozinhas na linha quando os arquivos existirem.
 
 - [ ] **V03** 👤 — Decidir quanto de pixel
 
