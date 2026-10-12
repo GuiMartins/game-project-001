@@ -185,6 +185,12 @@ O número de um sistema que você não tem sai do CI: o `selftest` reprovado no 
 imprime as medidas inteiras no log. Só entra o que diverge de verdade, e entrada
 que voltou a ficar igual a `valores` sai.
 
+Commit que só mexe em markdown e em `docs/` não roda as provas: o job
+`mudancas` do `ci.yml` olha o que mudou, e os jobs pesados pulam. Os checks
+obrigatórios continuam reportando (pulado conta como verde), então o PR de
+texto entra em um minuto. Qualquer outro arquivo, inclusive o próprio
+workflow, roda tudo.
+
 ## Onde **não** há rede
 
 Saber disto faz parte do contrato. Nenhum destes é pego por nada automatizado:
