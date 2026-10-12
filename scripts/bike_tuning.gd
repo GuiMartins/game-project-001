@@ -204,6 +204,10 @@ const SAVE_PATH: String = "user://tuning.tres"
 ## sorteado de um gaussiano a cada quadro, com pico perto de 1 m, e qualquer
 ## raspada no carro tremia a tela inteira.
 @export_range(0.0, 0.5, 0.01) var cam_shake: float = 0.12
+## Forca do borrao de velocidade na velocidade maxima: o comprimento do risco,
+## em fracao da tela, de um ponto colado na camera a uma tela do ponto de fuga.
+## Zero desliga. Ver `Borrao`.
+@export_range(0.0, 1.0, 0.01) var borrao: float = 0.2
 
 ## --- Camera garupa --------------------------------------------------------
 ## O modo GARUPA do F2: um cinegrafista em outra moto, colado no jogador. Os

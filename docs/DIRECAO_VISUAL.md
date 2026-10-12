@@ -55,7 +55,7 @@ Leitura das imagens, cada uma traduzida para o que ela é tecnicamente. A coluna
 | 1 | Câmera baixa, atrás, piloto centralizado ocupando ~⅓ da altura | Perseguição por posição com atraso, FOV que abre com a velocidade | **já existe** (`chase_camera.gd`) |
 | 2 | Piloto e moto lidos como foto, não como desenho | Sprite digitalizado: fonte fotográfica ou renderizada offline, quantizada, com borda dura | falta |
 | 3 | Sol duro, céu azul saturado, sombra de contato sob cada veículo | Uma `DirectionalLight3D` com sombra ligada + ambiente vindo do céu | sol existe, **sombra desligada** |
-| 4 | Periferia borrada, faixas da pista esticadas em risco | Borrão radial em pós-processamento, mascarado por profundidade | falta |
+| 4 | Periferia borrada, faixas da pista esticadas em risco | Borrão radial em pós-processamento, mascarado por profundidade e stencil | **feito** (`borrao.gdshader`, V08) |
 | 5 | Fumaça, faísca, poeira, fogo | `GPUParticles3D` com flipbook e escala de tempo travada | falta |
 | 6 | Nuvens com bandas e dithering visíveis | Céu procedural com textura de cobertura + debanding desligado de propósito | falta (fundo é cor chapada) |
 | 7 | HUD gorda, com contorno, barras segmentadas em degradê | Fonte bitmap + `ColorRect`s dentro do mesmo SubViewport | existe, mas magra e sem estilo |
@@ -485,6 +485,17 @@ caminhos:
 `CompositorEffect` fica guardado para o dia em que fizer falta um buffer que o
 2D não vê — vetor de movimento por objeto, por exemplo.
 
+**Corrigido na V08: o `ColorRect` não alcança profundidade.** O Godot 4.7.2
+recusa `hint_depth_texture` em shader `canvas_item` ("not supported in
+'canvas_item' shaders"). O que foi feito é o terceiro caminho, fora da tabela:
+um quad preso à câmera, em shader `spatial` no passe transparente, que lê
+`hint_screen_texture` e `hint_depth_texture` (`borrao.gdshader`). O piloto sai
+da máscara por **stencil**, e não por profundidade: ele, o asfalto em volta da
+roda e o carro colado estão à mesma distância da câmera. Quem grava o stencil
+é um `material_overlay` no ator (`foco.gdshader`). Consequência para a ordem
+dos passes: o borrão roda antes de glow, tonemap e LUT, e não depois — ver o
+diagrama abaixo.
+
 O efeito tem três ingredientes, e o terceiro é o que separa "parece velocidade"
 de "parece sujeira na tela":
 
@@ -524,10 +535,10 @@ O que é nosso é o que vem depois:
 mundo 3D (640x360)
   -> sombra, SSAO                 <- Environment
   -> neblina                      <- Environment
+  -> borrao radial                <- nosso: quad 3D na camera (V08)
   -> glow (em HDR)                <- Environment
   -> tonemap                      <- Environment
   -> LUT de cor (adjustment)      <- Environment, e ja e o ultimo passo dele
-  -> borrao radial                <- nosso: ColorRect com shader
   -> quantizacao + dither         <- nosso: ColorRect com shader (POR ULTIMO)
   -> HUD                          <- CanvasLayer dentro do mesmo SubViewport
   -> upscale inteiro por nearest  <- SubViewportContainer
@@ -536,10 +547,11 @@ mundo 3D (640x360)
 A HUD entra depois da quantização de propósito: ela já é desenhada em cores
 escolhidas à mão, e passá-la pelo dither só suja o texto.
 
-Dois `ColorRect` em sequência precisam de duas camadas — o segundo lê o
-resultado do primeiro por `hint_screen_texture`, e para isso o primeiro já tem
-que ter sido desenhado. Na prática são dois `CanvasLayer` com `layer` crescente,
-e a HUD (`layer = 10`, hoje) acima dos dois.
+Com o borrão dentro do 3D, sobrou um `ColorRect` só, o da paleta, num
+`CanvasLayer` (`layer = 5`) abaixo da HUD (`layer = 10`). Um passe 2D novo que
+precise ler o resultado de outro entra em camada própria, com `layer`
+crescente: o segundo lê o primeiro por `hint_screen_texture`, e para isso o
+primeiro já tem que ter sido desenhado.
 
 ## Céu, paleta e dithering
 
@@ -737,7 +749,8 @@ ou substituída pela alternativa; `fps` dentro do orçamento com o pior caso
 (queda no meio do trânsito).
 
 **Fase 5 — borrão.** Shader radial com máscara de profundidade. Testar antes a
-versão barata (linhas de velocidade): pode ser que ela baste.
+versão barata (linhas de velocidade): pode ser que ela baste. *Feito na V08,
+direto no borrão: o vídeo de referência não usa linhas de velocidade.*
 *Aceite:* a 180 km/h o piloto está nítido e a periferia não.
 
 **Fase 6 — o ator.** Aqui entra a decisão rota A / rota B, e só aqui: as cinco
@@ -871,7 +884,7 @@ Refazer a verificação num bump de engine é barato, e o motivo de registrar aq
 
 | | |
 | --- | --- |
-| `Environment.motion_blur_enabled` | **não existe no 4.7.2.** Motion blur é código nosso: `ColorRect` com shader lendo cor + profundidade, ou `CompositorEffect` |
+| `Environment.motion_blur_enabled` | **não existe no 4.7.2.** Motion blur é código nosso: quad 3D preso à câmera lendo cor + profundidade (`borrao.gdshader`), ou `CompositorEffect`. `ColorRect` não serve: `canvas_item` não lê profundidade |
 
 **A confirmar rodando** (com o teste ao lado):
 

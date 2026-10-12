@@ -126,6 +126,11 @@ func _ready() -> void:
 	_rng_queda.seed = SEMENTE_DA_QUEDA
 
 
+## Este e o corredor que a camera segue: o borrao de velocidade nao passa nele.
+func marcar_foco() -> void:
+	_ator.foco = true
+
+
 ## Monta a moto `modelo` (um `Entregador.Modelo`), com a mola da inclinacao
 ## dela. O resto da fisica e o mesmo em todas (ver `FisicaDaMoto`).
 func usar_modelo(modelo: int) -> void:
