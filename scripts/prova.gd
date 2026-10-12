@@ -128,6 +128,13 @@ func _roda() -> void:
 		lupa(linhas_variantes[0].slice(0, VARIANTES_PIXEL.size())).save_png(
 			"%s/variantes_lupa.png" % saida
 		)
+		# Cada variante da largada em tela cheia de 1080p, um arquivo por
+		# variante: e o tamanho em que o jogador ve, e trocar de arquivo no
+		# visualizador mostra a diferenca melhor que qualquer folha.
+		for i in VARIANTES_PIXEL.size():
+			var cheia := (linhas_variantes[0][i] as Image).duplicate() as Image
+			cheia.resize(cheia.get_width() * 3, cheia.get_height() * 3, Image.INTERPOLATE_NEAREST)
+			cheia.save_png("%s/variante_%d_%s.png" % [saida, i + 1, VARIANTES_PIXEL[i]["nome"]])
 		print("prova: variantes de pixel em %s/variantes.png" % saida)
 	get_tree().quit(0)
 
