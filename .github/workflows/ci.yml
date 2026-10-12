@@ -9,9 +9,14 @@ name: CI
 # Não é zelo: o binário padrão do Godot no Windows é GUI-subsystem e engole a
 # saída quando redirecionada, então o banco de provas passava em silêncio, sem
 # imprimir um número. Uma matrix de um SO só nunca veria isso.
+#
+# `push` so na master, e o resto pelo `pull_request`. Com `push` em toda
+# branch, cada commit de PR rodava duas vezes, a mesma matrix com o mesmo
+# codigo. O preco: branch sem PR nao tem CI sozinha. Para testar uma antes de
+# abrir o PR, `gh workflow run CI --ref <branch>`.
 on:
   push:
-    branches: ["**"]
+    branches: [master]
   pull_request:
   workflow_dispatch:
 

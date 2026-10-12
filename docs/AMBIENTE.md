@@ -90,7 +90,7 @@ estranha. Isso é bom.
 
 | Workflow | Quando | O quê |
 | --- | --- | --- |
-| `ci.yml` | todo push e PR | lint + format, e testes nos três SOs |
+| `ci.yml` | PR, push na `master` e disparo manual | lint + format, e testes nos três SOs; só markdown e `docs/` pulam as provas |
 | `release.yml` | tag `v*` | confere a tag, testa, exporta, publica |
 
 A matrix não tem `fail-fast`: quando um sistema diverge, o que interessa é
