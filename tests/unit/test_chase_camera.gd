@@ -13,6 +13,10 @@ const PASSO: float = 1.0 / 60.0
 
 func _camera() -> Array:
 	var tuning := BikeTuning.new()
+	# O default e zero (camera sem giro, como no video), e com zero o filtro
+	# nao teria o que filtrar. O que se testa e o filtro, para quando alguem
+	# ligar o giro no F3.
+	tuning.cam_lean_follow = 0.2
 	# Na arvore: a camera le a posicao global da moto. Sem pista, a moto nao
 	# roda fisica - so o `lean` que o teste escreve importa.
 	var moto: PlayerBike = auto_free(PlayerBike.new())

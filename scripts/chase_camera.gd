@@ -200,11 +200,15 @@ func _alvos() -> Array[Vector3]:
 	elif mode == Mode.DEBUG_FREE:
 		distance = tuning.cam_distance * 2.6
 		height = tuning.cam_height * 4.0
-	# Mira longe: olhar 14 m a frente abaixa o horizonte e abre a pista. Mirar
-	# em cima da moto so mostra o para-lama.
+	# A mira e slider (`cam_mira_*`): com a camera baixa, a altura dela decide
+	# onde fica o horizonte.
 	return [
 		target.global_position + back * distance + Vector3.UP * height,
-		target.global_position - back * 14.0 + Vector3.UP * 1.2,
+		(
+			target.global_position
+			- back * tuning.cam_mira_distancia
+			+ Vector3.UP * tuning.cam_mira_altura
+		),
 	]
 
 
