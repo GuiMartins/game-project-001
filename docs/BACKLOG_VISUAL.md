@@ -434,7 +434,7 @@ e no `git log`.
   - **Aceite:** num trecho de corredor não se vê céu entre prédios no nível
     da rua; `fps` medido, porque é aqui que a conta de desenho aperta.
 
-- [x] **V12** — Glow: outdoor, lanterna e cromo brilhando (12/10/2026)
+- [x] **V12** — Glow: outdoor, lanterna e cromo brilhando (12/10/2026, #84)
 
   O vídeo tem *bloom* nos outdoors, nos carros brancos e no cromo. O jogo não
   liga `glow_enabled` (é o item 4 da tabela de luz do `DIRECAO_VISUAL.md`).
