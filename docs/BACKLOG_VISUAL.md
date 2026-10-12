@@ -107,7 +107,7 @@ e no `git log`.
     ladeira↔`t1.0s`, reta↔`t5.0s`. As quatro imagens da V01 já estão
     mapeadas e entram sozinhas na linha quando os arquivos existirem.
 
-- [x] **V03** 👤 — Decidir quanto de pixel (11/10/2026)
+- [x] **V03** 👤 — Decidir quanto de pixel (11/10/2026, #66)
 
   A pergunta aberta nº 1 da `REFERENCIA_VIDEO.md`. As imagens paradas e o
   `DIRECAO_VISUAL.md` pedem pixel (640×360, dither, ator a 12 fps). O vídeo é
