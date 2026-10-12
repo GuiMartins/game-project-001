@@ -290,7 +290,7 @@ e no `git log`.
   de 20° ninguém solta o braço. Só pose: baseline sem variação, e nenhuma
   malha nova na tela (sem `fps`).
 
-- [x] **V07a** 👤 — Mãos e pés nos comandos: gás, freio e marcha (12/10/2026)
+- [x] **V07a** 👤 — Mãos e pés nos comandos: gás, freio e marcha (12/10/2026, #78)
 
   Ideia do Guilherme jogando a V07: acelerar é torcer o pulso para baixo,
   quase em ângulo reto com o antebraço, e a pilotagem tem ainda o freio e a
