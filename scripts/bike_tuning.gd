@@ -132,9 +132,26 @@ const SAVE_PATH: String = "user://tuning.tres"
 @export_group("Camera")
 
 ## Distancia da camera atras da moto, em metros.
-@export_range(2.0, 14.0, 0.1) var cam_distance: float = 6.4
-## Altura da camera, em metros.
-@export_range(0.5, 6.0, 0.1) var cam_height: float = 2.25
+##
+## Era 6,4 com a camera a 2,25 m: o piloto ocupava ~29% da altura da tela, e
+## o corredor entre dois carros lia como mapa visto de cima. O video de
+## referencia poe a camera perto e abaixo do capacete (docs/REFERENCIA_VIDEO.md).
+## A proposta de la (4,0 m, 1,6 m, mira a 1,4 m) cortava a moto: com a camera
+## baixa e a lente quase nivelada, so o tronco do piloto cabia no quadro, e a
+## roda sumia na borda de baixo. A 4,5 m, 1,2 m e mira baixa, a moto inteira
+## aparece, o piloto ocupa ~45% da altura e o horizonte fica em ~44% do topo.
+@export_range(2.0, 14.0, 0.1) var cam_distance: float = 4.5
+## Altura da camera, em metros. Abaixo do capacete (~1,3 m na pose de pilotar):
+## o piloto e visto de baixo, como no video, e nao de cima.
+@export_range(0.5, 6.0, 0.1) var cam_height: float = 1.2
+## Quantos metros a frente da moto a camera mira. Era 14 cravado no codigo.
+## Com a camera baixa, mira longe deixa a lente nivelada e a moto sai pela
+## borda de baixo; mais perto, a lente desce o bastante para a roda caber.
+@export_range(4.0, 40.0, 0.5) var cam_mira_distancia: float = 8.0
+## Altura da mira, em metros. Era 1,2 cravado. Junto com a distancia, decide
+## a inclinacao da lente: 0,2 m a 8 m da ~4,5 graus para baixo, que poe a
+## roda traseira perto da borda e o horizonte um pouco acima do meio.
+@export_range(0.0, 4.0, 0.05) var cam_mira_altura: float = 0.2
 ## Quao rapido a camera persegue a moto (1/s). Baixo = solta, alto = grudada.
 @export_range(1.0, 30.0, 0.25) var cam_follow: float = 7.0
 ## FOV parado, em graus. O texto de arquitetura pede ~50 (lente longa).
@@ -151,8 +168,10 @@ const SAVE_PATH: String = "user://tuning.tres"
 @export_range(0.0, 3.0, 0.1) var cam_recuo: float = 0.0
 ## Quanto da inclinacao da moto a camera copia (0 = fixa, 1 = acompanha tudo).
 ## Era 0.3: a 38 graus de inclinacao a camera girava 11, e na entrada de curva
-## isso pesava mais que a propria curva.
-@export_range(0.0, 1.0, 0.02) var cam_lean_follow: float = 0.2
+## isso pesava mais que a propria curva. Depois 0,2; agora zero, como no video
+## de referencia, onde o horizonte nao gira e quem deita e so a moto. Com a
+## camera perto, qualquer giro dela pesa mais que antes.
+@export_range(0.0, 1.0, 0.02) var cam_lean_follow: float = 0.0
 ## Quao rapido o giro da camera alcanca a inclinacao da moto (1/s).
 ##
 ## A moto inclina na velocidade do polegar; a camera nao pode. Copiando direto,
@@ -213,7 +232,7 @@ const SAVE_PATH: String = "user://tuning.tres"
 @export_range(0.5, 10.0, 0.25) var garupa_aproximacao: float = 2.5
 ## Fracao da inclinacao do jogador que vai para o horizonte. A 38 graus de
 ## inclinacao da ~11 de giro, os picos de 10-15 graus do video. E maior que o
-## `cam_lean_follow` da perseguicao (0,2): aqui a camera e de gente, e gira.
+## `cam_lean_follow` da perseguicao (zero): aqui a camera e de gente, e gira.
 @export_range(0.0, 0.6, 0.02) var garupa_giro: float = 0.3
 ## Tremor eficaz, em graus, de banda (2-12 Hz). O video tem 0,5-0,8; a 0,6
 ## sao 2-3 pixels de tremor continuo, e isso cansa antes de vender numa

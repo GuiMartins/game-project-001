@@ -133,7 +133,7 @@ e no `git log`.
 
 ### Enquadramento
 
-- [ ] **V04** — Câmera de perseguição perto e baixa
+- [x] **V04** — Câmera de perseguição perto e baixa (11/10/2026)
 
   A maior distância entre o vídeo e o jogo, e a que decide o que todo o resto
   precisa mostrar: no vídeo o piloto ocupa ~53% da altura e a câmera está
@@ -150,6 +150,14 @@ e no `git log`.
   - **Aceite:** jogando, o corredor entre dois carros parece mais apertado e o
     que vem à frente continua legível a 180 km/h. Piloto em 40–45% da altura
     em cruzeiro. A prova muda de cara: baseline visual no mesmo commit.
+  - **Resultado:** a proposta de partida (4,0 m, 1,6 m, mira a 1,4 m)
+    cortava a moto: lente quase nivelada, só o tronco do piloto no quadro.
+    Ficou `cam_distance` 4,5, `cam_height` 1,2, mira virou slider
+    (`cam_mira_distancia` 8, `cam_mira_altura` 0,2: lente ~4,5° para baixo)
+    e `cam_lean_follow` 0. Na prova, piloto em ~45% da altura com a roda
+    inteira e horizonte em ~44% do topo (antes ~29%). Baseline visual:
+    `visual_fracao_ceu` 0,104 → 0,082, porque a câmera baixa vê mais
+    fachada e menos céu.
 
 ### A moto viva
 
