@@ -168,9 +168,6 @@ def corpo(material, colecao, pai) -> None:
     # Protetor de carter: a placa por baixo do motor, que e o que bate na pedra.
     c.caixa((0.0, 0.10, 0.31), (0.20, 0.36, 0.015), "metal", rot_x=-6.0)
     c.caixa((0.0, 0.29, 0.37), (0.18, 0.10, 0.015), "metal", rot_x=-55.0)
-    # Pedais: cambio na esquerda, freio na direita.
-    c.barra((-0.16, -0.03, 0.42), (-0.17, 0.13, 0.39), 0.02, 0.015, "preto")
-    c.barra((0.16, -0.03, 0.40), (0.16, 0.12, 0.37), 0.02, 0.015, "preto")
 
     # Pedaleiras do piloto (de trilha, de metal serrilhado) e da garupa.
     for lado in (-1.0, 1.0):
@@ -291,6 +288,9 @@ def corpo(material, colecao, pai) -> None:
         c.caixa((lado * 0.165, -1.015, 0.80), (0.05, 0.06, 0.035), "pisca")
 
     c.objeto(material, colecao, pai)
+    # Pedais: cambio na esquerda, freio na direita.
+    e.pedal(material, colecao, pai, "Pedal_Cambio", (-0.16, -0.03, 0.42), (-0.17, 0.13, 0.39))
+    e.pedal(material, colecao, pai, "Pedal_Freio", (0.16, -0.03, 0.40), (0.16, 0.12, 0.37))
 
 
 def _lateral(lado, x):
@@ -360,7 +360,6 @@ def direcao(material, colecao, pai):
         d.tubo(no_garfo(-0.02, lado * 0.04), (lado * 0.04, 0.32, 1.14), 0.016, 0.016, "preto", lados=6)  # torre
         d.tubo((lado * (m.x - 0.065), m.y + 0.01, m.z), (lado * (m.x + 0.06), m.y - 0.01, m.z), 0.018, 0.018, "borracha", lados=8)
         d.caixa((lado * 0.25, 0.28, 1.19), (0.045, 0.05, 0.045), "preto")  # punho de comando
-        d.barra((lado * 0.28, 0.32, 1.20), (lado * 0.40, 0.32, 1.19), 0.012, 0.012, "metal")  # manete
         # Protetor de mao: a concha preta na frente da manopla. De tras ela
         # alarga o guidao e le como "moto de trilha" antes de qualquer outra
         # peca.
@@ -374,7 +373,10 @@ def direcao(material, colecao, pai):
         d.tubo((lado * 0.23, 0.28, 1.20), (lado * 0.30, 0.25, 1.42), 0.007, 0.007, "preto", lados=4)
         d.caixa((lado * 0.32, 0.25, 1.44), (0.10, 0.025, 0.065), "preto")
         d.caixa((lado * 0.32, 0.236, 1.44), (0.08, 0.004, 0.05), "cromado")
-    return d.objeto(material, colecao, pai)
+    obj = d.objeto(material, colecao, pai)
+    for lado, sufixo in ((-1.0, "E"), (1.0, "D")):
+        e.manete(material, colecao, obj, sufixo, (lado * 0.28, 0.32, 1.20), (lado * 0.40, 0.32, 1.19))
+    return obj
 
 
 def garfo(material, colecao, pai):
@@ -462,6 +464,7 @@ def monta(mat, colecao, raiz) -> None:
         INCLINACAO_TORSO=INCLINACAO_TORSO,
         MANOPLA=MANOPLA,
         PEDALEIRA=PEDALEIRA,
+        MANETE=0.06,
     )
 
 

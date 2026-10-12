@@ -47,8 +47,11 @@ O que da para animar, e por onde:
           Amortecedor_E/D  corpo do amortecedor; aponta para a Mola
           Direcao          esterca em volta da reta Direcao -> Garfo
             Garfo          as bainhas: deslizam ao longo do garfo
-              Roda_Dianteira   gira em X
+              Manete_E/D     embreagem e freio: giram em Y, puxadas pelos dedos
+            Roda_Dianteira   gira em X
                 Raios_Dianteira  some em alta, quando o borrao entra
+          Pedal_Cambio     gira em X: o bico sobe e desce a marcha
+          Pedal_Freio      gira em X: o bico desce na freada
           Balanca          gira em X em volta do pivo, no quadro
             Roda_Traseira  gira em X
               Raios_Traseira
@@ -56,7 +59,7 @@ O que da para animar, e por onde:
       Piloto               o quadril; anda com o Suspenso, solta na queda
         Tronco             deita, gira e rola o torso em volta do quadril
           Cabeca, Bag
-          Braco_E/D -> Antebraco_E/D -> Mao_E/D
+          Braco_E/D -> Antebraco_E/D -> Mao_E/D -> Dedos_E/D
         Coxa_E/D -> Canela_E/D -> Pe_E/D
 
 **As rodas nunca saem do chao; quem se mexe e o resto.** O `entregador.gd`
@@ -610,9 +613,6 @@ def corpo(material, colecao, pai) -> None:
     c.caixa(base_cil + eixo_cil * 0.235, (0.19, 0.16, 0.06), "motor", rot_x=-15.0)
     c.caixa(base_cil + eixo_cil * 0.285, (0.13, 0.11, 0.05), "preto", rot_x=-15.0)
     c.caixa((0.0, 0.05, 0.66), (0.09, 0.09, 0.07), "preto")  # corpo de borboleta
-    # Pedais: cambio na esquerda, freio na direita.
-    c.barra((-0.16, -0.02, 0.36), (-0.17, 0.14, 0.33), 0.02, 0.015, "preto")
-    c.barra((0.16, -0.02, 0.34), (0.16, 0.13, 0.31), 0.02, 0.015, "preto")
 
     # Protetor de perna, o "mata-cachorro": de fabrica nao vem, mas em moto de
     # entrega e quase uniforme. Ele alarga a silhueta na altura do joelho, que
@@ -737,6 +737,33 @@ def corpo(material, colecao, pai) -> None:
         c.caixa((lado * 0.195, -0.935, 0.73), (0.05, 0.06, 0.035), "pisca")
 
     c.objeto(material, colecao, pai)
+    # Pedais: cambio na esquerda, freio na direita.
+    pedal(material, colecao, pai, "Pedal_Cambio", (-0.16, -0.02, 0.36), (-0.17, 0.14, 0.33))
+    pedal(material, colecao, pai, "Pedal_Freio", (0.16, -0.02, 0.34), (0.16, 0.13, 0.31))
+
+
+def pedal(material, colecao, pai, nome, pivo, bico) -> bpy.types.Object:
+    """Pedal de cambio ou de freio, com o pivo atras, perto da pedaleira.
+
+    Peca a parte, e nao do corpo, porque o pe do piloto mexe nele: o ator
+    desce o bico na freada e sobe ou desce na troca de marcha.
+    """
+    p = Peca(nome, pivo)
+    p.barra(pivo, bico, 0.02, 0.015, "preto")
+    p.caixa(Vector(bico) + Vector((0.0, 0.0, 0.005)), (0.04, 0.03, 0.02), "borracha")
+    return p.objeto(material, colecao, pai)
+
+
+def manete(material, colecao, pai, sufixo, pivo, ponta) -> bpy.types.Object:
+    """A manete, com o pivo no punho de comando, e a ponta para fora.
+
+    Peca a parte porque os dedos puxam: a esquerda e a embreagem (ou o freio
+    de tras, na scooter), a direita o freio da frente. Tubo, e nao `barra`:
+    a `barra` mede so em Y e Z, e a manete corre em X.
+    """
+    m = Peca("Manete_" + sufixo, pivo)
+    m.tubo(pivo, ponta, 0.008, 0.007, "metal", lados=4)
+    return m.objeto(material, colecao, pai)
 
 
 def direcao(material, colecao, pai) -> bpy.types.Object:
@@ -786,12 +813,14 @@ def direcao(material, colecao, pai) -> bpy.types.Object:
     for lado in (-1.0, 1.0):
         d.tubo((lado * (m.x - 0.065), m.y + 0.005, m.z), (lado * (m.x + 0.06), m.y - 0.01, m.z), 0.018, 0.018, "borracha", lados=8)
         d.caixa((lado * 0.215, 0.22, 1.075), (0.045, 0.05, 0.045), "preto")  # punho de comando
-        d.barra((lado * 0.25, 0.25, 1.085), (lado * 0.36, 0.25, 1.075), 0.012, 0.012, "metal")  # manete
         # Retrovisor: na silhueta de tras, e o que faz o guidao existir.
         d.tubo((lado * 0.21, 0.24, 1.08), (lado * 0.27, 0.22, 1.30), 0.007, 0.007, "preto", lados=4)
         d.caixa((lado * 0.29, 0.22, 1.32), (0.11, 0.025, 0.07), "preto")
         d.caixa((lado * 0.29, 0.206, 1.32), (0.09, 0.004, 0.055), "cromado")
-    return d.objeto(material, colecao, pai)
+    obj = d.objeto(material, colecao, pai)
+    for lado, sufixo in ((-1.0, "E"), (1.0, "D")):
+        manete(material, colecao, obj, sufixo, (lado * 0.25, 0.25, 1.085), (lado * 0.36, 0.25, 1.075))
+    return obj
 
 
 def garfo(material, colecao, pai) -> bpy.types.Object:
@@ -912,12 +941,14 @@ def piloto(
     INCLINACAO_TORSO=INCLINACAO_TORSO,  # noqa: N803
     MANOPLA=MANOPLA,  # noqa: N803
     PEDALEIRA=PEDALEIRA,  # noqa: N803
+    MANETE=0.05,  # noqa: N803
 ) -> None:
     """Quem pilota, sentado na moto dada pelo quadril, manopla e pedaleira.
 
     O mesmo corpo em toda moto: muda so onde ele senta, o quanto o torso
     deita e onde maos e pes pegam. Os nomes em caixa alta sao os da CG, que e
-    o padrao; a XRE (`arte/xre300.py`) passa os dela.
+    o padrao; a XRE (`arte/xre300.py`) passa os dela. `MANETE` e quanto a
+    manete fica a frente da manopla, que e onde os dedos repousam.
     """
     base = vazio("Piloto", QUADRIL, colecao, raiz)
 
@@ -1015,7 +1046,13 @@ def piloto(
         luva = Peca("Mao_" + sufixo, mao)
         luva.caixa(mao + Vector((0.0, 0.01, 0.005)), (0.08, 0.09, 0.075), "luva")
         luva.caixa(mao + Vector((-lado * 0.035, 0.03, 0.02)), (0.03, 0.05, 0.03), "luva")
-        luva.objeto(material, colecao, obj_antebraco)
+        obj_mao = luva.objeto(material, colecao, obj_antebraco)
+        # Indicador e medio, por cima da manete: no transito se pilota com dois
+        # dedos nela, pronto para frear. O ator gruda os dedos na manete, e e
+        # ele que tira os da direita quando o pulso torce o acelerador.
+        dedos = Peca("Dedos_" + sufixo, mao + Vector((0.0, MANETE - 0.02, 0.0)))
+        dedos.caixa(mao + Vector((lado * 0.012, MANETE, 0.012)), (0.05, 0.03, 0.026), "luva")
+        dedos.objeto(material, colecao, obj_mao)
 
         quadril = QUADRIL + Vector((lado * 0.11, 0.0, -0.03))
         tornozelo = Vector((lado * PEDALEIRA.x, PEDALEIRA.y - 0.04, PEDALEIRA.z + 0.07))
