@@ -388,10 +388,10 @@ func pintar(a_cruzamentos: Array[Vector2], a_boca: float) -> void:
 			var side := -1.0 if k == 0 else 1.0
 			var fim := c.x + boca if c.y == 0.0 or c.y == side else zebra_fim
 			sem_bordo[k].append(Vector2(retencao, fim))
-		var x := -road_w + (ZEBRA_PERIODO - ZEBRA_LISTRA) * 0.5
-		while x + ZEBRA_LISTRA <= road_w:
-			_quad(tinta, zebra_inicio, zebra_fim, x, x + ZEBRA_LISTRA, 0.03)
-			x += ZEBRA_PERIODO
+		for x in listras_da_zebra(road_w * 2.0):
+			_quad(
+				tinta, zebra_inicio, zebra_fim, x - ZEBRA_LISTRA * 0.5, x + ZEBRA_LISTRA * 0.5, 0.03
+			)
 		_quad(tinta, retencao, retencao + RETENCAO_LARGURA, -road_w, road_w, 0.03)
 
 	var steps := int(length / MESH_STEP)
@@ -417,6 +417,19 @@ func pintar(a_cruzamentos: Array[Vector2], a_boca: float) -> void:
 	_pintura.mesh = mesh
 	_pintura.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_pintura)
+
+
+## Centro de cada listra de uma zebra que atravessa `largura` metros de rua,
+## medido do meio dela. Simetrica: zebra que sobra mais de um lado que do outro
+## parece pintada torta.
+static func listras_da_zebra(largura: float) -> Array[float]:
+	# Pelo menos 30 cm de asfalto entre a ultima listra e o meio-fio.
+	var cabem := floori((largura - 0.6 + ZEBRA_PERIODO - ZEBRA_LISTRA) / ZEBRA_PERIODO)
+	var meio := float(cabem - 1) * 0.5
+	var centros: Array[float] = []
+	for i in cabem:
+		centros.append((float(i) - meio) * ZEBRA_PERIODO)
+	return centros
 
 
 ## Se `[a, b]` nao encosta em nenhum dos `buracos`.

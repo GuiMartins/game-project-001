@@ -391,6 +391,10 @@ e no `git log`.
     sem variação; visual dentro da tolerância (luminância −2,5%, céu −2,2%).
     `fps` depois: p50 e p95 em 8,33 ms, no teto de 120 Hz da tela, então não
     há diferença para medir; a mudança custa uma chamada de desenho.
+    Depois, jogando: a zebra das ruas transversais, que já existia, saía
+    torta (40 cm de margem de um lado, 10 do outro) e com outro desenho.
+    Passou a usar a mesma zebra e a mesma retenção da avenida, centrada
+    (`RoadTrack.listras_da_zebra`), a 1 m do asfalto da avenida.
 
 ### Os prédios e o céu
 

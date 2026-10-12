@@ -188,24 +188,25 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 				)
 			)
 			var chao := centro + acima + Vector3.UP * 0.03
-			# Faixa de pedestre na linha da calcada, e a linha de retencao logo
-			# atras dela, so na mao de quem chega. Listra de 0,5 m com periodo de
-			# 1 m: ela corre ao longo da rua, de lado para a moto, e de lado nao
-			# pisca (a regra do `arte/chao.py` e para o que se atravessa).
-			var listra := -meio + 0.4
-			while listra < meio - 0.4:
-				var p := chao + r * (listra + 0.25) + d * (calcada + 0.4)
-				_faixa(tinta, p, d, r, 0.5, 3.0)
-				listra += 1.0
-			_faixa(tinta, chao + d * (calcada + 4.0), r, d, 0.4, meio)
+			# Faixa de pedestre na linha da calcada, com a mesma zebra e a mesma
+			# retencao da avenida, so na mao de quem chega. Fica a
+			# `ZEBRA_ESQUINA` do asfalto da avenida, como a da avenida fica da
+			# boca da rua: e por ali que passa quem anda pela calcada.
+			var zebra := RoadTrack.ZEBRA_ESQUINA
+			for x in RoadTrack.listras_da_zebra(RUA_LARGURA):
+				var p := chao + r * x + d * zebra
+				_faixa(tinta, p, d, r, RoadTrack.ZEBRA_LISTRA, RoadTrack.ZEBRA_COMPRIMENTO)
+			var retencao := zebra + RoadTrack.ZEBRA_COMPRIMENTO + RoadTrack.RETENCAO_RECUO
+			var linha := chao + d * (retencao + RoadTrack.RETENCAO_LARGURA * 0.5)
+			_faixa(tinta, linha, r, d, RoadTrack.RETENCAO_LARGURA, meio)
 			# O fundo da rua e a fachada de um predio da quadra de tras, olhando
 			# para a avenida: rua que acaba no vazio mostra a borda do mundo, e
 			# predio no fundo e o "T" que toda rua de bairro tem.
 			var tipo := _tipo_de_predio(rua.randf_range(6.0, 23.0))
 			var pe := centro + d * (RUA_COMPRIMENTO - 2.0 + Predio.frente(tipo))
 			_predio(props, rua, tipo, pe, -d)
-			# Tracejado do meio da rua.
-			var t := calcada + 5.0
+			# Tracejado do meio da rua, um carro depois da retencao.
+			var t := retencao + 5.0
 			while t < RUA_COMPRIMENTO - 3.0:
 				_faixa(tinta, chao + d * t, d, r, 0.14, 2.0)
 				t += 4.5
@@ -220,7 +221,7 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 			# atravessaria o poste, que nao tem colisor.
 			var esquina := centro + acima + d * (calcada + 0.8) + r * (meio + 0.9)
 			_semaforo(props, materiais, esquina, d, track.sample_basis(c.x).z)
-			var fila := calcada + 4.8
+			var fila := retencao + RoadTrack.RETENCAO_LARGURA + 0.6
 			for _i in rua.randi_range(1, 3):
 				fila = _carro_parado(props, rua, centro + acima + r * meio * 0.5, d, fila)
 
