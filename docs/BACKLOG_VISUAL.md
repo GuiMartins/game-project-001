@@ -24,6 +24,17 @@ baixo. Item marcado 👤 depende do Guilherme (decisão de produto ou arquivo qu
 só ele tem): quem for implementar pergunta na hora, com a recomendação que o
 item já traz, e não pula para o seguinte sem a resposta.
 
+**Antes de escolher o item, atualize a branch:** `git fetch origin` e comece
+de `origin/master`, não da `master` local nem do worktree que já estava
+aberto. A fila anda a cada merge, e a cópia velha mente sobre qual é o
+primeiro `[ ]`: foi assim que a V01 começou a ser refeita minutos depois de
+mergeada (#72).
+
+```bash
+git fetch origin
+git switch -c <assunto> origin/master
+```
+
 Cada item vira **uma branch e um PR**, com o portão verde, do jeito do
 `CLAUDE.md`. Ao fechar:
 
