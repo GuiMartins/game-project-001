@@ -484,6 +484,13 @@ no passo de ampliar, não no render.
   ao nearest, então `shots` e `prova` (1920×1080, 3×) não andaram. Custo: uma
   passada na resolução da tela, a mesma cópia que já existia.
 
+  Jogando, isso sozinho não mudou quase nada: o tremor maior vinha do render
+  sem antialiasing (faixa pintada, quina de prédio e caixilho mais finos que
+  um pixel acendendo e apagando). Entraram junto **MSAA 4×** no SubViewport e
+  filtro **trilinear** na textura dos prédios (era nearest). Na `prova` o
+  quadro parado fica quase igual; `shots` andou menos de 1%; `fps` igual
+  (p50 8,33 ms, mesma máquina da V25).
+
 - [ ] **V29** — Proporção de tela: tarja ou mais mundo
 
   Com `aspect = keep`, tela 16:10 (Mac, Steam Deck) ganha tarja em cima e

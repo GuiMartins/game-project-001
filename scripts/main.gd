@@ -74,7 +74,13 @@ func _ready() -> void:
 
 	sub_viewport = SubViewport.new()
 	sub_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	sub_viewport.msaa_3d = Viewport.MSAA_DISABLED
+	## MSAA 4x, e nao desligado: a 640x360 sem antialiasing, faixa pintada
+	## de 32 cm, quina de predio e caixilho de janela ficam mais finos que um
+	## pixel ao longe e acendem e apagam conforme a camera anda - a tela inteira
+	## cintila em movimento. O MSAA so amostra a borda da geometria, entao o
+	## pixel continua grande e a textura continua sendo do material; e a
+	## 640x360 quatro amostras custam o mesmo que uma em 1280x720.
+	sub_viewport.msaa_3d = Viewport.MSAA_4X
 	sub_viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 	sub_viewport.handle_input_locally = false
 	container.add_child(sub_viewport)

@@ -11,8 +11,13 @@ shader_type spatial;
 // seria bonito e piscaria a cada quadro em 640x360.
 render_mode specular_disabled;
 
-uniform sampler2D albedo : source_color, filter_nearest_mipmap;
-uniform sampler2D mascara : hint_default_black, filter_nearest_mipmap;
+// Trilinear, e nao nearest: predio e quase sempre visto de longe, com o
+// caixilho e o friso menores que um pixel. Nearest escolhe um texel por pixel
+// e a escolha muda a cada quadro, entao a fachada pisca em faixas verticais;
+// o linear entre mipmaps media o que nao cabe no pixel. O pixel da tela segue
+// vindo dos 640x360 e da quantizacao, como no asfalto (`road_track.gd`).
+uniform sampler2D albedo : source_color, filter_linear_mipmap_anisotropic;
+uniform sampler2D mascara : hint_default_black, filter_linear_mipmap_anisotropic;
 
 // A cor pintada na textura em cada canal. A troca preserva o tom relativo: a
 // cornija continua mais escura que a parede depois de pintada de rosa.
