@@ -409,6 +409,17 @@ e no `git log`.
     sem variação; visual dentro da tolerância (luminância −2,5%, céu −2,2%).
     `fps` depois: p50 e p95 em 8,33 ms, no teto de 120 Hz da tela, então não
     há diferença para medir; a mudança custa uma chamada de desenho.
+    Depois, jogando: a zebra das ruas transversais, que já existia, saía
+    torta (40 cm de margem de um lado, 10 do outro) e com outro desenho.
+    Passou a usar a mesma zebra e a mesma retenção da avenida, centrada
+    (`RoadTrack.listras_da_zebra`), a 1 m do asfalto da avenida.
+    E a rua ganhou meio-fio (no sol o asfalto dela some contra o cimentado,
+    e a zebra parecia pintada na calçada), e poste da avenida não nasce mais
+    na boca da rua (`Cidade.na_boca`).
+    E o que fazia a zebra da rua parecer torta e voando era a ladeira: a rua
+    inclina na largura junto com a avenida, e a zebra, o meio-fio e a fila
+    eram desenhados na horizontal. A 10% de rampa, uma borda ficava 30 cm
+    acima do asfalto e a outra enterrada; agora tudo segue o plano da rua.
 
 ### Os prédios e o céu
 

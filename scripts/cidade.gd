@@ -62,6 +62,16 @@ func _sorteia_cruzamentos(rua: RandomNumberGenerator) -> Array[Vector2]:
 	return lista
 
 
+## Se o ponto `offset` da avenida, do lado `side`, cai na boca de uma rua - ou
+## na calcada da esquina dela, onde fica o semaforo. Poste ali e poste no
+## meio da rua.
+static func na_boca(cruzamentos: Array[Vector2], offset: float, side: float) -> bool:
+	for c in cruzamentos:
+		if _abre(c.y, side) and absf(offset - c.x) < RUA_LARGURA * 0.5 + RUA_CALCADA:
+			return true
+	return false
+
+
 static func _abre(lados: float, side: float) -> bool:
 	return lados == LADO_AMBOS or lados == side
 
@@ -146,8 +156,8 @@ static func _colisor(dono: Node3D, caixa: AABB) -> void:
 
 ## O asfalto, a pintura, o semaforo e a fila de cada rua que cruza a avenida.
 ##
-## O asfalto e a pintura de todas as ruas sao uma malha so, com duas
-## superficies: dezenas de ruas viram duas chamadas de desenho.
+## O asfalto, a pintura e o meio-fio de todas as ruas sao uma malha so, com
+## tres superficies: dezenas de ruas viram tres chamadas de desenho.
 func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props: Node3D) -> void:
 	var road_w := RoadTrack.half_width()
 	# Onde acaba o andavel: dali para fora fica o que a moto nao alcanca.
@@ -156,6 +166,8 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 	asfalto.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var tinta := SurfaceTool.new()
 	tinta.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var meio_fio := SurfaceTool.new()
+	meio_fio.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var materiais := _materiais_de_semaforo()
 
 	for c in cruzamentos:
@@ -172,7 +184,14 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 			var d := track.sample_basis(c.x).x * side
 			d.y = 0.0
 			d = d.normalized()
-			var r := (-d).cross(Vector3.UP)
+			# `r` corre na largura da rua, e na ladeira ele sobe junto com a
+			# avenida: a rua e o retangulo de `perto_a` a `perto_b`, que estao em
+			# alturas diferentes. Tirado na horizontal, a zebra, o meio-fio e a
+			# fila ficavam na altura do meio da rua - a 10% de rampa, uma borda
+			# 30 cm acima do asfalto e a outra enterrada nele.
+			var r := (perto_b - perto_a).normalized()
+			if r.dot((-d).cross(Vector3.UP)) < 0.0:
+				r = -r
 			# A calcada esta na altura da pista e a rua passa por cima dela, 6 cm
 			# acima: acima tambem do meio-fio e da faixa de servico, que ela corta,
 			# e o bastante para nao brigar com eles no depth buffer.
@@ -188,24 +207,30 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 				)
 			)
 			var chao := centro + acima + Vector3.UP * 0.03
-			# Faixa de pedestre na linha da calcada, e a linha de retencao logo
-			# atras dela, so na mao de quem chega. Listra de 0,5 m com periodo de
-			# 1 m: ela corre ao longo da rua, de lado para a moto, e de lado nao
-			# pisca (a regra do `arte/chao.py` e para o que se atravessa).
-			var listra := -meio + 0.4
-			while listra < meio - 0.4:
-				var p := chao + r * (listra + 0.25) + d * (calcada + 0.4)
-				_faixa(tinta, p, d, r, 0.5, 3.0)
-				listra += 1.0
-			_faixa(tinta, chao + d * (calcada + 4.0), r, d, 0.4, meio)
+			# Meio-fio dos dois lados da rua. Sem ele o asfalto da rua no sol fica
+			# da cor do cimentado em volta, e a zebra parece pintada na calcada.
+			for lado: float in [-1.0, 1.0]:
+				var borda := chao + r * lado * (meio + RoadTrack.MEIO_FIO * 0.5)
+				_faixa(meio_fio, borda, d, r, RoadTrack.MEIO_FIO, RUA_COMPRIMENTO)
+			# Faixa de pedestre na linha da calcada, com a mesma zebra e a mesma
+			# retencao da avenida, so na mao de quem chega. Fica a
+			# `ZEBRA_ESQUINA` do asfalto da avenida, como a da avenida fica da
+			# boca da rua: e por ali que passa quem anda pela calcada.
+			var zebra := RoadTrack.ZEBRA_ESQUINA
+			for x in RoadTrack.listras_da_zebra(RUA_LARGURA):
+				var p := chao + r * x + d * zebra
+				_faixa(tinta, p, d, r, RoadTrack.ZEBRA_LISTRA, RoadTrack.ZEBRA_COMPRIMENTO)
+			var retencao := zebra + RoadTrack.ZEBRA_COMPRIMENTO + RoadTrack.RETENCAO_RECUO
+			var linha := chao + d * (retencao + RoadTrack.RETENCAO_LARGURA * 0.5)
+			_faixa(tinta, linha, r, d, RoadTrack.RETENCAO_LARGURA, meio)
 			# O fundo da rua e a fachada de um predio da quadra de tras, olhando
 			# para a avenida: rua que acaba no vazio mostra a borda do mundo, e
 			# predio no fundo e o "T" que toda rua de bairro tem.
 			var tipo := _tipo_de_predio(rua.randf_range(6.0, 23.0))
 			var pe := centro + d * (RUA_COMPRIMENTO - 2.0 + Predio.frente(tipo))
 			_predio(props, rua, tipo, pe, -d)
-			# Tracejado do meio da rua.
-			var t := calcada + 5.0
+			# Tracejado do meio da rua, um carro depois da retencao.
+			var t := retencao + 5.0
 			while t < RUA_COMPRIMENTO - 3.0:
 				_faixa(tinta, chao + d * t, d, r, 0.14, 2.0)
 				t += 4.5
@@ -220,15 +245,23 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 			# atravessaria o poste, que nao tem colisor.
 			var esquina := centro + acima + d * (calcada + 0.8) + r * (meio + 0.9)
 			_semaforo(props, materiais, esquina, d, track.sample_basis(c.x).z)
-			var fila := calcada + 4.8
+			var fila := retencao + RoadTrack.RETENCAO_LARGURA + 0.6
+			# Na ladeira o carro tomba de lado junto com a rua, senao uma roda
+			# fica no ar e a outra dentro do asfalto.
+			var normal := d.cross(r)
+			if normal.y < 0.0:
+				normal = -normal
+			var faixa := centro + acima + r * meio * 0.5
 			for _i in rua.randi_range(1, 3):
-				fila = _carro_parado(props, rua, centro + acima + r * meio * 0.5, d, fila)
+				fila = _carro_parado(props, rua, faixa, d, normal, fila)
 
 	var malha := ArrayMesh.new()
 	asfalto.commit(malha)
 	malha.surface_set_material(0, RoadTrack.material_texturizado(RoadTrack.ASFALTO))
 	tinta.commit(malha)
 	malha.surface_set_material(1, RoadTrack.material_liso(RoadTrack.TINTA))
+	meio_fio.commit(malha)
+	malha.surface_set_material(2, RoadTrack.material_liso(RoadTrack.COR_MEIO_FIO))
 	var ruas := MeshInstance3D.new()
 	ruas.name = "Ruas"
 	ruas.mesh = malha
@@ -237,13 +270,19 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 
 
 ## Um carro esperando o verde, `fila` metros adiante do asfalto da avenida,
-## na mao de quem chega. Devolve onde comeca o espaco do proximo da fila.
+## na mao de quem chega, de pe em `normal`, a do chao da rua. Devolve onde
+## comeca o espaco do proximo da fila.
 ##
 ## E so o `Carro`, sem `TrafficCar`: nao anda e nao entra no transito. Tem
 ## colisor, da lataria, porque a moto que entra na rua bate nele. Uma pose so,
 ## parado e sem encostar, e o que acende a lanterna de freio.
 func _carro_parado(
-	props: Node3D, rua: RandomNumberGenerator, faixa: Vector3, d: Vector3, fila: float
+	props: Node3D,
+	rua: RandomNumberGenerator,
+	faixa: Vector3,
+	d: Vector3,
+	normal: Vector3,
+	fila: float
 ) -> float:
 	var sorteio := rua.randf()
 	var modelo := Carro.Modelo.SEDA
@@ -264,7 +303,7 @@ func _carro_parado(
 		carro.queue_free()
 		return fila
 	carro.global_transform = Transform3D(
-		Basis.looking_at(-d, Vector3.UP), faixa + d * (fila + comprimento * 0.5)
+		Basis.looking_at(-d, normal), faixa + d * (fila + comprimento * 0.5)
 	)
 	carro.atualizar(1.0 / 60.0, 0.0, 0.0, false, 0)
 	_colisor(carro, carro.caixa())

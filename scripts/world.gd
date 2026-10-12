@@ -271,13 +271,23 @@ func _build_scenery() -> void:
 	props.name = "Scenery"
 	add_child(props)
 
+	# A cidade vem antes dos postes para eles saberem onde estao as ruas. Ela
+	# sorteia do gerador dela, cuja semente nao depende do estado deste: a
+	# ordem nao mexe em nada do que sai do `_rng`.
+	var rua := RandomNumberGenerator.new()
+	rua.seed = hash(_rng.seed + 1)
+	Cidade.new(track).montar(rua, props)
+
 	var edge := RoadTrack.half_width() + RoadTrack.SHOULDER
 
 	var o := 30.0
 	while o < track.length - 10.0:
 		var side := 1.0 if _rng.randf() < 0.5 else -1.0
 		var at := track.point(o, edge * side + 0.8 * side) + Vector3.UP * 3.0
+		var na_rua := Cidade.na_boca(track.cruzamentos, o, side)
 		o += _rng.randf_range(18.0, 34.0)
+		if na_rua:
+			continue
 		var pole := StaticBody3D.new()
 		pole.collision_layer = Layers.WORLD
 		pole.collision_mask = 0
@@ -301,10 +311,6 @@ func _build_scenery() -> void:
 			_rng.randf()
 			_rng.randf()
 		o += _rng.randf_range(16.0, 30.0)
-
-	var rua := RandomNumberGenerator.new()
-	rua.seed = hash(_rng.seed + 1)
-	Cidade.new(track).montar(rua, props)
 
 
 ## Quanto o jogador ja andou da rota, em metros. E daqui que sai a colocacao -
