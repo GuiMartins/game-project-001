@@ -3,6 +3,12 @@ extends RefCounted
 ## O que fica dos dois lados da avenida: predio colado em predio, e as ruas que
 ## a cruzam, com semaforo e a fila parada no vermelho.
 ##
+## A avenida alterna dois trechos. No corredor, o predio vem na linha da
+## calcada, de qualquer altura, e o ceu so aparece em cima. No largo, a
+## fachada recua uns 10 m e fica baixa - sobrado e comercio -, e o quadro
+## abre. A alternancia e o ritmo do video de referencia: o corredor so parece
+## fechado porque o largo veio antes.
+##
 ## Nada aqui anda, mas tudo bate: predio, semaforo e carro parado tem colisor
 ## na camada do mundo, e a moto que sai da avenida acha eles pela frente. Serve
 ## ao olho, ao referencial de velocidade - a fachada passando do lado - e a
@@ -22,6 +28,20 @@ const LADO_AMBOS: float = 0.0
 ## Da beira da calcada andavel ate a fachada, em metros: a faixa de servico e o
 ## resto da calcada. E o espaco onde vai morar poste, arvore e gente.
 const RECUO_FACHADA: float = 6.0
+## Comprimento de cada trecho, em metros. O largo e curto: a 35 m/s sao uns
+## 3 s de respiro, e e o corredor que se quer na maior parte da volta. Mais
+## curto que isso o largo vira um buraco na fileira, e nao um trecho.
+const LARGO_COMPRIMENTO := Vector2(60.0, 130.0)
+const CORREDOR_COMPRIMENTO := Vector2(180.0, 380.0)
+## Quanto a fachada do largo recua alem do `RECUO_FACHADA`. O limite de cima e
+## o chao: com o predio mais fundo do largo (o sobrado, 12,5 m com o toldo), a
+## parede dos fundos ainda fica antes do fim da calcada (`RoadTrack.GROUND`).
+const LARGO_RECUO := Vector2(8.0, 12.0)
+## A altura sorteada em cada trecho, que o `_tipo_de_predio` vira tipo. No
+## largo so cabe sobrado e comercio: predio alto recuado e so um corredor mais
+## longe, e o que abre o quadro e o ceu que aparece por cima.
+const ALTURA_LARGO := Vector2(6.0, 16.0)
+const ALTURA_CORREDOR := Vector2(6.0, 26.0)
 
 var track: RoadTrack
 
@@ -34,10 +54,40 @@ func _init(a_track: RoadTrack) -> void:
 ## mexe no transito nem nos rivais.
 func montar(rua: RandomNumberGenerator, props: Node3D) -> void:
 	var cruzamentos := _sorteia_cruzamentos(rua)
+	var trechos := _sorteia_trechos(rua)
 	track.pintar(cruzamentos, RUA_LARGURA * 0.5)
 	_monta_ruas(cruzamentos, rua, props)
 	for side: float in [-1.0, 1.0]:
-		_monta_quarteirao(side, cruzamentos, rua, props)
+		_monta_quarteirao(side, cruzamentos, trechos, rua, props)
+
+
+## Onde a avenida e largo e onde e corredor. Cada um e `[fim, recuo]`: o
+## trecho vai do fim do anterior ate `fim`, e `recuo` e o que a fachada recua
+## alem do `RECUO_FACHADA` - zero no corredor. Os dois lados da avenida
+## dividem a mesma lista: largo de um lado so e um predio faltando, e nao uma
+## praca.
+##
+## Comeca no largo, como o video: e a largada que respira, e o corredor
+## chega depois.
+func _sorteia_trechos(rua: RandomNumberGenerator) -> Array[Vector2]:
+	var lista: Array[Vector2] = []
+	var o := 0.0
+	var largo := true
+	while o < track.length:
+		var faixa := LARGO_COMPRIMENTO if largo else CORREDOR_COMPRIMENTO
+		o += rua.randf_range(faixa.x, faixa.y)
+		var recuo := rua.randf_range(LARGO_RECUO.x, LARGO_RECUO.y) if largo else 0.0
+		lista.append(Vector2(o, recuo))
+		largo = not largo
+	return lista
+
+
+## O recuo extra do trecho em que cai `o`; zero e corredor.
+static func recuo_em(trechos: Array[Vector2], o: float) -> float:
+	for t in trechos:
+		if o < t.x:
+			return t.y
+	return 0.0
 
 
 ## Onde a avenida e cruzada. Cada um e `[offset, lados]`, com `lados` em
@@ -73,7 +123,11 @@ static func _abre(lados: float, side: float) -> bool:
 ## entre duas obras, ate meio metro - o bastante para a fachada nao parecer
 ## uma parede so, pouco para o ceu aparecer no nivel da rua.
 func _monta_quarteirao(
-	side: float, cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props: Node3D
+	side: float,
+	cruzamentos: Array[Vector2],
+	trechos: Array[Vector2],
+	rua: RandomNumberGenerator,
+	props: Node3D
 ) -> void:
 	var edge := RoadTrack.half_width() + RoadTrack.SHOULDER
 	var vaos: Array[Vector2] = []
@@ -84,10 +138,11 @@ func _monta_quarteirao(
 
 	var o := 12.0
 	while o < track.length - 10.0:
-		var h := rua.randf_range(6.0, 26.0)
-		var tipo := _tipo_de_predio(h)
+		var recuo := recuo_em(trechos, o)
+		var alturas := ALTURA_LARGO if recuo > 0.0 else ALTURA_CORREDOR
+		var tipo := _tipo_de_predio(rua.randf_range(alturas.x, alturas.y))
 		var caixa := Predio.malha(tipo).get_aabb()
-		var lateral := (edge + RECUO_FACHADA + Predio.frente(tipo)) * side
+		var lateral := (edge + RECUO_FACHADA + recuo + Predio.frente(tipo)) * side
 		# Na curva, o metro de pista no eixo nao e o metro na fachada: por
 		# fora ele estica, por dentro encolhe. A largura do predio e medida
 		# onde ele esta, senao abre buraco por fora e encavala por dentro.
@@ -366,15 +421,18 @@ static func _quad_deitado(st: SurfaceTool, cantos: Array[Vector3], uvs: Array[Ve
 			st.add_vertex(cantos[i])
 
 
-## Qual dos quatro predios cabe na altura sorteada. A faixa de cada um e a
-## proporcao dele na avenida: um quarto de sobrado, o grosso de predio baixo
-## de comercio, e torre so de vez em quando - torre demais fecha o ceu, e o
-## ceu e metade da leitura de velocidade.
+## Qual dos cinco predios cabe na altura sorteada. A faixa de cada um e a
+## proporcao dele no corredor (6 a 26 m): um quinto de sobrado, um quarto de
+## comercio, um quarto de deco, e torre so de vez em quando - torre demais
+## fecha o ceu, e o ceu e metade da leitura de velocidade. O largo sorteia so
+## ate 16 m, e fica no sobrado e no comercio.
 static func _tipo_de_predio(altura: float) -> Predio.Tipo:
-	if altura < 11.0:
+	if altura < 10.0:
 		return Predio.Tipo.SOBRADO
-	if altura < 19.0:
+	if altura < 16.0:
 		return Predio.Tipo.COMERCIO
+	if altura < 21.5:
+		return Predio.Tipo.DECO
 	if altura < 23.0:
 		return Predio.Tipo.ESCRITORIO
 	return Predio.Tipo.TORRE

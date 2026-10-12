@@ -412,7 +412,7 @@ e no `git log`.
 
 ### Os prédios e o céu
 
-- [ ] **V11** 👤 — Fachada contínua, térreo vivo
+- [x] **V11** 👤 — Fachada contínua, térreo vivo (12/10/2026)
 
   Depois dos 2,5 s o vídeo é um corredor de paredes: prédio colado em prédio,
   loja com toldo e letreiro no térreo. Hoje os prédios são sorteados com
@@ -433,6 +433,16 @@ e no `git log`.
     aberta / corredor fechado.
   - **Aceite:** num trecho de corredor não se vê céu entre prédios no nível
     da rua; `fps` medido, porque é aqui que a conta de desenho aperta.
+
+  - **Feito**, Rio. Quinto prédio, o `Deco` (art déco de Copacabana, 7
+    andares, torreão com friso vertical passando do telhado). Loja com
+    letreiro e toldo no `Sobrado` (dois dos três arcos), no `Deco` e na
+    `Torre` (dos dois lados da portaria); o `Escritorio` ficou sem, é a torre
+    do fundo. A avenida alterna **largo** (60–130 m, fachada recuada 8–12 m,
+    só sobrado e comércio) e **corredor** (180–380 m, colado, de tudo), e
+    começa no largo. A fração de céu da regressão visual subiu 35% por isso,
+    e o `baseline_visual.json` andou junto. `fps`: os dois no teto de 120 do
+    monitor, p95 8,33 → 8,65 ms.
 
 - [ ] **V12** — Glow: outdoor, lanterna e cromo brilhando
 
