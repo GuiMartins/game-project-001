@@ -97,6 +97,10 @@ var _lado_queda: float = -1.0
 var _hitbox: Area3D
 var _sensor: Area3D
 var _lean: float = 0.0
+var _lean_vel: float = 0.0
+## A mola da inclinacao da moto sorteada: rival de PCX troca de lado mais
+## nervoso que rival de XRE, como o jogador.
+var _fisica := FisicaDaMoto.new()
 
 
 func _ready() -> void:
@@ -155,7 +159,9 @@ func setup(
 	# ritmo - toda XRE seria a do rival mais lento.
 	var sorteio := RandomNumberGenerator.new()
 	sorteio.seed = hash([seed_value, "moto"])
-	_ator.trocar_modelo(sorteio.randi() % Entregador.CENAS.size())
+	var modelo := sorteio.randi() % Entregador.CENAS.size()
+	_ator.trocar_modelo(modelo)
+	_fisica = FisicaDaMoto.de(modelo)
 
 
 ## Poe o rival na largada e zera a corrida dele.
@@ -179,6 +185,7 @@ func reset_race(at_offset: float, at_lateral: float, a_finish_offset: float) -> 
 	_credito_jogador = 0.0
 	_hitbox.monitoring = false
 	_lean = 0.0
+	_lean_vel = 0.0
 	pace = _rng.randf_range(world_tuning.rival_pace_min, world_tuning.rival_pace_max)
 	speed = tuning.max_speed * pace * 0.6
 	_aggression = _rng.randf_range(
@@ -310,11 +317,7 @@ func _drive(delta: float) -> void:
 		):
 			lateral_speed = 0.0
 	lateral += lateral_speed * delta
-	_lean = lerpf(
-		_lean,
-		clampf(-lateral_speed / 9.0, -1.0, 1.0) * deg_to_rad(tuning.max_lean),
-		1.0 - exp(-8.0 * delta)
-	)
+	_inclinar(clampf(-lateral_speed / 9.0, -1.0, 1.0) * deg_to_rad(tuning.max_lean), delta)
 
 	if mode == Mode.ATTACK:
 		_aim_punch(delta)
@@ -401,7 +404,15 @@ func _coast_out(delta: float) -> void:
 	var side := 1.0 if lateral >= 0.0 else -1.0
 	_target_lateral = side * (RoadTrack.half_width() + RoadTrack.SHOULDER * 0.5)
 	lateral = move_toward(lateral, _target_lateral, 6.0 * delta)
-	_lean = lerpf(_lean, 0.0, 1.0 - exp(-6.0 * delta))
+	_inclinar(0.0, delta)
+
+
+## A mesma mola do jogador, na moto do rival. Era um `lerp`, que nunca passa do
+## alvo: do lado do jogador, o rival trocava de lado como ponteiro.
+func _inclinar(alvo: float, delta: float) -> void:
+	var passo := PlayerBike.passo_da_inclinacao(_lean, _lean_vel, alvo, delta, tuning, _fisica)
+	_lean = passo.x
+	_lean_vel = passo.y
 
 
 func _advance(delta: float) -> void:
@@ -503,5 +514,6 @@ func receive_hit(from_side: int, shove: float, stagger: float) -> void:
 	speed *= 0.85
 	_ator.levar_golpe(from_side)
 	_lean = deg_to_rad(tuning.max_lean) * float(from_side) * 0.9
+	_lean_vel = 0.0
 	_apply_transform()
 	_check_wipeout()
