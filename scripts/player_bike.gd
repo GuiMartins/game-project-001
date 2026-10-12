@@ -71,6 +71,8 @@ var find_clear_lateral: Callable = Callable()
 var _vertical_speed: float = 0.0
 ## Velocidade angular da inclinacao, rad/s: a metade da mola que nao aparece.
 var _lean_vel: float = 0.0
+## A mola da inclinacao da moto montada. Nasce na CG, a moto do ator recem-criado.
+var _fisica := FisicaDaMoto.new()
 var _punch_timer: float = -1.0
 var _punch_side: int = 0  ## -1 esquerda, +1 direita, 0 nenhum.
 ## Este soco ja acertou. Desligar a hitbox no acerto nao bastava: o passo
@@ -124,10 +126,11 @@ func _ready() -> void:
 	_rng_queda.seed = SEMENTE_DA_QUEDA
 
 
-## Monta a moto `modelo` (um `Entregador.Modelo`). So visual: a fisica e a
-## mesma em todas.
+## Monta a moto `modelo` (um `Entregador.Modelo`), com a mola da inclinacao
+## dela. O resto da fisica e o mesmo em todas (ver `FisicaDaMoto`).
 func usar_modelo(modelo: int) -> void:
 	_ator.trocar_modelo(modelo)
+	_fisica = FisicaDaMoto.de(modelo)
 
 
 func modelo() -> int:
@@ -233,7 +236,7 @@ func _ride(delta: float, steer: float, throttle: float, brake: float) -> void:
 
 func _update_lean(delta: float, steer: float) -> void:
 	var target := steer * deg_to_rad(tuning.max_lean)
-	var passo := passo_da_inclinacao(lean, _lean_vel, target, delta, tuning)
+	var passo := passo_da_inclinacao(lean, _lean_vel, target, delta, tuning, _fisica)
 	lean = passo.x
 	_lean_vel = passo.y
 
@@ -243,18 +246,21 @@ func _update_lean(delta: float, steer: float) -> void:
 ## Inclinar custa mais que endireitar: a moto cai facil pro lado e volta
 ## sozinha. Duas molas separadas, e nao uma, e o que da a sensacao de peso. A
 ## de deitar e critica; a de voltar passa do zero e assenta. Estatica para o
-## teste unitario medir a mola sem montar a moto.
+## teste unitario medir a mola sem montar a moto, e para o rival andar na mola
+## da moto dele. Sem `moto`, e a CG.
 static func passo_da_inclinacao(
-	angulo: float, vel: float, alvo: float, delta: float, t: BikeTuning
+	angulo: float, vel: float, alvo: float, delta: float, t: BikeTuning, moto: FisicaDaMoto = null
 ) -> Vector2:
+	if moto == null:
+		moto = FisicaDaMoto.new()
 	# `alvo * angulo < 0`, e nao `signf` diferente: com o alvo no zero, o sinal
 	# dele (0) difere do de qualquer angulo, e a contra-inclinacao trocava para
 	# a mola critica bem na hora de passar do zero.
 	var deitando := absf(alvo) > absf(angulo) or alvo * angulo < 0.0
-	var w := t.lean_freq if deitando else t.lean_return_freq
-	var zeta := 1.0 if deitando else t.lean_return_damping
-	# Euler semi-implicito: estavel enquanto w * delta < 2, e o slider para em
-	# 40 rad/s, 0,67 a 60 Hz.
+	var w := t.lean_freq * moto.deitar if deitando else t.lean_return_freq * moto.voltar
+	var zeta := 1.0 if deitando else t.lean_return_damping * moto.amortecer
+	# Euler semi-implicito: estavel enquanto w * delta < 2. O slider para em
+	# 40 rad/s, e a PCX multiplica por 1,3: 52 rad/s, 0,87 a 60 Hz.
 	vel += (w * w * (alvo - angulo) - 2.0 * zeta * w * vel) * delta
 	angulo += vel * delta
 	# A mola critica entrando com embalo (saindo de uma contra-inclinacao, por

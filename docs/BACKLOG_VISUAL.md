@@ -196,7 +196,7 @@ e no `git log`.
     carro e pega a quina mais em cheio. O portão da disputa reprovava quando
     o piloto automático vencia, e foi consertado antes, em PR próprio.
 
-- [ ] **V05a** 👤 — Física por moto: CG, XRE e PCX andam diferente
+- [x] **V05a** 👤 — Física por moto: CG, XRE e PCX andam diferente (12/10/2026)
 
   Hoje as três motos só trocam de modelo: a física é uma só, do
   `BikeTuning`. Depois da mola da V05, o Guilherme quer que cada moto tenha
@@ -214,6 +214,13 @@ e no `git log`.
     continua valendo para ela. As outras ganham teste unitário da mola.
   - **Aceite:** jogando, dá pra dizer de olho fechado qual moto você
     escolheu pela troca de lado no corredor.
+
+  **Resultado:** decidido só inclinação, e os rivais também. Multiplicadores
+  sobre o `BikeTuning` em `FisicaDaMoto` (o F3 continua valendo nas três),
+  não um recurso por moto. Deitar 0->90%: PCX ~0,4 s, CG 0,52 s, XRE ~0,64 s;
+  contra-inclinação saindo de 25 graus: 7 / 4,6 / 2,5. O rival trocou o
+  `lerp` pela mesma mola, na moto sorteada. Baseline sem variação (o banco
+  roda na CG, multiplicador 1); as outras duas têm teste unitário.
 
 - [ ] **V06** — Vibração miúda, roda lisa em alta e cabeça no horizonte
 
