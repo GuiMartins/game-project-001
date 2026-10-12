@@ -189,6 +189,25 @@ e no `git log`.
     carro e pega a quina mais em cheio. O portão da disputa reprovava quando
     o piloto automático vencia, e foi consertado antes, em PR próprio.
 
+- [ ] **V05a** 👤 — Física por moto: CG, XRE e PCX andam diferente
+
+  Hoje as três motos só trocam de modelo: a física é uma só, do
+  `BikeTuning`. Depois da mola da V05, o Guilherme quer que cada moto tenha
+  a sua calibração, a começar pela inclinação (`lean_freq`,
+  `lean_return_freq`, `lean_return_damping`).
+
+  - **Decisão 👤:** quais números variam por moto (só inclinação, ou também
+    velocidade, aceleração e curva), e se os rivais herdam a física da moto
+    sorteada ou só o jogador.
+  - **Recomendação:** um `BikeTuning` base e um recurso pequeno por moto que
+    sobrepõe só o que muda. A scooter (roda pequena, entre-eixos curto)
+    deita mais rápido e volta mais nervosa; a XRE (alta, roda grande) mais
+    lenta e assentada; a CG fica no meio, com os valores de hoje.
+  - **Mexe no `selftest`:** ele roda numa moto fixa (a CG), e o baseline
+    continua valendo para ela. As outras ganham teste unitário da mola.
+  - **Aceite:** jogando, dá pra dizer de olho fechado qual moto você
+    escolheu pela troca de lado no corredor.
+
 - [ ] **V06** — Vibração miúda, roda lisa em alta e cabeça no horizonte
 
   Três coisas pequenas de pose, todas no `Entregador`, nenhuma na física.
