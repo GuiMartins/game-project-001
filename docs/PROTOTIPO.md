@@ -52,9 +52,12 @@ A HUD mora dentro do SubViewport de propósito: HUD nítida sobre mundo pixelado
 
 Isso é a decisão de design mais importante do arquivo. Você precisa se
 comprometer com um lado antes de virar, e precisa endireitar antes de flicar
-pro outro. Duas taxas separadas (`lean_rate` pra deitar, `lean_return_rate` pra
-levantar) fazem a moto cair fácil pro lado e voltar sozinha. É daí que sai o
-peso.
+pro outro. A inclinação é uma mola (ângulo e velocidade angular), e são duas:
+a de deitar (`lean_freq`) é amortecida no crítico e chega ao pedido sem passar
+dele; a de levantar (`lean_return_freq`, `lean_return_damping`) é mais rápida
+e passa do zero, deitando uns graus pro outro lado antes de assentar. É daí
+que sai o peso: com `lerp` a troca de lado lia como ponteiro voltando ao
+centro.
 
 Em cima disso:
 
