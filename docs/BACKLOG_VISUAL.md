@@ -266,7 +266,7 @@ e no `git log`.
   Jogador e rival ganham os dois, nas três motos. Baseline sem variação; a
   prova de trás sai igual, porque dali a roda mal aparece.
 
-- [ ] **V07** — Postura do vídeo: sentado e de cotovelo aberto
+- [x] **V07** — Postura do vídeo: sentado e de cotovelo aberto (12/10/2026, #77)
 
   A 128 km/h o entregador do vídeo continua **sentado**, tronco a 10–15°, com
   os cotovelos bem abertos: são as pontas mais largas da silhueta, mais largas
@@ -275,6 +275,20 @@ e no `git log`.
   - **Onde:** `scripts/entregador.gd` (pose e IK dos braços).
   - **Aceite:** de trás, a silhueta mostra o losango braço-guidão. Faz mais
     sentido depois da V04, quando o piloto está grande na tela.
+
+  **Resultado:** `TRONCO_DEITADO` −16 → −3: no talo o tronco vai de 12 a 15
+  graus para a frente, em vez de 30, e o capacete volta a aparecer acima da
+  bag na prova. O polo do cotovelo virou `COTOVELO` (1; −0,3; 0,3), quase só
+  para fora, em vez de (1; −1; 0,3): de trás, nas três motos, os cotovelos
+  passam da bag e o braço fecha o losango com o guidão. Parado no losango a
+  corrida inteira ficava boneco, então o braço ganhou vida própria
+  (`Cotovelos`): de tempos em tempos um braço relaxa, desce e cola no corpo
+  por 0,6–2,5 s, às vezes os dois, e volta; aberto, cada vez dobra um pouco
+  diferente. Quando e quanto é sorteio, não ciclo, com semente da posição em
+  que o ator nasce: dois pilotos não relaxam juntos e a mesma corrida repete.
+  Relaxa mais devagar (60% por sorteio) que no talo (25%), e na curva acima
+  de 20° ninguém solta o braço. Só pose: baseline sem variação, e nenhuma
+  malha nova na tela (sem `fps`).
 
 ### Velocidade
 
