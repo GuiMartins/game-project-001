@@ -107,7 +107,7 @@ e no `git log`.
     ladeira↔`t1.0s`, reta↔`t5.0s`. As quatro imagens da V01 já estão
     mapeadas e entram sozinhas na linha quando os arquivos existirem.
 
-- [ ] **V03** 👤 — Decidir quanto de pixel
+- [x] **V03** 👤 — Decidir quanto de pixel (11/10/2026)
 
   A pergunta aberta nº 1 da `REFERENCIA_VIDEO.md`. As imagens paradas e o
   `DIRECAO_VISUAL.md` pedem pixel (640×360, dither, ator a 12 fps). O vídeo é
@@ -123,6 +123,13 @@ e no `git log`.
     12 fps do ator fica para a V22, que é onde ela se julga rodando.
   - **Aceite:** a decisão escrita aqui, com a data, e o default do shader
     ajustado se ela mudou alguma coisa.
+  - **Decisão (11/10/2026, Guilherme):** fica **como está**: 640×360, 16
+    níveis por canal e o Bayer inteiro (`forca = 1`). Comparadas em 1080p,
+    contra "sem paleta" e "dither pela metade", a trama visível no céu e na
+    neblina ganhou: é ela que diz pixel art, e não só a resolução. O default
+    do shader não mudou. As variantes continuam em `dev.py prova --variantes`
+    (folha, lupa e uma 1080p por variante) para quando a pergunta voltar,
+    por exemplo depois do céu com nuvem (V14).
 
 ### Enquadramento
 
