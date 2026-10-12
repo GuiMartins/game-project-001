@@ -162,7 +162,7 @@ e no `git log`.
 
 ### A moto viva
 
-- [x] **V05** — Inclinação com mola: entra devagar, sai seca, passa do zero (12/10/2026, #PR)
+- [x] **V05** — Inclinação com mola: entra devagar, sai seca, passa do zero (12/10/2026, #71)
 
   O vídeo deita em ~1 s e levanta em ~0,3 s, com uma contra-inclinação de
   4–8° no fim. O `lerp` exponencial de hoje nunca passa do alvo, então a troca
