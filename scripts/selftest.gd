@@ -24,6 +24,9 @@ const KMH: float = 3.6
 ## lado que importa, e continua valendo depois que alguem atualizar o baseline -
 ## que e justamente quando uma regressao de agressividade passaria batida.
 const FREERUN_HITS_MAX: int = 2
+## Segundos que a disputa espera o pelotao depois que o jogador cruza. A ~30
+## m/s sao 150 m: quem estava colado chega, quem ficou a meia corrida nao.
+const DISPUTA_ESPERA_S: float = 5.0
 
 ## Nome de cada fase, na ordem em que rodam. Serve pro `--fase <nome>`:
 ## quem esta iterando em curva nao precisa esperar os 45 s da corrida
@@ -95,6 +98,9 @@ var _sobreposicoes := VigiaDeSobreposicao.new()
 ## pelotao inteiro, transito em volta e o piloto automatico no corredor.
 var _fps: bool = OS.get_cmdline_user_args().has("--fps")
 var _prova_de_batida: ProvaDeBatida
+## Quando o jogador cruzou a linha na disputa, no relogio da fase. -1 antes.
+var _disputa_cruzou_em: float = -1.0
+var _disputa_modo: Node.ProcessMode = Node.PROCESS_MODE_INHERIT
 var _prova_de_combate: ProvaDeCombate
 var _quadros_ms: PackedFloat32Array = []
 
@@ -690,6 +696,19 @@ func _phase_sprint(_delta: float) -> void:
 
 	if _world.run.phase == RaceRun.Phase.RACING and _t < 30.0:
 		return
+	# A chegada do jogador abre a tela de resultado, e ela congela o `World`
+	# inteiro, rivais juntos. Medindo nesse instante, um piloto automatico que
+	# vencesse reprovava o "nenhum rival cruzou" com o pelotao a um segundo
+	# dele. Aqui o mundo volta a rodar so para os rivais terminarem: quem
+	# chegou antes do jogador ja esta contado, e a ordem nao muda.
+	if _world.run.phase == RaceRun.Phase.FINISHED:
+		if _disputa_cruzou_em < 0.0:
+			_disputa_cruzou_em = _t
+			_disputa_modo = _world.process_mode
+		_world.process_mode = Node.PROCESS_MODE_INHERIT
+		if _t - _disputa_cruzou_em < DISPUTA_ESPERA_S and not _todos_cruzaram():
+			return
+		_world.process_mode = _disputa_modo
 
 	var finished_rivals := 0
 	var rivals_ahead := 0
@@ -730,6 +749,13 @@ func _phase_sprint(_delta: float) -> void:
 			)
 		)
 	_next_phase()
+
+
+func _todos_cruzaram() -> bool:
+	for rival in _world.rivals:
+		if rival.finish_time < 0.0:
+			return false
+	return true
 
 
 ## Fase 9 - batida: as quatro montagens moram em `ProvaDeBatida` ----------

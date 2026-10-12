@@ -32,7 +32,7 @@
 		"corrida_rivais_caidos": 3.0,
 		"corrida_rivais_derrubados": 0.0,
 		"disputa_posicao": 4.0,
-		"disputa_rivais_na_linha": 3.0,
+		"disputa_rivais_na_linha": 5.0,
 		"freada_distancia_m": 37.499951,
 		"freada_tempo_s": 1.483333,
 		"guinada_graus_s": 35.777312,
