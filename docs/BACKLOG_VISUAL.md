@@ -236,7 +236,7 @@ e no `git log`.
   6,6 / 4,6 / 2,0. O rival trocou o `lerp` pela mesma mola, na moto sorteada.
   Baseline sem variação (o banco roda na CG, que dá 1).
 
-- [x] **V06** — Vibração miúda, roda lisa em alta e cabeça no horizonte (12/10/2026, #PR)
+- [x] **V06** — Vibração miúda, roda lisa em alta e cabeça no horizonte (12/10/2026, #76)
 
   Três coisas pequenas de pose, todas no `Entregador`, nenhuma na física.
 
