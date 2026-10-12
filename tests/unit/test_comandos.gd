@@ -36,29 +36,29 @@ func test_o_gas_torce_o_pulso_direito_e_a_freada_fecha() -> void:
 	# O topo da manopla vai para tras (+Z): e o gas abrindo, e nao fechando.
 	assert_float((c.pulso(1) * Vector3.UP).z).is_greater(0.5)
 	for i in 30:
-		c.passo(PASSO, 20.0, 1.0, -20.0, false)
+		c.passo(PASSO, 20.0, 1.0, 1.0, false)
 	assert_float(c.torcao()).is_less(0.0)
 
 
 func test_a_freada_puxa_a_manete_e_pisa_no_pedal() -> void:
 	var c := _comandos(5)
 	for i in 30:
-		c.passo(PASSO, 20.0, 0.0, -20.0, false)
+		c.passo(PASSO, 20.0, 0.0, 1.0, false)
 	assert_float(c.manete(1)).is_greater(0.9)
 	assert_float(c.manete(0)).is_equal(0.0)
 	assert_float(c.pedal_freio()).is_greater(0.5)
 	# A bota desce o bico junto com o pedal.
 	assert_float((c.bota(1) * Vector3.FORWARD).y).is_less(-0.1)
-	# Embalando a moto perde velocidade sozinha, e isso nao e freio.
+	# Soltou o freio, a manete volta: embalar nao e frear.
 	for i in 60:
-		c.passo(PASSO, 20.0, 0.0, -3.0, false)
+		c.passo(PASSO, 20.0, 0.0, 0.0, false)
 	assert_float(c.manete(1)).is_less(0.05)
 
 
 func test_na_automatica_os_dois_freios_sao_de_mao() -> void:
 	var c := _comandos(0)
 	for i in 30:
-		c.passo(PASSO, 20.0, 0.0, -20.0, false)
+		c.passo(PASSO, 20.0, 0.0, 1.0, false)
 	assert_float(c.manete(0)).is_greater(0.9)
 	assert_float(c.manete(1)).is_greater(0.9)
 	assert_float(c.pedal_freio()).is_equal(0.0)
@@ -72,7 +72,7 @@ func test_acelerando_sobe_todas_as_marchas_e_freando_desce() -> void:
 		var trocando := false
 		while v < Comandos.TETO:
 			v += 8.0 * PASSO
-			c.passo(PASSO, v, 1.0, 8.0, false)
+			c.passo(PASSO, v, 1.0, 0.0, false)
 			if c.trocando() and not trocando:
 				trocas += 1
 				# Na troca o piloto puxa a embreagem e alivia o gas.
@@ -81,7 +81,7 @@ func test_acelerando_sobe_todas_as_marchas_e_freando_desce() -> void:
 		assert_int(trocas).is_equal(maxi(marchas - 1, 0))
 		while v > 1.0:
 			v -= 10.0 * PASSO
-			c.passo(PASSO, v, 0.0, -10.0, false)
+			c.passo(PASSO, v, 0.0, 0.5, false)
 		for i in 60:
 			c.passo(PASSO, 0.0, 0.0, 0.0, false)
 		assert_int(c.marcha()).is_equal(1 if marchas > 0 else 0)
@@ -93,6 +93,17 @@ func test_moto_que_nasce_andando_nao_sai_trocando() -> void:
 		c.passo(PASSO, 40.0, 1.0, 0.0, false)
 		assert_bool(c.trocando()).is_false()
 	assert_int(c.marcha()).is_equal(5)
+
+
+func test_soltar_o_gas_em_alta_nao_puxa_a_manete() -> void:
+	var ator := _ator(Entregador.Modelo.CG_160)
+	var v := 45.0
+	for i in 120:
+		# O arrasto a 45 m/s tira mais de 5 m/s2, sem ninguem frear.
+		v -= 6.0 * PASSO
+		ator.atualizar(PASSO, v, 0.0, 0.0, false)
+	assert_float(ator._comandos.manete(1)).is_equal(0.0)
+	assert_float(ator._comandos.torcao()).is_equal_approx(0.0, 0.5)
 
 
 func test_toda_moto_tem_as_marchas_na_ficha() -> void:
@@ -110,11 +121,11 @@ func test_a_manete_vem_para_a_manopla_e_os_dedos_vao_junto() -> void:
 			ator.atualizar(PASSO, 20.0, 0.0, 0.0, false)
 		# No espaco do guidao: na freada o garfo mergulha e leva tudo junto.
 		var ponta := manete.transform * Vector3(0.1, 0.0, 0.0)
-		# Freando forte: a velocidade cai 20 m/s2.
+		# Freio cheio, com a velocidade caindo junto.
 		var v := 20.0
 		for i in 20:
 			v -= 20.0 * PASSO
-			ator.atualizar(PASSO, v, 0.0, 0.0, false)
+			ator.atualizar(PASSO, v, 0.0, 0.0, false, 1.0, 0.0, 0.0, 1.0)
 		var puxada := manete.transform * Vector3(0.1, 0.0, 0.0)
 		# A ponta veio para tras, para a manopla.
 		assert_float(puxada.z - ponta.z).is_greater(0.02)

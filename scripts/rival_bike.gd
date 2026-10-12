@@ -90,8 +90,9 @@ var _credito_jogador: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _visual: Node3D
 var _ator: Entregador
-## Se ele esta acelerando neste passo. So a pose le.
+## Gas e freio neste passo, de 0 a 1. So a pose le.
 var _acelerador: float = 0.0
+var _freio: float = 0.0
 ## Para que lado ele tomba na queda: o lado em que estava inclinado.
 var _lado_queda: float = -1.0
 var _hitbox: Area3D
@@ -200,6 +201,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_acelerador = 0.0
+	_freio = 0.0
 	_update_hitbox(delta)
 	_punch_cooldown = maxf(_punch_cooldown - delta, 0.0)
 	# Corre em qualquer estado: o rival socado passa o cambaleio inteiro sem
@@ -238,7 +240,9 @@ func _physics_process(delta: float) -> void:
 		_lean / deg_to_rad(tuning.max_lean),
 		state == State.DOWN,
 		_lado_queda,
-		_lean
+		_lean,
+		0.0,
+		_freio
 	)
 
 
@@ -271,7 +275,12 @@ func _drive(delta: float) -> void:
 		pace_speed *= 1.06  # o arranque de quem esta saindo de tras do carro
 	var band := clampf(gap * world_tuning.rival_rubber_band, -6.0, 12.0)
 	var target_speed := clampf(pace_speed + band, tuning.max_speed * 0.35, tuning.max_speed * 1.08)
-	_acelerador = 1.0 if target_speed > speed else 0.0
+	# A pose le gas e freio daqui. Acima do alvo o rival perde ate 18 m/s2,
+	# e isso e freio, nao embalo; no alvo ele segura meio gas, como quem
+	# mantem a velocidade, e nao o pulso fechado de quem solta.
+	var falta := target_speed - speed
+	_acelerador = 1.0 if falta > 0.5 else (0.4 if falta > -0.5 else 0.0)
+	_freio = clampf(-falta / 3.0, 0.0, 1.0)
 	speed = move_toward(speed, target_speed, 18.0 * delta)
 
 	# Pra onde ir depende da intencao, mas o filtro do transito vale pra todas:

@@ -85,6 +85,7 @@ var _ator: Entregador
 ## O que o polegar pediu neste passo. So a pose le: a fisica recebe o input
 ## direto em `_ride`.
 var _acelerador: float = 0.0
+var _freio: float = 0.0
 var _esterco: float = 0.0
 ## Para que lado a moto tomba na queda: -1 esquerda, 1 direita.
 var _lado_queda: float = 1.0
@@ -187,6 +188,7 @@ func _physics_process(delta: float) -> void:
 	_update_hitboxes(delta)
 
 	_acelerador = 0.0
+	_freio = 0.0
 	_esterco = 0.0
 	match state:
 		State.CRASHED:
@@ -203,6 +205,7 @@ func _physics_process(delta: float) -> void:
 			_ride(delta, steer, throttle, brake)
 			_try_punch()
 			_acelerador = throttle
+			_freio = brake
 			_esterco = steer
 
 	# Caido, a moto desliza: a velocidade que o ator recebe e a do deslize, e e
@@ -218,7 +221,8 @@ func _physics_process(delta: float) -> void:
 		state == State.CRASHED,
 		_lado_queda,
 		lean,
-		_giro_queda
+		_giro_queda,
+		_freio
 	)
 
 
