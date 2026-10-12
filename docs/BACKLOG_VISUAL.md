@@ -360,7 +360,7 @@ e no `git log`.
     e bate no prédio, que tem colisor (`scripts/cidade.gd`). A faixa de
     serviço está desenhada, mas não bloqueia — quem bloqueia é o que mora nela.
 
-- [x] **V10** — Faixa de pedestres e linha de bordo (12/10/2026)
+- [x] **V10** — Faixa de pedestres e linha de bordo (12/10/2026, #81)
 
   A zebra é a pintura de maior contraste do vídeo e o marcador de velocidade
   mais forte dele: as listas brancas passando sob a roda.
