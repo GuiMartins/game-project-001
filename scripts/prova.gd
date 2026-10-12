@@ -88,9 +88,20 @@ func _roda() -> void:
 	var variantes := OS.get_environment("RUSHFOOD_PROVA_VARIANTES") == "1"
 	var linhas_variantes: Array[Array] = []
 	var imagens: Array[Image] = []
+	# `dev.py prova --kmh`: os quadros andando em outra velocidade. A largada
+	# continua parada - e o quadro do piloto com o pe no chao.
+	var velocidade := OS.get_environment("RUSHFOOD_PROVA_VELOCIDADE")
 	for quadro: Dictionary in pontos(_world.track):
-		_world.start_race(quadro["offset"], quadro["velocidade"])
+		var v: float = quadro["velocidade"]
+		if v > 0.0 and velocidade.is_valid_float():
+			v = velocidade.to_float()
+		_world.start_race(quadro["offset"], v)
 		await _passos(PASSOS)
+		# A 180 km/h o pelotao do grid esta na frente, e em meio segundo a moto
+		# ja freou nele. O quadro e de quem anda nessa velocidade: ela volta
+		# para o velocimetro, que e o que o borrao le.
+		if v > 0.0 and velocidade.is_valid_float():
+			_world.player.speed = v
 		_world.camera.encaixar()
 		for i in QUADROS_DE_ESPERA:
 			await RenderingServer.frame_post_draw

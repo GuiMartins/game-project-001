@@ -703,6 +703,9 @@ def cmd_prova(args: argparse.Namespace) -> int:
         if not amostra.exists() or amostra.read_bytes()[:4] != b"\x89PNG":
             return _fail(f"{amostra.relative_to(PROJECT)} nao e PNG - rode `git lfs pull`")
         os.environ["RUSHFOOD_PROVA_REFERENCIA"] = "1"
+    if args.kmh is not None:
+        # Os quadros andando saem a 90 km/h; o borrao (V08) se julga a 180.
+        os.environ["RUSHFOOD_PROVA_VELOCIDADE"] = str(args.kmh / 3.6)
     code = _godot(binary, "--", "--prova")
     pngs = sorted(PROVA_DIR.glob("*.png"))
     if code != 0:
@@ -928,6 +931,8 @@ def main() -> int:
     p_prova.add_argument("--variantes", action="store_true",
                          help="gera variantes.png: cada quadro com e sem paleta, dither "
                               "fraco e a referencia (V03)")
+    p_prova.add_argument("--kmh", type=float, default=None,
+                         help="velocidade dos quadros andando (padrao 90 km/h)")
     sub.add_parser("fps", help="tempo de quadro da corrida solta, com tela e sem vsync")
     sub.add_parser("run", help="abre o jogo")
     sub.add_parser("export", help="exporta as tres plataformas")

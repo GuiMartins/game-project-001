@@ -318,7 +318,7 @@ e no `git log`.
 
 ### Velocidade
 
-- [ ] **V08** — Borrão radial com máscara de profundidade
+- [x] **V08** — Borrão radial com máscara de profundidade (12/10/2026)
 
   O que mais vende velocidade nas cinco referências, e o que mais compensa a
   falta de detalhe do cenário: o que está borrado não precisa ter detalhe. O
@@ -335,6 +335,24 @@ e no `git log`.
   - **Aceite:** a 180 km/h a periferia e o chão borram e o piloto fica
     nítido; o tracejado vira risco. `fps` medido. Ruído do portão visual
     medido em 4 rodadas, porque borrão aumenta a variância.
+  - **Resultado:** o `ColorRect` do plano não existe no 4.7.2 (`canvas_item`
+    recusa `hint_depth_texture`): virou um quad 3D preso à câmera
+    (`Borrao`, `borrao.gdshader`), no passe transparente, lendo cor e
+    profundidade. Risco do tamanho do movimento de verdade (distância do
+    ponto de fuga ÷ distância da câmera, com piso de 15% para a periferia
+    longe borrar), ponto de fuga no rumo da moto e não no centro da lente.
+    O piloto fica de fora por **stencil** (`foco.gdshader`, overlay no ator
+    via `Entregador.foco`), porque pela profundidade ele é igual ao asfalto
+    em volta da roda. Começa em 30% da velocidade máxima, satura em 1,25 no
+    boost; slider `borrao` no F3 (0,2; zero desliga). A 180 km/h
+    (`dev.py prova --kmh 180`, opção nova) o chão, o carro colado e o
+    tracejado viram risco, o rival a 15 m continua legível e o piloto fica
+    nítido. Vidro de carro fica nítido por cima (é desenhado depois). `fps`
+    igual antes e depois (p50 8,33 ms, preso no refresh de 120 Hz deste
+    Mac). Baseline sem variação. Para caber no limite de 1000 linhas, a
+    medida de aceleração do ator saiu para `Acelerometro`. **Ruído do
+    portão visual em 4 rodadas: não medido** — o `shots` travou nesta
+    máquina com 0 quadros, inclusive na `master`; fica com o CI.
 
 ### A rua
 

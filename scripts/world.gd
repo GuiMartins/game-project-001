@@ -128,6 +128,10 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	add_child(camera)
 	camera.setup(tuning, player)
 	camera.current = true
+	var borrao := Borrao.new()
+	camera.add_child(borrao)
+	borrao.setup(tuning, player)
+	player.marcar_foco()
 
 	_spawn_traffic()
 	_sync_rival_pool()

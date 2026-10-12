@@ -238,6 +238,14 @@ static var _imagem_da_paleta: Image
 
 ## Qual moto esta montada. Troca por `trocar_modelo`.
 var modelo: int = Modelo.CG_160
+## Se este e o corredor que a camera segue: o borrao de velocidade passa em
+## volta dele e nao nele (`foco.gdshader`). E do ator, e nao do `PlayerBike`,
+## porque a camera pode seguir qualquer um, e qualquer moto montada tem de
+## sair marcada inteira, disco da roda lisa inclusive.
+var foco: bool = false:
+	set(valor):
+		foco = valor
+		Foco.marcar(_modelo, foco)
 
 var _modelo: Node3D
 var _material: ShaderMaterial
@@ -300,16 +308,8 @@ var _treme := Vector2.ZERO
 ## O borrao de cada roda em alta, na ordem de `_rodas`.
 var _lisas: Array[RodaLisa] = []
 
-## O que o ator mede do proprio movimento, em m/s2 e rad/s2, ja filtrado.
-var _a_long: float = 0.0
-var _a_vert: float = 0.0
-var _a_rolagem: float = 0.0
-var _amostras: int = 0
-var _pos_anterior := Vector3.ZERO
-var _vy_anterior: float = 0.0
-var _v_anterior: float = 0.0
-var _incl_anterior: float = 0.0
-var _giro_incl_anterior: float = 0.0
+## O que o ator mede do proprio movimento.
+var _acel := Acelerometro.new()
 ## A ultima velocidade de pe: a do instante da queda, que e com a qual o
 ## piloto sai voando.
 var _v_de_pe: float = 0.0
@@ -442,6 +442,8 @@ func _monta() -> void:
 		_contatos.append([_pernas[i][1], Vector3.ZERO, 0.07])
 		_contatos.append([_pernas[i][2], Vector3.ZERO, 0.08])
 	_comandos.montar(_modelo, FichaDaMoto.de(modelo))
+	# A malha velha foi junto com a moto velha: a nova nasce sem a marca.
+	Foco.marcar(_modelo, foco)
 
 
 ## Veste o corredor de uma cor: bag e moto nela, jaqueta num tom escuro dela.
@@ -512,7 +514,7 @@ func atualizar(
 	_cotovelos.passo(delta, v, inclinacao, global_position)
 	for lisa in _lisas:
 		lisa.atualizar(v)
-	_mede(delta, velocidade, inclinacao, caido)
+	_acel.medir(delta, global_position, velocidade, inclinacao, caido)
 	_comandos.passo(delta, v, acelerador, freio, caido)
 
 	var parado := v < PARADO and not caido
@@ -552,43 +554,6 @@ func atualizar(
 	_posa()
 
 
-## Aceleracao longitudinal, vertical e da inclinacao, lidas do proprio
-## movimento. Medir aqui, e nao receber do corpo, e o que deixa o jogador e o
-## rival - um com fisica, o outro parametrico na curva - usarem o mesmo ator.
-func _mede(delta: float, velocidade: float, inclinacao: float, caido: bool) -> void:
-	var pos := global_position
-	# Teleporte (largada, respawn, o salto do banco de provas) nao e movimento:
-	# medido, ele seria um coice de mil g na suspensao.
-	if caido or _amostras > 0 and pos.distance_to(_pos_anterior) > 6.0:
-		_amostras = 0
-	var vy := (pos.y - _pos_anterior.y) / delta
-	var giro_incl := (inclinacao - _incl_anterior) / delta
-	var a_long := 0.0
-	var a_vert := 0.0
-	var a_rol := 0.0
-	if _amostras >= 1:
-		a_long = clampf((velocidade - _v_anterior) / delta, -40.0, 40.0)
-	if _amostras >= 2:
-		a_vert = clampf((vy - _vy_anterior) / delta, -60.0, 60.0)
-		a_rol = clampf((giro_incl - _giro_incl_anterior) / delta, -60.0, 60.0)
-	_amostras = mini(_amostras + 1, 2)
-	_pos_anterior = pos
-	_vy_anterior = vy if _amostras >= 2 else 0.0
-	_v_anterior = velocidade
-	_incl_anterior = inclinacao
-	_giro_incl_anterior = giro_incl if _amostras >= 2 else 0.0
-
-	# Na curva a moto inclinada carrega 1/cos da inclinacao: a 38 graus, 27% a
-	# mais de peso nas molas.
-	a_vert += 9.8 * (1.0 / cos(clampf(inclinacao, -1.2, 1.2)) - 1.0)
-	# 60 ms: o freio do jogador liga e desliga em degrau, e a mola leria cada
-	# degrau como um coice.
-	var filtro := 1.0 - exp(-delta / 0.06)
-	_a_long = lerpf(_a_long, a_long, filtro)
-	_a_vert = lerpf(_a_vert, a_vert, filtro)
-	_a_rolagem = lerpf(_a_rolagem, a_rol, filtro)
-
-
 func _suspensao(delta: float, v: float) -> void:
 	if _voando:
 		return
@@ -600,10 +565,10 @@ func _suspensao(delta: float, v: float) -> void:
 	d -= _entre_eixos
 	var onda_tras := pisa * (0.6 * sin(d * 0.35) + 0.4 * sin(d * 0.9 + 1.3))
 
-	var freia := tanh(-_a_long / ACELERACAO_REF)
+	var freia := tanh(-_acel.longitudinal / ACELERACAO_REF)
 	var alvo := Vector2(
-		MERGULHO * freia + PESO * _a_vert + onda_frente,
-		-AGACHA * freia + PESO * _a_vert + onda_tras
+		MERGULHO * freia + PESO * _acel.vertical + onda_frente,
+		-AGACHA * freia + PESO * _acel.vertical + onda_tras
 	)
 	var w := Vector2(TAU * FREQ_FRENTE, TAU * FREQ_TRAS)
 	var zeta := Vector2(AMORTECE_FRENTE, AMORTECE_TRAS)
@@ -621,9 +586,9 @@ func _suspensao(delta: float, v: float) -> void:
 
 func _corpo(delta: float) -> void:
 	var alvo := Vector3(
-		-MASSA_ROLAGEM * _a_rolagem,
-		-MASSA_PESO * _a_vert,
-		MASSA_FRENTE * tanh(_a_long / ACELERACAO_REF)
+		-MASSA_ROLAGEM * _acel.rolagem,
+		-MASSA_PESO * _acel.vertical,
+		MASSA_FRENTE * tanh(_acel.longitudinal / ACELERACAO_REF)
 	)
 	var w := TAU * MASSA_FREQ
 	_massa_v += (w * w * (alvo - _massa) - 2.0 * MASSA_AMORTECE * w * _massa_v) * delta
