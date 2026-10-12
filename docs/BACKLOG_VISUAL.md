@@ -434,7 +434,7 @@ e no `git log`.
   - **Aceite:** num trecho de corredor não se vê céu entre prédios no nível
     da rua; `fps` medido, porque é aqui que a conta de desenho aperta.
 
-- [ ] **V12** — Glow: outdoor, lanterna e cromo brilhando
+- [x] **V12** — Glow: outdoor, lanterna e cromo brilhando (12/10/2026)
 
   O vídeo tem *bloom* nos outdoors, nos carros brancos e no cromo. O jogo não
   liga `glow_enabled` (é o item 4 da tabela de luz do `DIRECAO_VISUAL.md`).
@@ -445,6 +445,24 @@ e no `git log`.
     emissivo passa); lanterna dos carros emissiva; SSAO leve, e só se o `fps`
     deixar (é o primeiro a cortar).
   - **Aceite:** lanterna acesa brilha a 30 m; asfalto ao sol **não** brilha.
+  - **Resultado:** glow aditivo com limiar 2,2 e rampa 1, só os três níveis
+    finos (`world.gd`). O limiar foi medido, e não escolhido: com a cena em
+    HDR, o mais claro que o sol produz é 2,0 (calçada branca e sacada de
+    frente para ele), e o asfalto não passa de 1. Nos cinco quadros da prova
+    o glow muda **0 pixels**. A pegadinha: o Godot compara com o limiar
+    **depois** do primeiro desfoque, e a lanterna a 30 m chegava lá com 13%
+    do que tinha (detalhe no `DIRECAO_VISUAL.md`). Freio e seta passaram
+    de ~1,4 e ~2,1 para 45, com cor de luz pura (`carro.gdshader`) para não
+    desbotar em salmão; a lanterna acesa sem freio continua abaixo do
+    limiar, só cor.
+    Conferido com carro plantado freando a 30 m e a 10 m, parado e a
+    90 km/h. **SSAO cortado**: leve, muda 0,3% dos pixels e o contato do
+    pneu fica igual (quem faz isso é a sombra); forte, escurece a sombra
+    inteira e desfaz o cinza frio do ambiente. **Cromo fica de fora**: o
+    mundo inteiro é `specular_disabled` de propósito (reflexo a 640×360
+    pisca), e sem especular não há brilho de cromo para o glow pegar. A
+    lanterna da moto também: o shader do entregador não tem canal de
+    máscara livre para emissão. Outdoor é a V13, já em cima deste limiar.
 
 - [ ] **V13** — Outdoor luminoso e letreiro
 

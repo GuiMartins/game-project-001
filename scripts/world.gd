@@ -213,6 +213,33 @@ func _build_environment() -> void:
 	env.fog_density = 0.0045
 	env.fog_aerial_perspective = 0.5
 	env.fog_sky_affect = 0.0
+	# Glow so no que e luz: lanterna de freio, seta e, depois, outdoor e faisca.
+	# O limiar fica logo acima do mais claro que o sol produz - calcada branca e
+	# sacada de frente para ele chegam a 2,0 em HDR; o asfalto nao passa de 1 -,
+	# entao com o sol de hoje o glow nao toca um pixel do que nao e luz. Medido
+	# nos cinco quadros da prova: 0 pixels mudam sem carro freando.
+	env.glow_enabled = true
+	env.glow_hdr_threshold = 2.2
+	# Rampa curta: logo acima do limiar a luz ja brilha inteira. Com a rampa
+	# padrao (2), uma lanterna a 30 m ficava no comeco dela e mal acendia.
+	env.glow_hdr_scale = 1.0
+	# O teto padrao (12) tambem e o divisor com que o primeiro passe achata as
+	# amostras contra vaga-lume, e com ele a lanterna de 45 chegava a metade.
+	env.glow_hdr_luminance_cap = 40.0
+	# Aditivo, e nao o soft light padrao: o glow entra em HDR antes do tonemap,
+	# como luz somada, e o LUT e a paleta passam por cima dele (DIRECAO_VISUAL).
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
+	# So os niveis finos, e o terceiro quase nada: a 640x360 ele ja e 1/8 da
+	# tela, e com 0,6 e 0,3 nos dois de cima o halo de uma lanterna a 30 m
+	# tingia de vermelho a traseira inteira do carro. Halo curto e o que le
+	# como pixel, e nao como lente suja.
+	for i in 7:
+		env.set_glow_level(i, [1.0, 0.4, 0.1, 0.0, 0.0, 0.0, 0.0][i])
+	# Sem SSAO, que a DIRECAO_VISUAL deixava para "se o fps deixar". Nao e o
+	# fps: e que nao aparece. Leve, muda 0,3% dos pixels da prova e o encontro
+	# do pneu com o chao fica igual - quem poe a moto no chao e a sombra de
+	# contato. Forte o bastante para se ver, escurece a sombra inteira e
+	# desfaz o cinza frio que o ambiente acima acertou.
 	# Tonemap antes do LUT, que e o ultimo passo do Environment: o sol de
 	# meio-dia estoura o branco em linear, e o filmic devolve o alto sem
 	# achatar a sombra.
