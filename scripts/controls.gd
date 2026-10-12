@@ -21,6 +21,9 @@ const ACTIONS: Dictionary = {
 	"debug_pixel_toggle": [KEY_F1, KEY_1],
 	"debug_camera_cycle": [KEY_F2, KEY_2],
 	"debug_tuning_panel": [KEY_F3, KEY_3],
+	# F11 e o atalho de tela cheia que todo jogo de PC usa; o 4 segue o
+	# 1/2/3 pelo mesmo motivo do macOS.
+	"tela_cheia": [KEY_F11, KEY_4],
 	"debug_restart": [KEY_R],
 }
 

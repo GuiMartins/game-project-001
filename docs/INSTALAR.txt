@@ -30,6 +30,7 @@ CONTROLES
   1 ou F1            liga/desliga o pixel de 640x360
   2 ou F2            troca a camera (perseguicao / capacete / diagnostico)
   3 ou F3            painel de tuning (abre em janela separada)
+  4 ou F11           liga/desliga a tela cheia
 
 Controle de videogame tambem funciona: stick esquerdo inclina,
 A/B aceleram e freiam, X/Y socam.
