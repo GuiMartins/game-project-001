@@ -40,8 +40,9 @@ window/stretch/aspect="keep"
 ; Fracionario de proposito. "integer" foi tentado e saiu: ele arredonda a
 ; escala sobre o viewport base de 1280x720, e nao sobre os 640x360 do mundo,
 ; entao em 1920x1080 (1,5x) caia para 1x e o jogo ocupava metade da janela.
-; O preco do fracionario e pixel levemente irregular em janela de tamanho
-; fora do padrao; em 1280, 1920, 2560 e 3840 a escala por pixel e inteira.
+; O preco do fracionario era pixel irregular (e tela tremendo com a camera
+; andando) em janela fora do padrao; o scripts/ampliacao.gdshader paga esse
+; preco. Em 1280, 1920, 2560 e 3840 a escala por pixel e inteira.
 window/stretch/scale_mode="fractional"
 ; O painel de tuning e um no Window. Sem isto o Godot desenha subjanelas
 ; DENTRO da janela do jogo (embedded), que e exatamente o que a gente
