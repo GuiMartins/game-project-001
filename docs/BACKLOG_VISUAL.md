@@ -215,12 +215,15 @@ e no `git log`.
   - **Aceite:** jogando, dá pra dizer de olho fechado qual moto você
     escolheu pela troca de lado no corredor.
 
-  **Resultado:** decidido só inclinação, e os rivais também. Multiplicadores
-  sobre o `BikeTuning` em `FisicaDaMoto` (o F3 continua valendo nas três),
-  não um recurso por moto. Deitar 0->90%: PCX ~0,4 s, CG 0,52 s, XRE ~0,64 s;
-  contra-inclinação saindo de 25 graus: 7 / 4,6 / 2,5. O rival trocou o
-  `lerp` pela mesma mola, na moto sorteada. Baseline sem variação (o banco
-  roda na CG, multiplicador 1); as outras duas têm teste unitário.
+  **Resultado:** decidido só inclinação, e os rivais também. Em vez de número
+  na mão, a mola sai da **ficha técnica real** (`FichaDaMoto`: peso, entre-eixos,
+  altura do banco, pneus, e o motor guardado para depois): um índice de
+  agilidade relativo à CG (`FisicaDaMoto.agilidade`), multiplicador sobre o
+  `BikeTuning` para o F3 continuar valendo nas três. Moto nova entra com a
+  ficha e nasce calibrada; sem ficha, o teste reprova. PCX 1,21×, XRE 0,76×.
+  Deitar 0->90%: 0,42 / 0,5 / 0,65 s; contra-inclinação saindo de 25 graus:
+  6,6 / 4,6 / 2,0. O rival trocou o `lerp` pela mesma mola, na moto sorteada.
+  Baseline sem variação (o banco roda na CG, que dá 1).
 
 - [ ] **V06** — Vibração miúda, roda lisa em alta e cabeça no horizonte
 
