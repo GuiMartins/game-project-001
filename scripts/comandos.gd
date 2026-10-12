@@ -3,9 +3,11 @@ extends RefCounted
 ## As maos e os pes nos comandos: pulso no acelerador, dedos nas manetes, bota
 ## nos pedais, e a troca de marcha.
 ##
-## Tudo sai do que o ator ja sabe, e nada da fisica: o acelerador que o corpo
-## manda, a freada que o ator mede do proprio movimento (a mesma que afunda o
-## garfo) e a velocidade. Por isso serve igual ao jogador e ao rival.
+## Tudo sai do que o corpo manda - gas e freio pedidos, a velocidade - e nada
+## da fisica: o jogador manda o polegar, o rival manda o que a IA decidiu.
+## Gas e freio pedidos, e nao a aceleracao medida: medida, soltar o gas a
+## 40 m/s (o arrasto passa de 5 m/s2), bater num carro ou subir na calcada
+## puxavam a manete sem ninguem frear.
 ##
 ## A fisica nao tem cambio. A marcha e de mentira, contada pela velocidade em
 ## faixas que encurtam como as de uma caixa de verdade, e so existe para o
@@ -24,16 +26,13 @@ const FECHA: float = 12.0
 const MANETE: float = 22.0
 const PEDAL: float = 14.0
 const BOTA: float = 18.0
-## Freada, em m/s2, em que o piloto comeca a apertar e em que aperta tudo. A
-## moto solta perde uns 3 m/s2 sozinha, e isso nao e freio.
-const FREIO_DE: float = 4.0
-const FREIO_CHEIO: float = 18.0
 ## Quanto do freio vai no pe, na moto de cambio: o de tras freia menos.
 const FREIO_NO_PE: float = 0.7
-## Velocidade em que a ultima marcha acaba, em m/s: o teto do jogo.
-const TETO: float = 49.0
+## Velocidade em que a ultima marcha acaba, em m/s: o `max_speed` do
+## `BikeTuning`. O boost passa dele, e la a quinta so estica.
+const TETO: float = 52.0
 ## Expoente das faixas: maior que 1 deixa as marchas de baixo curtas, como
-## numa caixa de verdade. Na CG de 5 marchas, troca a 6, 16, 26 e 37 m/s.
+## numa caixa de verdade. Na CG de 5 marchas, troca a 7, 16, 28 e 39 m/s.
 const ESCALONAMENTO: float = 1.25
 ## Quanto abaixo da troca para cima a marcha desce, em m/s: sem folga, a moto
 ## no limite trocaria a cada quadro.
@@ -96,14 +95,14 @@ func montar(modelo: Node3D, ficha: FichaDaMoto) -> void:
 		_dedos_na_manete.append(Transform3D(Basis.IDENTITY, entre))
 
 
-func passo(delta: float, v: float, acelerador: float, a_long: float, caido: bool) -> void:
+## `acelerador` e `freio` de 0 a 1, como pedidos neste passo.
+func passo(delta: float, v: float, acelerador: float, freio: float, caido: bool) -> void:
 	if caido:
 		_gas = 0.0
 		_freio = 0.0
 		_troca_t = -1.0
 	else:
-		var freio := clampf((-a_long - FREIO_DE) / (FREIO_CHEIO - FREIO_DE), 0.0, 1.0)
-		_freio = lerpf(_freio, freio, 1.0 - exp(-15.0 * delta))
+		_freio = lerpf(_freio, clampf(freio, 0.0, 1.0), 1.0 - exp(-15.0 * delta))
 		var gas := clampf(acelerador, 0.0, 1.0) * (1.0 - _freio)
 		_gas = lerpf(_gas, gas, 1.0 - exp(-12.0 * delta))
 		_cambio(delta, v)
