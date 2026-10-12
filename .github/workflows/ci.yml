@@ -16,10 +16,44 @@ on:
   workflow_dispatch:
 
 jobs:
+  # O que mudou. Commit que so mexe em markdown e em `docs/` nao muda nada que
+  # o jogo carregue nem que os testes leiam (`docs/` tem `.gdignore`, e as
+  # referencias de la so entram no `dev.py prova`, que nao roda aqui), e
+  # rodar a matrix inteira por ele e quase meia hora de runner jogada fora.
+  #
+  # Os jobs pesados pulam, em vez de o workflow inteiro usar `paths-ignore`:
+  # workflow que nao dispara nao reporta check nenhum, e a master exige
+  # `banco-de-provas` e `regressao-visual` - o PR de markdown ficaria
+  # esperando para sempre. Job pulado por `if` reporta "skipped", que a
+  # protecao aceita.
+  #
+  # Na duvida, roda: disparo manual sempre testa tudo, e qualquer arquivo fora
+  # da lista (inclusive este workflow) conta como codigo.
+  mudancas:
+    runs-on: ubuntu-latest
+    outputs:
+      codigo: ${{ github.event_name == 'workflow_dispatch' || steps.filtro.outputs.codigo == 'true' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dorny/paths-filter@v3
+        id: filtro
+        with:
+          # `every`: o arquivo so conta como codigo se escapar de TODOS os
+          # padroes. Com o `some` de fabrica, um `.md` casaria o `**` e
+          # contaria.
+          predicate-quantifier: every
+          filters: |
+            codigo:
+              - "**"
+              - "!**/*.md"
+              - "!docs/**"
+
   # Estilo não depende de sistema operacional, então roda uma vez só.
   # Rápido de propósito: falha de formatação aparece antes de a matrix inteira
   # terminar, e o conserto é `python tools/dev.py format`.
   qualidade:
+    needs: mudancas
+    if: needs.mudancas.outputs.codigo == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -32,6 +66,8 @@ jobs:
         run: python tools/dev.py format --check
 
   provas:
+    needs: mudancas
+    if: needs.mudancas.outputs.codigo == 'true'
     strategy:
       # Sem fail-fast: quando um SO diverge, o que interessa é saber quais
       # outros divergiram junto. Cancelar os irmãos esconde exatamente isso.
@@ -71,6 +107,8 @@ jobs:
   # inteiro. O caso registrado no PROTOTIPO.md e a pista sumindo por backface
   # culling, que o Godot descarta sem um erro no console.
   regressao-visual:
+    needs: mudancas
+    if: needs.mudancas.outputs.codigo == 'true'
     runs-on: ubuntu-latest
     steps:
       # Com LFS pelo mesmo motivo do job de provas, e aqui pesa mais: e o
@@ -109,13 +147,21 @@ jobs:
   # produz um por sistema. Em vez de afrouxar a proteção pra caber na matrix,
   # este job mantém o nome e só passa quando os três sistemas passam. Ele é o
   # portão; os outros são a evidência.
+  #
+  # Quando so mudou markdown, os dois pularam e ele passa dizendo isso. Mas so
+  # nesse caso: "skipped" por qualquer outro motivo (um job que dependia de um
+  # que falhou) continua reprovando.
   banco-de-provas:
-    needs: [qualidade, provas]
+    needs: [mudancas, qualidade, provas]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Conferir os três sistemas
         run: |
+          if [ "${{ needs.mudancas.result }}" = "success" ] &&              [ "${{ needs.mudancas.outputs.codigo }}" = "false" ]; then
+            echo "::notice::só markdown e docs/ mudaram: provas puladas"
+            exit 0
+          fi
           echo "qualidade: ${{ needs.qualidade.result }}"
           echo "provas:    ${{ needs.provas.result }}"
           if [ "${{ needs.qualidade.result }}" != "success" ] ||              [ "${{ needs.provas.result }}" != "success" ]; then
