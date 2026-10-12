@@ -62,6 +62,16 @@ func _sorteia_cruzamentos(rua: RandomNumberGenerator) -> Array[Vector2]:
 	return lista
 
 
+## Se o ponto `offset` da avenida, do lado `side`, cai na boca de uma rua - ou
+## na calcada da esquina dela, onde fica o semaforo. Poste ali e poste no
+## meio da rua.
+static func na_boca(cruzamentos: Array[Vector2], offset: float, side: float) -> bool:
+	for c in cruzamentos:
+		if _abre(c.y, side) and absf(offset - c.x) < RUA_LARGURA * 0.5 + RUA_CALCADA:
+			return true
+	return false
+
+
 static func _abre(lados: float, side: float) -> bool:
 	return lados == LADO_AMBOS or lados == side
 
@@ -146,8 +156,8 @@ static func _colisor(dono: Node3D, caixa: AABB) -> void:
 
 ## O asfalto, a pintura, o semaforo e a fila de cada rua que cruza a avenida.
 ##
-## O asfalto e a pintura de todas as ruas sao uma malha so, com duas
-## superficies: dezenas de ruas viram duas chamadas de desenho.
+## O asfalto, a pintura e o meio-fio de todas as ruas sao uma malha so, com
+## tres superficies: dezenas de ruas viram tres chamadas de desenho.
 func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props: Node3D) -> void:
 	var road_w := RoadTrack.half_width()
 	# Onde acaba o andavel: dali para fora fica o que a moto nao alcanca.
@@ -156,6 +166,8 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 	asfalto.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var tinta := SurfaceTool.new()
 	tinta.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var meio_fio := SurfaceTool.new()
+	meio_fio.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var materiais := _materiais_de_semaforo()
 
 	for c in cruzamentos:
@@ -188,6 +200,11 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 				)
 			)
 			var chao := centro + acima + Vector3.UP * 0.03
+			# Meio-fio dos dois lados da rua. Sem ele o asfalto da rua no sol fica
+			# da cor do cimentado em volta, e a zebra parece pintada na calcada.
+			for lado: float in [-1.0, 1.0]:
+				var borda := chao + r * lado * (meio + RoadTrack.MEIO_FIO * 0.5)
+				_faixa(meio_fio, borda, d, r, RoadTrack.MEIO_FIO, RUA_COMPRIMENTO)
 			# Faixa de pedestre na linha da calcada, com a mesma zebra e a mesma
 			# retencao da avenida, so na mao de quem chega. Fica a
 			# `ZEBRA_ESQUINA` do asfalto da avenida, como a da avenida fica da
@@ -230,6 +247,8 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 	malha.surface_set_material(0, RoadTrack.material_texturizado(RoadTrack.ASFALTO))
 	tinta.commit(malha)
 	malha.surface_set_material(1, RoadTrack.material_liso(RoadTrack.TINTA))
+	meio_fio.commit(malha)
+	malha.surface_set_material(2, RoadTrack.material_liso(RoadTrack.COR_MEIO_FIO))
 	var ruas := MeshInstance3D.new()
 	ruas.name = "Ruas"
 	ruas.mesh = malha

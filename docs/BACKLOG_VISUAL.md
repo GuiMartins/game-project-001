@@ -395,6 +395,9 @@ e no `git log`.
     torta (40 cm de margem de um lado, 10 do outro) e com outro desenho.
     Passou a usar a mesma zebra e a mesma retenção da avenida, centrada
     (`RoadTrack.listras_da_zebra`), a 1 m do asfalto da avenida.
+    E a rua ganhou meio-fio (no sol o asfalto dela some contra o cimentado,
+    e a zebra parecia pintada na calçada), e poste da avenida não nasce mais
+    na boca da rua (`Cidade.na_boca`).
 
 ### Os prédios e o céu
 

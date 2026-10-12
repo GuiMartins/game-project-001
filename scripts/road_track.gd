@@ -44,6 +44,7 @@ const CALCADA_TILE: float = 4.4
 const CALCADA_LARGURA: float = 2.2
 ## O meio-fio, 20 cm de concreto mais claro que o cimentado.
 const MEIO_FIO: float = 0.2
+const COR_MEIO_FIO := Color(0.70, 0.68, 0.65)
 ## A tira de servico depois do andavel, com os postes (que ficam a 0,8 m).
 const FAIXA_SERVICO: float = 1.6
 
@@ -333,7 +334,7 @@ func _build_mesh() -> void:
 	# calcada e cimento claro.
 	_commit(asphalt, mesh, material_texturizado(ASFALTO))
 	_commit(shoulder, mesh, material_texturizado(CALCADA))
-	_commit(curb, mesh, material_liso(Color(0.70, 0.68, 0.65)))
+	_commit(curb, mesh, material_liso(COR_MEIO_FIO))
 	_commit(servico, mesh, material_liso(Color(0.50, 0.49, 0.47)))
 
 	_asphalt_mesh = MeshInstance3D.new()
