@@ -58,6 +58,7 @@ de novo ou voltar. `ESC` no meio da corrida congela e abre o menu.
 | `1` ou `F1` | liga/desliga o pixel de 640×360 |
 | `2` ou `F2` | alterna câmera (perseguição / capacete / diagnóstico) |
 | `3` ou `F3` | painel de tuning (abre em janela separada) |
+| `4` ou `F11` | liga/desliga a tela cheia (também em Configurações) |
 
 No macOS as teclas de função são do sistema (brilho, Mission Control), então
 `F1`–`F3` só chegam no jogo com `Fn` segurado. Use `1`, `2` e `3`.

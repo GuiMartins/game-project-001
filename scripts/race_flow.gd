@@ -20,6 +20,7 @@ signal corrida_pedida
 signal pixel_alternado
 signal camera_alternada
 signal painel_pedido
+signal tela_cheia_alternada
 ## Pediram a proxima moto da lista (`passo` 1) ou a anterior (-1).
 signal moto_trocada(passo: int)
 ## A tela mudou. Quem ouve decide o que congelar e o que esconder - o fluxo nao
@@ -29,8 +30,8 @@ signal tela_mudou(nova: int)
 enum Tela { MENU, CORRIDA, CONFIGURACOES, RESULTADO }
 
 ## Quantas linhas de menu cabem de uma vez. A tela mais cheia e a de
-## configuracoes, com quatro.
-const MAX_ITENS: int = 4
+## configuracoes, com cinco.
+const MAX_ITENS: int = 5
 
 ## Altura de uma linha de menu, em unidades de layout (a tela de 320x180 em que
 ## a `Hud` e escrita; ver `Hud.ESCALA`). Menos que isto e o contorno preto de
@@ -52,6 +53,7 @@ const COR_ITEM: Color = Color(0.82, 0.85, 0.92)
 var descreve_pixel: Callable
 var descreve_camera: Callable
 var descreve_moto: Callable
+var descreve_tela_cheia: Callable
 
 var tela: int = Tela.MENU
 
@@ -154,6 +156,13 @@ func navegar(evento: InputEvent) -> bool:
 
 
 func _process(_delta: float) -> void:
+	# Com o pixel desligado o SubViewport dobra de tamanho, e o menu, escrito
+	# para 640x360, encolhia para um quarto da tela. Mesma conta da `Hud`:
+	# escala inteira, para o pixel da fonte continuar quadrado.
+	var tela_px := get_viewport().get_visible_rect().size
+	var k := maxi(int(floor(tela_px.y / (Hud.H * Hud.ESCALA))), 1)
+	scale = Vector2(k, k)
+	_raiz.size = (tela_px / k).floor()
 	# A tela de configuracoes mostra estado que muda enquanto ela esta aberta
 	# (o pixel alterna na propria linha), entao o rotulo se refaz por frame. O
 	# menu tambem, pela linha da moto.
@@ -230,6 +239,7 @@ func rotulos_da_tela() -> PackedStringArray:
 				[
 					"PIXEL 640x360: %s" % _descreve(descreve_pixel),
 					"CAMERA: %s" % _descreve(descreve_camera),
+					"TELA CHEIA: %s" % _descreve(descreve_tela_cheia),
 					"PAINEL DE TUNING",
 					"VOLTAR",
 				]
@@ -262,8 +272,10 @@ func _escolher(indice: int) -> void:
 				1:
 					camera_alternada.emit()
 				2:
-					painel_pedido.emit()
+					tela_cheia_alternada.emit()
 				3:
+					painel_pedido.emit()
+				4:
 					_ir_para(Tela.MENU)
 		Tela.RESULTADO:
 			if indice == 0:

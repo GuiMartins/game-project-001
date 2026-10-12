@@ -133,6 +133,7 @@ func test_configuracoes_mostram_o_estado_de_quem_sabe() -> void:
 	var fluxo := _fluxo()
 	fluxo.descreve_pixel = func() -> String: return "LIGADO"
 	fluxo.descreve_camera = func() -> String: return "CAPACETE"
+	fluxo.descreve_tela_cheia = func() -> String: return "LIGADA"
 
 	fluxo.navegar(_tecla("ui_down"))
 	fluxo.navegar(_tecla("ui_down"))
@@ -142,6 +143,7 @@ func test_configuracoes_mostram_o_estado_de_quem_sabe() -> void:
 	var rotulos := fluxo.rotulos_da_tela()
 	assert_str(rotulos[0]).contains("LIGADO")
 	assert_str(rotulos[1]).contains("CAPACETE")
+	assert_str(rotulos[2]).contains("TELA CHEIA: LIGADA")
 	assert_str(rotulos[rotulos.size() - 1]).is_equal("VOLTAR")
 
 
@@ -170,3 +172,17 @@ func test_selecao_da_a_volta_nas_duas_direcoes() -> void:
 
 	assert_int(pedidos[0]).is_equal(1)
 	assert_int(fluxo.tela).is_equal(RaceFlow.Tela.CORRIDA)
+
+
+func test_tela_cheia_nas_configuracoes_pede_a_troca() -> void:
+	var fluxo := _fluxo()
+	var pedidos: Array[int] = [0]
+	fluxo.tela_cheia_alternada.connect(func() -> void: pedidos[0] += 1)
+	fluxo.navegar(_tecla("ui_down"))
+	fluxo.navegar(_tecla("ui_down"))
+	fluxo.navegar(_tecla("ui_accept"))
+	fluxo.navegar(_tecla("ui_down"))
+	fluxo.navegar(_tecla("ui_down"))
+	fluxo.navegar(_tecla("ui_accept"))
+	assert_int(pedidos[0]).is_equal(1)
+	assert_int(fluxo.tela).is_equal(RaceFlow.Tela.CONFIGURACOES)

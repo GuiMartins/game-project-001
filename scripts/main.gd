@@ -19,6 +19,9 @@ const PIXEL_SHRINK: int = 2
 ## arquivo so dela, e nao no `tuning.tres`: o tuning e o que o F3 salva quando
 ## alguem aperta Salvar, e escolher moto nao e mexer em slider.
 const MOTO_SALVA: String = "user://moto.cfg"
+## Tela cheia sobrevive ao fechar o jogo, no mesmo arquivo da moto: e escolha
+## de quem joga, como ela, e nao slider de feel.
+const SECAO_TELA: String = "tela"
 
 var sub_viewport: SubViewport
 var container: SubViewportContainer
@@ -78,6 +81,10 @@ func _ready() -> void:
 	_moto_salva = use_saved
 	if _moto_salva:
 		world.player.usar_modelo(_le_moto())
+		# So fora das medidas: prova e shots fotografam a janela no tamanho do
+		# `project.godot`, e tela cheia mudaria o quadro que eles comparam.
+		if _le_config(SECAO_TELA, "cheia", false):
+			_aplica_tela_cheia(true)
 
 	_monta_paleta()
 
@@ -95,6 +102,8 @@ func _ready() -> void:
 	fluxo.descreve_pixel = func() -> String: return "LIGADO" if _pixel_mode else "DESLIGADO"
 	fluxo.descreve_camera = func() -> String: return world.camera.mode_name()
 	fluxo.descreve_moto = func() -> String: return Entregador.NOMES[world.player.modelo()]
+	fluxo.descreve_tela_cheia = func() -> String: return "LIGADA" if _tela_cheia() else "DESLIGADA"
+	fluxo.tela_cheia_alternada.connect(_alterna_tela_cheia)
 	fluxo.moto_trocada.connect(_trocar_moto)
 	fluxo.corrida_pedida.connect(_restart)
 	fluxo.pixel_alternado.connect(_toggle_pixel)
@@ -165,6 +174,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_toggle_pixel()
 	elif event.is_action("debug_camera_cycle"):
 		world.camera.cycle_mode()
+	elif event.is_action("tela_cheia"):
+		_alterna_tela_cheia()
 	elif event.is_action("debug_tuning_panel"):
 		tuning_panel.toggle()
 	elif event.is_action("debug_restart") and fluxo.tela == RaceFlow.Tela.CORRIDA:
@@ -197,16 +208,47 @@ func _trocar_moto(passo: int) -> void:
 	world.player.usar_modelo(nova)
 	if not _moto_salva:
 		return
-	var arquivo := ConfigFile.new()
-	arquivo.set_value("jogador", "moto", nova)
-	arquivo.save(MOTO_SALVA)
+	_grava_config("jogador", "moto", nova)
 
 
 func _le_moto() -> int:
+	return int(_le_config("jogador", "moto", Entregador.Modelo.CG_160))
+
+
+func _tela_cheia() -> bool:
+	return DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+
+
+func _alterna_tela_cheia() -> void:
+	var cheia := not _tela_cheia()
+	_aplica_tela_cheia(cheia)
+	if _moto_salva:
+		_grava_config(SECAO_TELA, "cheia", cheia)
+
+
+## FULLSCREEN, e nao EXCLUSIVE_FULLSCREEN: no macOS o exclusivo tira o jogo
+## do Mission Control e trava o Cmd+Tab, e no Windows troca o modo de video do
+## monitor. A janela sem borda do tamanho da tela da o mesmo quadro.
+func _aplica_tela_cheia(cheia: bool) -> void:
+	DisplayServer.window_set_mode(
+		DisplayServer.WINDOW_MODE_FULLSCREEN if cheia else DisplayServer.WINDOW_MODE_WINDOWED
+	)
+
+
+## Le e grava no `MOTO_SALVA` preservando o resto do arquivo: gravar a moto
+## com um ConfigFile novo apagaria a tela cheia, e vice-versa.
+func _le_config(secao: String, chave: String, padrao: Variant) -> Variant:
 	var arquivo := ConfigFile.new()
 	if arquivo.load(MOTO_SALVA) != OK:
-		return Entregador.Modelo.CG_160
-	return int(arquivo.get_value("jogador", "moto", Entregador.Modelo.CG_160))
+		return padrao
+	return arquivo.get_value(secao, chave, padrao)
+
+
+func _grava_config(secao: String, chave: String, valor: Variant) -> void:
+	var arquivo := ConfigFile.new()
+	arquivo.load(MOTO_SALVA)
+	arquivo.set_value(secao, chave, valor)
+	arquivo.save(MOTO_SALVA)
 
 
 func _restart() -> void:
