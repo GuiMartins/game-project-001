@@ -98,8 +98,8 @@ const TRONCO_NA_CURVA: float = 0.12
 ## 14 m/s. Em velocidade a curva sai da inclinacao, como no `PlayerBike`.
 const ESTERCO_DEVAGAR: float = 20.0
 const ESTERCO_RAPIDO: float = 4.0
-## Quanto do esterco o tronco acompanha, girando os ombros para a curva. Sem
-## isso, com o guidao no batente, a manopla de fora foge do alcance do braco.
+## Quanto do esterco o tronco acompanha, girando os ombros: sem isso, com o
+## guidao no batente, a manopla de fora foge do braco.
 const TRONCO_SEGUE_GUIDAO: float = 0.5
 
 ## A cabeca procura o horizonte: desfaz esta fracao da inclinacao da moto. E
@@ -405,9 +405,8 @@ func _monta() -> void:
 	_altura_eixo = [eixo_tras.y, eixo_frente.y]
 	_entre_eixos = eixo_tras.z - eixo_frente.z
 	_direcao = _no("Direcao")
-	# O garfo inteiro gira em volta da reta que liga a cabeca do garfo ao eixo
-	# dianteiro, e nao em volta da vertical: e o que faz a roda estercar sem
-	# sair de baixo do paralama. E a bainha desliza ao longo da mesma reta.
+	# O garfo gira em volta da reta cabeca do garfo-eixo, e nao da vertical: a
+	# roda esterca sem sair do paralama. A bainha desliza na mesma reta.
 	_eixo_direcao = _repouso[_garfo].origin.normalized()
 	for lado: String in ["E", "D"]:
 		var amortecedor := _no("Amortecedor_" + lado)
@@ -499,7 +498,8 @@ func atualizar(
 	caido: bool,
 	lado_queda: float = 1.0,
 	inclinacao: float = 0.0,
-	giro_queda: float = 0.0
+	giro_queda: float = 0.0,
+	freio: float = 0.0
 ) -> void:
 	if delta <= 0.0:
 		return
@@ -515,7 +515,7 @@ func atualizar(
 	for lisa in _lisas:
 		lisa.atualizar(v)
 	_acel.medir(delta, global_position, velocidade, inclinacao, caido)
-	_comandos.passo(delta, v, acelerador, _acel.longitudinal, caido)
+	_comandos.passo(delta, v, acelerador, freio, caido)
 
 	var parado := v < PARADO and not caido
 	_pe = move_toward(_pe, 1.0 if parado else 0.0, delta / TEMPO_DO_PE)

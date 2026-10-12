@@ -311,6 +311,10 @@ e no `git log`.
     puxa a embreagem, alivia o gás e mexe a bota (redução com tapa no gás).
     A manete antiga era uma `barra` que media só em Y e Z, e saía um cubo de
     1 cm: ninguém via. Baseline sem variação; `shots` passa.
+    Depois, jogando: o freio passou a vir do pedido (botão do jogador; no
+    rival, estar acima da velocidade-alvo), e não da desaceleração medida,
+    que puxava a manete ao soltar o gás em alta e em toda batida. E o rival
+    em cruzeiro segura meio gás, em vez do pulso fechado de quem embala.
 
 ### Velocidade
 
