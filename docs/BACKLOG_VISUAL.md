@@ -266,7 +266,7 @@ e no `git log`.
   Jogador e rival ganham os dois, nas três motos. Baseline sem variação; a
   prova de trás sai igual, porque dali a roda mal aparece.
 
-- [x] **V07** — Postura do vídeo: sentado e de cotovelo aberto (12/10/2026)
+- [x] **V07** — Postura do vídeo: sentado e de cotovelo aberto (12/10/2026, #77)
 
   A 128 km/h o entregador do vídeo continua **sentado**, tronco a 10–15°, com
   os cotovelos bem abertos: são as pontas mais largas da silhueta, mais largas
