@@ -251,6 +251,12 @@ func _build_environment() -> void:
 	sun.directional_shadow_blend_splits = true
 	sun.shadow_bias = 0.03
 	sun.shadow_normal_bias = 0.8
+	# Penumbra de ~1 pixel da tela em todas as divisoes. Com as divisoes
+	# misturadas, o Godot borra o mesmo numero de texels em cada uma, e o texel
+	# cresce com a distancia mais ou menos como o pixel cresce: tres texels
+	# dao perto de um pixel de 640x360 da roda ate os 250 m. Menos que isso e
+	# a borda serrilha andando; mais e sombra de dia nublado.
+	sun.shadow_blur = 3.0
 	add_child(sun)
 
 

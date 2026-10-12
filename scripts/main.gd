@@ -4,7 +4,8 @@ extends Node
 ## O look pixel sai de um SubViewport de 640x360 com upscale INTEIRO de 2x pra
 ## 1280x720. Inteiro importa: 2.5x deixa pixel de tamanhos diferentes na mesma
 ## tela e o serrilhado fica sujo em vez de proposital. A janela escala o resto
-## (ver `scale_mode` no `project.godot`): 1920x1080 da 3x por pixel, exato.
+## (ver `scale_mode` no `project.godot`): 1920x1080 da 3x por pixel, exato. Em
+## tamanho que nao fecha inteiro, o `ampliacao.gdshader` segura o tremor.
 
 ## 1280x720 / 2 = 640x360 exato. O SubViewportContainer faz a conta sozinho
 ## via stretch_shrink - setar sub_viewport.size na mao nao funciona com stretch
@@ -63,13 +64,26 @@ func _ready() -> void:
 	container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	container.stretch = true
 	container.stretch_shrink = PIXEL_SHRINK
-	container.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	## Linear, e nao nearest: quem escolhe onde ler e o `ampliacao.gdshader`,
+	## que faz nearest no miolo do pixel e deixa o filtro misturar so a costura.
+	## Nearest puro em escala quebrada (tela cheia fora de 1080p) faz a tela
+	## inteira tremer com a camera andando.
+	container.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	var ampliacao := ShaderMaterial.new()
+	ampliacao.shader = preload("res://scripts/ampliacao.gdshader")
+	container.material = ampliacao
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(container)
 
 	sub_viewport = SubViewport.new()
 	sub_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	sub_viewport.msaa_3d = Viewport.MSAA_DISABLED
+	## MSAA 4x, e nao desligado: a 640x360 sem antialiasing, faixa pintada
+	## de 32 cm, quina de predio e caixilho de janela ficam mais finos que um
+	## pixel ao longe e acendem e apagam conforme a camera anda - a tela inteira
+	## cintila em movimento. O MSAA so amostra a borda da geometria, entao o
+	## pixel continua grande e a textura continua sendo do material; e a
+	## 640x360 quatro amostras custam o mesmo que uma em 1280x720.
+	sub_viewport.msaa_3d = Viewport.MSAA_4X
 	sub_viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 	sub_viewport.handle_input_locally = false
 	container.add_child(sub_viewport)

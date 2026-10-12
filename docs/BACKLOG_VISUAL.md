@@ -70,6 +70,7 @@ e no `git log`.
 | Suspensão da CG, corpo que sente a freada, soco | #47 |
 | Hatch, sedã, SUV, táxi e ônibus, com lanterna de freio e porta | #43 |
 | Câmera `GARUPA` (`F2`) | #37, #38, #50 |
+| Ampliação sem tremor em tela de escala quebrada (`ampliacao.gdshader`) | V28 |
 
 ## A fila
 
@@ -471,6 +472,68 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
   subia a `fracao_ceu`): `fracao_ceu` 0,139 → 0,104 e `familias_de_cor`
   51,5 → 45,8, só por tirar a HUD velha da conta. `fps` igual ao do `master`
   (p50 8,33 ms nos dois, mesma máquina).
+
+### Tela e resolução
+
+O mundo renderiza em 640×360 e a janela amplia. Custo de GPU fixo, seja a tela
+de 720p ou 4K, e é por isso que a escolha escala. O que sobra de problema está
+no passo de ampliar, não no render.
+
+- [x] **V28** — Tela cheia sem tremor nem cintilação em movimento (12/10/2026)
+
+  Em `scale_mode = fractional` com filtro nearest, toda janela que não é
+  múltipla inteira de 640×360 (tela de Mac a 3,76×, 1366×768, 1600×900) faz
+  colunas de pixel de larguras diferentes, e com a câmera andando cada borda
+  pula de coluna a cada quadro: a tela inteira vibra.
+
+  **Resultado:** `scripts/ampliacao.gdshader` no `SubViewportContainer`
+  ("sharp bilinear"): nearest no miolo do pixel, rampa de um pixel de tela na
+  costura, com o filtro do container em linear. Em escala inteira é idêntico
+  ao nearest, então `shots` e `prova` (1920×1080, 3×) não andaram. Custo: uma
+  passada na resolução da tela, a mesma cópia que já existia.
+
+  Jogando, isso sozinho não mudou quase nada: o tremor maior vinha do render
+  sem antialiasing (faixa pintada, quina de prédio e caixilho mais finos que
+  um pixel acendendo e apagando). Entraram junto **MSAA 4×** no SubViewport e
+  filtro **trilinear** na textura dos prédios (era nearest). Na `prova` o
+  quadro parado fica quase igual; `shots` andou menos de 1%; `fps` igual
+  (p50 8,33 ms, mesma máquina da V25).
+
+  O que ainda tremia era a **borda das sombras**, só andando. Sombra não passa
+  pelo MSAA (é sombreamento, não geometria), e dura ela é mais fina que o
+  pixel. Ficou macia na qualidade máxima de PCF com `shadow_blur = 3`, uma
+  penumbra de ~1 pixel em todas as divisões; anisotrópico do chão subiu de 4×
+  para 16×. Testado e descartado no caminho: sombra dura (continua
+  serrilhando), FOV em degraus (o Godot escala a sombra pelo FOV, mas não era
+  isso que se via) e dither mais fraco (não era ele). `shots`:
+  `familias_de_cor` +3,6%, o resto abaixo de 1%; `fps` igual.
+
+- [ ] **V29** — Proporção de tela: tarja ou mais mundo
+
+  Com `aspect = keep`, tela 16:10 (Mac, Steam Deck) ganha tarja em cima e
+  embaixo, e ultrawide (21:9) ganha tarja dos lados. A alternativa é
+  `aspect = expand`: o mundo cresce na largura ou na altura em vez de tarja.
+
+  - **O risco:** mexe no enquadramento da câmera (FOV horizontal muda com a
+    proporção) e na HUD, que hoje é desenhada para 640×360 cravado. Os quatro
+    cantos teriam de ancorar na borda real, e a `prova` e o `shots` teriam de
+    continuar em 16:9 para comparar com o baseline.
+  - **Aceite:** jogando em 16:10 e 21:9, sem tarja, a HUD nos cantos e o
+    piloto no mesmo lugar relativo da tela.
+
+- [ ] **V30** 👤 — Pixel grande demais em tela grande
+
+  640×360 em 4K é 6× por pixel. É a estética que a V03 decidiu, mas em
+  monitor grande perto do rosto o pixel pode passar de "look" a "borrado de
+  propósito". Degraus com escala inteira nas telas comuns: 960×540 (perde
+  720p) ou resolução interna escolhida pela tela (mais detalhe em 4K, o mesmo
+  look em 1080p).
+
+  - **Decisão 👤:** se a resolução interna é fixa (o mesmo quadro para todo
+    mundo) ou acompanha a tela. Fixa é mais fácil de afinar e de comparar na
+    `prova`; variável muda o tamanho do dither e do pixel entre máquinas.
+  - **Custo:** o render 3D cresce com o quadrado da resolução interna
+    (960×540 são 2,25× os fragmentos de 640×360). Medir com `dev.py fps`.
 
 ### Fechamento
 
