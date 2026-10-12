@@ -255,9 +255,13 @@ e no `git log`.
   **Resultado:** tremor de 1,2 cm de pico a 35 m/s, crescendo com o quadrado
   da velocidade, de 8 a 15 Hz, com fase integrada do tempo de física
   (`Tremor`); entra somado à suspensão, então as rodas continuam no chão pela
-  mesma conta. Acima de 16 m/s (some abaixo de 14) um disco da cor dos raios
-  cobre o vazado (`RodaLisa`), com a cor lida da própria malha: escuro na CG
-  e na PCX, prata na raiada da XRE. A cabeça já desfazia ~29% do *roll* desde
+  mesma conta. A roda das três motos ficou preta com detalhe cinza (friso no
+  meio de cada raio da CG e da PCX; o raio de aço da XRE), e os raios viraram
+  peça própria (`Raios_*`). Acima de 16 m/s (voltam abaixo de 14) eles somem
+  e entra o borrão (`RodaLisa`): um disco de anéis com a média do que passa
+  em cada distância do eixo, lida da malha dos raios, e o friso vira anel
+  cinza girando. Com a roda toda cinza-escuro de antes o disco saía da mesma
+  cor e ninguém notava a troca. A cabeça já desfazia ~29% do *roll* desde
   a #47 (0,35 da moto menos o que o tronco deita), e ficou como estava.
   Jogador e rival ganham os dois, nas três motos. Baseline sem variação; a
   prova de trás sai igual, porque dali a roda mal aparece.

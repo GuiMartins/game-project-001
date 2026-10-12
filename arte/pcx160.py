@@ -354,14 +354,20 @@ def moto(material, colecao, raiz) -> None:
     x = Vector((0.004, 0.0, 0.0))
     disco = EIXO_DIANTEIRO + Vector((-0.068, 0.0, 0.0))
     roda_frente.tubo(disco - x, disco + x, 0.11, 0.11, "cromado", lados=14)
-    roda_frente.objeto(material, colecao, obj_garfo)
+    obj = roda_frente.objeto(material, colecao, obj_garfo)
+    raios = Peca("Raios_Dianteira", EIXO_DIANTEIRO)
+    raios.raios_de_liga(EIXO_DIANTEIRO, RAIO_FRENTE, 0.077)
+    raios.objeto(material, colecao, obj)
 
     obj_balanca = balanca(material, colecao, suspenso)
     roda_tras = Peca("Roda_Traseira", EIXO_TRASEIRO)
     roda_tras.roda(EIXO_TRASEIRO, RAIO_TRAS, 0.13, 0.09)
     # Tambor do freio, do lado do variador.
     roda_tras.tubo(EIXO_TRASEIRO + Vector((-0.075, 0.0, 0.0)), EIXO_TRASEIRO + Vector((-0.02, 0.0, 0.0)), 0.07, 0.075, "motor", lados=12)
-    roda_tras.objeto(material, colecao, obj_balanca)
+    obj = roda_tras.objeto(material, colecao, obj_balanca)
+    raios = Peca("Raios_Traseira", EIXO_TRASEIRO)
+    raios.raios_de_liga(EIXO_TRASEIRO, RAIO_TRAS, 0.09)
+    raios.objeto(material, colecao, obj)
 
     for lado, sufixo in ((-1.0, "E"), (1.0, "D")):
         cima = Vector((lado * AMORTECEDOR_CIMA.x, AMORTECEDOR_CIMA.y, AMORTECEDOR_CIMA.z))

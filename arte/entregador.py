@@ -48,8 +48,10 @@ O que da para animar, e por onde:
           Direcao          esterca em volta da reta Direcao -> Garfo
             Garfo          as bainhas: deslizam ao longo do garfo
               Roda_Dianteira   gira em X
+                Raios_Dianteira  some em alta, quando o borrao entra
           Balanca          gira em X em volta do pivo, no quadro
             Roda_Traseira  gira em X
+              Raios_Traseira
             Mola_E/D       a mola: aponta para o Amortecedor e encolhe
       Piloto               o quadril; anda com o Suspenso, solta na queda
         Tronco             deita, gira e rola o torso em volta do quadril
@@ -348,24 +350,34 @@ class Peca:
             centro = Vector(eixo) + Vector((0.0, math.cos(fi), math.sin(fi))) * raio
             self.caixa(centro, (largura, comprimento, 0.02), cor, rot_x=math.degrees(fi) - 90.0)
 
-    def roda(self, centro, raio, largura, altura, raios=5) -> None:
-        """Roda de liga da CG: pneu de secao redonda, aro e cinco raios.
+    def roda(self, centro, raio, largura, altura) -> None:
+        """Roda de liga da CG sem os raios: pneu de secao redonda, aro e cubo.
 
-        Raio de verdade, e nao fatia pintada: entre eles se ve o outro lado, e
-        e esse vazado que gira. Disco liso girando e igual a disco parado, e a
-        roda girar e metade da leitura de velocidade.
+        Os raios sao peca a parte (`raios_de_liga`), filha desta: em alta o
+        `RodaLisa` do jogo esconde eles e poe o borrao no lugar. O aro e preto
+        de proposito, para o friso cinza dos raios ser o que se ve girar.
         """
         c = Vector(centro)
         self.anel(c, raio, largura, altura, "pneu")
-        aro = raio - altura + 0.006
-        self.anel(c, aro, largura * 0.75, 0.024, "aro", perfil=4, expoente=4.0)
+        self.anel(c, aro_da_roda(raio, altura), largura * 0.75, 0.024, "preto", perfil=4, expoente=4.0)
         x = Vector((0.055, 0.0, 0.0))
         self.tubo(c - x, c + x, 0.045, 0.045, "motor", lados=10)
-        de, ate = 0.04, aro - 0.018
+
+    def raios_de_liga(self, centro, raio, altura, raios=5) -> None:
+        """Os cinco raios da roda de liga, pretos com um friso cinza.
+
+        Raio de verdade, e nao fatia pintada: entre eles se ve o outro lado, e
+        e esse vazado que gira. O friso e o detalhe que aparece: devagar ele
+        gira com o raio, e em alta vira o anel cinza do borrao.
+        """
+        c = Vector(centro)
+        de, ate = 0.04, aro_da_roda(raio, altura) - 0.018
         for k in range(raios):
             a = math.tau * k / raios + 0.3
-            meio = c + Vector((0.0, math.cos(a), math.sin(a))) * (de + ate) * 0.5
-            self.caixa(meio, (0.022, ate - de, 0.03), "aro", rot_x=math.degrees(a))
+            direcao = Vector((0.0, math.cos(a), math.sin(a)))
+            self.caixa(c + direcao * (de + ate) * 0.5, (0.022, ate - de, 0.03), "preto", rot_x=math.degrees(a))
+            friso = de + (ate - de) * FRISO
+            self.caixa(c + direcao * friso, (0.024, (ate - de) * 0.22, 0.032), "metal", rot_x=math.degrees(a))
 
     def objeto(self, material, colecao, pai=None) -> bpy.types.Object:
         bm = self.bm
@@ -405,6 +417,11 @@ class Peca:
         colecao.objects.link(obj)
         anexa(obj, self.pivo, pai)
         return obj
+
+
+def aro_da_roda(raio, altura) -> float:
+    """Raio de fora do aro: onde o pneu acaba por dentro."""
+    return raio - altura + 0.006
 
 
 def vazio(nome, pivo, colecao, pai=None) -> bpy.types.Object:
@@ -508,6 +525,9 @@ def material(albedo) -> bpy.types.Material:
 # mede a distancia do cinegrafista a partir do eixo traseiro em 0,66 m.
 
 RAIO_RODA = 0.31
+# Onde fica o friso cinza de cada raio, em fracao do caminho do cubo ao aro:
+# para fora do meio, onde a roda girando desenha o anel mais largo.
+FRISO = 0.62
 EIXO_DIANTEIRO = Vector((0.0, 0.66, RAIO_RODA))
 EIXO_TRASEIRO = Vector((0.0, -0.66, RAIO_RODA))
 
@@ -862,7 +882,10 @@ def moto(material, colecao, raiz) -> None:
     x = Vector((0.004, 0.0, 0.0))
     disco = EIXO_DIANTEIRO + Vector((-0.072, 0.0, 0.0))
     roda_frente.tubo(disco - x, disco + x, 0.12, 0.12, "cromado", lados=16)
-    roda_frente.objeto(material, colecao, obj_garfo)
+    obj = roda_frente.objeto(material, colecao, obj_garfo)
+    raios = Peca("Raios_Dianteira", EIXO_DIANTEIRO)
+    raios.raios_de_liga(EIXO_DIANTEIRO, RAIO_RODA, 0.08)
+    raios.objeto(material, colecao, obj)
 
     obj_balanca = balanca(material, colecao, suspenso)
     roda_tras = Peca("Roda_Traseira", EIXO_TRASEIRO)
@@ -870,7 +893,10 @@ def moto(material, colecao, raiz) -> None:
     # Tambor do freio na direita, coroa na esquerda.
     roda_tras.tubo(EIXO_TRASEIRO + Vector((0.02, 0.0, 0.0)), EIXO_TRASEIRO + Vector((0.075, 0.0, 0.0)), 0.075, 0.07, "motor", lados=12)
     roda_tras.tubo(EIXO_TRASEIRO + Vector((-0.13, 0.0, 0.0)), EIXO_TRASEIRO + Vector((-0.12, 0.0, 0.0)), 0.10, 0.10, "preto", lados=16)
-    roda_tras.objeto(material, colecao, obj_balanca)
+    obj = roda_tras.objeto(material, colecao, obj_balanca)
+    raios = Peca("Raios_Traseira", EIXO_TRASEIRO)
+    raios.raios_de_liga(EIXO_TRASEIRO, RAIO_RODA, 0.085)
+    raios.objeto(material, colecao, obj)
 
     amortecedores(material, colecao, suspenso, obj_balanca)
 

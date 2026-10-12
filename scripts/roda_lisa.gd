@@ -1,94 +1,148 @@
 class_name RodaLisa
 extends RefCounted
-## O disco que cobre o vazado da roda em alta velocidade.
+## O borrao da roda em alta velocidade: os raios somem e um disco toma o lugar.
 ##
 ## A 35 m/s a roda da volta e meia por quadro, e a 60 Hz os raios piscam ou
-## parecem girar para tras. O borrao de verdade transforma raio e vazado num
-## disco de tom medio; aqui o disco e malha, ligado pelo `Entregador` acima de
-## uma velocidade. O resto da roda (pneu, aro, cubo, freio) ja e redondo, e
-## girando nao estrobosca.
+## parecem girar para tras. Girando de verdade, cada ponto do raio vira um
+## anel: o friso cinza do raio vira um anel cinza, o raio preto some no preto.
+## O disco e esse desenho, tirado da malha dos raios de cada roda (`Raios_*`,
+## filho da roda no modelo), e por isso serve a qualquer moto sem constante
+## por modelo. Pneu, aro e cubo ficam: sao redondos, e girando nao piscam.
+##
+## Um por roda, com o estado dele: o `Entregador` so diz a velocidade.
 
-## Raio do disco em fracao do raio da roda: ate onde comeca o pneu nas tres
-## motos (0,72 na CG, 0,73 na XRE, 0,70 na PCX), passando um pouco para
-## dentro dele, e a meia largura, em metros, que cobre os raios cruzados da
-## XRE sem sair pelo flanco de nenhum pneu.
-const DISCO_RAIO: float = 0.74
-const DISCO_MEIA_LARGURA: float = 0.035
+## Velocidades, em m/s, em que o borrao entra e em que os raios voltam:
+## separadas para nao piscar na fronteira.
+const LIGA: float = 16.0
+const DESLIGA: float = 14.0
+## Aneis do disco, do cubo a ponta dos raios. 16 em 0,3 m da 2 cm cada: mais
+## fino que um pixel da tela a 6 m.
+const ANEIS: int = 16
+## O fundo do borrao: o vao entre os raios e o outro lado da roda, no escuro.
+## O mesmo "preto" da paleta do `arte/entregador.py`.
+const FUNDO := Color(0.07, 0.07, 0.08)
+## Quanto o anel puxa para a cor do raio, por fracao da volta que o raio
+## cobre. O borrao fisico de cinco raios de 2 cm sai 12% da cor deles, e isso
+## e preto com preto: forcado, o friso aparece como anel, que e o efeito que
+## se quer ver de longe.
+const GANHO: float = 4.0
+## Meia espessura do disco, em metros: fica no plano do meio da roda, dentro
+## do aro, como os raios que ele substitui.
+const MEIA_LARGURA: float = 0.012
+
+static var _material: StandardMaterial3D
+
+var _raios: Node3D
+var _disco: MeshInstance3D
 
 
-## Monta o disco de uma roda, filho dela e escondido: quem liga e o ator. A
-## cor sai da propria malha: o UV dos raios, com o mesmo material do resto. Assim
-## a roda raiada da XRE e a de liga da CG ganham cada uma o seu tom sem
-## constante por modelo, e a pintura do corredor vale no disco tambem.
-static func criar(roda: MeshInstance3D, raio: float, material: Material) -> MeshInstance3D:
-	var arrays := roda.mesh.surface_get_arrays(0)
+func _init(roda: Node3D, paleta: Image) -> void:
+	for filho in roda.get_children():
+		if filho is MeshInstance3D and String(filho.name).begins_with("Raios"):
+			_raios = filho
+	assert(_raios != null, "roda %s sem os raios" % roda.name)
+	_disco = MeshInstance3D.new()
+	_disco.name = "Disco"
+	_disco.mesh = _malha(_aneis((_raios as MeshInstance3D).mesh, paleta))
+	_disco.material_override = _material_do_disco()
+	_disco.visible = false
+	roda.add_child(_disco)
+
+
+func atualizar(velocidade: float) -> void:
+	if velocidade > LIGA:
+		_disco.visible = true
+	elif velocidade < DESLIGA:
+		_disco.visible = false
+	_raios.visible = not _disco.visible
+
+
+func lisa() -> bool:
+	return _disco.visible
+
+
+## A cor de cada anel e o raio de fora do ultimo: a media do que passa por
+## cada distancia do eixo, pesada pela area que os raios cobrem ali.
+static func _aneis(malha: Mesh, paleta: Image) -> Array:
+	var arrays := malha.surface_get_arrays(0)
 	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	var uvs: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
 	var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
 	if indices.is_empty():
 		indices = PackedInt32Array(range(vertices.size()))
-	# Voto por triangulo: entre o cubo e o aro, perto do plano do meio, so ha
-	# raio. O disco de freio fica de fora pela largura, o tambor pelo raio, e o
-	# box dos raios da CG so tem vertice nas pontas, por isso o centro e nao o
-	# vertice.
-	var votos: Dictionary[Vector2, int] = {}
-	for t in range(0, indices.size(), 3):
-		var centro := (
-			(vertices[indices[t]] + vertices[indices[t + 1]] + vertices[indices[t + 2]]) / 3.0
-		)
-		var r := Vector2(centro.y, centro.z).length()
-		if absf(centro.x) < DISCO_MEIA_LARGURA and r > raio * 0.3 and r < raio * 0.55:
-			var uv := uvs[indices[t]]
-			votos[uv] = votos.get(uv, 0) + 1
-	var uv := uvs[0]
-	var mais := 0
-	for chave: Vector2 in votos:
-		if votos[chave] > mais:
-			mais = votos[chave]
-			uv = chave
+	var fora := 0.0
+	for v in vertices:
+		fora = maxf(fora, Vector2(v.y, v.z).length())
 
+	var area: Array[float] = []
+	var soma: Array[Color] = []
+	area.resize(ANEIS)
+	soma.resize(ANEIS)
+	area.fill(0.0)
+	soma.fill(Color(0, 0, 0, 0))
+	# Triangulo comprido (o lado de um raio vai do cubo ao aro) cai em varios
+	# aneis: amostrado numa grade, e nao pelo centro, que poria tudo num so.
+	var grade := 6
+	for t in range(0, indices.size(), 3):
+		var a := vertices[indices[t]]
+		var b := vertices[indices[t + 1]]
+		var c := vertices[indices[t + 2]]
+		var projetada := absf((b - a).cross(c - a).x) * 0.5
+		if projetada < 1e-9:
+			continue
+		var uv := uvs[indices[t]]
+		var x := clampi(int(uv.x * paleta.get_width()), 0, paleta.get_width() - 1)
+		var y := clampi(int(uv.y * paleta.get_height()), 0, paleta.get_height() - 1)
+		var cor := paleta.get_pixel(x, y)
+		var pedaco := projetada / float(grade * (grade + 1) / 2)
+		for i in grade:
+			for j in grade - i:
+				var p := a + (b - a) * ((i + 0.33) / grade) + (c - a) * ((j + 0.33) / grade)
+				var anel := clampi(int(Vector2(p.y, p.z).length() / fora * ANEIS), 0, ANEIS - 1)
+				area[anel] += pedaco
+				soma[anel] += cor * pedaco
+
+	var cores: Array[Color] = []
+	for k in ANEIS:
+		var r0 := fora * k / ANEIS
+		var r1 := fora * (k + 1) / ANEIS
+		# Metade da area projetada: malha fechada conta a frente e o verso.
+		var cobre := area[k] * 0.5 / (PI * (r1 * r1 - r0 * r0))
+		var media := soma[k] / area[k] if area[k] > 0.0 else FUNDO
+		cores.append(FUNDO.lerp(media, minf(cobre * GANHO, 1.0)))
+	return [cores, fora]
+
+
+static func _malha(aneis: Array) -> ArrayMesh:
+	var cores: Array[Color] = aneis[0]
+	var fora: float = aneis[1]
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	st.set_uv(uv)
-	var lados := 20
-	var r_disco := raio * DISCO_RAIO
-	var w := DISCO_MEIA_LARGURA
-	for k in lados:
-		var a0 := TAU * k / lados
-		var a1 := TAU * (k + 1) / lados
-		var p0 := Vector2(cos(a0), sin(a0)) * r_disco
-		var p1 := Vector2(cos(a1), sin(a1)) * r_disco
-		for lado: float in [-1.0, 1.0]:
-			_triangulo(
-				st,
-				Vector3(lado * w, 0.0, 0.0),
-				Vector3(lado * w, p0.x, p0.y),
-				Vector3(lado * w, p1.x, p1.y),
-				Vector3(lado, 0.0, 0.0)
-			)
-		var fora := Vector3(0.0, cos((a0 + a1) * 0.5), sin((a0 + a1) * 0.5))
-		var q := [
-			Vector3(-w, p0.x, p0.y),
-			Vector3(w, p0.x, p0.y),
-			Vector3(w, p1.x, p1.y),
-			Vector3(-w, p1.x, p1.y),
-		]
-		_triangulo(st, q[0], q[1], q[2], fora)
-		_triangulo(st, q[0], q[2], q[3], fora)
+	var lados := 24
+	for k in ANEIS:
+		st.set_color(cores[k])
+		var r0 := fora * k / ANEIS
+		var r1 := fora * (k + 1) / ANEIS
+		for i in lados:
+			var a0 := TAU * i / lados
+			var a1 := TAU * (i + 1) / lados
+			for lado: float in [-1.0, 1.0]:
+				var x := lado * MEIA_LARGURA
+				var q := [
+					Vector3(x, cos(a0) * r0, sin(a0) * r0),
+					Vector3(x, cos(a0) * r1, sin(a0) * r1),
+					Vector3(x, cos(a1) * r1, sin(a1) * r1),
+					Vector3(x, cos(a1) * r0, sin(a1) * r0),
+				]
+				var normal := Vector3(lado, 0.0, 0.0)
+				_triangulo(st, q[0], q[1], q[2], normal)
+				_triangulo(st, q[0], q[2], q[3], normal)
 	st.generate_normals()
-
-	var disco := MeshInstance3D.new()
-	disco.name = "Disco"
-	disco.mesh = st.commit()
-	disco.material_override = material
-	disco.visible = false
-	roda.add_child(disco)
-	return disco
+	return st.commit()
 
 
 ## Triangulo virado para `fora`. O Godot descarta face anti-horaria sem avisar
-## (ver o `CLAUDE.md`), e acertar a ordem na mao em tres faces diferentes e
-## onde isso se perde: aqui a ordem sai da normal pedida.
+## (ver o `CLAUDE.md`): a ordem sai da normal pedida, e nao da mao.
 static func _triangulo(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, fora: Vector3) -> void:
 	# Horario visto de fora e normal geometrica apontando para dentro.
 	if (b - a).cross(c - a).dot(fora) > 0.0:
@@ -98,3 +152,15 @@ static func _triangulo(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, fora
 	st.add_vertex(a)
 	st.add_vertex(b)
 	st.add_vertex(c)
+
+
+## A mesma luz do material do entregador: fosco e sem especular. A cor vem
+## por vertice, porque o disco nao tem celula na paleta.
+static func _material_do_disco() -> StandardMaterial3D:
+	if _material == null:
+		_material = StandardMaterial3D.new()
+		_material.vertex_color_use_as_albedo = true
+		_material.vertex_color_is_srgb = true
+		_material.roughness = 1.0
+		_material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	return _material

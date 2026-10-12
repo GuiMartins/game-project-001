@@ -338,16 +338,21 @@ func test_a_roda_fica_lisa_so_em_alta() -> void:
 			var normais: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
 			for i in vertices.size():
 				var v := vertices[i]
-				var fora := Vector3(signf(v.x), 0.0, 0.0)
-				if absf(normais[i].x) < 0.5:
-					fora = Vector3(0.0, v.y, v.z).normalized()
-				assert_float(normais[i].dot(fora)).is_greater(0.5)
+				assert_float(normais[i].x * signf(v.x)).is_greater(0.5)
 		_anda(ator, 0.1, 10.0, 1.0, 0.0)
 		for disco: MeshInstance3D in discos:
 			assert_bool(disco.visible).is_false()
 		_anda(ator, 0.1, 20.0, 1.0, 0.0)
 		for disco: MeshInstance3D in discos:
 			assert_bool(disco.visible).is_true()
+			# O borrao troca os raios, e nao cobre: os dois juntos e o raio
+			# atravessando o disco.
+			(
+				assert_bool(
+					(disco.get_parent().find_child("Raios*", false, false) as Node3D).visible
+				)
+				. is_false()
+			)
 		# Entre os dois limites nada muda: e o que impede de piscar a 15 m/s.
 		_anda(ator, 0.1, 15.0, 1.0, 0.0)
 		for disco: MeshInstance3D in discos:
@@ -355,6 +360,18 @@ func test_a_roda_fica_lisa_so_em_alta() -> void:
 		_anda(ator, 0.1, 10.0, 1.0, 0.0)
 		for disco: MeshInstance3D in discos:
 			assert_bool(disco.visible).is_false()
+
+
+func test_o_friso_vira_um_anel_mais_claro_que_o_resto() -> void:
+	for modelo in _modelos():
+		var ator := _ator(modelo)
+		for disco: MeshInstance3D in ator.find_children("Disco", "MeshInstance3D", true, false):
+			var cores: PackedColorArray = disco.mesh.surface_get_arrays(0)[Mesh.ARRAY_COLOR]
+			var claro := 0.0
+			for cor in cores:
+				claro = maxf(claro, cor.get_luminance())
+			# Um anel ao menos bem acima do fundo: e o efeito que se ve girar.
+			assert_float(claro).is_greater(RodaLisa.FUNDO.get_luminance() + 0.15)
 
 
 func test_o_tremor_cresce_com_a_velocidade_e_nao_sorteia() -> void:
