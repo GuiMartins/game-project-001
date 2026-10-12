@@ -503,8 +503,8 @@ e no `git log`.
     (1 = tela, 0,4 = desenho), e o shader acende os dois com
     `tela_brilho` 4, acima do limiar 2,2 do glow. O `Predio.frente` passou a
     medir só até 5 m de altura, senão a bandeira recuava o `Deco` 2 m. Com
-    o glow da V12 aplicado localmente, nos cinco quadros da prova o branco
-    cheio fora do céu é só o outdoor. Baseline visual:
+    o glow da V12, nos cinco quadros da prova o branco cheio fora do céu é
+    só o outdoor. Baseline visual:
     `visual_familias_de_cor` 48,4 → 66,3, pelas cores de tela novas. `fps`
     igual, no teto de 120.
 
