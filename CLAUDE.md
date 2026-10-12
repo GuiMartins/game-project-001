@@ -107,6 +107,17 @@ jogo continua rodando, só errado. Estão explicados em `docs/PROTOTIPO.md`.
   deste repositório: leia qualquer arquivo em `scripts/` antes de escrever.
   Número mágico sem justificativa ao lado é dívida.
 - Tudo em português — código, comentário, commit, documento.
+- **Moto e piloto se escrevem para todos.** Mexeu no `Entregador`, na física
+  da moto, no `PlayerBike` ou no `RivalBike`: a mudança tem de servir a toda
+  moto e a todo corredor, jogador ou rival, e a mais de um ao mesmo tempo. O
+  que muda de uma moto para outra sai do modelo ou da `FichaDaMoto`, nunca de
+  `if modelo ==`; estado é por instância, nunca estático, global ou
+  "o jogador"; o que jogador e rival têm em comum mora no ator ou numa classe
+  pequena compartilhada (`Tremor`, `RodaLisa`, `FisicaDaMoto`), e não copiado
+  nos dois corpos. O teste do ator roda em todos os `_modelos()`. *Por quê:*
+  já são três motos e cinco corredores na tela, e a fila pede mais; melhoria
+  que só vale para a CG do jogador vira rival andando diferente e moto nova
+  nascendo pela metade — e ninguém nota, porque o jogo continua rodando.
 
 ## Branches e release
 

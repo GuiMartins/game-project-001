@@ -237,6 +237,8 @@ const ATRITO_NO_CHAO: float = 8.0
 ## Quanto tempo o corpo leva para largar a moto e abrir os bracos.
 const TEMPO_DE_SOLTAR: float = 0.15
 
+static var _imagem_da_paleta: Image
+
 ## Qual moto esta montada. Troca por `trocar_modelo`.
 var modelo: int = Modelo.CG_160
 
@@ -293,6 +295,11 @@ var _girado: float = 0.0
 var _relogio: float = 0.0
 var _passo: float = 1.0 / 60.0
 var _rodado: float = 0.0
+var _tremor := Tremor.new()
+## Quanto o tremor afunda a frente (x) e a traseira (y) neste passo, em metros.
+var _treme := Vector2.ZERO
+## O borrao de cada roda em alta, na ordem de `_rodas`.
+var _lisas: Array[RodaLisa] = []
 
 ## O que o ator mede do proprio movimento, em m/s2 e rad/s2, ja filtrado.
 var _a_long: float = 0.0
@@ -390,8 +397,10 @@ func _monta() -> void:
 	_garfo = _no("Garfo")
 	_piloto = _no("Piloto")
 	_rodas = [_no("Roda_Traseira"), _no("Roda_Dianteira")]
+	_lisas.clear()
 	for i in 2:
 		_raios[i] = (_rodas[i] as MeshInstance3D).get_aabb().size.y * 0.5
+		_lisas.append(RodaLisa.new(_rodas[i], _paleta()))
 	var eixo_tras := _no_relativo(_rodas[0], _moto)
 	var eixo_frente := _no_relativo(_rodas[1], _moto)
 	_altura_eixo = [eixo_tras.y, eixo_frente.y]
@@ -499,6 +508,9 @@ func atualizar(
 		_giros[i] = wrapf(_giros[i] + velocidade / _raios[i] * delta, 0.0, TAU)
 	_rodado += v * delta
 	_inclinacao = inclinacao
+	_treme = _tremor.passo(delta, v, caido)
+	for lisa in _lisas:
+		lisa.atualizar(v)
 	_mede(delta, velocidade, inclinacao, caido)
 
 	var parado := v < PARADO and not caido
@@ -650,10 +662,13 @@ func _posa() -> void:
 ## Poe a massa suspensa onde as molas mandam, e o garfo e a balanca onde as
 ## rodas precisam estar para continuar no chao.
 func _posa_suspensao() -> void:
-	var arfa := (_susp.x + _susp.y) * 0.5
+	# O tremor entra aqui, e nao na mola: e curto demais para ela, e somado
+	# depois dela as rodas continuam no chao pela mesma conta.
+	var susp := _susp + _treme
+	var arfa := (susp.x + susp.y) * 0.5
 	# Frente afundando mais que a traseira e nariz para baixo: rotacao
 	# negativa em X, que leva a frente (-Z) para baixo.
-	var arfagem := (_susp.y - _susp.x) / _entre_eixos
+	var arfagem := (susp.y - susp.x) / _entre_eixos
 	var corpo := Basis(Vector3.RIGHT, arfagem)
 	_suspenso.transform = Transform3D(corpo, Vector3(0.0, -arfa, 0.0))
 
@@ -937,6 +952,14 @@ func _estica(d: Vector3, k: float) -> Basis:
 	return Basis(
 		Vector3.RIGHT + d * (m * d.x), Vector3.UP + d * (m * d.y), Vector3.BACK + d * (m * d.z)
 	)
+
+
+## A textura de paleta lida uma vez so: e dela que o borrao tira a cor dos
+## raios.
+static func _paleta() -> Image:
+	if _imagem_da_paleta == null:
+		_imagem_da_paleta = ALBEDO.get_image()
+	return _imagem_da_paleta
 
 
 func _suave(t: float) -> float:

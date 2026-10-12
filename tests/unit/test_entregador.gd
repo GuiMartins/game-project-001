@@ -322,3 +322,72 @@ func test_cores_de_fabrica_batem_com_a_textura() -> void:
 		assert_float(mais_clara.r).is_equal_approx(fabrica[canal].r, 0.01)
 		assert_float(mais_clara.g).is_equal_approx(fabrica[canal].g, 0.01)
 		assert_float(mais_clara.b).is_equal_approx(fabrica[canal].b, 0.01)
+
+
+func test_a_roda_fica_lisa_so_em_alta() -> void:
+	for modelo in _modelos():
+		var ator := _ator(modelo)
+		var discos := ator.find_children("Disco", "MeshInstance3D", true, false)
+		assert_int(discos.size()).is_equal(2)
+		# A normal que o `SurfaceTool` gera sai do winding: apontando para
+		# fora, a face e horaria e o Godot desenha. Invertida, o disco some
+		# sem erro nenhum.
+		for disco: MeshInstance3D in discos:
+			var arrays := disco.mesh.surface_get_arrays(0)
+			var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			var normais: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+			for i in vertices.size():
+				var v := vertices[i]
+				assert_float(normais[i].x * signf(v.x)).is_greater(0.5)
+		_anda(ator, 0.1, 10.0, 1.0, 0.0)
+		for disco: MeshInstance3D in discos:
+			assert_bool(disco.visible).is_false()
+		_anda(ator, 0.1, 20.0, 1.0, 0.0)
+		for disco: MeshInstance3D in discos:
+			assert_bool(disco.visible).is_true()
+			# O borrao troca os raios, e nao cobre: os dois juntos e o raio
+			# atravessando o disco.
+			(
+				assert_bool(
+					(disco.get_parent().find_child("Raios*", false, false) as Node3D).visible
+				)
+				. is_false()
+			)
+		# Entre os dois limites nada muda: e o que impede de piscar a 15 m/s.
+		_anda(ator, 0.1, 15.0, 1.0, 0.0)
+		for disco: MeshInstance3D in discos:
+			assert_bool(disco.visible).is_true()
+		_anda(ator, 0.1, 10.0, 1.0, 0.0)
+		for disco: MeshInstance3D in discos:
+			assert_bool(disco.visible).is_false()
+
+
+func test_o_friso_vira_um_anel_mais_claro_que_o_resto() -> void:
+	for modelo in _modelos():
+		var ator := _ator(modelo)
+		for disco: MeshInstance3D in ator.find_children("Disco", "MeshInstance3D", true, false):
+			var cores: PackedColorArray = disco.mesh.surface_get_arrays(0)[Mesh.ARRAY_COLOR]
+			var claro := 0.0
+			for cor in cores:
+				claro = maxf(claro, cor.get_luminance())
+			# Um anel ao menos bem acima do fundo: e o efeito que se ve girar.
+			assert_float(claro).is_greater(RodaLisa.FUNDO.get_luminance() + 0.15)
+
+
+func test_o_tremor_cresce_com_a_velocidade_e_nao_sorteia() -> void:
+	var a := Tremor.new()
+	var b := Tremor.new()
+	var parado := 0.0
+	var rapido := 0.0
+	for i in 120:
+		parado = maxf(parado, a.passo(PASSO, 0.0, false).length())
+		b.passo(PASSO, 0.0, false)
+	for i in 120:
+		var t := a.passo(PASSO, 35.0, false)
+		# Mesma entrada, mesma saida: a prova visual congelada depende disto.
+		assert_vector(b.passo(PASSO, 35.0, false)).is_equal(t)
+		rapido = maxf(rapido, maxf(absf(t.x), absf(t.y)))
+	assert_float(parado).is_equal(0.0)
+	assert_float(rapido).is_between(Tremor.PICO * 0.5, Tremor.PICO)
+	# Caido nao treme: a moto deitada no asfalto ja nao tem motor.
+	assert_vector(a.passo(PASSO, 35.0, true)).is_equal(Vector2.ZERO)

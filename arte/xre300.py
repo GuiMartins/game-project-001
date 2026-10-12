@@ -84,8 +84,21 @@ def no_garfo(d: float, x: float = 0.0) -> Vector:
     return CABECA_GARFO + DIR_GARFO * d + Vector((x, 0.0, 0.0))
 
 
-def roda_raiada(p: Peca, centro, raio, largura, altura, raios=18) -> None:
-    """Roda raiada: pneu de trilha, aro fino e os raios cruzados.
+def roda_raiada(p: Peca, centro, raio, largura, altura) -> None:
+    """Roda raiada sem os raios: pneu de trilha, aro fino e cubo.
+
+    O aro e preto, como o da CG: o que se ve girar e o raio de aco.
+    """
+    c = Vector(centro)
+    # Expoente menor que o da CG: o pneu de cravo tem ombro quadrado.
+    p.anel(c, raio, largura, altura, "pneu", expoente=3.4)
+    p.anel(c, raio - altura + 0.008, largura * 0.62, 0.02, "preto", perfil=4, expoente=4.0)
+    x = Vector((0.06, 0.0, 0.0))
+    p.tubo(c - x, c + x, 0.04, 0.04, "motor", lados=10)
+
+
+def raios_cruzados(p: Peca, centro, raio, altura, raios=18) -> None:
+    """Os raios de arame, peca a parte como os da CG (ver `Peca.raios_de_liga`).
 
     Raio de arame de verdade, e nao disco: e o vazado que gira, e roda raiada
     e metade da cara de moto de trilha. Os raios saem alternados das duas
@@ -93,12 +106,7 @@ def roda_raiada(p: Peca, centro, raio, largura, altura, raios=18) -> None:
     "V", e nao como uma tabua.
     """
     c = Vector(centro)
-    # Expoente menor que o da CG: o pneu de cravo tem ombro quadrado.
-    p.anel(c, raio, largura, altura, "pneu", expoente=3.4)
     aro = raio - altura + 0.008
-    p.anel(c, aro, largura * 0.62, 0.02, "aro", perfil=4, expoente=4.0)
-    x = Vector((0.06, 0.0, 0.0))
-    p.tubo(c - x, c + x, 0.04, 0.04, "motor", lados=10)
     for k in range(raios):
         a = math.tau * k / raios
         lado = 1.0 if k % 2 else -1.0
@@ -422,7 +430,10 @@ def moto(material, colecao, raiz) -> None:
     x = Vector((0.004, 0.0, 0.0))
     disco = EIXO_DIANTEIRO + Vector((-0.075, 0.0, 0.0))
     roda_frente.tubo(disco - x, disco + x, 0.128, 0.128, "cromado", lados=12)
-    roda_frente.objeto(material, colecao, obj_garfo)
+    obj = roda_frente.objeto(material, colecao, obj_garfo)
+    raios = Peca("Raios_Dianteira", EIXO_DIANTEIRO)
+    raios_cruzados(raios, EIXO_DIANTEIRO, RAIO_FRENTE, 0.085)
+    raios.objeto(material, colecao, obj)
 
     obj_balanca = balanca(material, colecao, suspenso)
     roda_tras = Peca("Roda_Traseira", EIXO_TRASEIRO)
@@ -430,7 +441,10 @@ def moto(material, colecao, raiz) -> None:
     # Disco atras na direita, coroa na esquerda.
     roda_tras.tubo(EIXO_TRASEIRO + Vector((0.075, 0.0, 0.0)), EIXO_TRASEIRO + Vector((0.083, 0.0, 0.0)), 0.11, 0.11, "cromado", lados=12)
     roda_tras.tubo(EIXO_TRASEIRO + Vector((-0.13, 0.0, 0.0)), EIXO_TRASEIRO + Vector((-0.12, 0.0, 0.0)), 0.10, 0.10, "preto", lados=16)
-    roda_tras.objeto(material, colecao, obj_balanca)
+    obj = roda_tras.objeto(material, colecao, obj_balanca)
+    raios = Peca("Raios_Traseira", EIXO_TRASEIRO)
+    raios_cruzados(raios, EIXO_TRASEIRO, RAIO_TRAS, 0.095)
+    raios.objeto(material, colecao, obj)
 
     # O mono e o par `_E`; o `_D` e vazio no mesmo lugar (ver o topo).
     e.amortecedor(material, colecao, suspenso, obj_balanca, "E", MONO_CIMA, MONO_BAIXO, mola=(0.042, 6, 0.008))
