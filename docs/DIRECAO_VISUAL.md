@@ -302,10 +302,20 @@ fácil que existe.
 | 2 | Ambiente vindo do céu | `Environment.ambient_light_source = AMBIENT_SOURCE_SKY` | A sombra fica azul em vez de cinza, e é isso que faz a cena ler como "sol do Rio" |
 | 3 | Tonemap + LUT | `tonemap_mode`, `adjustment_color_correction` | É o passo que cria a paleta, e paleta é metade do look |
 | 4 | Glow | `glow_enabled`, `glow_hdr_threshold` | Faísca, farol, placa refletindo. Sem glow a faísca é um pixel laranja |
-| 5 | SSAO | `ssao_enabled` | Escurece o encontro do pneu com o chão. Sutil, e o primeiro a cortar se o orçamento apertar |
+| 5 | SSAO | `ssao_enabled` | Escurece o encontro do pneu com o chão. Sutil, e o primeiro a cortar se o orçamento apertar. **Cortado na V12**: leve, não aparece; forte, escurece a sombra inteira |
 | 6 | Neblina aérea | `fog_aerial_perspective`, `fog_sun_scatter` | Dá profundidade ao fundo sem custo de geometria |
 
 Todas verificadas como existentes no 4.7.2 (apêndice A).
+
+**O limiar do glow vem depois do desfoque** (V12, lido no `copy.glsl` do
+Godot). O primeiro passe reduz à meia resolução, desfoca e só então compara
+com `glow_hdr_threshold`. Área grande passa inteira; ponto pequeno chega
+diluído — a 30 m uma lanterna de 3 px chega com ~13% do que tem. Por isso o
+limiar sozinho não separa luz de sol: o que brilha precisa de emissão muito
+acima dele (a lanterna de freio tem 45 com limiar 2,2), e o que não brilha
+fica abaixo dele em área (a calçada branca ao sol chega a 2,0). Vale para
+tudo que vier depois: faísca, outdoor, farol. Emissão "um pouco acima do
+limiar" não acende nada a mais de alguns metros.
 
 ### O que **não** ligar, e por quê
 
