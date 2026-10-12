@@ -280,8 +280,15 @@ e no `git log`.
   graus para a frente, em vez de 30, e o capacete volta a aparecer acima da
   bag na prova. O polo do cotovelo virou `COTOVELO` (1; −0,3; 0,3), quase só
   para fora, em vez de (1; −1; 0,3): de trás, nas três motos, os cotovelos
-  passam da bag e o braço fecha o losango com o guidão. Só pose: baseline sem
-  variação, e nenhuma malha nova na tela (sem `fps`).
+  passam da bag e o braço fecha o losango com o guidão. Parado no losango a
+  corrida inteira ficava boneco, então o braço ganhou vida própria
+  (`Cotovelos`): de tempos em tempos um braço relaxa, desce e cola no corpo
+  por 0,6–2,5 s, às vezes os dois, e volta; aberto, cada vez dobra um pouco
+  diferente. Quando e quanto é sorteio, não ciclo, com semente da posição em
+  que o ator nasce: dois pilotos não relaxam juntos e a mesma corrida repete.
+  Relaxa mais devagar (60% por sorteio) que no talo (25%), e na curva acima
+  de 20° ninguém solta o braço. Só pose: baseline sem variação, e nenhuma
+  malha nova na tela (sem `fps`).
 
 ### Velocidade
 

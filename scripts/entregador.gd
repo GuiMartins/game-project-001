@@ -111,8 +111,6 @@ const CABECA_NIVELA: float = 0.35
 ## E olha para dentro da curva, por radiano de inclinacao: se olha para onde
 ## se vai, nao para onde a moto aponta.
 const CABECA_OLHA_CURVA: float = 0.45
-## Para onde o cotovelo dobra: para fora, a ponta mais larga da silhueta.
-const COTOVELO := Vector3(1.0, -0.3, 0.3)
 
 ## --- Suspensao ---
 ##
@@ -297,6 +295,7 @@ var _relogio: float = 0.0
 var _passo: float = 1.0 / 60.0
 var _rodado: float = 0.0
 var _tremor := Tremor.new()
+var _cotovelos := Cotovelos.new()
 ## Quanto o tremor afunda a frente (x) e a traseira (y) neste passo, em metros.
 var _treme := Vector2.ZERO
 ## O borrao de cada roda em alta, na ordem de `_rodas`.
@@ -510,6 +509,7 @@ func atualizar(
 	_rodado += v * delta
 	_inclinacao = inclinacao
 	_treme = _tremor.passo(delta, v, caido)
+	_cotovelos.passo(delta, v, inclinacao, global_position)
 	for lisa in _lisas:
 		lisa.atualizar(v)
 	_mede(delta, velocidade, inclinacao, caido)
@@ -749,7 +749,7 @@ func _posa_piloto() -> void:
 		var mao: Node3D = braco[2]
 		var manopla := _direcao.global_transform * _manoplas[i]
 		var alvo := manopla
-		var polo := base * (COTOVELO * Vector3(sinal, 1.0, 1.0))
+		var polo := base * _cotovelos.polo(i)
 		var solta := 0.0
 		if peso_soco > 0.0 and is_equal_approx(sinal, s):
 			solta = peso_soco
