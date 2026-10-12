@@ -398,6 +398,10 @@ e no `git log`.
     E a rua ganhou meio-fio (no sol o asfalto dela some contra o cimentado,
     e a zebra parecia pintada na calçada), e poste da avenida não nasce mais
     na boca da rua (`Cidade.na_boca`).
+    E o que fazia a zebra da rua parecer torta e voando era a ladeira: a rua
+    inclina na largura junto com a avenida, e a zebra, o meio-fio e a fila
+    eram desenhados na horizontal. A 10% de rampa, uma borda ficava 30 cm
+    acima do asfalto e a outra enterrada; agora tudo segue o plano da rua.
 
 ### Os prédios e o céu
 

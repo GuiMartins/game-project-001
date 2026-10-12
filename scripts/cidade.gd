@@ -184,7 +184,14 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 			var d := track.sample_basis(c.x).x * side
 			d.y = 0.0
 			d = d.normalized()
-			var r := (-d).cross(Vector3.UP)
+			# `r` corre na largura da rua, e na ladeira ele sobe junto com a
+			# avenida: a rua e o retangulo de `perto_a` a `perto_b`, que estao em
+			# alturas diferentes. Tirado na horizontal, a zebra, o meio-fio e a
+			# fila ficavam na altura do meio da rua - a 10% de rampa, uma borda
+			# 30 cm acima do asfalto e a outra enterrada nele.
+			var r := (perto_b - perto_a).normalized()
+			if r.dot((-d).cross(Vector3.UP)) < 0.0:
+				r = -r
 			# A calcada esta na altura da pista e a rua passa por cima dela, 6 cm
 			# acima: acima tambem do meio-fio e da faixa de servico, que ela corta,
 			# e o bastante para nao brigar com eles no depth buffer.
@@ -239,8 +246,14 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 			var esquina := centro + acima + d * (calcada + 0.8) + r * (meio + 0.9)
 			_semaforo(props, materiais, esquina, d, track.sample_basis(c.x).z)
 			var fila := retencao + RoadTrack.RETENCAO_LARGURA + 0.6
+			# Na ladeira o carro tomba de lado junto com a rua, senao uma roda
+			# fica no ar e a outra dentro do asfalto.
+			var normal := d.cross(r)
+			if normal.y < 0.0:
+				normal = -normal
+			var faixa := centro + acima + r * meio * 0.5
 			for _i in rua.randi_range(1, 3):
-				fila = _carro_parado(props, rua, centro + acima + r * meio * 0.5, d, fila)
+				fila = _carro_parado(props, rua, faixa, d, normal, fila)
 
 	var malha := ArrayMesh.new()
 	asfalto.commit(malha)
@@ -257,13 +270,19 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 
 
 ## Um carro esperando o verde, `fila` metros adiante do asfalto da avenida,
-## na mao de quem chega. Devolve onde comeca o espaco do proximo da fila.
+## na mao de quem chega, de pe em `normal`, a do chao da rua. Devolve onde
+## comeca o espaco do proximo da fila.
 ##
 ## E so o `Carro`, sem `TrafficCar`: nao anda e nao entra no transito. Tem
 ## colisor, da lataria, porque a moto que entra na rua bate nele. Uma pose so,
 ## parado e sem encostar, e o que acende a lanterna de freio.
 func _carro_parado(
-	props: Node3D, rua: RandomNumberGenerator, faixa: Vector3, d: Vector3, fila: float
+	props: Node3D,
+	rua: RandomNumberGenerator,
+	faixa: Vector3,
+	d: Vector3,
+	normal: Vector3,
+	fila: float
 ) -> float:
 	var sorteio := rua.randf()
 	var modelo := Carro.Modelo.SEDA
@@ -284,7 +303,7 @@ func _carro_parado(
 		carro.queue_free()
 		return fila
 	carro.global_transform = Transform3D(
-		Basis.looking_at(-d, Vector3.UP), faixa + d * (fila + comprimento * 0.5)
+		Basis.looking_at(-d, normal), faixa + d * (fila + comprimento * 0.5)
 	)
 	carro.atualizar(1.0 / 60.0, 0.0, 0.0, false, 0)
 	_colisor(carro, carro.caixa())
