@@ -84,11 +84,10 @@ const JOELHO_NA_CURVA: float = 0.6
 ## Velocidade, em m/s, em que o tronco deita o maximo. Perto do teto (~49 m/s)
 ## e de proposito: deitar inteiro e o que se faz no talo, nao em cruzeiro.
 const DEITA: float = 35.0
-## Angulo do tronco em graus, positivo para tras: sentado, deitado no tanque e
-## o quanto ele levanta a mais com o pe no chao. Na CG se senta quase reto (o
-## modelo ja tem 14 graus); deitar e se esconder atras do painel.
+## Tronco em graus, + para tras: sentado, no talo e com o pe no chao. Como no
+## video, segue sentado a 128 km/h (o modelo ja tem 14): so se encolhe.
 const TRONCO_SENTADO: float = 2.0
-const TRONCO_DEITADO: float = -16.0
+const TRONCO_DEITADO: float = -3.0
 const TRONCO_PE_NO_CHAO: float = 6.0
 ## Quanto do angulo da curva o tronco deita a mais que a moto. Quem pilota
 ## acompanha a moto e poe um pouco do corpo para dentro, e e esse pouco que
@@ -112,6 +111,8 @@ const CABECA_NIVELA: float = 0.35
 ## E olha para dentro da curva, por radiano de inclinacao: se olha para onde
 ## se vai, nao para onde a moto aponta.
 const CABECA_OLHA_CURVA: float = 0.45
+## Para onde o cotovelo dobra: para fora, a ponta mais larga da silhueta.
+const COTOVELO := Vector3(1.0, -0.3, 0.3)
 
 ## --- Suspensao ---
 ##
@@ -747,9 +748,8 @@ func _posa_piloto() -> void:
 		var braco: Array = _bracos[i]
 		var mao: Node3D = braco[2]
 		var manopla := _direcao.global_transform * _manoplas[i]
-		# Cotovelo para fora e para baixo, como quem segura um guidao largo.
 		var alvo := manopla
-		var polo := base * Vector3(sinal, -1.0, 0.3)
+		var polo := base * (COTOVELO * Vector3(sinal, 1.0, 1.0))
 		var solta := 0.0
 		if peso_soco > 0.0 and is_equal_approx(sinal, s):
 			solta = peso_soco
