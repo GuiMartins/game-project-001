@@ -162,7 +162,7 @@ e no `git log`.
 
 ### A moto viva
 
-- [ ] **V05** — Inclinação com mola: entra devagar, sai seca, passa do zero
+- [x] **V05** — Inclinação com mola: entra devagar, sai seca, passa do zero (12/10/2026, #71)
 
   O vídeo deita em ~1 s e levanta em ~0,3 s, com uma contra-inclinação de
   4–8° no fim. O `lerp` exponencial de hoje nunca passa do alvo, então a troca
@@ -175,6 +175,38 @@ e no `git log`.
     por quê.
   - **Aceite:** jogando, a troca de lado no corredor tem peso: a moto deita,
     volta e assenta. Pico numa curva suave perto de 25°.
+  - **Resultado:** duas molas em `PlayerBike.passo_da_inclinacao`. Deitar é
+    crítica (`lean_freq` 8): 0→90% em 0,52 s (era 0,35), com arrancada macia.
+    Levantar é `lean_return_freq` 13 com `lean_return_damping` 0,45: do
+    pedido ao zero em ~0,17 s, um terço da entrada, e passa ~19% do outro
+    lado (−4,6° saindo de 25°, −7° saindo de 38°), assentando em ~0,2 s. Os
+    sliders trocaram de nome junto com o sentido, para um `tuning.tres` velho
+    não injetar taxa de `lerp` numa frequência. Baseline: `inclinacao_0_90_s`
+    0,35 → 0,52 (o objetivo); corrida solta e disputa andaram por caos de
+    trajetória do piloto automático (1381 → 1217 m, mas com a entrada a 0,38 s
+    cai para 1018 m: não é perda de agilidade); `batida_quina_desvio_m`
+    4,5 → 2,0 porque o segurador de faixa da prova chega 14 cm mais dentro do
+    carro e pega a quina mais em cheio. O portão da disputa reprovava quando
+    o piloto automático vencia, e foi consertado antes, em PR próprio.
+
+- [ ] **V05a** 👤 — Física por moto: CG, XRE e PCX andam diferente
+
+  Hoje as três motos só trocam de modelo: a física é uma só, do
+  `BikeTuning`. Depois da mola da V05, o Guilherme quer que cada moto tenha
+  a sua calibração, a começar pela inclinação (`lean_freq`,
+  `lean_return_freq`, `lean_return_damping`).
+
+  - **Decisão 👤:** quais números variam por moto (só inclinação, ou também
+    velocidade, aceleração e curva), e se os rivais herdam a física da moto
+    sorteada ou só o jogador.
+  - **Recomendação:** um `BikeTuning` base e um recurso pequeno por moto que
+    sobrepõe só o que muda. A scooter (roda pequena, entre-eixos curto)
+    deita mais rápido e volta mais nervosa; a XRE (alta, roda grande) mais
+    lenta e assentada; a CG fica no meio, com os valores de hoje.
+  - **Mexe no `selftest`:** ele roda numa moto fixa (a CG), e o baseline
+    continua valendo para ela. As outras ganham teste unitário da mola.
+  - **Aceite:** jogando, dá pra dizer de olho fechado qual moto você
+    escolheu pela troca de lado no corredor.
 
 - [ ] **V06** — Vibração miúda, roda lisa em alta e cabeça no horizonte
 

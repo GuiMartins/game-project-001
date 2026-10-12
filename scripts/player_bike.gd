@@ -69,6 +69,8 @@ var slope_enabled: bool = true
 var find_clear_lateral: Callable = Callable()
 
 var _vertical_speed: float = 0.0
+## Velocidade angular da inclinacao, rad/s: a metade da mola que nao aparece.
+var _lean_vel: float = 0.0
 var _punch_timer: float = -1.0
 var _punch_side: int = 0  ## -1 esquerda, +1 direita, 0 nenhum.
 ## Este soco ja acertou. Desligar a hitbox no acerto nao bastava: o passo
@@ -231,11 +233,38 @@ func _ride(delta: float, steer: float, throttle: float, brake: float) -> void:
 
 func _update_lean(delta: float, steer: float) -> void:
 	var target := steer * deg_to_rad(tuning.max_lean)
-	# Inclinar custa mais que endireitar: a moto cai facil pro lado e volta
-	# sozinha. Duas taxas separadas, e nao uma, e o que da a sensacao de peso.
-	var going_out := absf(target) > absf(lean) or signf(target) != signf(lean)
-	var rate := tuning.lean_rate if going_out else tuning.lean_return_rate
-	lean = lerpf(lean, target, 1.0 - exp(-rate * delta))
+	var passo := passo_da_inclinacao(lean, _lean_vel, target, delta, tuning)
+	lean = passo.x
+	_lean_vel = passo.y
+
+
+## Um passo da mola da inclinacao: devolve (angulo, velocidade angular).
+##
+## Inclinar custa mais que endireitar: a moto cai facil pro lado e volta
+## sozinha. Duas molas separadas, e nao uma, e o que da a sensacao de peso. A
+## de deitar e critica; a de voltar passa do zero e assenta. Estatica para o
+## teste unitario medir a mola sem montar a moto.
+static func passo_da_inclinacao(
+	angulo: float, vel: float, alvo: float, delta: float, t: BikeTuning
+) -> Vector2:
+	# `alvo * angulo < 0`, e nao `signf` diferente: com o alvo no zero, o sinal
+	# dele (0) difere do de qualquer angulo, e a contra-inclinacao trocava para
+	# a mola critica bem na hora de passar do zero.
+	var deitando := absf(alvo) > absf(angulo) or alvo * angulo < 0.0
+	var w := t.lean_freq if deitando else t.lean_return_freq
+	var zeta := 1.0 if deitando else t.lean_return_damping
+	# Euler semi-implicito: estavel enquanto w * delta < 2, e o slider para em
+	# 40 rad/s, 0,67 a 60 Hz.
+	vel += (w * w * (alvo - angulo) - 2.0 * zeta * w * vel) * delta
+	angulo += vel * delta
+	# A mola critica entrando com embalo (saindo de uma contra-inclinacao, por
+	# exemplo) ainda passa do alvo uma vez. No teto isso seria passar de
+	# `max_lean`, que e a promessa do slider.
+	var teto := deg_to_rad(t.max_lean)
+	if absf(angulo) > teto:
+		angulo = signf(angulo) * teto
+		vel = 0.0
+	return Vector2(angulo, vel)
 
 
 func _update_speed(delta: float, throttle: float, brake: float) -> void:
@@ -652,6 +681,7 @@ func place_on_track(at_offset: float, at_lateral: float, at_speed: float) -> voi
 	heading = atan2(-t.basis.z.x, -t.basis.z.z)
 	rotation = Vector3(0.0, heading + PI, 0.0)
 	lean = 0.0
+	_lean_vel = 0.0
 	speed = at_speed
 	velocity = Vector3(sin(heading), 0.0, cos(heading)) * at_speed
 	_vertical_speed = 0.0

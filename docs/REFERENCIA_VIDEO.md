@@ -310,7 +310,8 @@ Três leituras:
   para o outro lado antes de se acomodar. É o que faz a troca de direção
   parecer peso em movimento, e não um ponteiro voltando ao centro.
 
-No jogo, `lean_rate = 7` e `lean_return_rate = 9` são taxas exponenciais
+No jogo (antes da V05, que trocou por mola), `lean_rate = 7` e
+`lean_return_rate = 9` eram taxas exponenciais
 (1/s). O retorno ser mais rápido que a entrada **já está certo em espírito**.
 O vídeo pede uma diferença maior: retorno umas **3 vezes** mais rápido que a
 entrada, e um *overshoot* pequeno no fim. Esse *overshoot* não existe hoje,

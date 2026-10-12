@@ -57,10 +57,29 @@ const SAVE_PATH: String = "user://tuning.tres"
 
 ## Inclinacao maxima da moto, em graus.
 @export_range(10.0, 60.0, 1.0) var max_lean: float = 38.0
-## Quao rapido a moto assume a inclinacao pedida (1/s). Baixo = pesada.
-@export_range(1.0, 20.0, 0.25) var lean_rate: float = 7.0
-## Quao rapido a moto volta pra vertical quando o input solta (1/s).
-@export_range(1.0, 20.0, 0.25) var lean_return_rate: float = 9.0
+## Frequencia da mola que deita a moto (rad/s). Baixo = pesada.
+##
+## A inclinacao e mola (angulo + velocidade angular), nao `lerp`: o `lerp`
+## nunca passa do alvo, e a troca de lado lia como ponteiro voltando ao centro.
+## Deitando, a mola e amortecida no critico, sem passar do pedido: a 8, vai de
+## 0 a 90% em ~0,5 s, com a arrancada macia de quem poe peso aos poucos. O
+## video deita em ~1 s, mas numa curva suave e com o polegar dosando; aqui o
+## teclado pede tudo de uma vez, e 1 s fecharia o corredor antes da moto virar.
+## Os nomes mudaram junto com o sentido (eram `lean_rate`, taxa do `lerp`):
+## um `tuning.tres` salvo antes nao injeta 7 numa frequencia.
+@export_range(2.0, 30.0, 0.25) var lean_freq: float = 8.0
+## Frequencia da mola que levanta a moto quando o input solta (rad/s).
+##
+## O video levanta em 0,2-0,4 s depois de deitar em ~1 s: soltar e seco. A 13,
+## de 90% ao zero leva ~0,17 s, um terco da entrada.
+@export_range(2.0, 40.0, 0.25) var lean_return_freq: float = 13.0
+## Amortecimento da mola de volta (1 = critico, sem passar do zero).
+##
+## Abaixo de 1 a moto passa do zero e deita uns graus pro outro lado antes de
+## assentar: a contra-inclinacao de 4-8 graus do video, que e o que faz a
+## troca de lado ler como peso. A 0,45 passa ~20%: 5 graus saindo de 25, e o
+## balanco morre em ~0,2 s. Abaixo de ~0,3 ela fica quicando.
+@export_range(0.2, 1.0, 0.01) var lean_return_damping: float = 0.45
 ## Guinada maxima em graus/s, na velocidade de melhor agilidade.
 @export_range(20.0, 200.0, 1.0) var turn_rate: float = 78.0
 ## Velocidade (m/s) em que a moto atinge agilidade total. Abaixo disso ela
