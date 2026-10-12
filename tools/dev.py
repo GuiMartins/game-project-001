@@ -693,7 +693,9 @@ def cmd_prova(args: argparse.Namespace) -> int:
     # vira "parece melhor" contra a lembranca de ontem.
     if args.garupa:
         os.environ["RUSHFOOD_PROVA_CAMERA"] = "garupa"
-    if args.referencia:
+    if args.variantes:
+        os.environ["RUSHFOOD_PROVA_VARIANTES"] = "1"
+    if args.referencia or args.variantes:
         # Clone sem `git lfs pull` tem ponteiro de texto no lugar do PNG, e o
         # Godot so diria que nao leu a imagem - a folha sairia sem referencia
         # nenhuma, parecendo que funcionou.
@@ -923,6 +925,9 @@ def main() -> int:
                          help="os mesmos quadros pela camera GARUPA, e nao pela perseguicao")
     p_prova.add_argument("--referencia", action="store_true",
                          help="gera tambem comparacao.png: cada quadro ao lado da referencia")
+    p_prova.add_argument("--variantes", action="store_true",
+                         help="gera variantes.png: cada quadro com e sem paleta, dither "
+                              "fraco e a referencia (V03)")
     sub.add_parser("fps", help="tempo de quadro da corrida solta, com tela e sem vsync")
     sub.add_parser("run", help="abre o jogo")
     sub.add_parser("export", help="exporta as tres plataformas")

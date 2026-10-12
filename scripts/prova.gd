@@ -41,6 +41,19 @@ const REFERENCIAS: Dictionary = {
 ## Fundo do que sobra quando uma linha e mais curta que a mais longa. Cinza
 ## medio, e nao preto: preto se confunde com o tunel e a sombra do jogo.
 const FUNDO := Color(0.5, 0.5, 0.5)
+## As variantes da V03 do backlog visual ("quanto de pixel"), na ordem em que
+## entram na linha da comparacao: como esta, sem o passe de paleta, e com o
+## dither pela metade. `forca` negativa desliga o passe inteiro.
+const VARIANTES_PIXEL: Array[Dictionary] = [
+	{"nome": "atual", "forca": 1.0},
+	{"nome": "sem_paleta", "forca": -1.0},
+	{"nome": "dither_fraco", "forca": 0.5},
+]
+## O recorte da lupa das variantes: ceu, neblina, fachada e asfalto da
+## largada, onde a banda e o padrao do dither aparecem. Na folha inteira as
+## tres variantes ficam iguais a olho - a diferenca mora no pixel.
+const LUPA := Rect2i(200, 40, 200, 150)
+const LUPA_ESCALA: int = 3
 ## Passos de fisica entre largar e congelar: meio segundo. Um so ja poria rival
 ## e carro no lugar, mas o piloto nasce parado e com o pe no chao, e em meio
 ## segundo a 25 m/s ele recolheu o pe - o quadro mostra a pose de quem anda.
@@ -70,6 +83,8 @@ func _roda() -> void:
 		saida = ProjectSettings.globalize_path("res://.dev/prova")
 	DirAccess.make_dir_recursive_absolute(saida)
 
+	var variantes := OS.get_environment("RUSHFOOD_PROVA_VARIANTES") == "1"
+	var linhas_variantes: Array[Array] = []
 	var imagens: Array[Image] = []
 	for quadro: Dictionary in pontos(_world.track):
 		_world.start_race(quadro["offset"], quadro["velocidade"])
@@ -77,10 +92,22 @@ func _roda() -> void:
 		_world.camera.encaixar()
 		for i in QUADROS_DE_ESPERA:
 			await RenderingServer.frame_post_draw
-		var sub: SubViewport = _main.get("sub_viewport")
-		var imagem := sub.get_texture().get_image()
+		var imagem := _captura()
 		imagem.save_png("%s/%s.png" % [saida, quadro["nome"]])
 		imagens.append(imagem)
+		# `dev.py prova --variantes`: o mesmo quadro congelado com a paleta
+		# trocada. O mundo nao anda entre uma captura e outra, entao so o
+		# passe de cor muda - e e so ele que esta em julgamento.
+		if variantes:
+			var linha: Array[Image] = []
+			for variante: Dictionary in VARIANTES_PIXEL:
+				_paleta(variante["forca"])
+				for i in QUADROS_DE_ESPERA:
+					await RenderingServer.frame_post_draw
+				linha.append(_captura())
+			_paleta(1.0)
+			linha.append_array(_referencias(quadro["nome"]))
+			linhas_variantes.append(linha)
 		print("prova: %-8s offset %6.0f m" % [quadro["nome"], quadro["offset"]])
 
 	_folha(imagens).save_png("%s/folha.png" % saida)
@@ -96,7 +123,33 @@ func _roda() -> void:
 			linhas.append(linha)
 		comparacao(linhas).save_png("%s/comparacao.png" % saida)
 		print("prova: comparacao com a referencia em %s/comparacao.png" % saida)
+	if variantes:
+		comparacao(linhas_variantes).save_png("%s/variantes.png" % saida)
+		lupa(linhas_variantes[0].slice(0, VARIANTES_PIXEL.size())).save_png(
+			"%s/variantes_lupa.png" % saida
+		)
+		# Cada variante da largada em tela cheia de 1080p, um arquivo por
+		# variante: e o tamanho em que o jogador ve, e trocar de arquivo no
+		# visualizador mostra a diferenca melhor que qualquer folha.
+		for i in VARIANTES_PIXEL.size():
+			var cheia := (linhas_variantes[0][i] as Image).duplicate() as Image
+			cheia.resize(cheia.get_width() * 3, cheia.get_height() * 3, Image.INTERPOLATE_NEAREST)
+			cheia.save_png("%s/variante_%d_%s.png" % [saida, i + 1, VARIANTES_PIXEL[i]["nome"]])
+		print("prova: variantes de pixel em %s/variantes.png" % saida)
 	get_tree().quit(0)
+
+
+func _captura() -> Image:
+	var sub: SubViewport = _main.get("sub_viewport")
+	return sub.get_texture().get_image()
+
+
+## Troca a forca do dither do passe de paleta; negativa esconde o passe.
+func _paleta(forca: float) -> void:
+	var camada: CanvasLayer = (_main.get("sub_viewport") as Node).get_node("Paleta")
+	camada.visible = forca >= 0.0
+	var tela := camada.get_child(0) as ColorRect
+	(tela.material as ShaderMaterial).set_shader_parameter("forca", maxf(forca, 0.0))
 
 
 ## Deixa o mundo rodar exatamente `n` passos de fisica e congela de novo.
@@ -227,4 +280,17 @@ static func comparacao(linhas: Array[Array]) -> Image:
 			var tamanho := Rect2i(Vector2i.ZERO, imagem.get_size())
 			folha.blit_rect(imagem, tamanho, Vector2i(x, i * h))
 			x += imagem.get_width()
+	return folha
+
+
+## O mesmo recorte de cada imagem, ampliado sem filtro e lado a lado.
+static func lupa(imagens: Array) -> Image:
+	var w := LUPA.size.x * LUPA_ESCALA
+	var h := LUPA.size.y * LUPA_ESCALA
+	var folha := Image.create(w * imagens.size(), h, false, Image.FORMAT_RGBA8)
+	for i in imagens.size():
+		var recorte := (imagens[i] as Image).get_region(LUPA)
+		recorte.convert(Image.FORMAT_RGBA8)
+		recorte.resize(w, h, Image.INTERPOLATE_NEAREST)
+		folha.blit_rect(recorte, Rect2i(Vector2i.ZERO, recorte.get_size()), Vector2i(i * w, 0))
 	return folha
