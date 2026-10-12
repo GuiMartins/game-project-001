@@ -467,7 +467,7 @@ e no `git log`.
     deixar (é o primeiro a cortar).
   - **Aceite:** lanterna acesa brilha a 30 m; asfalto ao sol **não** brilha.
 
-- [ ] **V13** — Outdoor luminoso e letreiro
+- [x] **V13** — Outdoor luminoso e letreiro (12/10/2026)
 
   Depois do céu, a coisa mais clara do quadro do vídeo. Retângulo emissivo nas
   fachadas e no topo dos prédios, com cor viva. Conteúdo inventado: nenhuma
@@ -476,6 +476,19 @@ e no `git log`.
   - **Onde:** `arte/predios.py` (onde o outdoor encaixa) e `predio.gd` (a cor).
   - **Aceite:** com o glow da V12, o outdoor é o ponto mais claro abaixo do
     horizonte.
+  - **Resultado:** painel de duas faces, **de topo para a rua** — colado na
+    fachada ele sumia, porque a câmera vê a fachada de raspão. O `Deco` tem
+    uma bandeira de 2,8 × 4,2 m a 6 m do chão, avançando 3,5 m sobre a
+    calçada; o `Comercio`, um de 7 × 3,5 m no telhado. Moldura clara, tela
+    na cor sorteada (seis, nenhuma vermelha: vermelho aceso é freio) e
+    disco e barras brancos por cima, sem texto. A máscara ganhou o canal B
+    (1 = tela, 0,4 = desenho), e o shader acende os dois com
+    `tela_brilho` 4, acima do limiar 2,2 do glow. O `Predio.frente` passou a
+    medir só até 5 m de altura, senão a bandeira recuava o `Deco` 2 m. Com
+    o glow da V12 aplicado localmente, nos cinco quadros da prova o branco
+    cheio fora do céu é só o outdoor. Baseline visual:
+    `visual_familias_de_cor` 48,4 → 66,3, pelas cores de tela novas. `fps`
+    igual, no teto de 120.
 
 - [ ] **V14** — Céu com nuvem
 

@@ -16,9 +16,10 @@ referencias:
 | `Sobrado`    | 10 x 11 x 12,8 m         | o casario do Centro: loja nas portas em arco, |
 |              |                          | sacada em cima                                |
 | `Comercio`   | 13 x 10 x 18,8 m         | loja com toldo embaixo, apartamento em cima,  |
-|              |                          | empena cega com mural                         |
+|              |                          | empena cega com mural, outdoor no telhado     |
 | `Deco`       | 14 x 12 x 29,8 m         | o art deco de Copacabana: torreao no meio,    |
-|              |                          | friso vertical passando do telhado, loja      |
+|              |                          | friso vertical passando do telhado, loja,     |
+|              |                          | outdoor em bandeira sobre a calcada           |
 | `Escritorio` | 12 x 12 x 43,5 m         | a torre de vidro azul do fundo da avenida     |
 | `Torre`      | 15 x 13 x 58,8 m         | o residencial de concreto com varanda corrida |
 |              |                          | e loja embaixo, dos dois lados da portaria    |
@@ -27,6 +28,9 @@ Todo predio de rua tem loja com toldo no terreo: e o que passa na altura do
 olho, e a faixa de cor saturada que da ritmo a fachada (REFERENCIA_VIDEO.md,
 "Os predios"). So o `Escritorio` nao tem: a torre de vidro e do fundo, e
 banco no terreo de torre e portaria, nao vitrine.
+
+As medidas da tabela sao do corpo. O outdoor fica fora delas: o do `Comercio`
+sobe a 23 m, e a bandeira do `Deco` avanca 3,5 m sobre a calcada.
 
 Convencoes, as mesmas do `entregador.py` e pelos mesmos motivos:
 
@@ -70,11 +74,16 @@ SEMENTE = 20260831
 # A mascara usa o mesmo UV. R = pintura da parede, G = toldo e faixa do
 # letreiro. E o que deixa o mesmo `Sobrado` ser amarelo, rosa ou azul ao longo
 # da avenida, como no Centro, sem um modelo por cor.
+#
+# B e o que acende, em dois degraus: 1 e a tela do outdoor, que acende e leva a
+# cor sorteada; 0,4 e o desenho por cima dela, que acende branco. Um canal so
+# para os dois porque a tela inteira e luz - nao existe tingido apagado.
 
 TEXTURA = 256
 CELULA = 32
 
 PAREDE, LOJA = (1, 0, 0), (0, 1, 0)
+TELA, LUZ = (0, 0, 1), (0, 0, 0.4)
 NADA = (0, 0, 0)
 
 # nome: (albedo em sRGB, mascara)
@@ -117,6 +126,11 @@ PALETA = {
     "mural_azul": ((0.20, 0.48, 0.86), NADA),
     "mural_laranja": ((0.95, 0.48, 0.16), NADA),
     "mural_roxo": ((0.48, 0.28, 0.70), NADA),
+    # A tela do outdoor. Ciano de fabrica, que o `predio.gd` troca pela cor
+    # sorteada; o desenho e branco e nao troca, e o que diz "tela" e nao
+    # "parede pintada".
+    "tela": ((0.20, 0.70, 0.95), TELA),
+    "tela_luz": ((0.97, 0.97, 0.94), LUZ),
 }
 CELULAS = {nome: i for i, nome in enumerate(PALETA)}
 MURAL = [nome for nome in PALETA if nome.startswith("mural_")]
@@ -355,6 +369,74 @@ def vao_de_loja(p, parede, s, largura, altura, porta_aco=False, fora=0.0) -> Non
         parede.placa(p, s, meio, largura, altura, "vitrine", fora + CAMADA * 2)
 
 
+# --- Outdoor -----------------------------------------------------------------
+#
+# O painel luminoso do video (REFERENCIA_VIDEO.md, "Os predios"): moldura
+# clara, tela de cor viva e um desenho grande por cima. Fica de **topo para a
+# rua**, perpendicular a fachada: a camera anda rente a avenida e ve a fachada
+# de raspao, entao painel colado nela some; de topo ele encara quem vem, como
+# o de verdade, que e posto para o transito ler.
+#
+# Duas faces, cada uma com o seu desenho: o predio cai dos dois lados da pista,
+# e a face que encara a camera depende de qual.
+
+OUTDOOR_MOLDURA = 0.25
+OUTDOOR_ESPESSURA = 0.3
+
+
+def outdoor(p, rng, centro, n, largura, altura) -> None:
+    """Painel em pe com o centro em `centro`, as duas telas para `n` e `-n`.
+
+    `n` e horizontal; a largura corre no eixo deitado perpendicular a ele.
+    """
+    c, n = Vector(centro), Vector(n)
+    u = Z.cross(n)
+    tam = u * (largura + OUTDOOR_MOLDURA * 2.0) + n * OUTDOOR_ESPESSURA
+    p.caixa(c, (abs(tam.x), abs(tam.y), altura + OUTDOOR_MOLDURA * 2.0), "friso")
+    for lado in (1.0, -1.0):
+        # `u` vira junto com a face: visto de fora, o desenho le da esquerda
+        # para a direita nas duas.
+        face = Parede(c, u * lado, n * lado, largura)
+        fora = OUTDOOR_ESPESSURA * 0.5
+        face.placa(p, 0.0, 0.0, largura, altura, "tela", fora + CAMADA)
+        desenho(p, face, rng, largura, altura, fora + CAMADA * 2)
+
+
+def desenho(p, face, rng, largura, altura, fora) -> None:
+    """O anuncio: uma forma grande e o titulo, sem texto nem marca.
+
+    Formas que leem a 640x360 de longe: a 60 m um painel de 7 m tem uns 25 px,
+    e o que sobra e um disco claro e duas barras. E o que a referencia mostra
+    tambem - de longe, anuncio e mancha clara com uma faixa ao lado.
+    """
+    hl, ha = largura * 0.5, altura * 0.5
+    margem = min(largura, altura) * 0.12
+
+    def disco(cs, cz, raio) -> None:
+        pontos = [face.ponto(cs + raio * math.cos(a), cz + raio * math.sin(a), fora) for a in (math.tau * i / 10 for i in range(10))]
+        p.face(pontos, face.n, "tela_luz")
+
+    if largura < altura:
+        # Em pe, a bandeira: produto em cima, titulo e chamada embaixo.
+        raio = hl - margem
+        disco(0.0, ha - margem - raio, raio)
+        face.placa(p, 0.0, -ha * 0.35, largura - margem * 2.0, altura * 0.12, "tela_luz", fora)
+        face.placa(p, -hl * 0.25, -ha * 0.68, largura * 0.5, altura * 0.07, "tela_luz", fora)
+    elif rng.random() < 0.5:
+        # Deitado: produto num lado, titulo e chamada no outro.
+        raio = ha - margem
+        lado = rng.choice((-1.0, 1.0))
+        disco(lado * (hl - margem - raio), 0.0, raio)
+        texto = largura - raio * 2.0 - margem * 3.0
+        ts = -lado * (hl - margem - texto * 0.5)
+        face.placa(p, ts, ha * 0.35, texto, altura * 0.22, "tela_luz", fora)
+        face.placa(p, ts - texto * 0.15, -ha * 0.25, texto * 0.7, altura * 0.12, "tela_luz", fora)
+    else:
+        # Deitado: titulo atravessado em cima e uma faixa de chamada no pe.
+        face.placa(p, 0.0, ha * 0.3, largura - margem * 2.0, altura * 0.28, "tela_luz", fora)
+        face.placa(p, -hl * 0.35, -ha * 0.55, largura * 0.45, altura * 0.14, "tela_luz", fora)
+
+
 # --- Sobrado -----------------------------------------------------------------
 #
 # O casario ecletico do Centro (referencia 2, lado direito): dois andares de pe
@@ -458,6 +540,17 @@ def comercio(rng) -> Peca:
     # chegando depende de que lado da pista o predio cai.
     for lado in (esquerda, direita):
         mural(p, lado, rng, LOJA_ALTURA + 0.4, TOPO + 0.6)
+
+    # Outdoor de telhado, na ponta oposta a caixa d'agua, sobre dois pes de
+    # ferro. 7 x 3,5 m e o padrao de rua (o "9 x 3" de beira de avenida,
+    # encolhido para caber no fundo de 10 m); um metro e meio de pe tira a
+    # tela de tras da platibanda vista de baixo.
+    PE, LARGURA, ALTURA = 1.5, 7.0, 3.5
+    base = TOPO + 1.1
+    centro = (-3.5, -0.3, base + PE + ALTURA * 0.5 + OUTDOOR_MOLDURA)
+    outdoor(p, rng, centro, (1, 0, 0), LARGURA, ALTURA)
+    for y in (-LARGURA * 0.3, LARGURA * 0.3):
+        p.caixa((-3.5, centro[1] + y, base + PE * 0.5), (0.2, 0.2, PE), "grade")
     return p
 
 
@@ -568,6 +661,19 @@ def deco(rng) -> Peca:
             lado.caixa(p, 0.0, z + 2.55, D, 0.1, 0.12, "friso")
             for s in colunas(3, D, 1.2):
                 lado.janela(p, s, z + 0.9, 1.2, 1.4, vidro_sorteado(rng, claro="cortina"), peitoril="friso")
+
+    # Outdoor em bandeira, saindo da fachada entre as duas janelas da ala, do
+    # primeiro ao segundo andar: e o painel da esquerda da referencia, que
+    # passa por cima da calcada. Comeca a 6 m do chao, acima do toldo e do
+    # caminhao bau, e sai 3,3 m - o `predio.gd` afasta o predio so pelo que
+    # fica na altura da rua, e a bandeira avanca sobre a calcada como a de
+    # verdade. Vem por ultimo para o sorteio do desenho nao mexer no vidro.
+    s, LARGURA, ALTURA, VAO = (TORREAO + ala) * 0.5, 2.8, 4.2, 0.25
+    z = LOJA_ALTURA + 1.6 + OUTDOOR_MOLDURA + ALTURA * 0.5
+    centro = frente.ponto(s, z, VAO + OUTDOOR_MOLDURA + LARGURA * 0.5)
+    outdoor(p, rng, centro, (1, 0, 0), LARGURA, ALTURA)
+    for dz in (-ALTURA * 0.35, ALTURA * 0.35):
+        frente.caixa(p, s, z + dz, 0.16, VAO, 0.16, "grade")
     return p
 
 
