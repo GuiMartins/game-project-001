@@ -149,6 +149,11 @@ const PESO: float = 0.003
 ## e a mola engolem, e na tela so viraria tremedeira.
 const ASFALTO: float = 0.006
 
+## Velocidades, em m/s, em que o disco da `RodaLisa` cobre os raios e em que
+## volta a sumir: separadas para nao piscar na fronteira.
+const RODA_LISA: float = 16.0
+const RODA_RAIADA: float = 14.0
+
 ## --- O corpo de quem pilota ---
 ##
 ## O tronco e uma massa presa por mola no quadril: a freada joga ele para a
@@ -293,6 +298,11 @@ var _girado: float = 0.0
 var _relogio: float = 0.0
 var _passo: float = 1.0 / 60.0
 var _rodado: float = 0.0
+var _tremor := Tremor.new()
+## Quanto o tremor afunda a frente (x) e a traseira (y) neste passo, em metros.
+var _treme := Vector2.ZERO
+## O disco liso de cada roda, na ordem de `_rodas`.
+var _discos: Array[MeshInstance3D] = []
 
 ## O que o ator mede do proprio movimento, em m/s2 e rad/s2, ja filtrado.
 var _a_long: float = 0.0
@@ -390,8 +400,10 @@ func _monta() -> void:
 	_garfo = _no("Garfo")
 	_piloto = _no("Piloto")
 	_rodas = [_no("Roda_Traseira"), _no("Roda_Dianteira")]
+	_discos.clear()
 	for i in 2:
 		_raios[i] = (_rodas[i] as MeshInstance3D).get_aabb().size.y * 0.5
+		_discos.append(RodaLisa.criar(_rodas[i] as MeshInstance3D, _raios[i], _material))
 	var eixo_tras := _no_relativo(_rodas[0], _moto)
 	var eixo_frente := _no_relativo(_rodas[1], _moto)
 	_altura_eixo = [eixo_tras.y, eixo_frente.y]
@@ -499,6 +511,12 @@ func atualizar(
 		_giros[i] = wrapf(_giros[i] + velocidade / _raios[i] * delta, 0.0, TAU)
 	_rodado += v * delta
 	_inclinacao = inclinacao
+	_treme = _tremor.passo(delta, v, caido)
+	for disco in _discos:
+		if v > RODA_LISA:
+			disco.visible = true
+		elif v < RODA_RAIADA:
+			disco.visible = false
 	_mede(delta, velocidade, inclinacao, caido)
 
 	var parado := v < PARADO and not caido
@@ -650,10 +668,13 @@ func _posa() -> void:
 ## Poe a massa suspensa onde as molas mandam, e o garfo e a balanca onde as
 ## rodas precisam estar para continuar no chao.
 func _posa_suspensao() -> void:
-	var arfa := (_susp.x + _susp.y) * 0.5
+	# O tremor entra aqui, e nao na mola: e curto demais para ela, e somado
+	# depois dela as rodas continuam no chao pela mesma conta.
+	var susp := _susp + _treme
+	var arfa := (susp.x + susp.y) * 0.5
 	# Frente afundando mais que a traseira e nariz para baixo: rotacao
 	# negativa em X, que leva a frente (-Z) para baixo.
-	var arfagem := (_susp.y - _susp.x) / _entre_eixos
+	var arfagem := (susp.y - susp.x) / _entre_eixos
 	var corpo := Basis(Vector3.RIGHT, arfagem)
 	_suspenso.transform = Transform3D(corpo, Vector3(0.0, -arfa, 0.0))
 

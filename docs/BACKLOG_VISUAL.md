@@ -236,7 +236,7 @@ e no `git log`.
   6,6 / 4,6 / 2,0. O rival trocou o `lerp` pela mesma mola, na moto sorteada.
   Baseline sem variação (o banco roda na CG, que dá 1).
 
-- [ ] **V06** — Vibração miúda, roda lisa em alta e cabeça no horizonte
+- [x] **V06** — Vibração miúda, roda lisa em alta e cabeça no horizonte (12/10/2026, #PR)
 
   Três coisas pequenas de pose, todas no `Entregador`, nenhuma na física.
 
@@ -251,6 +251,16 @@ e no `git log`.
     horizonte.
   - **Aceite:** em movimento, a moto treme de leve no cruzeiro e a roda não
     estrobosca. Nenhum número do `selftest` anda.
+
+  **Resultado:** tremor de 1,2 cm de pico a 35 m/s, crescendo com o quadrado
+  da velocidade, de 8 a 15 Hz, com fase integrada do tempo de física
+  (`Tremor`); entra somado à suspensão, então as rodas continuam no chão pela
+  mesma conta. Acima de 16 m/s (some abaixo de 14) um disco da cor dos raios
+  cobre o vazado (`RodaLisa`), com a cor lida da própria malha: escuro na CG
+  e na PCX, prata na raiada da XRE. A cabeça já desfazia ~29% do *roll* desde
+  a #47 (0,35 da moto menos o que o tronco deita), e ficou como estava.
+  Jogador e rival ganham os dois, nas três motos. Baseline sem variação; a
+  prova de trás sai igual, porque dali a roda mal aparece.
 
 - [ ] **V07** — Postura do vídeo: sentado e de cotovelo aberto
 
