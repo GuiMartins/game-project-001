@@ -76,7 +76,7 @@ e no `git log`.
 
 ### Fundação
 
-- [ ] **V01** 👤 — As quatro imagens paradas entram no repositório
+- [x] **V01** 👤 — As quatro imagens paradas entram no repositório (12/10/2026)
 
   Hoje só os dois vídeos estão em `docs/referencias/`. As imagens chegaram num
   chat e nunca viraram arquivo, e a `PROVA_VISUAL.md` já registra isso como o
@@ -88,6 +88,13 @@ e no `git log`.
   - **Aceite:** os quatro arquivos no repositório.
   - Não bloqueia os itens seguintes, só a folha de comparação (V02) e o
     veredito (V27). Se faltar, faz-se o resto e volta-se aqui.
+  - **Resultado:** estavam no `~/Downloads` como as quatro fotos do WhatsApp
+    de 11/09/2026 (19h02, 19h33 e duas às 19h48), na ordem dos nomes: Theatro
+    Municipal, Gamboa com a roda-gigante, viaduto com mural e a vertical com
+    a bag. Viraram PNG sem mexer em pixel nem tamanho (o original é JPEG de
+    WhatsApp, então o artefato de compressão é da fonte). A folha do
+    `dev.py prova --referencia` passou a ter a terceira coluna sem tocar em
+    código: o mapeamento da V02 já esperava esses nomes.
 
 - [x] **V02** — Folha de comparação: o jogo ao lado da referência (11/10/2026, #65)
 
