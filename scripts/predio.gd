@@ -1,26 +1,26 @@
 class_name Predio
 extends RefCounted
-## Os quatro predios de `arte/predios.py`, prontos para espalhar na avenida.
+## Os cinco predios de `arte/predios.py`, prontos para espalhar na avenida.
 ##
 ## Cada predio na rua e um `MeshInstance3D` com a malha e o material
 ## compartilhados: o `.glb` e aberto uma vez so, e o que muda de um predio
 ## para o outro e a cor, passada por instancia. Por isso nada aqui instancia a
 ## cena do `.glb` por predio - seriam centenas de arvores de no para mostrar
-## quatro malhas.
+## cinco malhas.
 ##
 ## O modelo olha para -Z (a fachada). Quem coloca so precisa apontar -Z para a
 ## pista, e afastar o predio pelo `frente`, que ja conta toldo, varanda e
 ## marquise.
 
 ## Do mais baixo ao mais alto. A ordem e a do `NOS` e e contrato com o
-## `world.gd`, que escolhe o tipo pela altura sorteada.
-enum Tipo { SOBRADO, COMERCIO, ESCRITORIO, TORRE }
+## `cidade.gd`, que escolhe o tipo pela altura sorteada.
+enum Tipo { SOBRADO, COMERCIO, DECO, ESCRITORIO, TORRE }
 
 const CENA: PackedScene = preload("res://assets/predios/predios.glb")
 const SHADER: Shader = preload("res://scripts/predio.gdshader")
 const ALBEDO: Texture2D = preload("res://assets/predios/predios_albedo.png")
 const MASCARA: Texture2D = preload("res://assets/predios/predios_mascara.png")
-const NOS: Array[String] = ["Sobrado", "Comercio", "Escritorio", "Torre"]
+const NOS: Array[String] = ["Sobrado", "Comercio", "Deco", "Escritorio", "Torre"]
 
 ## A cor pintada na textura em cada canal da mascara: a celula mais clara sob
 ## ele em `PALETA`, no `arte/predios.py`. O `test_predio.gd` le a textura e

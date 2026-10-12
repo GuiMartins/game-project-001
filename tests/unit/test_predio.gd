@@ -1,5 +1,5 @@
 extends GdUnitTestSuite
-## Os predios: quatro tamanhos, fachada para o lado certo e a cor de fabrica.
+## Os predios: cinco tamanhos, fachada para o lado certo e a cor de fabrica.
 ##
 ## Nada disto aparece no banco de provas - predio nao tem colisor - e a
 ## regressao visual so pega a tela errada por inteiro. Um eixo trocado no
@@ -7,7 +7,7 @@ extends GdUnitTestSuite
 ## rodando, so que olhando para a parede dos fundos.
 
 
-func test_quatro_alturas_do_mais_baixo_ao_mais_alto() -> void:
+func test_alturas_do_mais_baixo_ao_mais_alto() -> void:
 	var anterior := 0.0
 	for tipo: int in Predio.Tipo.values():
 		var altura := Predio.malha(tipo).get_aabb().size.y

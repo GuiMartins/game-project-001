@@ -75,3 +75,24 @@ func test_o_colisor_do_predio_fica_atras_da_fachada() -> void:
 				. is_equal_approx(caixa.end.z, 0.01)
 			)
 		return
+
+
+func test_largo_e_corredor_se_alternam() -> void:
+	# Largo seguido de largo e so um largo mais comprido, e corredor seguido
+	# de corredor e a avenida sem ritmo nenhum - que e o que era antes.
+	var rua := RandomNumberGenerator.new()
+	rua.seed = 7
+	var trechos := _cidade._sorteia_trechos(rua)
+	assert_int(trechos.size()).is_greater(2)
+	assert_float(trechos[0].y).is_greater(0.0)
+	for i in range(1, trechos.size()):
+		assert_bool((trechos[i].y > 0.0) != (trechos[i - 1].y > 0.0)).is_true()
+	assert_float(trechos[-1].x).is_greater_equal(_track.length)
+
+
+func test_no_largo_so_predio_baixo() -> void:
+	# Predio alto recuado e so um corredor mais longe: o que abre o quadro no
+	# largo e o ceu por cima de sobrado e comercio.
+	for h in range(int(Cidade.ALTURA_LARGO.x), int(Cidade.ALTURA_LARGO.y)):
+		var tipo := Cidade._tipo_de_predio(float(h) + 0.99)
+		assert_bool(tipo == Predio.Tipo.SOBRADO or tipo == Predio.Tipo.COMERCIO).is_true()

@@ -409,10 +409,21 @@ e no `git log`.
     sem variação; visual dentro da tolerância (luminância −2,5%, céu −2,2%).
     `fps` depois: p50 e p95 em 8,33 ms, no teto de 120 Hz da tela, então não
     há diferença para medir; a mudança custa uma chamada de desenho.
+    Depois, jogando: a zebra das ruas transversais, que já existia, saía
+    torta (40 cm de margem de um lado, 10 do outro) e com outro desenho.
+    Passou a usar a mesma zebra e a mesma retenção da avenida, centrada
+    (`RoadTrack.listras_da_zebra`), a 1 m do asfalto da avenida.
+    E a rua ganhou meio-fio (no sol o asfalto dela some contra o cimentado,
+    e a zebra parecia pintada na calçada), e poste da avenida não nasce mais
+    na boca da rua (`Cidade.na_boca`).
+    E o que fazia a zebra da rua parecer torta e voando era a ladeira: a rua
+    inclina na largura junto com a avenida, e a zebra, o meio-fio e a fila
+    eram desenhados na horizontal. A 10% de rampa, uma borda ficava 30 cm
+    acima do asfalto e a outra enterrada; agora tudo segue o plano da rua.
 
 ### Os prédios e o céu
 
-- [ ] **V11** 👤 — Fachada contínua, térreo vivo
+- [x] **V11** 👤 — Fachada contínua, térreo vivo (12/10/2026)
 
   Depois dos 2,5 s o vídeo é um corredor de paredes: prédio colado em prédio,
   loja com toldo e letreiro no térreo. Hoje os prédios são sorteados com
@@ -433,6 +444,16 @@ e no `git log`.
     aberta / corredor fechado.
   - **Aceite:** num trecho de corredor não se vê céu entre prédios no nível
     da rua; `fps` medido, porque é aqui que a conta de desenho aperta.
+
+  - **Feito**, Rio. Quinto prédio, o `Deco` (art déco de Copacabana, 7
+    andares, torreão com friso vertical passando do telhado). Loja com
+    letreiro e toldo no `Sobrado` (dois dos três arcos), no `Deco` e na
+    `Torre` (dos dois lados da portaria); o `Escritorio` ficou sem, é a torre
+    do fundo. A avenida alterna **largo** (60–130 m, fachada recuada 8–12 m,
+    só sobrado e comércio) e **corredor** (180–380 m, colado, de tudo), e
+    começa no largo. A fração de céu da regressão visual subiu 35% por isso,
+    e o `baseline_visual.json` andou junto. `fps`: os dois no teto de 120 do
+    monitor, p95 8,33 → 8,65 ms.
 
 - [x] **V12** — Glow: outdoor, lanterna e cromo brilhando (12/10/2026, #84)
 

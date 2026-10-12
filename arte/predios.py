@@ -1,23 +1,32 @@
-"""Gerador dos predios: quatro modelos de rua carioca, de alturas e larguras diferentes.
+"""Gerador dos predios: cinco modelos de rua carioca, de alturas e larguras diferentes.
 
 Roda dentro do Blender (5.2+), igual ao entregador:
 
     blender --background --factory-startup --python arte/predios.py
 
-Apaga a cena, monta os quatro, salva `arte/predios.blend` e exporta
+Apaga a cena, monta os cinco, salva `arte/predios.blend` e exporta
 `assets/predios/predios.glb` mais as duas texturas. Mesma receita, mesmo
 `.glb`, byte a byte: este script e a fonte, o resto e build.
 
-Os quatro, do mais baixo ao mais alto, cada um tirado de um pedaco das
+Os cinco, do mais baixo ao mais alto, cada um tirado de um pedaco das
 referencias:
 
 | no           | largura x fundo x altura | de onde vem                                  |
 | ------------ | ------------------------ | -------------------------------------------- |
-| `Sobrado`    | 10 x 11 x 12,8 m         | o casario do Centro: portas em arco, sacada   |
+| `Sobrado`    | 10 x 11 x 12,8 m         | o casario do Centro: loja nas portas em arco, |
+|              |                          | sacada em cima                                |
 | `Comercio`   | 13 x 10 x 18,8 m         | loja com toldo embaixo, apartamento em cima,  |
 |              |                          | empena cega com mural                         |
+| `Deco`       | 14 x 12 x 29,8 m         | o art deco de Copacabana: torreao no meio,    |
+|              |                          | friso vertical passando do telhado, loja      |
 | `Escritorio` | 12 x 12 x 43,5 m         | a torre de vidro azul do fundo da avenida     |
 | `Torre`      | 15 x 13 x 58,8 m         | o residencial de concreto com varanda corrida |
+|              |                          | e loja embaixo, dos dois lados da portaria    |
+
+Todo predio de rua tem loja com toldo no terreo: e o que passa na altura do
+olho, e a faixa de cor saturada que da ritmo a fachada (REFERENCIA_VIDEO.md,
+"Os predios"). So o `Escritorio` nao tem: a torre de vidro e do fundo, e
+banco no terreo de torre e portaria, nao vitrine.
 
 Convencoes, as mesmas do `entregador.py` e pelos mesmos motivos:
 
@@ -288,6 +297,64 @@ def vidro_sorteado(rng, claro="vidro_ceu", escuro="vidro", chance=0.3) -> str:
     return claro if rng.random() < chance else escuro
 
 
+# --- Terreo ------------------------------------------------------------------
+#
+# A loja e o que todo predio de rua divide: vao, toldo e letreiro. Mora aqui,
+# e nao copiada em cada predio, para o toldo do sobrado e o da torre lerem como
+# a mesma rua - mesma inclinacao, mesma listra, mesma altura de cabeca.
+
+# Quanto o toldo cai para a rua. Mais deitado some visto de lado; mais em pe
+# vira parede colorida tapando a vitrine.
+TOLDO_QUEDA = 22.0
+# Listra de 1,5 m: larga o bastante para nao virar chuvisco quando passa no
+# canto da tela. Toldo mais estreito que duas dessas sai liso.
+TOLDO_LISTRA = 1.5
+
+
+def toldo(p, parede, s, largura, z_topo, saida=1.8, fora=0.0) -> None:
+    """Lona caindo para a rua, com a borda de cima em `z_topo`, na parede.
+
+    So na fachada: a inclinacao gira em X, que e o eixo da parede da frente.
+    """
+    assert parede.n.y > 0.5, "toldo so na fachada"
+    queda = math.radians(TOLDO_QUEDA)
+    listras = max(1, round(largura / TOLDO_LISTRA))
+    if listras > 1 and listras % 2 == 0:
+        # Impar: as duas pontas na cor da loja, que e a que se ve de lado.
+        listras += 1
+    largura_listra = largura / listras
+    for k in range(listras):
+        ds = -largura * 0.5 + largura_listra * (k + 0.5)
+        centro = parede.ponto(s + ds, z_topo - saida * 0.5 * math.sin(queda), fora + saida * 0.5 * math.cos(queda))
+        cor = "toldo" if k % 2 == 0 else "toldo_listra"
+        p.caixa(centro, (largura_listra, saida, 0.06), cor, rot_x=-TOLDO_QUEDA)
+
+
+def letreiro(p, parede, s, largura, z, fora=0.0) -> None:
+    """Placa clara com faixa na cor da loja; `z` e o centro da placa.
+
+    Sem texto: nome de loja e marca, e marca o PROTOTIPO.md deixou de fora.
+    """
+    parede.caixa(p, s, z, largura, 0.3, 0.8, "letreiro", recuo=-fora)
+    parede.caixa(p, s, z - 0.32, largura, 0.32, 0.16, "toldo", recuo=-fora)
+
+
+def vao_de_loja(p, parede, s, largura, altura, porta_aco=False, fora=0.0) -> None:
+    """Vitrine ou porta de aco de enrolar, do chao ate `altura`.
+
+    As ranhuras da porta sao horizontais e grossas: atravessadas na pista
+    seriam chuvisco, mas aqui correm junto com a pista, de lado.
+    """
+    meio = 0.1 + altura * 0.5
+    if porta_aco:
+        parede.placa(p, s, meio, largura, altura, "porta_aco", fora + CAMADA)
+        for k in range(int(altura / 0.6)):
+            parede.placa(p, s, 0.4 + k * 0.6, largura, 0.08, "caixilho", fora + CAMADA * 2)
+    else:
+        parede.placa(p, s, meio, largura + 0.3, altura + 0.2, "caixilho", fora + CAMADA)
+        parede.placa(p, s, meio, largura, altura, "vitrine", fora + CAMADA * 2)
+
+
 # --- Sobrado -----------------------------------------------------------------
 #
 # O casario ecletico do Centro (referencia 2, lado direito): dois andares de pe
@@ -319,13 +386,18 @@ def sobrado(rng) -> Peca:
         frente.caixa(p, s, PLATIBANDA + 0.5, 0.4, 0.4, 0.8, "friso")
 
     for i, s in enumerate(vaos):
-        # Terreo: porta alta de madeira com bandeira em arco. O vao do meio e
-        # loja, com vitrine no lugar da madeira.
-        miolo = "vitrine" if i == 1 else "madeira"
+        # Terreo: porta alta com bandeira em arco. Dois vaos sao loja, com
+        # vitrine ou porta de aco e um toldo liso logo abaixo da nascenca do
+        # arco, que continua aparecendo por cima. O da ponta e a porta de
+        # madeira da escada de quem mora em cima: o casario do Centro e assim,
+        # e a madeira escura entre dois toldos e o que o separa do Comercio.
+        miolo = ("vitrine", "porta_aco", "madeira")[i]
         frente.placa(p, s, 1.6, 1.6, 3.2, miolo, CAMADA * 3)
         frente.arco(p, s, 3.2, 1.0, "friso", CAMADA * 2)
-        frente.arco(p, s, 3.2, 0.8, miolo, CAMADA * 3)
+        frente.arco(p, s, 3.2, 0.8, "vitrine" if miolo == "porta_aco" else miolo, CAMADA * 3)
         frente.placa(p, s, 1.65, 2.0, 3.3, "friso", CAMADA * 2)
+        if miolo != "madeira":
+            toldo(p, frente, s, 1.9, 3.25, saida=1.1, fora=0.2)
 
         # Superior: janela de sacada com bandeira, persiana aberta dos lados e
         # sacadinha de ferro.
@@ -364,28 +436,13 @@ def comercio(rng) -> Peca:
 
     frente, esquerda, direita = paredes(W, D)
 
-    # Loja: duas vitrines e uma porta de aco de enrolar. As ranhuras da porta
-    # sao horizontais e grossas: atravessadas na pista seriam chuvisco, mas
-    # aqui correm junto com a pista, de lado.
+    # Loja: duas vitrines e uma porta de aco, debaixo de um letreiro e de um
+    # toldo so, de ponta a ponta.
     for s in (-4.1, 0.6):
-        frente.placa(p, s, 1.6, 3.6, 3.0, "caixilho", CAMADA)
-        frente.placa(p, s, 1.6, 3.3, 2.8, "vitrine", CAMADA * 2)
-    frente.placa(p, 4.7, 1.6, 2.8, 3.2, "porta_aco", CAMADA)
-    for k in range(5):
-        frente.placa(p, 4.7, 0.4 + k * 0.6, 2.8, 0.08, "caixilho", CAMADA * 2)
-    # Letreiro: placa clara com faixa na cor da loja. Sem texto - nome de loja
-    # e marca, e marca o PROTOTIPO.md deixou de fora.
-    frente.caixa(p, 0.0, 4.0, W - 0.6, 0.3, 0.8, "letreiro")
-    frente.caixa(p, 0.0, 3.68, W - 0.6, 0.32, 0.16, "toldo")
-    # Toldo listrado, caindo para a rua. Listra de 1,5 m: larga o bastante
-    # para nao virar chuvisco quando passa no canto da tela.
-    listras = 8
-    largura_listra = (W - 1.0) / listras
-    for k in range(listras):
-        s = -(W - 1.0) * 0.5 + largura_listra * (k + 0.5)
-        centro = frente.ponto(s, 3.05, 0.85)
-        cor = "toldo" if k % 2 == 0 else "toldo_listra"
-        p.caixa(centro, (largura_listra, 1.8, 0.06), cor, rot_x=-22.0)
+        vao_de_loja(p, frente, s, 3.3, 2.8)
+    vao_de_loja(p, frente, 4.7, 2.8, 3.0, porta_aco=True)
+    letreiro(p, frente, 0.0, W - 0.6, 4.0)
+    toldo(p, frente, 0.0, W - 1.0, 3.39)
 
     for andar in range(ANDARES):
         z = LOJA_ALTURA + andar * ANDAR
@@ -433,6 +490,85 @@ def mural(p, parede, rng, z0, z1) -> None:
             dz = max(z0 - cz, min(z1 - cz, dz))
             pontos.append(parede.ponto(cs + ds, cz + dz, CAMADA * (2 + k)))
         p.face(pontos, parede.n, cor)
+
+
+# --- Deco --------------------------------------------------------------------
+#
+# O predio de apartamento art deco de Copacabana, dos anos 30 e 40: sete
+# andares sobre loja, um torreao no meio da fachada que sobe alem do telhado,
+# e as linhas horizontais ligando as janelas - a "linha de velocidade" do
+# estilo. E o predio que mais diz Rio na rua, e o que faltava entre o Comercio
+# de quatro andares e as torres.
+
+
+def deco(rng) -> Peca:
+    p = Peca("Deco")
+    W, D = 14.0, 12.0
+    LOJA_ALTURA, ANDAR, ANDARES = 4.4, 3.0, 7
+    TOPO = LOJA_ALTURA + ANDAR * ANDARES
+    PLATIBANDA = TOPO + 0.8
+    TORREAO, SAIDA = 4.6, 0.7
+    p.caixa((0, 0, PLATIBANDA * 0.5), (W, D, PLATIBANDA), "pintura")
+    p.caixa((0, 0, PLATIBANDA), (W + 0.2, D + 0.2, 0.3), "friso")
+    # So 1 cm para fora da parede: a vitrine vai uma `CAMADA` adiante, e o
+    # embasamento no mesmo plano dela piscaria.
+    p.caixa((0, 0, LOJA_ALTURA * 0.5), (W + 0.02, D + 0.02, LOJA_ALTURA), "granito")
+    p.caixa((-3.0, -2.0, PLATIBANDA + 1.2), (2.6, 2.6, 2.2), "caixa_dagua")
+
+    frente, esquerda, direita = paredes(W, D)
+
+    # Terreo: portaria no meio, com a moldura em degraus que e a assinatura
+    # do estilo, e uma loja de cada lado com letreiro e toldo proprios.
+    for k, (largura, cor) in enumerate(((3.4, "friso"), (2.8, "granito"), (2.0, "vitrine"))):
+        altura = 3.6 - k * 0.4
+        frente.placa(p, 0.0, altura * 0.5, largura, altura, cor, CAMADA * (k + 1))
+    frente.caixa(p, 0.0, 3.85, 3.6, 1.6, 0.18, "concreto")
+    for lado in (-1.0, 1.0):
+        s = lado * 4.7
+        vao_de_loja(p, frente, s, 3.8, 2.9, porta_aco=lado < 0.0 and rng.random() < 0.4)
+        letreiro(p, frente, s, 4.4, 3.95)
+        toldo(p, frente, s, 4.2, 3.35)
+
+    # Torreao: a caixa saliente no meio, do primeiro andar ate acima da
+    # platibanda, com janela corrida em cada andar e dois frisos verticais
+    # que passam do topo. Visto de longe, e ele que faz o predio ser deco e
+    # nao um Comercio mais alto.
+    frente.caixa(p, 0.0, (LOJA_ALTURA + PLATIBANDA + 2.4) * 0.5, TORREAO, SAIDA, PLATIBANDA + 2.4 - LOJA_ALTURA, "pintura")
+    torreao = Parede(frente.ponto(0.0, 0.0, SAIDA), frente.u, frente.n, TORREAO)
+    for andar in range(ANDARES):
+        z = LOJA_ALTURA + andar * ANDAR
+        torreao.janela(p, 0.0, z + 0.8, 3.4, 1.5, vidro_sorteado(rng, chance=0.35))
+        torreao.caixa(p, 0.0, z + 0.55, TORREAO, 0.14, 0.14, "friso")
+    for s in (-1.4, 1.4):
+        torreao.caixa(p, s, (LOJA_ALTURA + PLATIBANDA + 3.6) * 0.5, 0.3, 0.3, PLATIBANDA + 3.6 - LOJA_ALTURA, "friso")
+    # Coroamento escalonado: dois degraus em cima do torreao.
+    torreao.caixa(p, 0.0, PLATIBANDA + 2.6, TORREAO - 0.8, SAIDA - 0.1, 0.4, "friso", recuo=SAIDA - 0.05)
+    torreao.caixa(p, 0.0, PLATIBANDA + 3.0, TORREAO - 2.0, SAIDA - 0.3, 0.4, "friso", recuo=SAIDA - 0.15)
+
+    # Os dois lados do torreao: duas janelas por andar com peitoril, e a
+    # sobrancelha corrida por cima delas, de quina a quina. A sombra de 10 cm
+    # dela e a linha horizontal que o estilo inteiro repete.
+    ala = (W - TORREAO) * 0.5
+    for andar in range(ANDARES):
+        z = LOJA_ALTURA + andar * ANDAR
+        for lado in (-1.0, 1.0):
+            meio = lado * (TORREAO + ala) * 0.5
+            frente.caixa(p, meio, z + 2.55, ala, 0.12, 0.12, "friso")
+            for ds in (-1.0, 1.0):
+                s = meio + ds
+                frente.janela(p, s, z + 0.9, 1.4, 1.5, vidro_sorteado(rng, claro="cortina"), peitoril="friso")
+                if rng.random() < 0.25:
+                    frente.caixa(p, s + 0.4, z + 0.55, 0.6, 0.42, 0.4, "ar_condicionado")
+    for s in (-W * 0.5 + 0.25, W * 0.5 - 0.25):
+        frente.caixa(p, s, (LOJA_ALTURA + PLATIBANDA) * 0.5, 0.5, 0.15, PLATIBANDA - LOJA_ALTURA, "friso")
+
+    for lado in (esquerda, direita):
+        for andar in range(ANDARES):
+            z = LOJA_ALTURA + andar * ANDAR
+            lado.caixa(p, 0.0, z + 2.55, D, 0.1, 0.12, "friso")
+            for s in colunas(3, D, 1.2):
+                lado.janela(p, s, z + 0.9, 1.2, 1.4, vidro_sorteado(rng, claro="cortina"), peitoril="friso")
+    return p
 
 
 # --- Escritorio --------------------------------------------------------------
@@ -501,10 +637,18 @@ def torre(rng) -> Peca:
     p.caixa((4.5, 2.0, TOPO + 2.9), (0.12, 0.12, 4.0), "grade")  # antena
 
     frente, esquerda, direita = paredes(W, D)
-    # Pilotis: pilares nos cantos e no meio, e a portaria de vidro.
+    # Pilotis: pilares nos cantos e no meio, a portaria de vidro e uma loja de
+    # cada lado dela, no plano recuado. O toldo sai de baixo da primeira
+    # varanda e passa um pouco da linha dos pilares: e o terreo de qualquer
+    # predio alto de Copacabana.
     for s in (-W * 0.5 + 0.4, -W / 6.0, W / 6.0, W * 0.5 - 0.4):
         frente.caixa(p, s, PILOTIS * 0.5, 0.8, 0.8, PILOTIS, "concreto", recuo=0.8)
     frente.placa(p, 0.0, 1.5, 3.0, 2.8, "vitrine", -1.0 + CAMADA)
+    for lado in (-1.0, 1.0):
+        s = lado * (W / 6.0 + W * 0.5 - 0.4) * 0.5
+        vao_de_loja(p, frente, s, 3.4, 2.9, porta_aco=lado > 0.0 and rng.random() < 0.5, fora=-1.0)
+        letreiro(p, frente, s, 3.8, 3.6, fora=-1.0)
+        toldo(p, frente, s, 3.8, 3.15, saida=1.9, fora=-1.0)
 
     vaos_frente = colunas(5, W, 0.8)
     for andar in range(ANDARES):
@@ -587,11 +731,13 @@ def main() -> None:
     mat = material(albedo)
 
     # Um sorteio por modelo, cada um com a sua semente: mexer no sobrado nao
-    # muda o mural do comercio.
+    # muda o mural do comercio. A semente e a da ordem em que o modelo nasceu,
+    # e nao a posicao na lista: o Deco entrou no meio e ficou com a 4, para o
+    # vidro do Escritorio e da Torre nao mudar com ele.
     x = 0.0
     objetos = []
-    for i, fabrica in enumerate((sobrado, comercio, escritorio, torre)):
-        peca = fabrica(random.Random(SEMENTE + i))
+    for fabrica, n in ((sobrado, 0), (comercio, 1), (deco, 4), (escritorio, 2), (torre, 3)):
+        peca = fabrica(random.Random(SEMENTE + n))
         obj = peca.objeto(mat, colecao, x)
         objetos.append(obj)
         x += 22.0
