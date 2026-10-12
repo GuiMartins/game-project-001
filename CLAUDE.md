@@ -239,6 +239,7 @@ saber onde **não** há rede faz parte do contrato.
 | `arte/xre300.py` | Gera a XRE 300 com a mesma árvore de nós da CG, reaproveitando peças e piloto do `entregador.py`. Nó novo ou renomeado numa moto tem que existir em todas: o ator não tem `if` por modelo. |
 | `arte/pcx160.py` | Gera a PCX 160 do mesmo jeito. Na scooter a `Balanca` é o motor oscilante e a `Pedaleira` é o assoalho. |
 | `assets/entregador/` | O modelo e as texturas que o jogo carrega. Não edite à mão: regere pelo script. |
+| `scripts/ficha_da_moto.gd` | Ficha técnica real de cada moto. Moto nova começa por ela: as medidas guiam o modelo do Blender e a mola sai dela (`FisicaDaMoto`). Sem ficha, o teste reprova. |
 | `scripts/carro.gd` | Os carros do trânsito por dentro: roda, mola, porta, luz e quem dirige. |
 | `arte/carros.py` | Gera hatch, sedã, SUV, táxi e ônibus no Blender. Fonte do `assets/carros/`, que é build. |
 | `scripts/ik.gd` | IK de dois ossos, dos braços do piloto e de quem dirige. |
