@@ -673,7 +673,7 @@ PROVA_DIR = DEV_DIR / "prova"
 
 
 def cmd_prova(args: argparse.Namespace) -> int:
-    """O quadro congelado da prova visual: os mesmos quatro quadros, sempre.
+    """O quadro congelado da prova visual: os mesmos cinco quadros, sempre.
 
     Mesma semente, mesmo trecho de pista, camera encaixada e mundo congelado
     antes do primeiro passo de fisica. Rodar duas vezes da o mesmo PNG - e o

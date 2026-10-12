@@ -360,7 +360,7 @@ e no `git log`.
     e bate no prédio, que tem colisor (`scripts/cidade.gd`). A faixa de
     serviço está desenhada, mas não bloqueia — quem bloqueia é o que mora nela.
 
-- [ ] **V10** — Faixa de pedestres e linha de bordo
+- [x] **V10** — Faixa de pedestres e linha de bordo (12/10/2026)
 
   A zebra é a pintura de maior contraste do vídeo e o marcador de velocidade
   mais forte dele: as listas brancas passando sob a roda.
@@ -374,6 +374,23 @@ e no `git log`.
   - A linha dupla amarela do vídeo **não entra**: é erro da IA (separa
     sentidos opostos, e todo o trânsito do vídeo vai no mesmo sentido).
   - **Aceite:** a zebra passa sem piscar a 180 km/h, julgado rodando.
+  - **Resultado:** o risco não existia. A zebra do CTB e a do vídeo têm as
+    listras **ao longo** da pista, lado a lado: o período (1,2 m, listra de
+    50 cm) é lateral, e quem passa por cima vê cada listra como uma barra de
+    4 m. Nada fino atravessado, então a regra da P4a não chega a valer. A
+    única coisa atravessada é a linha de retenção (50 cm, 1,6 m antes da
+    zebra), que passa uma vez só. Conferido numa sequência de 90 quadros a
+    0,83 m cada (180 km/h a 60 Hz), de 95 m até em cima: a zebra não pisca
+    nem de longe. Uma zebra por cruzamento, na chegada; o tracejado para na
+    retenção e volta depois da boca da rua, e a linha de bordo (20 cm, branca,
+    a 10 cm do meio-fio — a antiga ficava em cima do meio-fio e brigava com
+    ele no depth buffer) abre na boca e na zebra. A pintura da avenida virou
+    malha própria (`RoadTrack.pintar`), refeita quando a `Cidade` sorteia os
+    cruzamentos. A tinta ficou branca (`RoadTrack.TINTA`), também nas ruas.
+    A prova ganhou o quadro `faixa`, ao lado do `t3.0s`. Baseline de física
+    sem variação; visual dentro da tolerância (luminância −2,5%, céu −2,2%).
+    `fps` depois: p50 e p95 em 8,33 ms, no teto de 120 Hz da tela, então não
+    há diferença para medir; a mudança custa uma chamada de desenho.
 
 ### Os prédios e o céu
 

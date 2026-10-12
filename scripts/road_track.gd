@@ -47,10 +47,41 @@ const MEIO_FIO: float = 0.2
 ## A tira de servico depois do andavel, com os postes (que ficam a 0,8 m).
 const FAIXA_SERVICO: float = 1.6
 
+## A pintura da avenida. Branco de tinta de rua, que puxa um pouco para o
+## quente: branco puro, com o sol de meio-dia, estoura antes do LUT.
+const TINTA := Color(0.90, 0.89, 0.84)
+## Linha de bordo: 20 cm, a 10 cm do meio-fio (o CTB pede de 10 a 30 cm). Mais
+## para dentro ela vira mais uma faixa; colada, briga com o meio-fio.
+const BORDO_LARGURA: float = 0.2
+const BORDO_RECUO: float = 0.1
+## A faixa de pedestres zebrada, como a do CTB: listras ao longo da pista, de
+## lado a lado. O periodo e lateral, e nao ao longo: quem passa por cima ve
+## cada listra como uma barra de 4 m, e a regra do `arte/chao.py` (nada fino
+## atravessado com periodo menor que 1,7 m) nao chega a valer. 50 cm de tinta
+## e 70 de asfalto fecham 11 listras nas quatro faixas, sem sobra no meio-fio;
+## o periodo real e de ~1 m, e o 1,2 m segura a listra la longe com mais de
+## um pixel.
+const ZEBRA_COMPRIMENTO: float = 4.0
+const ZEBRA_LISTRA: float = 0.5
+const ZEBRA_PERIODO: float = 1.2
+## Da zebra ate a esquina: o pedestre atravessa na calcada, nao na boca da rua.
+const ZEBRA_ESQUINA: float = 1.0
+## Linha de retencao: 50 cm de largura, 1,6 m antes da zebra (o minimo do CTB).
+## E a unica coisa fina atravessada na pista, e passa uma vez so: sem periodo,
+## nao tem com o que piscar.
+const RETENCAO_LARGURA: float = 0.5
+const RETENCAO_RECUO: float = 1.6
+
 var curve: Curve3D
 var length: float = 0.0
+## Onde a avenida e cruzada, como a `Cidade` sorteou: `[offset, lados]`, com os
+## lados no sinal do `Cidade.LADO_*`. E dele que sai onde a pintura abre.
+var cruzamentos: Array[Vector2] = []
+## Meia largura da boca das ruas que cruzam, no meio-fio da avenida.
+var boca: float = 0.0
 
 var _asphalt_mesh: MeshInstance3D
+var _pintura: MeshInstance3D
 
 
 func build(total_length: float, rng: RandomNumberGenerator) -> void:
@@ -265,8 +296,6 @@ func _build_mesh() -> void:
 	curb.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var servico := SurfaceTool.new()
 	servico.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var paint := SurfaceTool.new()
-	paint.begin(Mesh.PRIMITIVE_TRIANGLES)
 
 	var lift := 0.0
 	var edge := road_w + SHOULDER
@@ -297,15 +326,6 @@ func _build_mesh() -> void:
 		_quad(servico, o0, o1, -edge - FAIXA_SERVICO, -edge, 0.02)
 		_quad(servico, o0, o1, edge, edge + FAIXA_SERVICO, 0.02)
 
-		# Faixas divisorias tracejadas: alem de ler a pista, elas sao a
-		# referencia visual do corredor entre as filas de carro.
-		if i % 3 != 2:
-			for lane in range(1, LANE_COUNT):
-				var x := lane_center(lane) - LANE_WIDTH * 0.5
-				_quad(paint, o0, o1 - 1.2, x - 0.16, x + 0.16, lift + 0.03)
-		_quad(paint, o0, o1, -road_w - 0.28, -road_w + 0.04, lift + 0.03)
-		_quad(paint, o0, o1, road_w - 0.04, road_w + 0.28, lift + 0.03)
-
 	# O asfalto tem que ficar claramente mais claro que o fundo, senao a pista
 	# desaparece e o jogador nao ve pra onde esta indo. Cores de meio-dia, e
 	# neutras ou quentes de proposito: as de antes eram de noite, puxadas pro
@@ -315,13 +335,13 @@ func _build_mesh() -> void:
 	_commit(shoulder, mesh, material_texturizado(CALCADA))
 	_commit(curb, mesh, material_liso(Color(0.70, 0.68, 0.65)))
 	_commit(servico, mesh, material_liso(Color(0.50, 0.49, 0.47)))
-	_commit(paint, mesh, material_liso(Color(0.88, 0.86, 0.68)))
 
 	_asphalt_mesh = MeshInstance3D.new()
 	_asphalt_mesh.name = "RoadMesh"
 	_asphalt_mesh.mesh = mesh
 	_asphalt_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_asphalt_mesh)
+	pintar(cruzamentos, boca)
 	if (
 		OS.has_environment("RUSHFOOD_SELFTEST_TRACE")
 		or OS.has_environment("RUSHFOOD_SELFTEST_SHOTS")
@@ -339,6 +359,89 @@ func _build_mesh() -> void:
 					% [i, mesh.surface_get_array_len(i), mesh.surface_get_material(i)]
 				)
 			)
+
+
+## A tinta da avenida: tracejado, linha de bordo e, em cada cruzamento, zebra
+## e linha de retencao. Malha propria, refeita quando a `Cidade` sorteia onde a
+## avenida e cruzada: a pista e a cidade saem de geradores diferentes, e a
+## pintura e o unico ponto onde uma depende da outra.
+func pintar(a_cruzamentos: Array[Vector2], a_boca: float) -> void:
+	cruzamentos = a_cruzamentos
+	boca = a_boca
+	if _pintura:
+		_pintura.queue_free()
+	var road_w := half_width()
+	var tinta := SurfaceTool.new()
+	tinta.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	# Onde cada pintura corrida abre. O tracejado para na retencao e volta do
+	# outro lado do cruzamento, como manda o CTB; a linha de bordo abre na boca
+	# da rua, do lado que ela chega, e na zebra, dos dois.
+	var sem_tracejado: Array[Vector2] = []
+	var sem_bordo: Array[Array] = [[], []]
+	for c in cruzamentos:
+		var zebra_fim := c.x - boca - ZEBRA_ESQUINA
+		var zebra_inicio := zebra_fim - ZEBRA_COMPRIMENTO
+		var retencao := zebra_inicio - RETENCAO_RECUO - RETENCAO_LARGURA
+		sem_tracejado.append(Vector2(retencao, c.x + boca))
+		for k in 2:
+			var side := -1.0 if k == 0 else 1.0
+			var fim := c.x + boca if c.y == 0.0 or c.y == side else zebra_fim
+			sem_bordo[k].append(Vector2(retencao, fim))
+		var x := -road_w + (ZEBRA_PERIODO - ZEBRA_LISTRA) * 0.5
+		while x + ZEBRA_LISTRA <= road_w:
+			_quad(tinta, zebra_inicio, zebra_fim, x, x + ZEBRA_LISTRA, 0.03)
+			x += ZEBRA_PERIODO
+		_quad(tinta, retencao, retencao + RETENCAO_LARGURA, -road_w, road_w, 0.03)
+
+	var steps := int(length / MESH_STEP)
+	for i in range(steps):
+		var o0 := float(i) * MESH_STEP
+		var o1 := minf(o0 + MESH_STEP, length)
+		# Faixas divisorias tracejadas: alem de ler a pista, elas sao a
+		# referencia visual do corredor entre as filas de carro.
+		if i % 3 != 2 and _livre(o0, o1 - 1.2, sem_tracejado):
+			for lane in range(1, LANE_COUNT):
+				var x := lane_center(lane) - LANE_WIDTH * 0.5
+				_quad(tinta, o0, o1 - 1.2, x - 0.16, x + 0.16, 0.03)
+		var dentro := road_w - BORDO_RECUO
+		for t in _recorta(o0, o1, sem_bordo[0]):
+			_quad(tinta, t.x, t.y, -dentro, -dentro + BORDO_LARGURA, 0.03)
+		for t in _recorta(o0, o1, sem_bordo[1]):
+			_quad(tinta, t.x, t.y, dentro - BORDO_LARGURA, dentro, 0.03)
+
+	var mesh := ArrayMesh.new()
+	_commit(tinta, mesh, material_liso(TINTA))
+	_pintura = MeshInstance3D.new()
+	_pintura.name = "Pintura"
+	_pintura.mesh = mesh
+	_pintura.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_pintura)
+
+
+## Se `[a, b]` nao encosta em nenhum dos `buracos`.
+static func _livre(a: float, b: float, buracos: Array[Vector2]) -> bool:
+	for h in buracos:
+		if a < h.y and b > h.x:
+			return false
+	return true
+
+
+## O que sobra de `[a, b]` tirando os `buracos`, em trechos.
+static func _recorta(a: float, b: float, buracos: Array) -> Array[Vector2]:
+	var trechos: Array[Vector2] = [Vector2(a, b)]
+	for h: Vector2 in buracos:
+		var sobra: Array[Vector2] = []
+		for t in trechos:
+			if t.y <= h.x or t.x >= h.y:
+				sobra.append(t)
+				continue
+			if t.x < h.x:
+				sobra.append(Vector2(t.x, h.x))
+			if t.y > h.y:
+				sobra.append(Vector2(h.y, t.y))
+		trechos = sobra
+	return trechos
 
 
 ## `u` e o U nas bordas `x0` e `x1`; com `tile` maior que zero, o quad ganha UV,
