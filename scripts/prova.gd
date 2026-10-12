@@ -1,7 +1,7 @@
 extends Node
 ## O quadro congelado da prova visual (P0 do `docs/PROVA_VISUAL.md`).
 ##
-## `godot -- --prova` monta a corrida, poe o pelotao em quatro pontos fixos da
+## `godot -- --prova` monta a corrida, poe o pelotao em cinco pontos fixos da
 ## pista e salva o que o SubViewport desenhou em cada um. Sem isto, toda
 ## comparacao de visual e contra um print diferente - outro instante, outro
 ## transito, outra camera -, e "melhorou?" deixa de ter resposta. E o mesmo
@@ -28,6 +28,7 @@ const QUADROS_DE_ESPERA: int = 3
 ##   deitada e a rua abrindo para um lado.
 ## - `ladeira`: tambem nao ha ladeira; o `t1.0s` e o de horizonte mais alto.
 ## - `reta`: corredor de predio fechando no ponto de fuga, como no `t5.0s`.
+## - `faixa`: a zebra chegando por baixo da moto, como no `t3.0s`.
 ##
 ## As imagens paradas (V01 do backlog visual) entram ao lado quando existirem;
 ## enquanto nao, ficam de fora sem reclamar, porque a folha continua servindo
@@ -37,6 +38,7 @@ const REFERENCIAS: Dictionary = {
 	"curva": ["video_01/t3.8s.png", "04_vertical.png"],
 	"ladeira": ["video_01/t1.0s.png", "03_viaduto.png"],
 	"reta": ["video_01/t5.0s.png", "02_praca_maua.png"],
+	"faixa": ["video_01/t3.0s.png"],
 }
 ## Fundo do que sobra quando uma linha e mais curta que a mais longa. Cinza
 ## medio, e nao preto: preto se confunde com o tunel e a sombra do jogo.
@@ -194,6 +196,13 @@ static func pontos(track: RoadTrack) -> Array[Dictionary]:
 	lista.append({"nome": "curva", "offset": curva - 40.0, "velocidade": 25.0})
 	lista.append({"nome": "ladeira", "offset": ladeira - 40.0, "velocidade": 25.0})
 	lista.append({"nome": "reta", "offset": reta - 40.0, "velocidade": 25.0})
+	# A primeira zebra longe da largada, entrando no quadro como a do `t3.0s`:
+	# a retencao a uns 25 m da camera, a zebra inteira no chao do quadro.
+	for c in track.cruzamentos:
+		if c.x > 150.0:
+			var zebra := c.x - track.boca - RoadTrack.ZEBRA_ESQUINA - RoadTrack.ZEBRA_COMPRIMENTO
+			lista.append({"nome": "faixa", "offset": zebra - 38.0, "velocidade": 25.0})
+			break
 	return lista
 
 

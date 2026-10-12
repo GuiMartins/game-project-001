@@ -34,6 +34,7 @@ func _init(a_track: RoadTrack) -> void:
 ## mexe no transito nem nos rivais.
 func montar(rua: RandomNumberGenerator, props: Node3D) -> void:
 	var cruzamentos := _sorteia_cruzamentos(rua)
+	track.pintar(cruzamentos, RUA_LARGURA * 0.5)
 	_monta_ruas(cruzamentos, rua, props)
 	for side: float in [-1.0, 1.0]:
 		_monta_quarteirao(side, cruzamentos, rua, props)
@@ -227,7 +228,7 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 	asfalto.commit(malha)
 	malha.surface_set_material(0, RoadTrack.material_texturizado(RoadTrack.ASFALTO))
 	tinta.commit(malha)
-	malha.surface_set_material(1, RoadTrack.material_liso(Color(0.88, 0.86, 0.68)))
+	malha.surface_set_material(1, RoadTrack.material_liso(RoadTrack.TINTA))
 	var ruas := MeshInstance3D.new()
 	ruas.name = "Ruas"
 	ruas.mesh = malha

@@ -566,4 +566,4 @@ para o ombro), o giro e o tremor de banda. O piloto segue ocupando ~40% da
 altura da tela, contra ~29% na perseguição.
 
 Para comparar um ajuste com outro, `python tools/dev.py prova --garupa` tira
-os mesmos quatro quadros congelados da prova visual pela câmera de garupa.
+os mesmos quadros congelados da prova visual pela câmera de garupa.
