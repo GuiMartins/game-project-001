@@ -159,13 +159,12 @@ uma grande para número (velocidade, posição) e uma pequena para legenda.
 | `docs/referencias/*.png` | **As quatro imagens entram no repositório.** A prova compara contra elas; comparação contra arquivo que mora no chat de alguém não é reproduzível |
 | `docs/referencias/video_01.mp4` | A referência em movimento: 6 s de corrida, com câmera, inclinação, trânsito e HUD medidos quadro a quadro em [REFERENCIA_VIDEO.md](REFERENCIA_VIDEO.md) |
 
-**Pendente, e é a única linha do manifesto que não pode ser produzida por quem
-executa o plano:** as quatro imagens chegaram anexadas numa conversa, não como
-arquivo no disco. Elas precisam ser salvas em `docs/referencias/` por quem as
-tem. Até isso acontecer, a P9 não tem contra o quê comparar — e o critério de
-pronto deste plano inteiro depende delas.
+**Entregue em 12/10/2026 (V01 do backlog visual):** as quatro imagens chegaram
+anexadas numa conversa, não como arquivo no disco, e foram as últimas peças do
+manifesto a entrar, por só quem as tinha poder produzi-las. Agora a P9 tem
+contra o quê comparar.
 
-Nomear `01_centro.png`, `02_praca_maua.png`, `03_viaduto.png`,
+Nomeadas `01_centro.png`, `02_praca_maua.png`, `03_viaduto.png`,
 `04_vertical.png`, para que o texto possa citar uma imagem específica sem
 ambiguidade.
 
