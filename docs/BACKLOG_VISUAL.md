@@ -196,7 +196,7 @@ e no `git log`.
     carro e pega a quina mais em cheio. O portão da disputa reprovava quando
     o piloto automático vencia, e foi consertado antes, em PR próprio.
 
-- [x] **V05a** 👤 — Física por moto: CG, XRE e PCX andam diferente (12/10/2026)
+- [x] **V05a** 👤 — Física por moto: CG, XRE e PCX andam diferente (12/10/2026, #73)
 
   Hoje as três motos só trocam de modelo: a física é uma só, do
   `BikeTuning`. Depois da mola da V05, o Guilherme quer que cada moto tenha
