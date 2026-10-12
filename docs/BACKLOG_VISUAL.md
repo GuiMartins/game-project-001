@@ -133,7 +133,7 @@ e no `git log`.
 
 ### Enquadramento
 
-- [x] **V04** — Câmera de perseguição perto e baixa (11/10/2026)
+- [x] **V04** — Câmera de perseguição perto e baixa (12/10/2026, #68)
 
   A maior distância entre o vídeo e o jogo, e a que decide o que todo o resto
   precisa mostrar: no vídeo o piloto ocupa ~53% da altura e a câmera está
