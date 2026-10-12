@@ -471,7 +471,7 @@ O mundo renderiza em 640×360 e a janela amplia. Custo de GPU fixo, seja a tela
 de 720p ou 4K, e é por isso que a escolha escala. O que sobra de problema está
 no passo de ampliar, não no render.
 
-- [x] **V28** — Tela cheia sem tremor em escala quebrada (12/10/2026)
+- [x] **V28** — Tela cheia sem tremor nem cintilação em movimento (12/10/2026)
 
   Em `scale_mode = fractional` com filtro nearest, toda janela que não é
   múltipla inteira de 640×360 (tela de Mac a 3,76×, 1366×768, 1600×900) faz
@@ -490,6 +490,15 @@ no passo de ampliar, não no render.
   filtro **trilinear** na textura dos prédios (era nearest). Na `prova` o
   quadro parado fica quase igual; `shots` andou menos de 1%; `fps` igual
   (p50 8,33 ms, mesma máquina da V25).
+
+  O que ainda tremia era a **borda das sombras**, só andando. Sombra não passa
+  pelo MSAA (é sombreamento, não geometria), e dura ela é mais fina que o
+  pixel. Ficou macia na qualidade máxima de PCF com `shadow_blur = 3`, uma
+  penumbra de ~1 pixel em todas as divisões; anisotrópico do chão subiu de 4×
+  para 16×. Testado e descartado no caminho: sombra dura (continua
+  serrilhando), FOV em degraus (o Godot escala a sombra pelo FOV, mas não era
+  isso que se via) e dither mais fraco (não era ele). `shots`:
+  `familias_de_cor` +3,6%, o resto abaixo de 1%; `fps` igual.
 
 - [ ] **V29** — Proporção de tela: tarja ou mais mundo
 

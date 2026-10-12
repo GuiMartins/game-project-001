@@ -56,7 +56,19 @@ common/physics_ticks_per_second=60
 
 [rendering]
 
+; 16x, e nao o padrao de 4x: o chao e visto quase de lado, e nessa inclinacao
+; a razao de anisotropia passa de 4 logo a frente da moto. Acima do limite o
+; grao claro do asfalto deixa de ser media e vira ponto que acende e apaga.
+textures/default_filters/anisotropic_filtering_level=4
 textures/canvas_textures/default_texture_filter=0
+; Sombra macia na qualidade maxima, e nao o padrao (baixa) nem a dura. A
+; borda de sombra nao passa pelo MSAA (e sombreamento, nao geometria): dura,
+; ela e mais fina que o pixel de 640x360 e serrilha andando com a camera. O
+; PCF a alarga para ~1 pixel (o `shadow_blur` em `world.gd`), que e o
+; antialiasing dela. Qualidade maxima porque o PCF do Godot gira as amostras
+; por um ruido preso ao pixel da tela: com poucas amostras a penumbra vira
+; chuvisco; com o maximo o ruido fica abaixo de um degrau da paleta.
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=5
 anti_aliasing/quality/msaa_3d=0
 anti_aliasing/quality/screen_space_aa=0
 scaling_3d/fsr_sharpness=0.0
