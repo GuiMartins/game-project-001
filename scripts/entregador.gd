@@ -95,13 +95,11 @@ const TRONCO_PE_NO_CHAO: float = 6.0
 const TRONCO_NA_CURVA: float = 0.12
 
 ## Quanto o guidao vira com o esterco inteiro, em graus, parado e a partir de
-## 14 m/s. Moto de verdade quase nao vira o guidao em velocidade: a curva sai
-## da inclinacao, e e assim que o `PlayerBike` funciona.
+## 14 m/s. Em velocidade a curva sai da inclinacao, como no `PlayerBike`.
 const ESTERCO_DEVAGAR: float = 20.0
 const ESTERCO_RAPIDO: float = 4.0
-## Quanto do esterco o tronco acompanha, girando os ombros para o lado da
-## curva. Sem isso, com o guidao no batente, a manopla de fora foge do alcance
-## do braco: e o que todo piloto faz, e o que deixa o IK chegar.
+## Quanto do esterco o tronco acompanha, girando os ombros para a curva. Sem
+## isso, com o guidao no batente, a manopla de fora foge do alcance do braco.
 const TRONCO_SEGUE_GUIDAO: float = 0.5
 
 ## A cabeca procura o horizonte: desfaz esta fracao da inclinacao da moto. E
@@ -296,6 +294,7 @@ var _passo: float = 1.0 / 60.0
 var _rodado: float = 0.0
 var _tremor := Tremor.new()
 var _cotovelos := Cotovelos.new()
+var _comandos := Comandos.new()
 ## Quanto o tremor afunda a frente (x) e a traseira (y) neste passo, em metros.
 var _treme := Vector2.ZERO
 ## O borrao de cada roda em alta, na ordem de `_rodas`.
@@ -443,6 +442,7 @@ func _monta() -> void:
 			_contatos.append([no, Vector3.ZERO, 0.06])
 		_contatos.append([_pernas[i][1], Vector3.ZERO, 0.07])
 		_contatos.append([_pernas[i][2], Vector3.ZERO, 0.08])
+	_comandos.montar(_modelo, FichaDaMoto.de(modelo))
 
 
 ## Veste o corredor de uma cor: bag e moto nela, jaqueta num tom escuro dela.
@@ -513,6 +513,7 @@ func atualizar(
 	for lisa in _lisas:
 		lisa.atualizar(v)
 	_mede(delta, velocidade, inclinacao, caido)
+	_comandos.passo(delta, v, acelerador, _a_long, caido)
 
 	var parado := v < PARADO and not caido
 	_pe = move_toward(_pe, 1.0 if parado else 0.0, delta / TEMPO_DO_PE)
@@ -764,7 +765,7 @@ func _posa_piloto() -> void:
 			polo = polo.lerp(polo_arma, arma).lerp(polo_bate, bate)
 		_ik(braco[0], braco[1], mao, alvo, polo)
 		# Na manopla a luva segue o guidao; no soco, o antebraco.
-		var no_guidao := _direcao.global_basis.get_rotation_quaternion()
+		var no_guidao := (_direcao.global_basis * _comandos.pulso(i)).get_rotation_quaternion()
 		var no_braco := (braco[1] as Node3D).global_basis.get_rotation_quaternion()
 		mao.global_basis = Basis(no_guidao.slerp(no_braco, solta))
 
@@ -781,13 +782,12 @@ func _posa_piloto() -> void:
 			pedaleira = pedaleira.lerp(global_transform * PE_NO_CHAO, no_chao)
 			polo_perna = polo_perna.lerp(global_basis * Vector3(-0.3, 0.3, -1.0), no_chao)
 		_ik(perna[0], perna[1], pe, pedaleira, polo_perna)
-		# Na pedaleira a bota acompanha a moto; no chao, assenta no asfalto.
-		# Por quaternion, e nao `Basis.slerp`: o `global_basis` sai do produto
-		# de tombo, guinada e inclinacao, e chega com o comprimento dos eixos em
-		# 0,9999. O `slerp` da Basis exige rotacao exata e cospe um erro por pe
-		# por passo de fisica; `get_rotation_quaternion` ortonormaliza antes.
-		var na_moto := base.get_rotation_quaternion()
+		# Na pedaleira a bota acompanha a moto (e o pedal); no chao, assenta no
+		# asfalto. Por quaternion: o `slerp` da Basis exige rotacao exata, e o
+		# produto de tombo, guinada e inclinacao chega com eixo de 0,9999.
+		var na_moto := (base * _comandos.bota(i)).get_rotation_quaternion()
 		pe.global_basis = Basis(na_moto.slerp(global_basis.get_rotation_quaternion(), no_chao))
+	_comandos.posar()
 
 
 ## Quanto do soco ja aconteceu: (armar, bater, peso). `armar` e `bater` vao de

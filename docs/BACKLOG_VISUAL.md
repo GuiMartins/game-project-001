@@ -290,6 +290,28 @@ e no `git log`.
   de 20° ninguém solta o braço. Só pose: baseline sem variação, e nenhuma
   malha nova na tela (sem `fps`).
 
+- [x] **V07a** 👤 — Mãos e pés nos comandos: gás, freio e marcha (12/10/2026, #78)
+
+  Ideia do Guilherme jogando a V07: acelerar é torcer o pulso para baixo,
+  quase em ângulo reto com o antebraço, e a pilotagem tem ainda o freio e a
+  troca de marcha.
+
+  - **Decisão 👤:** pose **e** peças que se mexem (manete, pedal), e não só
+    pose.
+  - **Resultado:** `Comandos`, classe pequena do ator. O pulso direito torce
+    até 65° com o gás e volta 12° na freada; a freada é a que o ator já mede
+    (a mesma que afunda o garfo), então vale para o rival sem nada novo no
+    corpo. Manete (embreagem e freio), pedal de câmbio, pedal de freio e os
+    dedos viraram peças no Blender nas três motos (`Manete_E/D`,
+    `Pedal_Cambio`, `Pedal_Freio`, `Dedos_E/D`); na PCX os pedais são vazios
+    pelo contrato da árvore, e a manete esquerda é o freio de trás. Os dedos
+    grudam na manete e largam quando o pulso torce o gás. A marcha é de
+    mentira, contada pela velocidade em faixas que encurtam: quantas sai da
+    ficha (`FichaDaMoto.marchas`: CG e XRE 5, PCX automática), e cada troca
+    puxa a embreagem, alivia o gás e mexe a bota (redução com tapa no gás).
+    A manete antiga era uma `barra` que media só em Y e Z, e saía um cubo de
+    1 cm: ninguém via. Baseline sem variação; `shots` passa.
+
 ### Velocidade
 
 - [ ] **V08** — Borrão radial com máscara de profundidade

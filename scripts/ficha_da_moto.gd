@@ -26,6 +26,9 @@ var pneus: PackedStringArray
 var cilindrada_cm3: float
 var potencia_cv: float
 var torque_kgfm: float
+## Marchas do cambio; 0 e automatico (CVT). Nao entra na fisica: e o ator que
+## troca de marcha pela velocidade, com a mao na embreagem e o pe na alavanca.
+var marchas: int
 
 
 func _init(
@@ -35,7 +38,8 @@ func _init(
 	a_pneus: PackedStringArray,
 	a_cilindrada: float,
 	a_potencia: float,
-	a_torque: float
+	a_torque: float,
+	a_marchas: int
 ) -> void:
 	peso_kg = a_peso
 	entre_eixos_mm = a_entre_eixos
@@ -44,6 +48,7 @@ func _init(
 	cilindrada_cm3 = a_cilindrada
 	potencia_cv = a_potencia
 	torque_kgfm = a_torque
+	marchas = a_marchas
 
 
 ## A ficha do `modelo` (um `Entregador.Modelo`), ou null se a moto nao tem.
@@ -52,15 +57,16 @@ static func de(modelo: int) -> FichaDaMoto:
 		Entregador.Modelo.CG_160:
 			# CG 160 Titan, a moto do entregador.
 			return FichaDaMoto.new(
-				117.0, 1315.0, 790.0, ["80/100-18", "100/80-18"], 162.7, 14.9, 1.4
+				117.0, 1315.0, 790.0, ["80/100-18", "100/80-18"], 162.7, 14.9, 1.4, 5
 			)
 		Entregador.Modelo.XRE_300:
+			# A XRE 300 de cinco marchas; a Sahara, que veio depois, tem seis.
 			return FichaDaMoto.new(
-				148.0, 1417.0, 860.0, ["90/90-21", "120/80-18"], 291.6, 25.6, 2.8
+				148.0, 1417.0, 860.0, ["90/90-21", "120/80-18"], 291.6, 25.6, 2.8, 5
 			)
 		Entregador.Modelo.PCX_160:
 			return FichaDaMoto.new(
-				124.0, 1313.0, 764.0, ["110/70-14", "130/70-13"], 156.9, 16.0, 1.5
+				124.0, 1313.0, 764.0, ["110/70-14", "130/70-13"], 156.9, 16.0, 1.5, 0
 			)
 	return null
 

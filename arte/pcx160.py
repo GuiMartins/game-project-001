@@ -206,6 +206,10 @@ def corpo(material, colecao, pai) -> None:
         c.caixa((lado * 0.09, -0.10, 0.37), (0.02, 0.10, 0.12), "preto")
 
     c.objeto(material, colecao, pai)
+    # Scooter nao tem pedal: cambio e automatico e os dois freios sao de mao.
+    # Os vazios existem pelo contrato da arvore, e o ator gira o nada.
+    vazio("Pedal_Cambio", (-0.16, 0.10, 0.32), colecao, pai)
+    vazio("Pedal_Freio", (0.16, 0.10, 0.32), colecao, pai)
 
 
 def direcao(material, colecao, pai):
@@ -241,13 +245,16 @@ def direcao(material, colecao, pai):
         d.tubo((lado * 0.24, m.y + 0.01, m.z), (lado * (m.x - 0.065), m.y, m.z), 0.012, 0.012, "preto", lados=6)
         d.tubo((lado * (m.x - 0.065), m.y, m.z), (lado * (m.x + 0.06), m.y - 0.01, m.z), 0.018, 0.018, "borracha", lados=8)
         d.caixa((lado * 0.25, m.y, m.z), (0.045, 0.05, 0.045), "preto")  # punho de comando
-        # Scooter tem manete dos dois lados: freio na frente e freio atras.
-        d.barra((lado * 0.27, m.y + 0.04, m.z + 0.01), (lado * 0.39, m.y + 0.04, m.z), 0.012, 0.012, "metal")
         # Retrovisor: sai da capa, alto e aberto.
         d.tubo((lado * 0.22, 0.25, 1.06), (lado * 0.29, 0.24, 1.26), 0.007, 0.007, "preto", lados=4)
         d.caixa((lado * 0.31, 0.24, 1.28), (0.12, 0.025, 0.07), "preto")
         d.caixa((lado * 0.31, 0.226, 1.28), (0.10, 0.004, 0.055), "cromado")
-    return d.objeto(material, colecao, pai)
+    obj = d.objeto(material, colecao, pai)
+    # Scooter tem manete dos dois lados: freio de tras na esquerda, da frente
+    # na direita.
+    for lado, sufixo in ((-1.0, "E"), (1.0, "D")):
+        e.manete(material, colecao, obj, sufixo, (lado * 0.27, m.y + 0.04, m.z + 0.01), (lado * 0.39, m.y + 0.04, m.z))
+    return obj
 
 
 def garfo(material, colecao, pai):
@@ -385,6 +392,7 @@ def monta(mat, colecao, raiz) -> None:
         INCLINACAO_TORSO=INCLINACAO_TORSO,
         MANOPLA=MANOPLA,
         PEDALEIRA=PEDALEIRA,
+        MANETE=0.04,
     )
 
 
