@@ -499,7 +499,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     portão visual em 4 rodadas: não medido** — o `shots` travou nesta
     máquina com 0 quadros, inclusive na `master`; fica com o CI.
 
-- [x] **V08a** — Borrão que risca o asfalto já em cruzeiro (13/10/2026)
+- [x] **V08a** — Borrão que risca o asfalto já em cruzeiro (13/10/2026, #93)
 
   A 128 km/h as referências têm o terço de baixo do asfalto todo em risco e
   a zebra riscada. O jogo, na mesma velocidade (`dev.py prova --kmh 128`),
