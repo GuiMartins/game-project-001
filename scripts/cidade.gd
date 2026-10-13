@@ -54,11 +54,24 @@ const CANTEIRO := Vector3(2.2, 0.5, 6.0)
 const CANTEIRO_PASSO: float = 10.0
 const COR_CANTEIRO := Color(0.62, 0.60, 0.56)
 const COR_GRAMA := Color(0.30, 0.46, 0.18)
-## A distancia entre um grupo de arvores e o seguinte, de cada lado.
-const ARVORE_PASSO := Vector2(35.0, 75.0)
-## A chance de o grupo ser uma copa, e nao palmeiras. Menos da metade: a copa
-## e o momento de passar por baixo, e momento repetido perde a graca.
-const ARVORE_COPA: float = 0.4
+## A faixa de grama colada na fachada da praca: largura, e o comprimento de
+## cada pedaco, curto o bastante para seguir a curva da avenida.
+const GRAMA_LARGURA: float = 1.6
+const GRAMA_PASSO: float = 4.0
+## A distancia entre um ponto da faixa de servico e o seguinte, de cada lado.
+const SERVICO_PASSO := Vector2(30.0, 65.0)
+## A chance de cada coisa num ponto da faixa de servico; o que sobra e mupi.
+## Copa e menos de um terco: e o momento de passar por baixo, e momento
+## repetido perde a graca.
+const ARVORE_COPA: float = 0.3
+const PALMEIRAS: float = 0.4
+const CACAMBA: float = 0.15
+## A placa de curva: a janela em que o giro e medido, o giro a partir do qual
+## e curva (0,2 rad em 40 m e um raio de ~200 m) e quanto antes dela a placa
+## fica - a 35 m/s, um segundo e meio de aviso.
+const CURVA_JANELA: float = 40.0
+const CURVA_LIMIAR: float = 0.2
+const CURVA_AVISO: float = 50.0
 ## Entre uma palmeira e a do lado, no grupo.
 const PALMEIRA_PASSO: float = 4.0
 
@@ -79,9 +92,11 @@ func montar(rua: RandomNumberGenerator, props: Node3D) -> void:
 	for side: float in [-1.0, 1.0]:
 		_monta_quarteirao(side, cruzamentos, trechos, rua, props)
 		_monta_praca(side, cruzamentos, trechos, props)
-	# Por ultimo, para os sorteios das arvores nao mexerem em predio nem rua.
+	# Por ultimo, para os sorteios da faixa de servico nao mexerem em predio
+	# nem rua. As placas de curva nao sorteiam nada.
 	for side: float in [-1.0, 1.0]:
-		_monta_arvores(side, cruzamentos, rua, props)
+		_monta_faixa_de_servico(side, cruzamentos, rua, props)
+	_monta_placas(cruzamentos, props)
 
 
 ## Onde a avenida e largo e onde e corredor. Cada um e `[fim, recuo]`: o
@@ -210,6 +225,10 @@ func _monta_praca(
 	var terra := BoxMesh.new()
 	terra.size = Vector3(CANTEIRO.x - 0.3, 0.02, CANTEIRO.z - 0.3)
 	terra.material = RoadTrack.material_liso(COR_GRAMA)
+	# A faixa de grama colada na fachada da praca (V17, `video_01/t2.0s`): o
+	# verde que separa a calcada do predio recuado. Uma malha so para todas.
+	var grama := SurfaceTool.new()
+	grama.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var inicio := 0.0
 	for t in trechos:
 		if t.y > 0.0:
@@ -224,34 +243,104 @@ func _monta_praca(
 				if not na_rua:
 					_canteiro(props, track.transform_at(o, lateral), caixa, terra)
 				o += CANTEIRO_PASSO
+			var fachada := (edge + RECUO_FACHADA + t.y) * side
+			var dentro := fachada - GRAMA_LARGURA * side
+			var g := inicio
+			while g < minf(t.x, track.length) - 0.1:
+				var g1 := minf(g + GRAMA_PASSO, minf(t.x, track.length))
+				if not Cidade.na_boca(cruzamentos, (g + g1) * 0.5, side):
+					var acima := Vector3.UP * 0.04
+					var cantos: Array[Vector3] = [
+						track.point(g, dentro) + acima,
+						track.point(g, fachada) + acima,
+						track.point(g1, fachada) + acima,
+						track.point(g1, dentro) + acima,
+					]
+					_quad_deitado(grama, cantos, [])
+				g = g1
 		inicio = t.x
+	var malha := ArrayMesh.new()
+	grama.commit(malha)
+	if malha.get_surface_count() > 0:
+		malha.surface_set_material(0, RoadTrack.material_liso(COR_GRAMA))
+		var faixa := MeshInstance3D.new()
+		faixa.name = "Grama"
+		faixa.mesh = malha
+		faixa.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		props.add_child(faixa)
 
 
-## Palmeira em grupo de duas ou tres e arvore de copa debrucada sobre a pista,
-## na faixa de servico (V16). Um grupo a cada 35 a 75 m de cada lado: mais
-## que isso a avenida vira bosque e esconde a fachada, que e o referencial de
-## velocidade; menos e a copa por cima da camera vira acidente, e nao ritmo.
-func _monta_arvores(
+## O que mora na faixa de servico, 3 m depois do meio-fio: palmeira em grupo
+## de duas ou tres e arvore de copa debrucada sobre a pista (V16), cacamba e
+## mupi (V17). Um ponto a cada 30 a 65 m de cada lado, e uma coisa so por
+## ponto: sorteadas juntas, a cacamba nunca cai dentro do tronco da palmeira.
+## Mais denso que isso a avenida vira bosque e esconde a fachada, que e o
+## referencial de velocidade; menos e a copa por cima da camera vira acidente,
+## e nao ritmo.
+func _monta_faixa_de_servico(
 	side: float, cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props: Node3D
 ) -> void:
-	# Na faixa de servico, 3 m depois do meio-fio: atras da linha dos postes
-	# (0,6 m) e da do rival que terminou a corrida (1,6 m).
+	# Atras da linha dos postes (0,6 m) e da do rival que terminou a corrida
+	# (1,6 m).
 	var lateral := (
 		(RoadTrack.half_width() + RoadTrack.SHOULDER + RoadTrack.FAIXA_SERVICO * 0.5) * side
 	)
 	var o := rua.randf_range(20.0, 60.0)
 	while o < track.length - 20.0:
-		var copa := rua.randf() < ARVORE_COPA
-		var quantas := 1 if copa else rua.randi_range(2, 3)
-		for i in quantas:
-			var aqui := o + i * PALMEIRA_PASSO
-			if Cidade.na_boca(cruzamentos, aqui, side):
-				continue
-			var pe := track.point(aqui, lateral)
-			var para_a_pista := track.sample_basis(aqui).x * -side
-			var tipo := Arvore.Tipo.COPA if copa else Arvore.Tipo.PALMEIRA
-			props.add_child(Arvore.criar(tipo, pe, para_a_pista))
-		o += rua.randf_range(ARVORE_PASSO.x, ARVORE_PASSO.y)
+		var sorteio := rua.randf()
+		var quantas := rua.randi_range(2, 3)
+		var para_a_pista := track.sample_basis(o).x * -side
+		var ao_longo := -track.sample_basis(o).z
+		if Cidade.na_boca(cruzamentos, o, side):
+			pass
+		elif sorteio < ARVORE_COPA:
+			props.add_child(Arvore.criar(Arvore.Tipo.COPA, track.point(o, lateral), para_a_pista))
+		elif sorteio < ARVORE_COPA + PALMEIRAS:
+			for i in quantas:
+				var aqui := o + i * PALMEIRA_PASSO
+				if not Cidade.na_boca(cruzamentos, aqui, side):
+					var pe := track.point(aqui, lateral)
+					props.add_child(Arvore.criar(Arvore.Tipo.PALMEIRA, pe, para_a_pista))
+		elif sorteio < ARVORE_COPA + PALMEIRAS + CACAMBA:
+			var tipo := Mobiliario.Tipo.CACAMBA
+			props.add_child(Mobiliario.criar(tipo, track.point(o, lateral), para_a_pista))
+		else:
+			# O mupi encara quem vem: a foto acesa e para o transito ler.
+			var tipo := Mobiliario.Tipo.MUPI
+			props.add_child(Mobiliario.criar(tipo, track.point(o, lateral), -ao_longo))
+		o += rua.randf_range(SERVICO_PASSO.x, SERVICO_PASSO.y)
+
+
+## O losango amarelo antes de cada curva (V17), do lado direito, encarando
+## quem vem. A curva e medida como na prova visual: quanto o rumo gira em
+## `CURVA_JANELA` metros. A placa fica `CURVA_AVISO` antes de onde a curva
+## comeca, no andavel, depois da linha dos postes.
+func _monta_placas(cruzamentos: Array[Vector2], props: Node3D) -> void:
+	var lateral := RoadTrack.half_width() + 1.4
+	var na_curva := false
+	var o := 0.0
+	while o < track.length - CURVA_JANELA:
+		var giro := giro_em(track, o)
+		var agora := absf(giro) > CURVA_LIMIAR
+		if agora and not na_curva and o >= CURVA_AVISO:
+			var aqui := o - CURVA_AVISO
+			if not Cidade.na_boca(cruzamentos, aqui, 1.0):
+				# Guinada positiva gira para a esquerda.
+				var tipo := (
+					Mobiliario.Tipo.PLACA_ESQUERDA if giro > 0.0 else Mobiliario.Tipo.PLACA_DIREITA
+				)
+				var quem_vem := track.sample_basis(aqui).z
+				props.add_child(Mobiliario.criar(tipo, track.point(aqui, lateral), quem_vem))
+		na_curva = agora
+		o += 10.0
+
+
+## Quanto o rumo da pista gira de `o` ate `CURVA_JANELA` metros adiante, em
+## radianos. Positivo e para a esquerda, como a guinada.
+static func giro_em(pista: RoadTrack, o: float) -> float:
+	var a := -pista.sample_basis(o).z
+	var b := -pista.sample_basis(o + CURVA_JANELA).z
+	return wrapf(atan2(b.x, b.z) - atan2(a.x, a.z), -PI, PI)
 
 
 func _canteiro(props: Node3D, onde: Transform3D, caixa: BoxMesh, terra: BoxMesh) -> void:
