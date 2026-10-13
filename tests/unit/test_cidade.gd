@@ -96,3 +96,65 @@ func test_no_largo_so_predio_baixo() -> void:
 	for h in range(int(Cidade.ALTURA_LARGO.x), int(Cidade.ALTURA_LARGO.y)):
 		var tipo := Cidade._tipo_de_predio(float(h) + 0.99)
 		assert_bool(tipo == Predio.Tipo.SOBRADO or tipo == Predio.Tipo.COMERCIO).is_true()
+
+
+## O nome de cada peca da faixa de servico pela malha: o nome do no nao serve,
+## porque o Godot troca nome repetido por `@StaticBody3D@12`.
+func _peca(no: Node) -> String:
+	for filho in no.get_children():
+		if not (filho is MeshInstance3D):
+			continue
+		var malha := (filho as MeshInstance3D).mesh
+		for tipo: int in Arvore.Tipo.values():
+			if malha == Arvore.malha(tipo):
+				return Arvore.NOS[tipo]
+		for tipo: int in Mobiliario.Tipo.values():
+			if malha == Mobiliario.malha(tipo):
+				return Mobiliario.NOS[tipo]
+	return ""
+
+
+func test_faixa_de_servico_tem_de_tudo() -> void:
+	# Arvore, cacamba e mupi saem do mesmo sorteio (V16, V17): se um deles
+	# some, e o peso dele que zerou, e nada da erro. Numa pista do tamanho da
+	# corrida, e nao nos 800 m dos outros testes: com 15% de chance cada, a
+	# cacamba e o mupi podem faltar num trecho curto so por sorteio.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20260831
+	var track: RoadTrack = auto_free(RoadTrack.new())
+	add_child(track)
+	track.build(3200.0, rng)
+	var props: Node3D = auto_free(Node3D.new())
+	add_child(props)
+	Cidade.new(track).montar(rng, props)
+	var contagem := {}
+	for no in props.get_children():
+		var nome := _peca(no)
+		contagem[nome] = contagem.get(nome, 0) + 1
+	print("faixa de servico em 3200 m: ", contagem)
+	for nome: String in ["Copa", "Palmeira", "Cacamba", "Mupi"]:
+		assert_int(contagem.get(nome, 0)).override_failure_message(nome).is_greater(0)
+
+
+func test_placa_de_curva_fala_o_lado_da_curva() -> void:
+	# Guinada positiva gira para a esquerda: e o invariante que ja inverteu o
+	# jogo uma vez. A placa le o mesmo sinal.
+	var placas := 0
+	for no in _props.get_children():
+		var nome := _peca(no)
+		if not nome.begins_with("Placa"):
+			continue
+		placas += 1
+		var corpo := no as Node3D
+		# O `project` so busca perto de um palpite; aqui o palpite e a pista
+		# inteira, metro a metro.
+		var o := 0.0
+		var perto := INF
+		for k in int(_track.length):
+			var d := _track.sample_position(float(k)).distance_squared_to(corpo.global_position)
+			if d < perto:
+				perto = d
+				o = float(k)
+		var giro := Cidade.giro_em(_track, o + Cidade.CURVA_AVISO)
+		assert_bool((nome == "PlacaEsquerda") == (giro > 0.0)).is_true()
+	print("placas de curva em 800 m: ", placas)

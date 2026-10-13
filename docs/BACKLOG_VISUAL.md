@@ -907,7 +907,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   ao lado da `t2.0s` e foi engrossado. `fps` p50 8,33 ms (refresh de
   120 Hz). Baseline sem variação.
 
-- [ ] **V17** — Mobiliário: lixeira, mupi, placa de curva, canteiro
+- [x] **V17** — Mobiliário: lixeira, mupi, placa de curva, canteiro (13/10/2026, #98)
 
   Barato, e cada um é um bloco de cor que marca distância: caçamba
   vermelho-alaranjada (cuidado para não competir com a bag do jogador), mupi
@@ -919,6 +919,19 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
     esquerda, lixeira à direita), `t2.0s` (losango amarelo e faixa de grama à
     direita) e `t3.0s` (losango no alto à direita).
   - **Aceite:** o critério de densidade da seção, junto com V15 e V16.
+
+  **Resultado:** `arte/mobiliario.py` gera a caçamba (vermelho de tijolo,
+  não laranja, para não ser um segundo entregador), o mupi aceso dos dois
+  lados com uma foto (brilho 3, passa no glow) e o losango amarelo de curva,
+  com a seta para cada lado (dois modelos: escala negativa vira o winding).
+  Caçamba e mupi saem do mesmo sorteio da faixa de serviço que as árvores
+  da V16, um item por ponto, para nunca cair um dentro do outro: em 3,2 km
+  dão ~40 copas, ~130 palmeiras, ~17 caçambas e ~16 mupis. A placa vai
+  50 m antes de cada curva que gira mais de 0,2 rad em 40 m, do lado
+  direito, e lê o mesmo sinal da guinada (teste). A praça ganhou a faixa
+  de grama colada na fachada. Lixeira ficou de fora: some a 640×360.
+  `fps` p50 8,33 ms (refresh de 120 Hz), com um pico isolado de 76 ms,
+  provavelmente compilação de shader. Baseline sem variação.
 
 - [ ] **V18** — Por cima da pista: semáforo suspenso e placa verde
 
