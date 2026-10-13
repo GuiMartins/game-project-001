@@ -411,7 +411,9 @@ func _coast_out(delta: float) -> void:
 	mode = Mode.FOLLOW
 	speed = move_toward(speed, 0.0, 14.0 * delta)
 	var side := 1.0 if lateral >= 0.0 else -1.0
-	_target_lateral = side * (RoadTrack.half_width() + RoadTrack.SHOULDER * 0.5)
+	# Na calcada, depois da linha dos postes. No meio dela, onde parava antes,
+	# fica o poste, e todo rival que terminava ia parar nele.
+	_target_lateral = side * (Poste.LATERAL + 1.0)
 	lateral = move_toward(lateral, _target_lateral, 6.0 * delta)
 	_inclinar(0.0, delta)
 
