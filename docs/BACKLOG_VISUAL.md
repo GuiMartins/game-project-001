@@ -773,7 +773,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     `visual_familias_de_cor` 48,4 → 66,3, pelas cores de tela novas. `fps`
     igual, no teto de 120.
 
-- [x] **V13a** — Outdoor deitado, de foto colorida (13/10/2026)
+- [x] **V13a** — Outdoor deitado, de foto colorida (13/10/2026, #96)
 
   Posição e brilho da V13 batem. O formato não: na referência o outdoor é
   deitado (~16:9), com moldura, e mostra uma foto colorida (gente, praia,
