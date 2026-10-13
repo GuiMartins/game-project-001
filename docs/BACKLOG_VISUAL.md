@@ -665,7 +665,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     e o `baseline_visual.json` andou junto. `fps`: os dois no teto de 120 do
     monitor, p95 8,33 → 8,65 ms.
 
-- [x] **V11a** 👤 — Refazer a fachada: cânion de pedra bege, não bloco pastel (13/10/2026)
+- [x] **V11a** 👤 — Refazer a fachada: cânion de pedra bege, não bloco pastel (13/10/2026, #95)
 
   A V11 fez a sequência colada e o térreo com loja, e isso fica. O que não
   lê como a referência é o prédio. No vídeo é um cânion de 8–15 andares em
