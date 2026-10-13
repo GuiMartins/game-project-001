@@ -955,7 +955,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   (Linha Vermelha, Av. Brasil, Rodoviária…), sem marca. Colisor só no
   fuste. `fps` p50 8,33 ms (refresh de 120 Hz). Baseline sem variação.
 
-- [x] **V19** — Pedestres (13/10/2026)
+- [x] **V19** — Pedestres (13/10/2026, #100)
 
   Textura de vida nos dois lados, em pé, andando e na esquina. Billboard em
   `MultiMesh`, sem lógica nenhuma, e ninguém atravessa a pista.
