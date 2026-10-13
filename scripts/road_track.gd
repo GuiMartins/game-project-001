@@ -40,11 +40,21 @@ const ASFALTO: Texture2D = preload("res://assets/visual/asfalto_albedo.png")
 const ASFALTO_TILE: float = 6.6
 const CALCADA: Texture2D = preload("res://assets/visual/calcada_albedo.png")
 const CALCADA_TILE: float = 4.4
-## Quanto da calcada cabe num tile de lado: a junta longitudinal fica a cada 2,2 m.
+## Quanto da calcada cabe num tile de lado, em metros.
 const CALCADA_LARGURA: float = 2.2
-## O meio-fio, 20 cm de concreto mais claro que o cimentado.
+## O meio-fio, 20 cm de concreto mais claro que a pedra.
 const MEIO_FIO: float = 0.2
 const COR_MEIO_FIO := Color(0.70, 0.68, 0.65)
+## Altura do meio-fio (V09a). Era 3 cm, so uma tira pintada, e a calcada lia
+## no nivel da pista. Nas referencias e um degrau de guia de verdade, com a
+## face na sombra. So visual: a calcada continua no nivel do asfalto para a
+## fisica (o chao nao tem colisor), e a moto que sobe nela atravessa 15 cm de
+## concreto num quadro, rapido demais para o olho.
+const ALTURA_MEIO_FIO: float = 0.15
+## A face do meio-fio virada para a pista: a sombra embaixo da guia que separa
+## pista de calcada nas referencias (`video_01/t5.0s`) sem precisar da linha
+## de bordo.
+const COR_FACE_MEIO_FIO := Color(0.36, 0.35, 0.34)
 ## A tira de servico depois do andavel, com os postes (que ficam a 0,8 m).
 const FAIXA_SERVICO: float = 1.6
 
@@ -293,8 +303,6 @@ func _build_mesh() -> void:
 	asphalt.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var shoulder := SurfaceTool.new()
 	shoulder.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var curb := SurfaceTool.new()
-	curb.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var servico := SurfaceTool.new()
 	servico.begin(Mesh.PRIMITIVE_TRIANGLES)
 
@@ -312,17 +320,14 @@ func _build_mesh() -> void:
 		var faixas := road_w / LANE_WIDTH
 		_quad(asphalt, o0, o1, -road_w, road_w, lift, Vector2(-faixas, faixas), ASFALTO_TILE)
 		# Calcada do meio-fio ate o fim do terreno, sem grama: avenida de
-		# cidade e cimento ate a fachada, e e debaixo dos predios e nas ruas que
+		# cidade e pedra ate a fachada, e e debaixo dos predios e nas ruas que
 		# cruzam que o resto aparece. Andavel continua so o `SHOULDER`.
 		var fora := edge + carpet
 		var tiles := (fora - road_w) / CALCADA_LARGURA
 		_quad(shoulder, o0, o1, -fora, -road_w, 0.0, Vector2(tiles, 0), CALCADA_TILE)
 		_quad(shoulder, o0, o1, road_w, fora, 0.0, Vector2(0, tiles), CALCADA_TILE)
-		# O meio-fio e uma tira propria: na textura ele repetiria a cada tile.
-		_quad(curb, o0, o1, -road_w - MEIO_FIO, -road_w, 0.03)
-		_quad(curb, o0, o1, road_w, road_w + MEIO_FIO, 0.03)
 		# Faixa de servico: onde moram os postes, e onde a moto para. Antes o
-		# terreno caia ali e mostrava o limite; com cimento ate a fachada, e
+		# terreno caia ali e mostrava o limite; com pedra ate a fachada, e
 		# esta tira que mostra.
 		_quad(servico, o0, o1, -edge - FAIXA_SERVICO, -edge, 0.02)
 		_quad(servico, o0, o1, edge, edge + FAIXA_SERVICO, 0.02)
@@ -331,10 +336,9 @@ func _build_mesh() -> void:
 	# desaparece e o jogador nao ve pra onde esta indo. Cores de meio-dia, e
 	# neutras ou quentes de proposito: as de antes eram de noite, puxadas pro
 	# azul, e com o ceu iluminando tudo de azul o asfalto virava violeta. A
-	# calcada e cimento claro.
+	# calcada e pedra portuguesa clara.
 	_commit(asphalt, mesh, material_texturizado(ASFALTO))
 	_commit(shoulder, mesh, material_texturizado(CALCADA))
-	_commit(curb, mesh, material_liso(COR_MEIO_FIO))
 	_commit(servico, mesh, material_liso(Color(0.50, 0.49, 0.47)))
 
 	_asphalt_mesh = MeshInstance3D.new()
@@ -374,6 +378,15 @@ func pintar(a_cruzamentos: Array[Vector2], a_boca: float) -> void:
 	var road_w := half_width()
 	var tinta := SurfaceTool.new()
 	tinta.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# O meio-fio mora aqui, e nao no `_build_mesh`, porque abre na boca das
+	# ruas que cruzam, e so aqui se sabe onde elas estao. Com 3 cm ele podia
+	# passar por cima da boca, que ninguem via; com 15 cm era um muro na
+	# frente de quem sai da transversal.
+	var curb := SurfaceTool.new()
+	curb.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var face := SurfaceTool.new()
+	face.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var sem_meio_fio: Array[Array] = [[], []]
 
 	# Onde cada pintura corrida abre. O tracejado para na retencao e volta do
 	# outro lado do cruzamento, como manda o CTB; a linha de bordo abre na boca
@@ -387,8 +400,11 @@ func pintar(a_cruzamentos: Array[Vector2], a_boca: float) -> void:
 		sem_tracejado.append(Vector2(retencao, c.x + boca))
 		for k in 2:
 			var side := -1.0 if k == 0 else 1.0
-			var fim := c.x + boca if c.y == 0.0 or c.y == side else zebra_fim
+			var abre := c.y == 0.0 or c.y == side
+			var fim := c.x + boca if abre else zebra_fim
 			sem_bordo[k].append(Vector2(retencao, fim))
+			if abre:
+				sem_meio_fio[k].append(Vector2(c.x - boca, c.x + boca))
 		for x in listras_da_zebra(road_w * 2.0):
 			_quad(
 				tinta, zebra_inicio, zebra_fim, x - ZEBRA_LISTRA * 0.5, x + ZEBRA_LISTRA * 0.5, 0.03
@@ -410,9 +426,18 @@ func pintar(a_cruzamentos: Array[Vector2], a_boca: float) -> void:
 			_quad(tinta, t.x, t.y, -dentro, -dentro + BORDO_LARGURA, 0.03)
 		for t in _recorta(o0, o1, sem_bordo[1]):
 			_quad(tinta, t.x, t.y, dentro - BORDO_LARGURA, dentro, 0.03)
+		# O meio-fio e uma tira propria: na textura ele repetiria a cada tile.
+		for k in 2:
+			var side := -1.0 if k == 0 else 1.0
+			var x0 := minf(side * road_w, side * (road_w + MEIO_FIO))
+			for t in _recorta(o0, o1, sem_meio_fio[k]):
+				_quad(curb, t.x, t.y, x0, x0 + MEIO_FIO, ALTURA_MEIO_FIO)
+				_face(face, t.x, t.y, side * road_w, ALTURA_MEIO_FIO)
 
 	var mesh := ArrayMesh.new()
 	_commit(tinta, mesh, material_liso(TINTA))
+	_commit(curb, mesh, material_liso(COR_MEIO_FIO))
+	_commit(face, mesh, material_liso(COR_FACE_MEIO_FIO))
 	_pintura = MeshInstance3D.new()
 	_pintura.name = "Pintura"
 	_pintura.mesh = mesh
@@ -497,6 +522,28 @@ func _quad(
 		if tile > 0.0:
 			st.set_uv(uvs[i])
 		st.add_vertex(verts[i])
+
+
+## Uma parede vertical ao longo da pista, do chao ate `altura`, na lateral `x`
+## e virada para o meio da pista.
+func _face(st: SurfaceTool, o0: float, o1: float, x: float, altura: float) -> void:
+	var up := Vector3.UP * altura
+	var a := point(o0, x)
+	var b := point(o1, x)
+	var c := b + up
+	var d := a + up
+	var para_dentro := -sample_basis((o0 + o1) * 0.5).x * signf(x)
+	# Mesma ordem do `_quad` e mesma regra de winding, conferida contra a
+	# normal que se quer, e nao deduzida: um sinal errado aqui e o meio-fio
+	# sumindo pelo backface culling, sem erro nenhum.
+	var verts: Array[Vector3] = [a, c, b, a, d, c]
+	var chao := (point(o1, x + 1.0) - point(o0, x)).cross(point(o0, x + 1.0) - point(o0, x))
+	var frente_do_quad := signf(chao.dot(Vector3.UP))
+	if ((c - a).cross(b - a) * frente_do_quad).dot(para_dentro) < 0.0:
+		verts = [a, b, c, a, c, d]
+	for v in verts:
+		st.set_normal(para_dentro)
+		st.add_vertex(v)
 
 
 func _commit(st: SurfaceTool, mesh: ArrayMesh, mat: Material) -> void:

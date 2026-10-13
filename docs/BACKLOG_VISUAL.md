@@ -544,7 +544,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     e bate no prédio, que tem colisor (`scripts/cidade.gd`). A faixa de
     serviço está desenhada, mas não bloqueia — quem bloqueia é o que mora nela.
 
-- [ ] **V09a** — Meio-fio que lê, e calçada de pedra quente
+- [x] **V09a** — Meio-fio que lê, e calçada de pedra quente (13/10/2026)
 
   A largura da V09 bate no corredor. Falta o resto: na referência o
   meio-fio é alto, com sombra embaixo, e às vezes pintado de amarelo; a
@@ -562,6 +562,18 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     portuguesa, respeitando a regra de "visto a 180 km/h" do topo dele.
   - **Aceite:** na prova o meio-fio separa pista e calçada sem a linha de
     bordo, e o tom da calçada fica perto do da `01_centro`.
+
+  **Resultado:** o meio-fio virou degrau de 15 cm (era tira de 3 cm), com o
+  topo claro e uma face escura virada para a pista, e abre na boca das ruas
+  que cruzam: por isso ele mora agora no `RoadTrack.pintar`, que conhece os
+  cruzamentos. Só visual: para a física a calçada continua no nível do
+  asfalto, e a moto que sobe nela atravessa o degrau num quadro. A calçada
+  virou pedra portuguesa lisa e quente (`arte/chao.py`, pedra de 7 cm
+  sorteada, sem padrão que repita), no lugar do cimentado frio. Ficaram de
+  fora: a placa de *downtown* (a junta transversal a cada metro pisca a
+  180 km/h, regra 1 do `chao.py`), o meio-fio amarelo e o das ruas
+  transversais, que segue tinta de 3 cm. O largo descampado é da V11a.
+  `fps` p50 8,33 ms (refresh de 120 Hz). Baseline sem variação.
 
 - [x] **V10** — Faixa de pedestres e linha de bordo (12/10/2026, #81)
 
