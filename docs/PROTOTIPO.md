@@ -465,7 +465,8 @@ sprite?" ser testada, e o `DIRECAO_VISUAL.md` já apontava o risco dele: ler
 como "3D com filtro". Este experimento coloca as duas respostas na mesma
 pista.
 
-O slider `ator_sprite` (grupo Ator, no F3) troca todo corredor, ao vivo, por
+A linha PILOTO do menu (ou o slider `ator_sprite`, grupo Ator, no F3) troca
+todo corredor, ao vivo, por
 um quad de frente para a câmera com um quadro do atlas
 [`assets/sprites/entregador.png`](../assets/sprites). O atlas sai de quatro
 folhas geradas no Google Flow a partir de uma imagem de referência
