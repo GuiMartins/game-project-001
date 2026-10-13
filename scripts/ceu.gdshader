@@ -1,20 +1,24 @@
-// O ceu: gradiente de meio-dia e cumulo de base reta e topo em bolhas,
-// iluminado pelo sol, andando devagar com o vento.
+// O ceu: gradiente de meio-dia e um campo de tufos de nuvem, andando devagar
+// com o vento.
 //
 // Na comparacao da V14 (textura com trama, lisa, esparsa, ruido e objeto no
-// mundo) ganhou a nuvem feita no shader. Mas ruido recortado por limiar e
-// mancha: borda rendada, sem base, sem volume - "poca de leite derramado". O
-// que faz cumulo e a estrutura, e e ela que este shader desenha:
-// - base reta, porque e onde o ar chega no ponto de orvalho;
-// - topo em domo feito de bolhas, mais alto no meio;
-// - cada bolha com a sua normal, entao o sol acende um lado e o pe fica na
-//   sombra azulada.
-// O ruido so quebra a borda das bolhas (`detalhe`).
+// mundo) ganhou a nuvem feita no shader. A forma veio das referencias, depois
+// de duas erradas (ruido recortado era "poca de leite"; cumulo grande de domo
+// arrumado nao e o que elas tem):
+// - muitos tufos pequenos em grupos irregulares, com azul entre os grupos;
+// - o ceu inteiro, menores e mais juntos perto do horizonte;
+// - cada tufo com o pe cortado reto e o alto em calombo;
+// - dois ou tres tons, topo branco e baixo azulado;
+// - a borda se desfaz em pixel solto, nem recorte liso nem degrade.
+//
+// A perspectiva vem de projetar a direcao do olhar num "teto" de nuvem: perto
+// do horizonte o mesmo tufo fica longe, menor e achatado. Projecao plana pura
+// (1/tan) achata demais; o expoente `perspectiva` dosa.
 //
 // O gradiente e o mesmo do ProceduralSkyMaterial de antes - mesmas cores,
 // mesma curva de 0,15 -, para a luz ambiente, que vem do ceu, nao mudar.
-// Os numeros da nuvem sao sliders do F3 (`WorldTuning`, grupo Ceu), e o
-// `world.gd` repassa. Os defaults daqui so valem ate o primeiro quadro.
+// Os numeros sao sliders do F3 (`WorldTuning`, grupo Ceu), e o `world.gd`
+// repassa. Os defaults daqui so valem ate o primeiro quadro.
 shader_type sky;
 
 uniform vec3 topo : source_color = vec3(0.16, 0.38, 0.82);
@@ -22,116 +26,78 @@ uniform vec3 horizonte : source_color = vec3(0.62, 0.74, 0.88);
 uniform vec3 chao_horizonte : source_color = vec3(0.55, 0.6, 0.62);
 uniform vec3 chao_fundo : source_color = vec3(0.24, 0.26, 0.25);
 
-uniform float altura_min = 8.0;
-uniform float altura_max = 40.0;
-uniform float cobertura = 0.42;
-uniform float tamanho = 16.0;
-uniform float achatamento = 2.0;
-uniform float borda = 0.0;
-uniform float detalhe = 4.0;
+uniform float altura_min = 4.0;
+uniform float cobertura = 0.5;
+uniform float tufo = 4.0;
+uniform float grupo = 6.0;
+uniform float perspectiva = 0.35;
+uniform float detalhe = 0.6;
+uniform float trama = 0.5;
 uniform float sombra = 0.5;
 uniform float brilho = 1.1;
-uniform float faixas_de_tom = 0.0;
+uniform float faixas_de_tom = 3.0;
 uniform float vento = 0.15;
 
-// Bolhas por cumulo: a fileira de baixo, que da a base e o domo, e as menores
-// por cima, que dao a couve-flor.
-const int FILEIRA = 6;
-const int TOPETES = 5;
+// A matriz de Bayer do `paleta.gdshader`, pela mesma razao de ser constante.
+const float BAYER[16] = float[](
+	0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0
+);
 
-vec4 hash4(float n) {
-	return fract(sin(vec4(n, n + 1.31, n + 2.77, n + 4.13)) * vec4(43758.55, 22578.15, 19642.35, 68023.71));
+vec2 hash2(vec2 p) {
+	p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+	return fract(sin(p) * 43758.5453);
 }
 
-float hash3(vec3 p) {
-	p = fract(p * 0.3183099 + 0.1);
-	p *= 17.0;
-	return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-}
-
-// Ruido de valor na DIRECAO do olhar, sem costura atras da camera.
-float ruido(vec3 p) {
-	vec3 i = floor(p);
-	vec3 f = fract(p);
-	vec3 u = f * f * (3.0 - 2.0 * f);
+float ruido(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	vec2 u = f * f * (3.0 - 2.0 * f);
 	return mix(
-		mix(
-			mix(hash3(i), hash3(i + vec3(1, 0, 0)), u.x),
-			mix(hash3(i + vec3(0, 1, 0)), hash3(i + vec3(1, 1, 0)), u.x),
-			u.y
-		),
-		mix(
-			mix(hash3(i + vec3(0, 0, 1)), hash3(i + vec3(1, 0, 1)), u.x),
-			mix(hash3(i + vec3(0, 1, 1)), hash3(i + vec3(1, 1, 1)), u.x),
-			u.y
-		),
-		u.z
+		mix(hash2(i).x, hash2(i + vec2(1.0, 0.0)).x, u.x),
+		mix(hash2(i + vec2(0.0, 1.0)).x, hash2(i + vec2(1.0, 1.0)).x, u.x),
+		u.y
 	);
 }
 
-float fbm(vec3 p) {
-	return ruido(p) * 0.6 + ruido(p * 2.1) * 0.3 + ruido(p * 4.3) * 0.1;
+// Onde ha grupo de nuvem: ruido de baixa frequencia, em unidades de tufo.
+float mascara(vec2 q) {
+	vec2 p = q / grupo;
+	return ruido(p) * 0.65 + ruido(p * 2.3 + 5.1) * 0.35;
 }
 
-// Testa o ponto (lon, elev) contra o cumulo da celula `id` da camada.
-// Devolve (achou, normal x, normal y, altura relativa na nuvem).
-vec4 cumulo(float id, float camada, float celula, float lon, float elev, float quebra) {
-	vec4 h = hash4(id * 7.13 + camada * 101.7);
-	if (h.x > cobertura) {
-		return vec4(0.0);
-	}
-	vec4 h2 = hash4(id * 3.71 + camada * 57.3 + 11.0);
-	float largura = tamanho * (0.6 + 0.8 * h.z);
-	float altura = largura / achatamento;
-	float base = mix(altura_min, max(altura_min, altura_max - altura), h.w);
-	// Perspectiva: nuvem perto do horizonte esta mais longe, e parece menor.
-	float longe = mix(0.55, 1.0, smoothstep(altura_min, altura_min + 25.0, base));
-	largura *= longe;
-	altura *= longe;
-	float centro = (id + 0.5 + (h.y - 0.5) * 0.6) * celula;
-	// Longitude encolhe com o cosseno da altura: e o que deixa a bolha redonda.
-	float esc = cos(radians(elev));
-	if (elev < base || abs(lon - centro) * esc > largura) {
-		return vec4(0.0);
-	}
-	float melhor = -2.0;
-	vec2 normal = vec2(0.0);
-	for (int i = 0; i < FILEIRA + TOPETES; i++) {
-		vec4 b = hash4(id * 13.7 + camada * 31.1 + float(i) * 1.618);
-		vec2 c;
-		float r;
-		if (i < FILEIRA) {
-			float f = (float(i) + 0.5) / float(FILEIRA);
-			float perfil = pow(sin(3.14159 * f), 0.7);
-			r = altura * (0.35 + 0.45 * perfil) * (0.85 + 0.3 * b.x);
-			c = vec2(centro + (f - 0.5) * largura * 0.85 / esc, base + r * 0.55);
-		} else {
-			// Topete: sentado na borda de cima de uma bolha do meio.
-			float f = 0.2 + 0.6 * b.y;
-			float perfil = pow(sin(3.14159 * f), 0.7);
-			float r0 = altura * (0.35 + 0.45 * perfil);
-			float a = mix(0.25, 0.75, b.z) * 3.14159;
-			r = r0 * (0.35 + 0.25 * b.x);
-			c = vec2(
-				centro + ((f - 0.5) * largura * 0.85 + cos(a) * r0 * 0.75) / esc,
-				base + r0 * 0.55 + sin(a) * r0 * 0.75
-			);
-		}
-		vec2 d = vec2((lon - c.x) * esc, elev - c.y);
-		float dist = length(d) + quebra * r;
-		if (dist < r) {
-			// A bolha mais por fora (normal mais para cima) decide a luz.
-			vec2 n = d / r;
-			if (n.y > melhor) {
-				melhor = n.y;
-				normal = n;
+// Uma oitava de tufos: um circulo por celula, so onde a mascara deixa, com o pe
+// cortado reto. `fora` e a direcao do horizonte no plano (o "para baixo" da
+// tela). Devolve (densidade 0-1, tom 0-1); densidade 0 e fora.
+vec2 tufos(vec2 q, float escala, float semente, vec2 fora, float limiar) {
+	vec2 qs = q * escala;
+	vec2 cel = floor(qs);
+	vec2 melhor = vec2(0.0);
+	for (int y = -1; y <= 1; y++) {
+		for (int x = -1; x <= 1; x++) {
+			vec2 c = cel + vec2(float(x), float(y));
+			vec2 h = hash2(c + semente);
+			vec2 centro = c + 0.15 + 0.7 * h;
+			float m = mascara(centro / escala);
+			if (m < limiar) {
+				continue;
+			}
+			// Na borda do grupo o tufo encolhe: e o que faz o grupo terminar em
+			// tufo pequeno, e nao numa parede.
+			float r =
+				(0.45 + 0.35 * hash2(c + semente + 7.7).x) * smoothstep(limiar, limiar + 0.12, m);
+			vec2 d = qs - centro;
+			float dist = length(d);
+			// Quanto o ponto esta abaixo do centro, para o lado do horizonte.
+			float baixo = dot(d, fora);
+			if (dist < r && baixo < r * 0.3) {
+				float dens = 1.0 - dist / r;
+				if (dens > melhor.x) {
+					melhor = vec2(dens, clamp(0.55 - baixo / r * 0.7, 0.0, 1.0));
+				}
 			}
 		}
 	}
-	if (melhor < -1.5) {
-		return vec4(0.0);
-	}
-	return vec4(1.0, normal, clamp((elev - base) / altura, 0.0, 1.0));
+	return melhor;
 }
 
 void sky() {
@@ -142,48 +108,46 @@ void sky() {
 	if (elev < 0.0) {
 		float g = clamp(-elev / 90.0, 0.0, 1.0);
 		cor = mix(chao_horizonte, chao_fundo, clamp(1.0 - pow(1.0 - g, 1.0 / 0.02), 0.0, 1.0));
-	} else if (elev < altura_max + tamanho) {
-		float lon = mod(degrees(atan(dir.x, dir.z)) + TIME * vento, 360.0);
-		// Uma nuvem por celula, e celulas inteiras na volta: sem costura.
-		float n_cel = max(floor(360.0 / (tamanho * 1.6)), 3.0);
-		float celula = 360.0 / n_cel;
-		// A borda quebrada: so encolhe a bolha, nunca cresce, para o ruido nao
-		// soltar fiapo fora da nuvem.
-		float quebra = max(fbm(dir * (57.3 / tamanho) * 3.0) - 0.3, 0.0) * 0.08 * detalhe;
-		vec4 hit = vec4(0.0);
-		// Duas camadas defasadas, para nem toda nuvem estar na mesma fileira.
-		for (int camada = 0; camada < 2; camada++) {
-			float l = lon + float(camada) * celula * 0.5;
-			float id = floor(l / celula);
-			for (int k = -1; k <= 1; k++) {
-				float idk = id + float(k);
-				// O id da volta: a celula n_cel e a celula 0.
-				float idw = mod(idk, n_cel);
-				vec4 r = cumulo(idw, float(camada), celula, l - (idk - idw) * celula, elev, quebra);
-				if (r.x > 0.5 && hit.x < 0.5) {
-					hit = r;
+	} else if (elev > altura_min * 0.5) {
+		// O vento gira o ceu em volta do eixo vertical.
+		float giro = radians(TIME * vento);
+		vec2 h = vec2(dir.x * cos(giro) - dir.z * sin(giro), dir.x * sin(giro) + dir.z * cos(giro));
+		vec2 fora = normalize(h + vec2(1e-6));
+		float t_e = max(tan(radians(elev)), 1e-3);
+		// O ponto no teto de nuvem. Normalizado para que, a 15 graus, um tufo
+		// meca `tufo` graus.
+		float ref = tan(radians(15.0));
+		float escala_ref = cos(radians(15.0)) / pow(ref, -perspectiva) * 57.3 / tufo;
+		vec2 q = fora * pow(t_e, -perspectiva) * escala_ref;
+		// Cobertura 0 e ceu limpo, 1 e quase fechado; a mascara mora em ~0,2-0,8.
+		float limiar = mix(0.75, 0.3, cobertura);
+		// Perto do chao as nuvens rareiam: o horizonte e neblina, nao parede.
+		limiar += (1.0 - smoothstep(altura_min, altura_min + 4.0, elev)) * 0.5;
+		vec2 grande = tufos(q, 1.0, 0.0, fora, limiar);
+		vec2 miudo = detalhe > 0.0 ? tufos(q, 2.3, 31.7, fora, limiar + 0.05) : vec2(0.0);
+		miudo.x *= detalhe;
+		vec2 hit = grande.x >= miudo.x ? grande : miudo;
+		if (hit.x > 0.0) {
+			// A borda: numa faixa estreita do contorno, o pixel some pelo Bayer
+			// da tela. Preso a tela, e nao ao ceu, para nao rastejar quando a
+			// camera gira. No mapa de luz ambiente nao ha tela, e la a borda e
+			// cheia.
+			bool cheio = true;
+			if (!AT_CUBEMAP_PASS && trama > 0.0) {
+				ivec2 px = ivec2(FRAGCOORD.xy) % 4;
+				float limiar_px = (BAYER[px.y * 4 + px.x] + 0.5) / 16.0;
+				cheio = clamp(hit.x / (trama * 0.4), 0.0, 1.0) > limiar_px;
+			}
+			if (cheio) {
+				float t = hit.y;
+				if (faixas_de_tom >= 2.0) {
+					t = clamp(floor(t * faixas_de_tom) / (faixas_de_tom - 1.0), 0.0, 1.0);
 				}
+				vec3 alto = vec3(brilho);
+				// O baixo e o branco puxado para o azul do horizonte.
+				vec3 baixo = mix(alto, horizonte * 0.8, sombra);
+				cor = mix(baixo, alto, t);
 			}
-		}
-		if (hit.x > 0.5) {
-			// Luz: a normal da bolha no espaco do olhar, contra o sol.
-			vec3 frente = normalize(vec3(dir.x, 0.0, dir.z));
-			vec3 lado = vec3(frente.z, 0.0, -frente.x);
-			vec2 n2 = hit.yz;
-			float nz = sqrt(max(1.0 - dot(n2, n2), 0.0));
-			vec3 n3 = normalize(lado * n2.x + vec3(0.0, n2.y, 0.0) - frente * nz);
-			float sol = LIGHT0_ENABLED ? dot(n3, LIGHT0_DIRECTION) : 0.5;
-			float t = clamp(0.25 + 0.45 * hit.w + 0.4 * sol + 0.25 * n2.y, 0.0, 1.0);
-			if (faixas_de_tom >= 2.0) {
-				t = clamp(floor(t * faixas_de_tom) / (faixas_de_tom - 1.0), 0.0, 1.0);
-			}
-			vec3 alto = vec3(brilho);
-			// A base e o branco puxado para o azul do horizonte.
-			vec3 base = mix(alto, horizonte * 0.8, sombra);
-			vec3 nuvem = mix(base, alto, t);
-			// Borda: 0 recorta seco; acima, a ponta da bolha some no ceu.
-			float alfa = 1.0 - smoothstep(1.0 - borda * 0.5, 1.0, length(n2));
-			cor = mix(cor, nuvem, borda > 0.0 ? alfa : 1.0);
 		}
 	}
 	// O sol: disco e um halo curto, o que o procedural tinha.

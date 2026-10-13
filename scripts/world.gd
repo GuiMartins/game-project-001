@@ -24,12 +24,12 @@ const CEU: Shader = preload("res://scripts/ceu.gdshader")
 ## Slider do `WorldTuning` para uniforme do `ceu.gdshader`.
 const CEU_SLIDERS: Dictionary = {
 	"ceu_altura_min": "altura_min",
-	"ceu_altura_max": "altura_max",
 	"ceu_cobertura": "cobertura",
-	"ceu_tamanho": "tamanho",
-	"ceu_achatamento": "achatamento",
-	"ceu_borda": "borda",
+	"ceu_tufo": "tufo",
+	"ceu_grupo": "grupo",
+	"ceu_perspectiva": "perspectiva",
 	"ceu_detalhe": "detalhe",
+	"ceu_trama": "trama",
 	"ceu_sombra": "sombra",
 	"ceu_brilho": "brilho",
 	"ceu_faixas_de_tom": "faixas_de_tom",
