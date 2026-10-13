@@ -955,7 +955,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   (Linha Vermelha, Av. Brasil, Rodoviária…), sem marca. Colisor só no
   fuste. `fps` p50 8,33 ms (refresh de 120 Hz). Baseline sem variação.
 
-- [ ] **V19** — Pedestres
+- [x] **V19** — Pedestres (13/10/2026, #100)
 
   Textura de vida nos dois lados, em pé, andando e na esquina. Billboard em
   `MultiMesh`, sem lógica nenhuma, e ninguém atravessa a pista.
@@ -965,6 +965,16 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
     teatro) e `t3.0s` (esquina).
   - **Aceite:** gente visível na calçada nos quatro quadros da prova; o `fps`
     não regride além do orçamento com a calçada inteira povoada (V15–V19).
+
+  **Resultado:** gente low-poly (`arte/pedestres.py`, 152 triângulos, de
+  pé e andando), e não billboard, num `MultiMesh` por pose: mais de mil
+  pessoas por corrida em duas chamadas de desenho. A camisa é a superfície
+  `roupa`, pintada pela cor da instância. Grupos de 1–3 a cada 6–16 m de
+  cada lado e 3–6 na esquina, entre a faixa de serviço e a fachada: fora do
+  andável e longe dos troncos. Sem lógica, sem colisor. Gente visível nos
+  cinco quadros da prova; com a calçada inteira povoada (V15–V19) o `fps`
+  fica em p50 8,33 ms e pior quadro 9,09 ms (refresh de 120 Hz). Baseline
+  sem variação.
 
 ### O trânsito
 

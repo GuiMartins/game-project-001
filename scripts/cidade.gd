@@ -100,6 +100,7 @@ func montar(rua: RandomNumberGenerator, props: Node3D) -> void:
 		_monta_faixa_de_servico(side, cruzamentos, rua, props)
 	_monta_placas(cruzamentos, props)
 	_monta_portais(cruzamentos, props)
+	Pedestres.montar(track, cruzamentos, rua, props)
 
 
 ## Onde a avenida e largo e onde e corredor. Cada um e `[fim, recuo]`: o
