@@ -544,7 +544,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     e bate no prédio, que tem colisor (`scripts/cidade.gd`). A faixa de
     serviço está desenhada, mas não bloqueia — quem bloqueia é o que mora nela.
 
-- [x] **V09a** — Meio-fio que lê, e calçada de pedra quente (13/10/2026)
+- [x] **V09a** — Meio-fio que lê, e calçada de pedra quente (13/10/2026, #94)
 
   A largura da V09 bate no corredor. Falta o resto: na referência o
   meio-fio é alto, com sombra embaixo, e às vezes pintado de amarelo; a
