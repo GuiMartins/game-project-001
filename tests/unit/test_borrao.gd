@@ -18,6 +18,14 @@ func test_cresce_com_a_velocidade_e_vale_um_na_maxima() -> void:
 	assert_float(Borrao.intensidade(52.0, 52.0)).is_equal_approx(1.0, 0.001)
 
 
+## A 128 km/h, a velocidade de todas as referencias, o borrao ja tem de estar
+## perto do inteiro (V08a): com a curva reta ele ficava em 55%, e o asfalto
+## saia nitido onde a referencia e so risco.
+func test_cruzeiro_ja_risca() -> void:
+	var tuning := BikeTuning.new()
+	assert_float(Borrao.intensidade(128.0 / 3.6, tuning.max_speed)).is_greater(0.65)
+
+
 func test_o_boost_passa_do_maximo_e_satura() -> void:
 	var tuning := BikeTuning.new()
 	var boost := Borrao.intensidade(52.0 * tuning.boost_speed_mult, 52.0)

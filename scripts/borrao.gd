@@ -16,6 +16,12 @@ const INICIO: float = 0.3
 ## saturar e o que faz o boost parecer boost (DIRECAO_VISUAL.md), e deixar
 ## crescer sem teto borra a tela inteira por cima do corredor.
 const SATURA: float = 1.25
+## Expoente da curva entre o inicio e a maxima (V08a). Reta (1), a 128 km/h -
+## a velocidade de todas as referencias - o borrao estava em 55% do inteiro, e
+## o asfalto saia quase nitido onde a referencia ja e so risco. Abaixo de 1 a
+## curva sobe cedo e achata no alto: em cruzeiro ja risca, e a diferenca para
+## o boost continua vindo do `SATURA`.
+const CURVA: float = 0.6
 ## Distancia a frente da moto do ponto que vira o ponto de fuga, em metros.
 ## Longe o bastante para estar no horizonte: e para la que tudo foge.
 const HORIZONTE: float = 1000.0
@@ -63,7 +69,8 @@ func _process(_delta: float) -> void:
 ## Quanto borra, de 0 a `SATURA`, pela fracao da velocidade maxima.
 static func intensidade(velocidade: float, maxima: float) -> float:
 	var fracao := velocidade / maxf(maxima, 1.0)
-	return clampf((fracao - INICIO) / (1.0 - INICIO), 0.0, SATURA)
+	var linear := maxf((fracao - INICIO) / (1.0 - INICIO), 0.0)
+	return minf(pow(linear, CURVA), SATURA)
 
 
 ## O ponto de fuga do movimento na tela, em UV: para onde a moto vai, e nao o

@@ -105,13 +105,20 @@ GRAO = 15
 # brita, e nao como chiado de TV.
 PEDRA_CLARA = (0.04, 34)
 PEDRA_ESCURA = (0.03, -22)
-# Remendo e desgaste: manchas grandes, de metro, quase sem contraste.
-REMENDO = 12
+# Remendo e desgaste: manchas grandes, de metro. Era 12, quase sem contraste,
+# e o borrao de velocidade nao tinha o que esticar: a 128 km/h o asfalto saia
+# liso onde as referencias sao so risco (V08a). Mancha de metro e grande o
+# bastante para ter contraste sem piscar (regra 2).
+REMENDO = 22
+# Veio: faixas de um palmo, compridas ao longo da pista, do asfalto que
+# assentou diferente. Corre junto com a pista (regra 1), e e o que o borrao
+# transforma no risco claro e escuro do terco de baixo das referencias.
+VEIO = 14
 # Onde a roda dos carros passa, a 0,8 m do centro da faixa: o asfalto fica
 # mais escuro e liso. Centro em U = 0,5 +/- 0,8 / 3,3.
 TRILHA_U = (0.258, 0.742)
 TRILHA_LARGURA = 0.1
-TRILHA = -24
+TRILHA = -32
 # O pingo de oleo no meio da faixa, de carro parado no transito.
 OLEO_LARGURA = 0.035
 OLEO = -14
@@ -125,6 +132,12 @@ def asfalto(rng):
     # e larga em U e curta em V para a variacao ser ao longo do comprimento.
     falha = [Ruido(rng, 2, 6), Ruido(rng, 4, 12)]
     gotas = [Ruido(rng, 2, 10), Ruido(rng, 4, 20)]
+    # 24 celulas em U sao 14 cm; 2 e 3 em V, 3,3 e 2,2 m: veio de palmo por
+    # metros, nunca atravessado.
+    # Semente propria: sorteado do `rng`, ele deslocaria todo sorteio depois
+    # dele, e a calcada mudaria sem ninguem ter mexido nela.
+    rng_veio = random.Random(SEMENTE + 1)
+    veio = [Ruido(rng_veio, 24, 2), Ruido(rng_veio, 48, 3)]
     grao = [[rng.random() for _ in range(ASFALTO)] for _ in range(ASFALTO // 2)]
     pedra = [[rng.random() for _ in range(ASFALTO)] for _ in range(ASFALTO // 2)]
 
@@ -135,6 +148,7 @@ def asfalto(rng):
             u = (x + 0.5) / ASFALTO
             val = ASFALTO_BASE
             val += (fbm(remendo, u, v) - 0.5) * 2 * REMENDO
+            val += (fbm(veio, u, v) - 0.5) * 2 * VEIO
 
             # Triangular, e nao uniforme: a maioria dos graos fica perto da base
             # e so alguns se destacam, como numa brita de verdade.

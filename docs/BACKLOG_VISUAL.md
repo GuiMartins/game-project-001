@@ -505,7 +505,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     portão visual em 4 rodadas: não medido** — o `shots` travou nesta
     máquina com 0 quadros, inclusive na `master`; fica com o CI.
 
-- [ ] **V08a** — Borrão que risca o asfalto já em cruzeiro
+- [x] **V08a** — Borrão que risca o asfalto já em cruzeiro (13/10/2026, #93)
 
   A 128 km/h as referências têm o terço de baixo do asfalto todo em risco e
   a zebra riscada. O jogo, na mesma velocidade (`dev.py prova --kmh 128`),
@@ -521,6 +521,18 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     asfalto em `arte/chao.py` se o risco não aparecer.
   - **Aceite:** na folha a 128 km/h o chão lê como a referência; o piloto
     continua nítido e o rival a 15 m legível. `fps` medido.
+
+  **Resultado:** as duas causas, as duas consertadas. A força segue uma
+  curva (`Borrao.CURVA` 0,6) e a 128 km/h está em 71% do inteiro, e não em
+  55%. O chão abaixo do ponto de fuga borra até 3× mais no pé da tela
+  (`chao` no shader), e o teto do risco foi de 0,1 para 0,14 da tela. O
+  asfalto ganhou contraste em `arte/chao.py`: remendo 12 → 22, trilha de
+  pneu −24 → −32 e um veio longitudinal de palmo (14), com semente própria
+  para a calçada não mudar. Na folha a 128 km/h o terço de baixo e a zebra
+  riscam, o piloto fica nítido e o rival a 15 m lê; a referência ainda
+  risca mais claro e escuro, porque o asfalto dela tem mais contraste que o
+  nosso. `fps` p50 8,33 ms, preso no refresh de 120 Hz deste Mac, como na
+  V08. Baseline sem variação.
 
 ### A rua
 
