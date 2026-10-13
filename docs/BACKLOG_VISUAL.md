@@ -879,7 +879,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
     ele. `selftest` sem variação; baseline visual dentro da tolerância;
     `fps` igual ao da master, os dois no teto de 144.
 
-- [x] **V16** — Palmeira e árvore de copa, inclusive por cima da pista (13/10/2026)
+- [x] **V16** — Palmeira e árvore de copa, inclusive por cima da pista (13/10/2026, #97)
 
   O que mais diz "cidade quente" e "Rio". E a árvore de copa larga debruçada
   sobre a pista resolve o item 4 de *Como o vídeo vende velocidade*: passar
