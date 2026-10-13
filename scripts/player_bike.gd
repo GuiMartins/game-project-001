@@ -151,6 +151,11 @@ func modelo() -> int:
 	return _ator.modelo
 
 
+## Desenha este corredor em sprite em vez do modelo 3D (`WorldTuning.ator_sprite`).
+func usar_sprite(ligado: bool) -> void:
+	_ator.sprite = ligado
+
+
 func _make_hitbox(side: int) -> Area3D:
 	var area := Area3D.new()
 	area.name = "Hit%s" % ("L" if side < 0 else "R")

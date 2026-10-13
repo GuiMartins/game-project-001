@@ -456,6 +456,36 @@ numa ladeira o corpo afunda ou flutua alguns centímetros. A cadência travada
 da animação, que faria o ator ler como digitalizado em vez de 3D, também não
 existe.
 
+## O entregador em sprite (experimento)
+
+O Road Rash que é referência não tem ator 3D: o do Mega Drive é sprite
+desenhado, e o do 3DO, que é o look perseguido, é sprite digitalizado sobre
+pista de polígono. O modelo acima entrou antes da pergunta "e se fosse
+sprite?" ser testada, e o `DIRECAO_VISUAL.md` já apontava o risco dele: ler
+como "3D com filtro". Este experimento coloca as duas respostas na mesma
+pista.
+
+O slider `ator_sprite` (grupo Ator, no F3) troca todo corredor, ao vivo, por
+um quad de frente para a câmera com um quadro do atlas
+[`assets/sprites/entregador.png`](../assets/sprites). O atlas sai de quatro
+folhas geradas no Google Flow a partir de uma imagem de referência
+([`arte/flow/`](../arte/flow)), recortadas por
+[`arte/sprites_flow.gd`](../arte/sprites_flow.gd) (`python tools/dev.py
+sprites`): fundo verde fora, borda dura, todos os desenhos alinhados pelo pé
+do pneu traseiro e reduzidos à mesma altura de piloto.
+
+O que o sprite mostra sai do mesmo estado do ator 3D, e por isso mora dentro
+do `Entregador` ([`scripts/ator_sprite.gd`](../scripts/ator_sprite.gd)):
+cinco quadros de inclinação, de 15 em 15 graus, e três de soco para cada lado.
+A cor do corredor entra no vermelho da bag e da camiseta. O modelo continua
+posado embaixo, sem aparecer na câmera e lançando a sombra, que um quad não
+tem como projetar direito.
+
+O que **não** está feito: o tombo (quem cai é o modelo 3D, por falta de
+quadro), a guinada da moto em relação à câmera (as folhas tentaram, e os
+ângulos saíram inconsistentes), o golpe recebido e a diferença entre as
+motos: XRE e PCX aparecem com o desenho da CG, só mais altas.
+
 ## Os carros
 
 O trânsito saiu da caixa pelo mesmo motivo que o entregador: o que o carro

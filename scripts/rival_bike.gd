@@ -135,6 +135,11 @@ func _ready() -> void:
 	add_child(_sensor)
 
 
+## Desenha este corredor em sprite em vez do modelo 3D (`WorldTuning.ator_sprite`).
+func usar_sprite(ligado: bool) -> void:
+	_ator.sprite = ligado
+
+
 func setup(
 	a_track: RoadTrack,
 	a_tuning: BikeTuning,

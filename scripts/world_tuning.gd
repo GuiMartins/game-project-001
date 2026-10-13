@@ -215,6 +215,15 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## Velocidade com que o ceu gira, em graus por segundo.
 @export_range(0.0, 3.0, 0.05) var ceu_vento: float = 0.15
 
+@export_group("Ator")
+
+## 1 desenha cada corredor em sprite, recortado das folhas do Google Flow
+## (`AtorSprite`), em vez do modelo 3D. E o experimento de comparar os dois na
+## pista: ao vivo, sem reiniciar, para alternar e olhar o mesmo trecho. Um
+## slider de 0 a 1, e nao uma caixa de marcar, porque o painel so sabe
+## desenhar slider.
+@export_range(0, 1, 1) var ator_sprite: int = 0
+
 
 static func load_or_default() -> WorldTuning:
 	if ResourceLoader.exists(SAVE_PATH):

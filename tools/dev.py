@@ -882,6 +882,23 @@ def cmd_changelog(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_sprites(_: argparse.Namespace) -> int:
+    """Recorta as folhas do Google Flow (`arte/flow/`) no atlas do ator.
+
+    Roda no Godot fixado, e nao em Python: o Python do sistema nao le JPEG sem
+    Pillow, e o Godot ja esta em toda maquina que roda o jogo.
+    """
+    binary = require_godot(godot_version())
+    folha = PROJECT / "arte" / "flow" / "pilotando_a.jpg"
+    if not folha.exists() or folha.read_bytes()[:2] != b"\xff\xd8":
+        return _fail(f"{folha.relative_to(PROJECT)} nao e JPEG - rode `git lfs pull`")
+    code = _godot(binary, "--headless", "--script", "res://arte/sprites_flow.gd",
+                  vigia_erros=True)
+    if code != 0:
+        return code
+    return _import_antes(binary)
+
+
 def cmd_export(_: argparse.Namespace) -> int:
     version = godot_version()
     binary = require_godot(version)
@@ -936,6 +953,7 @@ def main() -> int:
     sub.add_parser("fps", help="tempo de quadro da corrida solta, com tela e sem vsync")
     sub.add_parser("run", help="abre o jogo")
     sub.add_parser("export", help="exporta as tres plataformas")
+    sub.add_parser("sprites", help="recorta as folhas do Google Flow no atlas do ator")
     p_versao = sub.add_parser("versao", help="mostra ou sobe a versao; o merge da versao nova publica")
     p_versao.add_argument("nova", nargs="?", metavar="X.Y.Z|patch",
                           help="a versao nova, ou `patch` para subir o ultimo numero")
@@ -958,6 +976,7 @@ def main() -> int:
         "lint": cmd_lint, "format": cmd_format, "test": cmd_test,
         "shots": cmd_shots,
         "prova": cmd_prova,
+        "sprites": cmd_sprites,
         "versao": cmd_versao,
         "changelog": cmd_changelog,
         "fps": cmd_fps,

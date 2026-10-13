@@ -82,6 +82,10 @@ func test_o_foco_marca_toda_malha_de_toda_moto() -> void:
 		ator.foco = true
 		ator.trocar_modelo((modelo + 1) % Entregador.CENAS.size())
 		var malhas := ator.find_children("*", "MeshInstance3D", true, false)
+		# O sprite marca o foco pelo proprio shader, e nao pelo overlay: o
+		# overlay redesenharia o quad sem o billboard (ver `AtorSprite`).
+		var sprite := ator.find_child("Sprite", false, false) as AtorSprite
+		malhas.erase(sprite)
 		assert_int(malhas.size()).is_greater(10)
 		var discos := 0
 		for malha: MeshInstance3D in malhas:
@@ -89,9 +93,12 @@ func test_o_foco_marca_toda_malha_de_toda_moto() -> void:
 			if malha.name == "Disco":
 				discos += 1
 		assert_int(discos).is_equal(2)
+		var material := sprite.material_override as ShaderMaterial
+		assert_object(material.shader).is_same(AtorSprite.SHADER_FOCO)
 		ator.foco = false
 		for malha: MeshInstance3D in malhas:
 			assert_object(malha.material_overlay).is_null()
+		assert_object(material.shader).is_same(AtorSprite.SHADER)
 
 
 func test_rival_nasce_sem_a_marca() -> void:
