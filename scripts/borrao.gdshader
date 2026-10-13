@@ -19,7 +19,7 @@ render_mode unshaded, fog_disabled, shadows_disabled, depth_test_disabled, depth
 stencil_mode read, compare_not_equal, 1;
 
 // Amostras ao longo do risco. 10 a 640x360: o risco mais longo (`maximo`) tem
-// ~64 px, e com mais espaco que isso entre amostras o risco vira copias
+// ~90 px, 9 px entre amostras; com mais espaco que isso o risco vira copias
 // separadas do mesmo carro. Sem sorteio entre amostras de proposito: ruido
 // que muda a cada quadro e cintilacao, o modo de falha que a tela inteira
 // evita (DIRECAO_VISUAL.md).
@@ -44,8 +44,17 @@ uniform float perto = 5.0;
 // borra: o borrao e pintado, nao fotografado (DIRECAO_VISUAL.md).
 uniform float longe = 0.15;
 // O risco mais comprido, em fracao da tela. Sem teto, o canto de baixo a 1 m
-// da camera borraria a tela inteira por cima dele.
-uniform float maximo = 0.1;
+// da camera borraria a tela inteira por cima dele. Era 0,1; com o reforco do
+// `chao` o pe da tela batia nele ja em cruzeiro e a zebra continuava inteira.
+// A 0,14 o risco tem ~90 px, e as 10 amostras ficam a 9 px uma da outra.
+uniform float maximo = 0.14;
+// Quanto o chao abaixo do ponto de fuga borra a mais, no pe da tela (V08a). A
+// 2 o asfalto riscava e a zebra nao; a 3 a zebra risca como no `t3.0s`.
+// Nas referencias o terco de baixo do asfalto e todo risco, e a conta do
+// movimento nao chega la sozinha: o chao debaixo da moto esta a ~6 m da
+// camera, alem do `perto`, e pesa so ~0,7. Cresce do ponto de fuga para baixo,
+// entao fachada e ceu nao mudam, e o piloto continua fora pelo stencil.
+uniform float chao = 3.0;
 
 
 void vertex() {
@@ -67,6 +76,7 @@ void fragment() {
 	float z = distancia(uv, INV_PROJECTION_MATRIX);
 	float perto_ate = clamp(perto / max(z, 0.001), 0.0, 1.0);
 	float peso = mix(longe, 1.0, perto_ate * perto_ate);
+	peso *= mix(1.0, chao, smoothstep(fuga.y, 1.0, uv.y));
 	vec2 raio = uv - fuga;
 	float comprimento = min(forca * peso * length(raio), maximo);
 	// O risco vai do pixel para o ponto de fuga: o que esta aqui agora veio de
