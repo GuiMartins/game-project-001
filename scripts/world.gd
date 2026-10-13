@@ -310,19 +310,13 @@ func _build_scenery() -> void:
 	var o := 30.0
 	while o < track.length - 10.0:
 		var side := 1.0 if _rng.randf() < 0.5 else -1.0
-		var at := track.point(o, edge * side + 0.8 * side) + Vector3.UP * 3.0
+		var at := track.point(o, edge * side + 0.8 * side)
+		var para_a_pista := track.sample_basis(o).x * -side
 		var na_rua := Cidade.na_boca(track.cruzamentos, o, side)
 		o += _rng.randf_range(18.0, 34.0)
 		if na_rua:
 			continue
-		var pole := StaticBody3D.new()
-		pole.collision_layer = Layers.WORLD
-		pole.collision_mask = 0
-		var pole_size := Vector3(0.35, 6.0, 0.35)
-		pole.add_child(Greybox.box(pole_size, Color(0.62, 0.6, 0.55)))
-		pole.add_child(Greybox.box_shape(pole_size))
-		props.add_child(pole)
-		pole.global_position = at
+		props.add_child(Poste.criar(at, para_a_pista))
 
 	# Os sorteios dos predios do greybox continuam saindo do gerador do mundo,
 	# na mesma quantidade e na mesma ordem, e vao fora. Transito e rivais vem

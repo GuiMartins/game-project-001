@@ -526,13 +526,22 @@ O critério dos cinco itens abaixo é um só, e vem do vídeo: **algo passa ao
 lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
 ~0,75 s, de um lado só por vez. Cada item mede isso e o `fps`.
 
-- [ ] **V15** — Poste de dois braços
+- [x] **V15** — Poste de dois braços (12/10/2026)
 
   O referencial de velocidade mais limpo do vídeo: ornamental, 8–10 m, dois
   braços curvos com luminária. Substitui a caixa de 0,35 × 6 m. O colisor fica
   igual, porque é ele que serve ao combate (dá pra jogar rival no poste).
 
   - **Aceite:** o braço do poste cruza o topo do quadro na V04.
+  - **Resultado:** `arte/poste.py` gera o poste (`assets/poste/`): ferro
+    verde-garrafa, 9 m, pedestal, anéis, dois braços em pescoço de cisne de
+    2,6 m com escora e globo leitoso, um por cima da pista e outro da
+    calçada. O braço tem 14 cm, o dobro do real, para não piscar a 20 m.
+    `Poste.criar` divide a malha entre todos; só ela gira, e o corpo e a
+    caixa de 0,35 × 6 m ficam como eram, nos eixos do mundo. Na prova o
+    braço cruza o topo no quadro da ladeira. `selftest` sem variação;
+    baseline visual dentro da tolerância (`visual_familias_de_cor` +1,7%);
+    `fps` igual ao da master (p50 6,9 ms, p95 8,3 ms).
 
 - [ ] **V16** — Palmeira e árvore de copa, inclusive por cima da pista
 

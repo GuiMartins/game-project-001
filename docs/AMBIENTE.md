@@ -54,7 +54,7 @@ opinião entre duas máquinas gera diff que ninguém pediu.
 ## Blender (só para mexer no modelo)
 
 Jogar, testar e exportar não precisam de Blender: o jogo carrega o `.glb`
-versionado. Ele só entra para mudar o entregador, os prédios ou os carros, e aí
+versionado. Ele só entra para mudar o entregador, os prédios, os carros ou o poste, e aí
 o caminho é o script, não o `.blend`:
 
 ```bash
@@ -63,10 +63,11 @@ blender --background --factory-startup --python arte/xre300.py
 blender --background --factory-startup --python arte/pcx160.py
 blender --background --factory-startup --python arte/predios.py
 blender --background --factory-startup --python arte/carros.py
+blender --background --factory-startup --python arte/poste.py
 ```
 
 Testado no Blender 5.2. Cada script apaga a cena, monta o modelo e regrava o
-seu `.blend` em `arte/` e a sua pasta em `assets/` (`entregador/`, `predios/`, `carros/`). A saída é reprodutível byte a
+seu `.blend` em `arte/` e a sua pasta em `assets/` (`entregador/`, `predios/`, `carros/`, `poste/`). A saída é reprodutível byte a
 byte — mesma versão do Blender, mesmo `.glb` —, então regerar sem mudar nada
 não gera diff. O `--factory-startup` existe para isso: deixa de fora os add-ons
 e as preferências de quem roda.
