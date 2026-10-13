@@ -95,6 +95,42 @@ e no `git log`.
 | Câmera `GARUPA` (`F2`) | #37, #38, #50 |
 | Ampliação sem tremor em tela de escala quebrada (`ampliacao.gdshader`) | V28 |
 
+## Revisão dos itens fechados contra as referências (12/10/2026)
+
+A V14 e a V15 saíram do texto e foram refeitas; os itens fechados antes da
+regra de abrir as referências podem ter o mesmo problema. Cada um foi
+comparado com `dev.py prova --referencia` (a 90 km/h, que é a da prova, e a
+128 km/h, que é a de todas as referências) e com as imagens da sua linha
+**Referências**. Os de *feel* foram comparados pela medida quadro a quadro do
+vídeo (`REFERENCIA_VIDEO.md`) contra os números do `selftest`; jogando, o
+veredito continua com o Guilherme.
+
+**Aprovado pelo Guilherme em 12/10/2026.** Cada desvio e refação virou item
+aberto logo abaixo do original: V03a, V05b, V07b, V08a, V09a, V11a e V13a.
+
+| Item | Classificação | O que falta |
+| --- | --- | --- |
+| V03 | desvio pequeno 👤 | Decidida sem as paradas. Nelas o pixel é 2–3× mais grosso que 640×360 só no céu, na nuvem e no asfalto borrado (trama em tufo, não grade), e a fachada é lisa. O jogo põe o Bayer fino por igual, fachada inclusive, e lê como retícula. Reabrir: trama só em gradiente e mais grossa. |
+| V04 | bate | Piloto em ~45% da altura (ref. ~46%), horizonte a ~45% do topo (ref. ~40%). |
+| V05 | desvio pequeno 👤 | Saída (~0,17 s) e contra-inclinação (−4,6°) batem. A entrada no teclado vai a ~60°/s; o vídeo deita a 12–25°/s, porque o piloto põe peso aos poucos. Rampa no pedido de inclinação do teclado, julgada jogando. |
+| V05a | bate | Nenhuma referência mostra PCX nem XRE; o alvo é a ficha. |
+| V06 | bate | Tremor (1,2 cm) e pneu preto sem banda batem com o vídeo. |
+| V07 | desvio pequeno | Postura e losango batem. A bag não: no vídeo é mais larga que alta, assenta nos ombros e o capacete fica inteiro acima; no jogo é quase quadrada, sobe acima do ombro e esconde meio capacete. |
+| V07a | bate | Nenhuma referência mostra os comandos nessa escala. |
+| V08 | desvio pequeno | A 128 km/h as referências têm o terço de baixo do asfalto todo em risco e a zebra riscada; o jogo, na mesma velocidade, deixa o asfalto e a zebra quase nítidos e só borra o rival na borda. Força maior em cruzeiro, e asfalto com contraste para ter o que riscar. |
+| V09 | desvio pequeno | Largura bate no corredor. Falta o meio-fio alto com sombra (no jogo a calçada lê no nível da pista), tom mais quente, e pedra portuguesa ou placa em vez de cimentado liso: `01_centro` e `t0.0s` mostram pedra portuguesa na avenida. No largo da V11 a calçada vira descampado que nenhuma referência tem. |
+| V10 | bate | Zebra ao longo da pista e linha de bordo branca, como no vídeo. |
+| V11 | refazer | A referência é um cânion de 8–15 andares em pedra bege e ocre, com cornija e toldo de cor lisa em todo o térreo, saindo pelo topo do quadro. O jogo mostra blocos pastel (amarelo, rosa, menta, lilás) de janela chapada, mural de triângulos que nenhuma referência tem, e o largo com recuo de 8–12 m abre céu e chão vazio. |
+| V12 | bate | Lanterna e outdoor brilham, asfalto não. O halo do vídeo nos carros brancos é exposição, não glow. |
+| V13 | desvio pequeno | Posição e brilho batem. Formato não: na referência é deitado (~16:9), de foto colorida e com moldura; no jogo, muito em pé (bandeira 2,8 × 4,2 m) e tela de uma cor só com disco e barras, puxando para o rosa. |
+
+Quem abriu as imagens antes de implementar, pelos transcripts (sessão
+compactada pode esconder leitura anterior): V07 e V07a (`moto_ampliada`),
+V10 (`t3.0s`) e V13 (`t3.0s`, `t3.8s`), sim. V03 e V04 só a
+`video_01/folha.png`, e as paradas ainda não existiam. V08 abriu `t5.0s`
+depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
+#61 (08/10), antes da folha da V02 e das paradas.
+
 ## A fila
 
 ### Fundação
@@ -146,6 +182,11 @@ e no `git log`.
   são o mesmo look. Decide-se **antes** de pintar mais textura, porque muda o
   quanto investir em detalhe.
 
+  - **Referências:** as quatro paradas (`01_centro`, `02_praca_maua`,
+    `03_viaduto`, `04_vertical`: bloco de pixel e trama grossa no céu, na
+    nuvem e no asfalto borrado, e fachada lisa, sem trama) e `video_01/t*.png`
+    (HD liso). A decisão é de 11/10, só com o vídeo: as paradas entraram no
+    #72.
   - **O que fazer:** três variantes no mesmo quadro da prova, lado a lado com
     o vídeo: (a) como está, (b) sem a quantização e o dither, (c) com dither
     mais fraco (`paleta.gdshader`). Levar a folha para a decisão.
@@ -162,6 +203,27 @@ e no `git log`.
     (folha, lupa e uma 1080p por variante) para quando a pergunta voltar,
     por exemplo depois do céu com nuvem (V14).
 
+- [ ] **V03a** 👤 — Trama de pixel só no gradiente, e mais grossa
+
+  A V03 foi decidida em 11/10, só com o vídeo: as quatro paradas entraram
+  no #72. Nelas o pixel é 2–3× mais grosso que 640×360, mas só no céu, na
+  nuvem e no asfalto borrado, e a trama é em tufo, não grade; a fachada é
+  lisa. O jogo põe o Bayer fino por igual, fachada inclusive, e de perto
+  lê como retícula de jornal, não pixel art.
+
+  - **Referências:** `01_centro` (céu, nuvem e fachada do Theatro),
+    `02_praca_maua` (céu e asfalto da zebra), `03_viaduto`, `04_vertical`
+    (asfalto em bloco); recorte lado a lado em *Revisão dos itens
+    fechados*.
+  - **O que fazer:** variantes no `paleta.gdshader` na
+    `dev.py prova --variantes`: trama pesada pelo gradiente local (some em
+    superfície lisa), e matriz maior ou em bloco de 2 px. Levar a folha com
+    as paradas ao lado para a decisão.
+  - **Recomendação:** manter 640×360 (a fachada da referência tem esse
+    detalhe) e mexer só na trama.
+  - **Aceite:** a decisão escrita aqui; na prova, fachada sem retícula e céu
+    com trama em tufo, perto do recorte da `01_centro`.
+
 ### Enquadramento
 
 - [x] **V04** — Câmera de perseguição perto e baixa (12/10/2026, #68)
@@ -171,6 +233,9 @@ e no `git log`.
   **abaixo do capacete**; no jogo, ~29% e acima. Com a câmera alta, o corredor
   vira mapa.
 
+  - **Referências:** `video_01/t0.0s`, `t1.0s` e `moto_ampliada` (piloto em
+    ~46% da altura, lente na altura do capacete); `01_centro`, `02_praca_maua`
+    e `04_vertical` (mesmo enquadramento, horizonte a ~40% do topo).
   - **Ponto de partida** (`REFERENCIA_VIDEO.md`, *Proposta de partida*):
     `cam_distance` ≈ 4,0, `cam_height` ≈ 1,6, `cam_lean_follow` ≈ 0. O
     `cam_fov_speed_gain` já está em 8.
@@ -198,6 +263,8 @@ e no `git log`.
   4–8° no fim. O `lerp` exponencial de hoje nunca passa do alvo, então a troca
   de direção lê como ponteiro voltando ao centro, e não como peso.
 
+  - **Referências:** `video_01.mp4` de 2,0 a 6,0 s e `video_01/moto_ampliada`,
+    medidos quadro a quadro em `REFERENCIA_VIDEO.md`, *A inclinação*.
   - **O que fazer:** trocar o `lerp` por mola (ângulo + velocidade angular)
     em `player_bike.gd`, retorno ~3× mais rápido que a entrada e *overshoot*
     pequeno. Os parâmetros viram slider.
@@ -226,6 +293,8 @@ e no `git log`.
   a sua calibração, a começar pela inclinação (`lean_freq`,
   `lean_return_freq`, `lean_return_damping`).
 
+  - **Referências:** nenhuma mostra PCX nem XRE, e o `video_01` só tem uma
+    naked; o alvo é a ficha técnica (`FichaDaMoto`).
   - **Decisão 👤:** quais números variam por moto (só inclinação, ou também
     velocidade, aceleração e curva), e se os rivais herdam a física da moto
     sorteada ou só o jogador.
@@ -248,10 +317,32 @@ e no `git log`.
   6,6 / 4,6 / 2,0. O rival trocou o `lerp` pela mesma mola, na moto sorteada.
   Baseline sem variação (o banco roda na CG, que dá 1).
 
+- [ ] **V05b** 👤 — Rampa no pedido de inclinação do teclado
+
+  A saída (~0,17 s) e a contra-inclinação (−4,6°) da V05 batem com o vídeo.
+  A entrada não: com a tecla, o pedido vai a 100% na hora e a moto deita a
+  ~60°/s; no vídeo ela deita a 12–25°/s, porque o piloto põe peso aos
+  poucos. A mola está certa; quem entra seco é o pedido.
+
+  - **Referências:** `video_01.mp4` de 2,0 a 3,9 s (0° → 25° em ~1,6 s) e
+    `video_01/moto_ampliada`; números em `REFERENCIA_VIDEO.md`, *A
+    inclinação*.
+  - **O que fazer:** o pedido vem de `Controls.steer_axis()` e entra cru
+    em `PlayerBike._update_lean`. Rampa no pedido de tecla: sobe enquanto
+    segurada e solta seco; analógico passa direto. A taxa vira slider.
+  - **Decisão 👤:** a taxa, jogando. Partida: 0 → máximo em ~0,8 s.
+  - **Mexe no `selftest`** se a rampa ficar no caminho que a prova usa:
+    o baseline anda com o motivo, ou a rampa fica só na leitura da tecla.
+  - **Aceite:** jogando, a troca de faixa curta continua viva e a curva
+    longa deita aos poucos.
+
 - [x] **V06** — Vibração miúda, roda lisa em alta e cabeça no horizonte (12/10/2026, #76)
 
   Três coisas pequenas de pose, todas no `Entregador`, nenhuma na física.
 
+  - **Referências:** `video_01.mp4` e `video_01/moto_ampliada` (topo da bag
+    oscilando ±3 px, pneu preto sem desenho de banda); `video_02.mp4` (moto de
+    verdade em movimento).
   - **Vibração:** 1–2 cm, 8–15 Hz, crescendo com a velocidade, no corpo da
     moto e do piloto. É o "veículo que não é rígido" do vídeo. A suspensão da
     #47 já cuida da ondulação longa (`ASFALTO`); isto é o tremor curto que ela
@@ -284,6 +375,9 @@ e no `git log`.
   os cotovelos bem abertos: são as pontas mais largas da silhueta, mais largas
   que a bag. O jogo deita o tronco com a velocidade (`TRONCO_DEITADO`).
 
+  - **Referências:** `video_01/moto_ampliada` e `t1.0s` (sentado, cotovelo
+    passando da bag, bag mais larga que alta e capacete inteiro acima dela);
+    `01_centro`, `02_praca_maua`, `04_vertical`.
   - **Onde:** `scripts/entregador.gd` (pose e IK dos braços).
   - **Aceite:** de trás, a silhueta mostra o losango braço-guidão. Faz mais
     sentido depois da V04, quando o piloto está grande na tela.
@@ -308,6 +402,9 @@ e no `git log`.
   quase em ângulo reto com o antebraço, e a pilotagem tem ainda o freio e a
   troca de marcha.
 
+  - **Referências:** nenhuma mostra pulso, manete ou pedal na escala da
+    câmera; `video_01/moto_ampliada` só confirma as mãos nas pontas do guidão.
+    O alvo é a pilotagem real.
   - **Decisão 👤:** pose **e** peças que se mexem (manete, pedal), e não só
     pose.
   - **Resultado:** `Comandos`, classe pequena do ator. O pulso direito torce
@@ -328,6 +425,20 @@ e no `git log`.
     que puxava a manete ao soltar o gás em alta e em toda batida. E o rival
     em cruzeiro segura meio gás, em vez do pulso fechado de quem embala.
 
+- [ ] **V07b** — Bag do vídeo: mais larga que alta, capacete por cima
+
+  A postura da V07 bate. A bag não: no vídeo ela é mais larga que alta,
+  assenta nos ombros e o capacete fica inteiro acima dela; no jogo é quase
+  quadrada, sobe acima do ombro e esconde meio capacete, e a silhueta perde
+  a cabeça.
+
+  - **Referências:** `video_01/moto_ampliada` (os oito quadros),
+    `video_01/t1.0s`; `01_centro`, `02_praca_maua`, `04_vertical`.
+  - **O que fazer:** proporção e altura da `Bag` em `arte/entregador.py`
+    (dimensões em `"bag"` e o `altura_bag`), nas três motos, e regerar.
+  - **Aceite:** na prova de trás o capacete aparece inteiro acima da bag, e
+    os cotovelos continuam passando dela.
+
 ### Velocidade
 
 - [x] **V08** — Borrão radial com máscara de profundidade (12/10/2026)
@@ -337,6 +448,10 @@ e no `git log`.
   vídeo mostra que é **este** o efeito, e não as linhas de velocidade que a
   P7 mandava testar primeiro.
 
+  - **Referências:** `01_centro`, `02_praca_maua` e `04_vertical` (terço de
+    baixo do asfalto em risco de bloco, carro colado borrado);
+    `video_01/t3.0s` a `t6.0s` (zebra e linha virando risco, táxi e sedã
+    colados borrados). Tudo a 128 km/h.
   - **O que fazer:** `ColorRect` com shader lendo cor e profundidade,
     `CanvasLayer` **acima** do mundo e **abaixo** da quantização (a ordem dos
     passes está em `DIRECAO_VISUAL.md`, *Ordem dos passes*). Força amarrada a
@@ -366,6 +481,23 @@ e no `git log`.
     portão visual em 4 rodadas: não medido** — o `shots` travou nesta
     máquina com 0 quadros, inclusive na `master`; fica com o CI.
 
+- [ ] **V08a** — Borrão que risca o asfalto já em cruzeiro
+
+  A 128 km/h as referências têm o terço de baixo do asfalto todo em risco e
+  a zebra riscada. O jogo, na mesma velocidade (`dev.py prova --kmh 128`),
+  deixa asfalto e zebra quase nítidos e só borra o rival na borda. Duas
+  causas: a força ainda é baixa em cruzeiro, e o asfalto quase liso não tem
+  contraste para virar risco.
+
+  - **Referências:** `01_centro`, `02_praca_maua`, `04_vertical` (asfalto
+    em risco de bloco no terço de baixo); `video_01/t3.0s` a `t6.0s`
+    (zebra e linha virando risco).
+  - **O que fazer:** curva da força em `Borrao` e `borrao.gdshader` (o
+    terço de baixo borra mais que a periferia de cima), e o contraste do
+    asfalto em `arte/chao.py` se o risco não aparecer.
+  - **Aceite:** na folha a 128 km/h o chão lê como a referência; o piloto
+    continua nítido e o rival a 15 m legível. `fps` medido.
+
 ### A rua
 
 - [x] **V09** — Calçada larga até a fachada
@@ -375,6 +507,10 @@ e no `git log`.
   entre ela e o prédio, aparece **grama** (dá pra ver em todos os quadros da
   prova).
 
+  - **Referências:** `01_centro`, `video_01/t0.0s` e `t1.0s` (pedra portuguesa
+    clara, meio-fio alto com sombra, ~5 m de calçada com árvore, mupi e
+    gente); `t3.0s` (meio-fio pintado de amarelo); `t5.0s` e `t6.0s` (calçada
+    lisa de *downtown*); `02_praca_maua` (meio-fio alto na curva).
   - **O que fazer:** separar a **largura andável** (`SHOULDER`, que mexe no
     *feel* e no `selftest`) da **largura visual** (pedra portuguesa até a
     fachada, ~6 m). O andável fica onde está; o resto vira faixa de serviço,
@@ -390,11 +526,33 @@ e no `git log`.
     e bate no prédio, que tem colisor (`scripts/cidade.gd`). A faixa de
     serviço está desenhada, mas não bloqueia — quem bloqueia é o que mora nela.
 
+- [ ] **V09a** — Meio-fio que lê, e calçada de pedra quente
+
+  A largura da V09 bate no corredor. Falta o resto: na referência o
+  meio-fio é alto, com sombra embaixo, e às vezes pintado de amarelo; a
+  calçada é clara e quente, em pedra portuguesa na avenida do Theatro e em
+  placa no *downtown*. No jogo a calçada lê no nível da pista, num
+  cimentado frio. E no largo da V11 ela vira descampado, que nenhuma
+  referência mostra.
+
+  - **Referências:** `01_centro`, `video_01/t0.0s` e `t1.0s` (pedra
+    portuguesa, meio-fio alto com sombra); `t3.0s` (meio-fio amarelo);
+    `t5.0s`, `t6.0s` (placa lisa de *downtown*); `02_praca_maua` (meio-fio
+    alto na curva).
+  - **O que fazer:** altura e face do meio-fio em `road_track.gd`; textura
+    da calçada em `arte/chao.py` com junta de placa e trecho de pedra
+    portuguesa, respeitando a regra de "visto a 180 km/h" do topo dele.
+  - **Aceite:** na prova o meio-fio separa pista e calçada sem a linha de
+    bordo, e o tom da calçada fica perto do da `01_centro`.
+
 - [x] **V10** — Faixa de pedestres e linha de bordo (12/10/2026, #81)
 
   A zebra é a pintura de maior contraste do vídeo e o marcador de velocidade
   mais forte dele: as listas brancas passando sob a roda.
 
+  - **Referências:** `video_01/t3.0s`, `t6.0s` e `02_praca_maua` (zebra larga,
+    listras ao longo da pista); `video_01/t0.0s` e `01_centro` (linha de bordo
+    branca junto ao meio-fio).
   - **O que fazer:** linha de bordo branca contínua junto ao meio-fio; faixas
     de pedestres com linha de retenção, nos cruzamentos.
   - **O risco:** a regra da P4a (`arte/chao.py`) proíbe coisa fina atravessada
@@ -441,6 +599,10 @@ e no `git log`.
   loja com toldo e letreiro no térreo. Hoje os prédios são sorteados com
   buraco entre eles, e só o `Comercio` tem loja embaixo.
 
+  - **Referências:** `video_01/t3.0s` a `t6.0s` (corredor de 8 a 15 andares em
+    pedra bege e ocre, com cornija, e toldo de cor lisa no térreo inteiro);
+    `01_centro`, `video_01/t0.0s` e `t1.0s` (Theatro e sobrado colonial ao
+    fundo); `02_praca_maua` (muro e casario).
   - **Decisão 👤:** Rio ou cidade genérica? **Recomendação** da
     `REFERENCIA_VIDEO.md`: Rio com o ritmo do *downtown* — sobrado, art déco
     de Copacabana e colonial do Centro, colados em sequência, com térreo
@@ -467,6 +629,30 @@ e no `git log`.
     e o `baseline_visual.json` andou junto. `fps`: os dois no teto de 120 do
     monitor, p95 8,33 → 8,65 ms.
 
+- [ ] **V11a** 👤 — Refazer a fachada: cânion de pedra bege, não bloco pastel
+
+  A V11 fez a sequência colada e o térreo com loja, e isso fica. O que não
+  lê como a referência é o prédio. No vídeo é um cânion de 8–15 andares em
+  pedra bege e ocre, com cornija, janela com moldura e toldo de cor lisa
+  em todo o térreo, saindo pelo topo do quadro. No jogo são blocos pastel
+  (amarelo, rosa, menta, lilás) de janela chapada, com mural de triângulos
+  que nenhuma referência tem, e o largo com recuo de 8–12 m abre céu e
+  chão vazio.
+
+  - **Referências:** `video_01/t3.0s` a `t6.0s` (o corredor); `01_centro`,
+    `video_01/t0.0s` e `t1.0s` (Theatro e sobrado colonial); `02_praca_maua`
+    (casario e muro). O mural colorido só existe no `03_viaduto` e no
+    `04_vertical`, em muro de via expressa, não em fachada.
+  - **Decisão 👤:** o largo fica (mais curto e sem o recuo vazio) ou sai?
+    **Recomendação:** fica, mas como praça com árvore e gente (V16, V19), e
+    não como chão vazio.
+  - **O que fazer:** paleta e material das fachadas em `arte/predios.py` e
+    `predio.gd` (pedra bege, ocre, creme; cor viva só no toldo e no
+    outdoor), cornija e moldura de janela, prédios de corredor mais altos,
+    mural fora da fachada.
+  - **Aceite:** na folha, o corredor do jogo ao lado de `t5.0s` lê como a
+    mesma rua. `fps` medido.
+
 - [x] **V12** — Glow: outdoor, lanterna e cromo brilhando (12/10/2026, #84)
 
   O vídeo tem *bloom* nos outdoors, nos carros brancos e no cromo. O jogo não
@@ -474,6 +660,8 @@ e no `git log`.
   Vem antes do outdoor e da partícula porque os dois dependem dele para ler:
   sem glow, faísca é um pixel laranja.
 
+  - **Referências:** `video_01/t3.0s` e `t5.0s` (outdoor com halo), `t1.0s`
+    (lanterna de freio do táxi); `03_viaduto` (painel de LED).
   - **O que fazer:** glow no `Environment` com limiar alto (só o que é
     emissivo passa); lanterna dos carros emissiva; SSAO leve, e só se o `fps`
     deixar (é o primeiro a cortar).
@@ -503,6 +691,10 @@ e no `git log`.
   fachadas e no topo dos prédios, com cor viva. Conteúdo inventado: nenhuma
   marca real.
 
+  - **Referências:** `video_01/t3.0s`, `t5.0s` e `t6.0s` (outdoor deitado, de
+    foto colorida, na esquina e na fachada, virado para a rua); `01_centro`
+    (mupi iluminado no ponto de ônibus); `03_viaduto` (painel de LED de
+    texto).
   - **Onde:** `arte/predios.py` (onde o outdoor encaixa) e `predio.gd` (a cor).
   - **Aceite:** com o glow da V12, o outdoor é o ponto mais claro abaixo do
     horizonte.
@@ -519,6 +711,22 @@ e no `git log`.
     só o outdoor. Baseline visual:
     `visual_familias_de_cor` 48,4 → 66,3, pelas cores de tela novas. `fps`
     igual, no teto de 120.
+
+- [ ] **V13a** — Outdoor deitado, de foto colorida
+
+  Posição e brilho da V13 batem. O formato não: na referência o outdoor é
+  deitado (~16:9), com moldura, e mostra uma foto colorida (gente, praia,
+  produto); no jogo a bandeira é em pé (2,8 × 4,2 m) e a tela é de uma cor
+  só com disco e barras, puxando para o rosa.
+
+  - **Referências:** `video_01/t3.0s` (na esquina, virado para a rua),
+    `t5.0s` e `t6.0s` (na fachada); `01_centro` (mupi iluminado com foto de
+    praia); `03_viaduto` (painel de LED de texto).
+  - **O que fazer:** em `arte/predios.py` (`outdoor`), painel deitado e
+    textura de "foto" inventada, várias cores por tela, sem marca real e
+    sem vermelho dominante (vermelho aceso é freio).
+  - **Aceite:** com o glow da V12, o outdoor continua o ponto mais claro
+    abaixo do horizonte e, ao lado da `t3.0s`, lê como o dela.
 
 - [x] **V14** — Céu com nuvem (12/10/2026, #87)
 
