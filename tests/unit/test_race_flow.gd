@@ -42,9 +42,29 @@ func test_jogo_abre_no_menu() -> void:
 	var fluxo := _fluxo()
 	assert_int(fluxo.tela).is_equal(RaceFlow.Tela.MENU)
 	fluxo.descreve_moto = func() -> String: return "CG 160"
+	fluxo.descreve_ator = func() -> String: return "3D"
 	assert_array(fluxo.rotulos_da_tela()).is_equal(
-		["JOGAR", "MOTO: < CG 160 >", "CONFIGURACOES", "SAIR"]
+		["JOGAR", "MOTO: < CG 160 >", "PILOTO: < 3D >", "CONFIGURACOES", "SAIR"]
 	)
+
+
+func test_a_linha_do_piloto_alterna_sem_sair_do_menu() -> void:
+	var fluxo := _fluxo()
+	var pedidos: Array[int] = [0]
+	fluxo.ator_trocado.connect(func() -> void: pedidos[0] += 1)
+	var motos: Array[int] = []
+	fluxo.moto_trocada.connect(func(passo: int) -> void: motos.append(passo))
+
+	fluxo.navegar(_tecla("ui_down"))
+	fluxo.navegar(_tecla("ui_down"))
+	fluxo.navegar(_tecla("ui_accept"))
+	fluxo.navegar(_tecla("ui_right"))
+	fluxo.navegar(_tecla("ui_left"))
+
+	assert_int(pedidos[0]).is_equal(3)
+	# A seta na linha do piloto nao troca a moto, e vice-versa.
+	assert_array(motos).is_empty()
+	assert_int(fluxo.tela).is_equal(RaceFlow.Tela.MENU)
 
 
 func test_a_linha_da_moto_troca_sem_sair_do_menu() -> void:
@@ -137,6 +157,7 @@ func test_configuracoes_mostram_o_estado_de_quem_sabe() -> void:
 
 	fluxo.navegar(_tecla("ui_down"))
 	fluxo.navegar(_tecla("ui_down"))
+	fluxo.navegar(_tecla("ui_down"))
 	fluxo.navegar(_tecla("ui_accept"))
 
 	assert_int(fluxo.tela).is_equal(RaceFlow.Tela.CONFIGURACOES)
@@ -149,6 +170,7 @@ func test_configuracoes_mostram_o_estado_de_quem_sabe() -> void:
 
 func test_esc_nas_configuracoes_volta_pro_menu() -> void:
 	var fluxo := _fluxo()
+	fluxo.navegar(_tecla("ui_down"))
 	fluxo.navegar(_tecla("ui_down"))
 	fluxo.navegar(_tecla("ui_down"))
 	fluxo.navegar(_tecla("ui_accept"))
@@ -178,6 +200,7 @@ func test_tela_cheia_nas_configuracoes_pede_a_troca() -> void:
 	var fluxo := _fluxo()
 	var pedidos: Array[int] = [0]
 	fluxo.tela_cheia_alternada.connect(func() -> void: pedidos[0] += 1)
+	fluxo.navegar(_tecla("ui_down"))
 	fluxo.navegar(_tecla("ui_down"))
 	fluxo.navegar(_tecla("ui_down"))
 	fluxo.navegar(_tecla("ui_accept"))

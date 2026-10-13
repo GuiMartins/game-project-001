@@ -23,14 +23,16 @@ signal painel_pedido
 signal tela_cheia_alternada
 ## Pediram a proxima moto da lista (`passo` 1) ou a anterior (-1).
 signal moto_trocada(passo: int)
+## Pediram para trocar o piloto entre o modelo 3D e o sprite.
+signal ator_trocado
 ## A tela mudou. Quem ouve decide o que congelar e o que esconder - o fluxo nao
 ## conhece o mundo nem a Hud.
 signal tela_mudou(nova: int)
 
 enum Tela { MENU, CORRIDA, CONFIGURACOES, RESULTADO }
 
-## Quantas linhas de menu cabem de uma vez. A tela mais cheia e a de
-## configuracoes, com cinco.
+## Quantas linhas de menu cabem de uma vez. As telas mais cheias sao o menu e
+## as configuracoes, com cinco.
 const MAX_ITENS: int = 5
 
 ## Altura de uma linha de menu, em unidades de layout (a tela de 320x180 em que
@@ -53,6 +55,7 @@ const COR_ITEM: Color = Color(0.82, 0.85, 0.92)
 var descreve_pixel: Callable
 var descreve_camera: Callable
 var descreve_moto: Callable
+var descreve_ator: Callable
 var descreve_tela_cheia: Callable
 
 var tela: int = Tela.MENU
@@ -146,6 +149,10 @@ func navegar(evento: InputEvent) -> bool:
 		_troca_moto(1)
 	elif _na_moto() and evento.is_action_pressed("ui_left"):
 		_troca_moto(-1)
+	elif (
+		_no_ator() and (evento.is_action_pressed("ui_right") or evento.is_action_pressed("ui_left"))
+	):
+		_troca_ator()
 	elif evento.is_action_pressed("ui_accept"):
 		_escolher(_selecionado)
 	elif evento.is_action_pressed("ui_cancel"):
@@ -190,7 +197,8 @@ func _ir_para(nova: int) -> void:
 			_posicionar(_subtitulo, 50.0)
 			_subtitulo.text = "corrida de entregadores - prototipo"
 			_subtitulo.visible = true
-			_posicionar_itens(90.0)
+			# Com cinco linhas, a 90 a ultima encostava no rodape (H - 16).
+			_posicionar_itens(80.0)
 			_rodape.text = "setas movem   ENTER escolhe   %s" % Hud.carimbo_versao()
 		Tela.CONFIGURACOES:
 			_posicionar(_titulo, 18.0)
@@ -226,10 +234,13 @@ func rotulos_da_tela() -> PackedStringArray:
 			# A moto mora no menu, e nao nas configuracoes, porque e escolha de
 			# antes de largar - e o mundo congelado atras do menu e a vitrine:
 			# a moto do jogador esta parada na largada, e troca ali na frente.
+			# O piloto em sprite ou em 3D, pelo mesmo motivo: e o experimento
+			# de comparar os dois, e a comparacao e olhando.
 			return PackedStringArray(
 				[
 					"CONTINUAR" if _corrida_pausada else "JOGAR",
 					"MOTO: < %s >" % _descreve(descreve_moto),
+					"PILOTO: < %s >" % _descreve(descreve_ator),
 					"CONFIGURACOES",
 					"SAIR",
 				]
@@ -262,8 +273,10 @@ func _escolher(indice: int) -> void:
 				1:
 					_troca_moto(1)
 				2:
-					_ir_para(Tela.CONFIGURACOES)
+					_troca_ator()
 				3:
+					_ir_para(Tela.CONFIGURACOES)
+				4:
 					get_tree().quit()
 		Tela.CONFIGURACOES:
 			match indice:
@@ -291,6 +304,17 @@ func _na_moto() -> bool:
 
 func _troca_moto(passo: int) -> void:
 	moto_trocada.emit(passo)
+	_pintar_itens()
+
+
+## A linha selecionada e a do piloto?
+func _no_ator() -> bool:
+	return tela == Tela.MENU and _selecionado == 2
+
+
+## Sao duas opcoes: as duas setas e o ENTER alternam.
+func _troca_ator() -> void:
+	ator_trocado.emit()
 	_pintar_itens()
 
 

@@ -246,9 +246,20 @@ var foco: bool = false:
 	set(valor):
 		foco = valor
 		Foco.marcar(_modelo, foco)
+		_sprite.marcar_foco(foco)
+## Desenhado em sprite (`AtorSprite`) no lugar do modelo 3D. O modelo segue
+## montado e posado: ele lanca a sombra, e e ele que aparece no tombo, que as
+## folhas ainda nao desenham.
+var sprite: bool = false:
+	set(valor):
+		if valor == sprite:
+			return
+		sprite = valor
+		_mostra_sprite()
 
 var _modelo: Node3D
 var _material: ShaderMaterial
+var _sprite := AtorSprite.new()
 var _cores: Array[Color] = [BAG_FABRICA, JAQUETA_FABRICA, MOTO_FABRICA]
 ## Transformacao de repouso de cada no do modelo. A posicao de cada filho e o
 ## osso do pai, e e daqui que o IK tira o comprimento de braco e perna.
@@ -351,6 +362,7 @@ func _ready() -> void:
 	_material.set_shader_parameter("jaqueta_fabrica", JAQUETA_FABRICA)
 	_material.set_shader_parameter("moto_fabrica", MOTO_FABRICA)
 	_aplica_cores()
+	add_child(_sprite)
 	_monta()
 
 
@@ -444,6 +456,8 @@ func _monta() -> void:
 	_comandos.montar(_modelo, FichaDaMoto.de(modelo))
 	# A malha velha foi junto com a moto velha: a nova nasce sem a marca.
 	Foco.marcar(_modelo, foco)
+	_sprite.medir(_modelo, self, eixo_tras.z)
+	_mostra_sprite()
 
 
 ## Veste o corredor de uma cor: bag e moto nela, jaqueta num tom escuro dela.
@@ -624,6 +638,7 @@ func _posa() -> void:
 		_posa_voo()
 	else:
 		_posa_piloto()
+	_mostra_sprite()
 
 
 ## Poe a massa suspensa onde as molas mandam, e o garfo e a balanca onde as
@@ -932,6 +947,7 @@ func _suave(t: float) -> float:
 
 
 func _aplica_cores() -> void:
+	_sprite.pintar(_cores[0])
 	if _material == null:
 		return
 	_material.set_shader_parameter("bag", _cores[0])
@@ -963,3 +979,22 @@ func _no_relativo(no: Node3D, ancestral: Node3D) -> Vector3:
 		pos += _repouso[atual as Node3D].origin
 		atual = atual.get_parent()
 	return pos
+
+
+## Sprite ou modelo neste passo, e o quadro do sprite.
+func _mostra_sprite() -> void:
+	if _modelo == null:
+		return
+	var fase := -1
+	if _soco_t >= 0.0:
+		fase = 0 if _soco_t < _soco_preparo else (1 if _soco_t < _soco_preparo + _soco_ativo else 2)
+	_sprite.mostrar(_modelo, sprite and is_zero_approx(_queda) and not _voando)
+	# O tronco jogado pela curva e pela pancada, e o bamboleio do guidao,
+	# viram o sprite inteiro gingando; a suspensao e o tremor, ele afundando.
+	var tremido := deg_to_rad(BAMBOLEIO * _bamboleio * sin(_relogio * TAU * BAMBOLEIO_HZ))
+	var ginga := Vector3(
+		atan(_massa.x / TRONCO_ALAVANCA) * 0.5 + tremido * 0.5,
+		_massa.x * 0.5,
+		(_susp.x + _susp.y + _treme.x + _treme.y) * 0.5 - _massa.y
+	)
+	_sprite.posar(_inclinacao, _soco_lado, fase, ginga)

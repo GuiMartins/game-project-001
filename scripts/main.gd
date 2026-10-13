@@ -95,6 +95,7 @@ func _ready() -> void:
 	_moto_salva = use_saved
 	if _moto_salva:
 		world.player.usar_modelo(_le_moto())
+		world_tuning.ator_sprite = int(_le_config("jogador", "ator", world_tuning.ator_sprite))
 		# So fora das medidas: prova e shots fotografam a janela no tamanho do
 		# `project.godot`, e tela cheia mudaria o quadro que eles comparam.
 		if _le_config(SECAO_TELA, "cheia", false):
@@ -116,6 +117,9 @@ func _ready() -> void:
 	fluxo.descreve_pixel = func() -> String: return "LIGADO" if _pixel_mode else "DESLIGADO"
 	fluxo.descreve_camera = func() -> String: return world.camera.mode_name()
 	fluxo.descreve_moto = func() -> String: return Entregador.NOMES[world.player.modelo()]
+	fluxo.descreve_ator = func() -> String:
+		return "SPRITE" if world_tuning.ator_sprite == 1 else "3D"
+	fluxo.ator_trocado.connect(_trocar_ator)
 	fluxo.descreve_tela_cheia = func() -> String: return "LIGADA" if _tela_cheia() else "DESLIGADA"
 	fluxo.tela_cheia_alternada.connect(_alterna_tela_cheia)
 	fluxo.moto_trocada.connect(_trocar_moto)
@@ -223,6 +227,15 @@ func _trocar_moto(passo: int) -> void:
 	if not _moto_salva:
 		return
 	_grava_config("jogador", "moto", nova)
+
+
+## O menu e o slider do F3 mexem no mesmo numero: o que um mostra, o outro
+## mostra. A escolha do menu fica no arquivo da moto, que e escolha de quem
+## joga; o slider so fica se alguem salvar o painel.
+func _trocar_ator() -> void:
+	world_tuning.ator_sprite = 1 - world_tuning.ator_sprite
+	if _moto_salva:
+		_grava_config("jogador", "ator", world_tuning.ator_sprite)
 
 
 func _le_moto() -> int:

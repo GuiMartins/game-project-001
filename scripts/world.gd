@@ -477,6 +477,7 @@ func _sync_rival_pool() -> void:
 
 func _process(_delta: float) -> void:
 	_aplica_ceu()
+	_aplica_ator()
 
 
 ## Repassa os sliders do ceu ao shader, so o que mudou.
@@ -486,6 +487,17 @@ func _aplica_ceu() -> void:
 		var uniforme: String = CEU_SLIDERS[slider]
 		if _ceu.get_shader_parameter(uniforme) != valor:
 			_ceu.set_shader_parameter(uniforme, valor)
+
+
+## Sprite ou modelo, em todo corredor. A cada quadro, e nao so quando o slider
+## mexe: rival que entra depois (R) nasce em 3D e tem de ser trocado tambem. O
+## ator ignora o pedido que nao muda nada.
+func _aplica_ator() -> void:
+	var ligado := world_tuning.ator_sprite == 1
+	if player != null:
+		player.usar_sprite(ligado)
+	for rival in rivals:
+		rival.usar_sprite(ligado)
 
 
 func _physics_process(delta: float) -> void:
