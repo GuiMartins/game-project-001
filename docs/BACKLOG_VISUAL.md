@@ -434,7 +434,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     que puxava a manete ao soltar o gás em alta e em toda batida. E o rival
     em cruzeiro segura meio gás, em vez do pulso fechado de quem embala.
 
-- [x] **V07b** — Bag do vídeo: mais larga que alta, capacete por cima (13/10/2026)
+- [x] **V07b** — Bag do vídeo: mais larga que alta, capacete por cima (13/10/2026, #92)
 
   A postura da V07 bate. A bag não: no vídeo ela é mais larga que alta,
   assenta nos ombros e o capacete fica inteiro acima dela; no jogo é quase
