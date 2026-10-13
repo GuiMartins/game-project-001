@@ -41,11 +41,6 @@ uniform float brilho = 1.1;
 uniform float faixas_de_tom = 5.0;
 uniform float vento = 0.15;
 
-// A matriz de Bayer do `paleta.gdshader`, pela mesma razao de ser constante.
-const float BAYER[16] = float[](
-	0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0
-);
-
 vec2 hash2(vec2 p) {
 	p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
 	return fract(sin(p) * 43758.5453);
@@ -156,44 +151,51 @@ void sky() {
 		vec2 grande = tufos(q, 1.0, 0.0, fora, limiar);
 		// As massas: tufos do dobro do tamanho, que so existem no banco, e sao
 		// o que faz o horizonte ser monte de nuvem e nao pipoca miuda.
-		vec2 massa = perto > 0.05 ? tufos(q, 0.5, 57.1, fora, limiar + 0.1 * (1.0 - perto)) : vec2(0.0);
+		// Entra aos poucos, e nao num `if` seco: ligada de uma vez, ela riscava
+		// uma linha reta no ceu na altura em que comecava.
+		float peso_massa = smoothstep(0.05, 0.3, perto);
+		vec2 massa = peso_massa > 0.0 ? tufos(q, 0.5, 57.1, fora, limiar + 0.1 * (1.0 - perto)) * peso_massa : vec2(0.0);
 		vec2 miudo = detalhe > 0.0 ? tufos(q, 2.3, 31.7, fora, limiar + 0.05) : vec2(0.0);
 		// A derivada do miudo vem em unidades dele, 2,3 vezes menores; e a da
 		// massa, em unidades dela, 2 vezes maiores.
 		vec2 campo = grande + massa * vec2(1.0, 0.5) + miudo * vec2(0.6, 2.3 * 0.6) * detalhe;
 		// O contorno da nuvem: a soma passando de 0,3, e nao a borda de um tufo.
 		float dens = campo.x - 0.3;
-		if (dens > 0.0) {
-			// A borda: numa faixa estreita do contorno, o pixel some pelo Bayer
-			// da tela. Preso a tela, e nao ao ceu, para nao rastejar quando a
-			// camera gira. No mapa de luz ambiente nao ha tela, e la a borda e
-			// cheia.
-			bool cheio = true;
-			if (!AT_CUBEMAP_PASS && trama > 0.0) {
-				ivec2 px = ivec2(FRAGCOORD.xy) % 4;
-				float limiar_px = (BAYER[px.y * 4 + px.x] + 0.5) / 16.0;
-				cheio = clamp(dens / (trama * 0.25), 0.0, 1.0) > limiar_px;
-			}
-			if (cheio) {
-				// Luz: no alto da massa a densidade cai para cima e o sol bate;
-				// no pe ela cresce para cima, e e sombra. Normalizada pela
-				// propria densidade, para valer igual em massa grande e pequena.
-				float subida = campo.y / max(campo.x, 0.3);
-				// Espessura: onde a soma e alta ha nuvem empilhada atras, e a luz
-				// nao atravessa - e o cinza. Continuo, entao as faixas de tom
-				// seguem as curvas de nivel da massa, e nao circulos.
-				float espessura = max(campo.x - 0.6, 0.0);
-				float t = 0.72 - subida * 0.18 - espessura * cinza * 0.65 - perto * cinza * 0.2;
-				t = clamp(t, 0.0, 1.0);
-				if (faixas_de_tom >= 2.0) {
-					t = clamp(floor(t * faixas_de_tom) / (faixas_de_tom - 1.0), 0.0, 1.0);
-				}
-				vec3 nuvem = tom_da_nuvem(t);
-				// Perspectiva aerea: a nuvem do horizonte esta a dezenas de km,
-				// e o ar entre ela e a camera a puxa para a cor do horizonte.
-				nuvem = mix(nuvem, horizonte, (1.0 - smoothstep(0.0, 14.0, elev)) * 0.35);
-				cor = nuvem;
-			}
+		// Luz: no alto da massa a densidade cai para cima e o sol bate; no pe
+		// ela cresce para cima, e e sombra. Normalizada pela propria
+		// densidade, para valer igual em massa grande e pequena.
+		float subida = campo.y / max(campo.x, 0.3);
+		// Espessura: onde a soma e alta ha nuvem empilhada atras, e a luz nao
+		// atravessa - e o cinza. Continuo, entao as faixas de tom seguem as
+		// curvas de nivel da massa, e nao circulos.
+		float espessura = max(campo.x - 0.6, 0.0);
+		float t = 0.72 - subida * 0.18 - espessura * cinza * 0.65 - perto * cinza * 0.2;
+		t = clamp(t, 0.0, 1.0);
+		// Toda aresta daqui - o contorno e a troca de faixa de tom - e limiar
+		// num campo que anda com a camera. Seca, ela fica mais fina que o pixel
+		// de 640x360 e acende e apaga a cada quadro, o mesmo tremor que a
+		// sombra e a quina de predio tinham na V28. Entao cada aresta e uma
+		// rampa da largura de um pixel, medida pela derivada na tela (fwidth),
+		// e a paleta da tela transforma a rampa em trama presa a tela. As
+		// derivadas saem aqui, fora de qualquer `if`, onde elas valem.
+		float px_dens = fwidth(dens);
+		float faixas = max(faixas_de_tom, 2.0);
+		float x = t * (faixas - 1.0);
+		float px_x = fwidth(x);
+		if (faixas_de_tom >= 2.0) {
+			float degrau = floor(x);
+			float f = x - degrau;
+			t = (degrau + smoothstep(1.0 - max(px_x, 1e-4), 1.0, f)) / (faixas - 1.0);
+		}
+		// Borda: um pixel de rampa no minimo; `trama` alarga ate quatro.
+		float largura = px_dens * (1.0 + trama * 3.0);
+		float alfa = smoothstep(0.0, max(largura, 1e-4), dens);
+		if (alfa > 0.0) {
+			vec3 nuvem = tom_da_nuvem(t);
+			// Perspectiva aerea: a nuvem do horizonte esta a dezenas de km, e o
+			// ar entre ela e a camera a puxa para a cor do horizonte.
+			nuvem = mix(nuvem, horizonte, (1.0 - smoothstep(0.0, 14.0, elev)) * 0.35);
+			cor = mix(cor, nuvem, alfa);
 		}
 	}
 	// O sol: disco e um halo curto, o que o procedural tinha.

@@ -200,7 +200,8 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 @export_range(0.0, 1.0, 0.01) var ceu_perspectiva: float = 0.35
 ## Tufos miudos entre os grandes: e o que deixa o alto em calombo.
 @export_range(0.0, 1.0, 0.01) var ceu_detalhe: float = 0.6
-## Largura da borda que se desfaz em pixel solto: 0 e recorte liso.
+## Largura da borda macia, de um a quatro pixels: a paleta da tela a
+## transforma em pixel solto. Menos que um pixel nao existe: borda seca treme.
 @export_range(0.0, 1.0, 0.01) var ceu_trama: float = 0.5
 ## Quanto o cinza mais escuro puxa para o azul-acinzentado escuro.
 @export_range(0.0, 1.0, 0.01) var ceu_sombra: float = 0.5
