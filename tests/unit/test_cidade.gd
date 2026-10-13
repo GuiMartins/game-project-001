@@ -158,3 +158,12 @@ func test_placa_de_curva_fala_o_lado_da_curva() -> void:
 		var giro := Cidade.giro_em(_track, o + Cidade.CURVA_AVISO)
 		assert_bool((nome == "PlacaEsquerda") == (giro > 0.0)).is_true()
 	print("placas de curva em 800 m: ", placas)
+
+
+func test_o_braco_do_portal_passa_por_cima_da_moto() -> void:
+	# O aceite da V18: o braco do semaforo suspenso cobre as duas faixas da
+	# direita, onde a moto anda, e fica acima do onibus.
+	var meio := RoadTrack.LANE_WIDTH * RoadTrack.LANE_COUNT * 0.5
+	var ponta := Portal.LATERAL - Portal.BRACO_COMPRIMENTO
+	assert_float(ponta).is_less(meio - RoadTrack.LANE_WIDTH * 2.0)
+	assert_float(Portal.BRACO_SEMAFORO - 1.2).is_greater(3.2)

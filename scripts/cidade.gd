@@ -72,6 +72,8 @@ const CACAMBA: float = 0.15
 const CURVA_JANELA: float = 40.0
 const CURVA_LIMIAR: float = 0.2
 const CURVA_AVISO: float = 50.0
+## Quanto antes do semaforo suspenso fica o portico da placa verde.
+const PORTICO_ANTES: float = 30.0
 ## Entre uma palmeira e a do lado, no grupo.
 const PALMEIRA_PASSO: float = 4.0
 
@@ -97,6 +99,7 @@ func montar(rua: RandomNumberGenerator, props: Node3D) -> void:
 	for side: float in [-1.0, 1.0]:
 		_monta_faixa_de_servico(side, cruzamentos, rua, props)
 	_monta_placas(cruzamentos, props)
+	_monta_portais(cruzamentos, props)
 
 
 ## Onde a avenida e largo e onde e corredor. Cada um e `[fim, recuo]`: o
@@ -333,6 +336,29 @@ func _monta_placas(cruzamentos: Array[Vector2], props: Node3D) -> void:
 				props.add_child(Mobiliario.criar(tipo, track.point(aqui, lateral), quem_vem))
 		na_curva = agora
 		o += 10.0
+
+
+## O semaforo suspenso na retencao de cada cruzamento, na mao de quem vem, e
+## o portico da placa verde 30 m antes, em cruzamento sim, cruzamento nao
+## (V18). Nada sorteado: a placa diz o destino da vez na lista.
+func _monta_portais(cruzamentos: Array[Vector2], props: Node3D) -> void:
+	var mat := _materiais_de_semaforo()
+	var boca := RUA_LARGURA * 0.5
+	for i in cruzamentos.size():
+		var c := cruzamentos[i]
+		var retencao := (
+			c.x
+			- boca
+			- RoadTrack.ZEBRA_ESQUINA
+			- RoadTrack.ZEBRA_COMPRIMENTO
+			- RoadTrack.RETENCAO_RECUO
+		)
+		props.add_child(Portal.semaforo(track.transform_at(retencao, Portal.LATERAL), mat))
+		var antes := retencao - PORTICO_ANTES
+		if i % 2 == 0 and antes > 0.0 and not Cidade.na_boca(cruzamentos, antes, 1.0):
+			var destinos: Array = Portal.DESTINOS[(i / 2) % Portal.DESTINOS.size()]
+			var onde := track.transform_at(antes, Portal.LATERAL)
+			props.add_child(Portal.placa(onde, mat, destinos))
 
 
 ## Quanto o rumo da pista gira de `o` ate `CURVA_JANELA` metros adiante, em
