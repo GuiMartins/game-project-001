@@ -233,6 +233,13 @@ Roda o jogo **com tela** — e isso não é escolha, é limitação: em headless
 viewport não renderiza e saem zero PNGs, sem erro nenhum. Por isso é um
 comando à parte, e no CI um job à parte com `xvfb`.
 
+**Feche o jogo antes.** Com uma janela do jogo aberta (`dev.py run`), a
+`prova` salvou dois quadros e parou ali, sem erro e sem sair: o processo fica
+vivo esperando um quadro que não vem, e quem roda com a saída num pipe só vê o
+comando não terminar. Visto na V14 com a `prova`; `shots` e `fps` passam pelo
+mesmo caminho de render com tela, então valem a mesma regra. Um Godot rodando
+`selftest` em outra worktree, headless, não atrapalha.
+
 Ele existe para pegar o que nenhuma medida de física pega: **a tela ficar
 errada por inteiro**. O caso registrado no `PROTOTIPO.md` é a pista saindo com
 winding anti-horário — o Godot descartava as faces sem um erro no console e o

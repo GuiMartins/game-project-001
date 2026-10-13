@@ -728,7 +728,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
   - **Aceite:** com o glow da V12, o outdoor continua o ponto mais claro
     abaixo do horizonte e, ao lado da `t3.0s`, lê como o dela.
 
-- [ ] **V14** — Céu com nuvem
+- [x] **V14** — Céu com nuvem (12/10/2026, #87)
 
   O céu de hoje é gradiente liso. O vídeo e as imagens têm cúmulo branco,
   gordo, de borda dura e base azulada, concentrado numa faixa baixa — e com
@@ -743,6 +743,40 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     `ProceduralSkyMaterial.sky_cover`, com `use_debanding` desligado.
   - **Aceite:** nuvem visível nos quatro quadros da prova, sem cintilar com a
     câmera andando. Baseline visual de céu anda, com o motivo.
+  - **Resultado:** a textura saiu, e o céu virou shader próprio
+    (`scripts/ceu.gdshader`). A `ceu_nuvens.png` do plano chegou a existir e
+    o Guilherme achou estranha; jogando, foram comparadas cinco saídas
+    (textura com trama, textura lisa, nuvens esparsas, shader de ruído e
+    nuvem como objeto no mundo) e ganhou o shader. A forma levou mais três
+    voltas, cada uma contra as referências: ruído recortado era "poça de
+    leite"; cúmulo de domo arrumado não é o que elas têm; e tufo desenhado
+    como círculo empilhava em bolas. O que ficou:
+    - **campo de tufos**: cada tufo soma uma bolha macia (metaball) e a nuvem
+      é onde a soma passa do limiar, então vizinhos se fundem num contorno
+      só, com o pé quase reto; uma máscara de baixa frequência agrupa os
+      tufos e deixa azul entre os grupos;
+    - **perspectiva**: o olhar é projetado num teto de nuvem
+      (`tan(elev)^-0,35`; o plano puro achatava demais), e o tufo encolhe
+      para o horizonte;
+    - **banco no horizonte**: a cobertura cresce lá embaixo, com tufos do
+      dobro do tamanho que só existem ali;
+    - **cinza onde acumula**: o tom sai da forma da massa (a densidade caindo
+      para cima é o alto, ao sol) e da espessura somada, em cinco faixas de
+      cinza azulado até o branco; a nuvem do horizonte puxa para a cor dele;
+    - **sem tremer andando**: contorno e troca de faixa são rampa de um pixel
+      por `fwidth`, e a trama é a da paleta da tela. Trama própria presa à
+      tela na borda, com a nuvem deslizando, era o tremor da V28 de novo.
+    O gradiente é o mesmo do `ProceduralSkyMaterial` (cores e curva), para a
+    luz ambiente não mudar; o Sky refaz o mapa de luz em modo incremental,
+    porque o vento muda o céu todo quadro. Os números são sliders do F3,
+    grupo Ceu (`WorldTuning`), e os defaults do repositório são os que foram
+    aprovados jogando. O plano pedia nuvem numa faixa baixa: o Guilherme
+    achou baixa e numerosa demais, e ela foi para o céu inteiro com banco no
+    horizonte. Baseline visual: `visual_fracao_ceu` 0,107 → 0,126 e
+    `visual_luminancia` 0,474 → 0,500, pelo branco da nuvem e pela luz
+    ambiente mais clara (a fração de céu provavelmente sobe porque o banco do
+    horizonte, puxado para a cor dele, fica parecido com o prédio distante na
+    neblina). Portão sem variação; `fps` no teto de 120.
 
 ### A calçada povoada
 
