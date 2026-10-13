@@ -326,7 +326,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
   6,6 / 4,6 / 2,0. O rival trocou o `lerp` pela mesma mola, na moto sorteada.
   Baseline sem variação (o banco roda na CG, que dá 1).
 
-- [ ] **V05b** 👤 — Rampa no pedido de inclinação do teclado
+- [x] **V05b** 👤 — Rampa no pedido de inclinação do teclado (13/10/2026)
 
   A saída (~0,17 s) e a contra-inclinação (−4,6°) da V05 batem com o vídeo.
   A entrada não: com a tecla, o pedido vai a 100% na hora e a moto deita a
@@ -344,6 +344,15 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     o baseline anda com o motivo, ou a rampa fica só na leitura da tecla.
   - **Aceite:** jogando, a troca de faixa curta continua viva e a curva
     longa deita aos poucos.
+  - **Decisão (13/10/2026, Guilherme):** rampa de **0,8 s**, mas **só na
+    arte**. Com ela na física a moto andava pouco de lado (a guinada sai
+    da inclinação) e a direção ficou dura. Agora são duas inclinações na
+    mesma mola: a `lean` da física, com a tecla crua, de onde saem a curva
+    e o deslocamento na pista; e a `lean_visual`, com a rampa, que moto,
+    piloto e câmeras leem. O analógico passa direto nas duas.
+  - **Resultado:** a CG que aparece chega a 25° em 0,77 s (tecla crua:
+    0,28 s; vídeo: ~1,6 s). Slider `lean_input_ramp`, grupo Inclinacao e
+    curva. Baseline sem variação: o banco mede a física, que não mudou.
 
 - [x] **V06** — Vibração miúda, roda lisa em alta e cabeça no horizonte (12/10/2026, #76)
 
