@@ -933,7 +933,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   `fps` p50 8,33 ms (refresh de 120 Hz), com um pico isolado de 76 ms,
   provavelmente compilação de shader. Baseline sem variação.
 
-- [x] **V18** — Por cima da pista: semáforo suspenso e placa verde (13/10/2026)
+- [x] **V18** — Por cima da pista: semáforo suspenso e placa verde (13/10/2026, #99)
 
   O "portal" de cruzamento do vídeo e a placa verde de rodovia das imagens
   paradas (pilar 9). **Só cenário**: semáforo com lógica saiu do protótipo de
