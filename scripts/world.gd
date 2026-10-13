@@ -305,12 +305,10 @@ func _build_scenery() -> void:
 	rua.seed = hash(_rng.seed + 1)
 	Cidade.new(track).montar(rua, props)
 
-	var edge := RoadTrack.half_width() + RoadTrack.SHOULDER
-
 	var o := 30.0
 	while o < track.length - 10.0:
 		var side := 1.0 if _rng.randf() < 0.5 else -1.0
-		var at := track.point(o, edge * side + 0.8 * side)
+		var at := track.point(o, Poste.LATERAL * side)
 		var para_a_pista := track.sample_basis(o).x * -side
 		var na_rua := Cidade.na_boca(track.cruzamentos, o, side)
 		o += _rng.randf_range(18.0, 34.0)

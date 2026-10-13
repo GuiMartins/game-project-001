@@ -15,6 +15,13 @@ const CENA: PackedScene = preload("res://assets/poste/poste.glb")
 ## pancada. Braco e luminaria ficam acima de qualquer cabeca.
 const COLISOR := Vector3(0.35, 6.0, 0.35)
 
+## Do eixo da avenida ao eixo do poste: 0,6 m depois do meio-fio, como no
+## video. Ja foi no fundo da calcada, na faixa de servico, e de la o braco nao
+## alcancava a pista - nao passava por cima da camera, que e para o que ele
+## existe. Rente ao meio-fio, o poste fica no andavel: quem sobe na calcada
+## tem que desviar dele, como na rua de verdade.
+const LATERAL: float = RoadTrack.LANE_WIDTH * RoadTrack.LANE_COUNT * 0.5 + 0.6
+
 static var _malha: Mesh
 
 

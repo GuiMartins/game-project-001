@@ -59,6 +59,12 @@ func passo(delta: float) -> bool:
 		# RIDING, entao o soco nunca saia e o teste media um rival que nunca
 		# foi socado.
 		_player.state = PlayerBike.State.RIDING
+		# Correndo, e nao de corrida terminada. As fases de antes empurram o
+		# pelotao para o fim da pista, e o `rivals[0]` chegava aqui ja com a
+		# chegada cruzada: depois do cambaleio ele ia encostar na calcada
+		# (`_coast_out`), e com poste no meio-fio caia nele - 5 m de "empurrao"
+		# que eram ele indo embora.
+		rival.finish_time = -1.0
 		# Emparelhado a um alcance de soco de distancia - nao a uma faixa
 		# inteira. Duas motos lado a lado no corredor ficam a pouco mais de um
 		# metro; 3,3 m e o centro da faixa vizinha, e la o soco nao alcanca

@@ -296,8 +296,9 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 			# para sair da avenida.
 			if rua.randf() < 0.5:
 				continue
-			# Na faixa de servico, alinhado com os postes: no andavel a moto
-			# atravessaria o poste, que nao tem colisor.
+			# Na faixa de servico, e nao no andavel como os postes da avenida:
+			# na esquina e a fila da rua que precisa do foco, e no andavel
+			# ele fecharia a curva de quem entra na transversal.
 			var esquina := centro + acima + d * (calcada + 0.8) + r * (meio + 0.9)
 			_semaforo(props, materiais, esquina, d, track.sample_basis(c.x).z)
 			var fila := retencao + RoadTrack.RETENCAO_LARGURA + 0.6

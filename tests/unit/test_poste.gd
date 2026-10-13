@@ -6,11 +6,19 @@ extends GdUnitTestSuite
 ## o braco da pista por cima da fachada, e o jogo continua rodando.
 
 
-func test_a_base_fica_no_chao_e_o_topo_a_nove_metros() -> void:
+func test_a_base_fica_no_chao_e_os_bracos_a_dez_metros() -> void:
 	var caixa := Poste.malha().get_aabb()
-	# O pedestal desce meio metro, para nao ficar com o pe no ar no meio-fio.
+	# A base desce meio metro, para nao ficar com o pe no ar no meio-fio.
 	assert_float(caixa.position.y).is_equal_approx(-0.5, 0.01)
-	assert_float(caixa.end.y).is_equal_approx(9.0, 0.01)
+	assert_float(caixa.end.y).is_between(9.8, 10.5)
+
+
+func test_o_braco_da_pista_chega_na_faixa_da_direita() -> void:
+	# E para isso que o poste existe: o braco passar por cima da camera. Se a
+	# cabeca nao alcancar a faixa de fora, ele volta a ser so um risco no canto.
+	var ponta := Poste.LATERAL + Poste.malha().get_aabb().position.z
+	assert_float(ponta).is_less(RoadTrack.lane_center(RoadTrack.LANE_COUNT - 1) + 1.0)
+	assert_float(Poste.LATERAL).is_greater(RoadTrack.half_width() + 0.3)
 
 
 func test_os_bracos_saem_para_frente_e_para_tras() -> void:

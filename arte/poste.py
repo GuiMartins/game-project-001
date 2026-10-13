@@ -7,25 +7,23 @@ Roda dentro do Blender (5.2+), igual aos outros:
 Apaga a cena, monta o poste, salva `arte/poste.blend` e exporta
 `assets/poste/poste.glb`. Mesma receita, mesmo `.glb`.
 
-O poste e o do video (REFERENCIA_VIDEO.md, "Como o video vende velocidade"):
-ornamental, de ferro pintado, 9 m, com dois bracos em pescoco de cisne e uma
-luminaria pendurada na ponta de cada um. Um braco vai por cima da pista e o
-outro por cima da calcada. E o referencial de velocidade mais limpo do video
-porque o braco passa **por cima** da camera: a coluna corre no canto da tela,
-o braco risca o topo dela.
+O poste e o do video (`docs/referencias/video_01/t1.0s.png`): fuste liso
+cinza-chumbo ate uns 7 m, e dali dois bracos que sobem quase em pe e abrem em
+curva ate ficar deitados a 10 m, como uma tulipa, com uma cabeca chata de LED
+na ponta de cada um. Um braco vai por cima da pista e o outro por cima da
+calcada. E o referencial de velocidade mais limpo do video porque o braco
+passa **por cima** da camera: o fuste corre no canto da tela, o braco risca o
+topo dela.
 
 Convencoes, as mesmas do `predios.py`:
 
 - **Metro, Z para cima, o braco da pista em +Y.** O exportador glTF poe +Y em
   -Z: no Godot o poste "olha" para -Z, e quem o coloca aponta -Z para a pista.
-- **Origem no chao, no eixo da coluna.** O pedestal desce meio metro abaixo
-  dela, para o poste nao ficar com o pe no ar onde a calcada sobe no meio-fio.
+- **Origem no chao, no eixo do fuste.** A base desce meio metro abaixo dela,
+  para o poste nao ficar com o pe no ar onde a calcada sobe no meio-fio.
 
-O que importa a 640x360 e a silhueta, nao o ornamento: o braco tem 14 cm de
-grossura, o dobro do de verdade, porque o de verdade a 20 m da camera tem
-menos de um pixel e pisca em vez de passar. Pelo mesmo motivo nao tem voluta
-de ferro fundido - so o pedestal, o anel e a escora, que leem como "poste
-antigo" ate de longe.
+O braco tem 12 cm de grossura, mais que o de verdade: o de verdade a 20 m da
+camera fica abaixo de um pixel em 640x360 e pisca em vez de passar.
 """
 
 import math
@@ -39,25 +37,34 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BLEND = os.path.join(RAIZ, "arte", "poste.blend")
 SAIDA = os.path.join(RAIZ, "assets", "poste")
 
-# Verde-garrafa quase preto, o do ferro pintado da orla. Escuro de proposito:
-# contra o ceu claro e a fachada creme, e a silhueta que marca a passagem.
-FERRO = (0.10, 0.15, 0.13)
-# O globo da luminaria. Leitoso, e nao aceso: e dia, e o glow da V12 e so para
-# o que e luz. Claro o bastante para a ponta do braco ser um ponto no ceu.
-GLOBO = (0.86, 0.86, 0.80)
+# Cinza-chumbo, o do aco pintado do video. Escuro contra o ceu claro: e a
+# silhueta que marca a passagem.
+FERRO = (0.20, 0.21, 0.22)
+# A lente da cabeca de LED, por baixo. Clara e apagada: e dia, e o glow da V12
+# e so para o que e luz.
+LENTE = (0.82, 0.84, 0.82)
 
-# Oito lados na coluna e no pedestal, seis no braco. Mais que isso nao aparece
-# a 640x360, e o poste se repete a cada 25 m da avenida inteira.
-LADOS_COLUNA = 8
+# Oito lados no fuste, seis no braco. Mais que isso nao aparece a 640x360, e o
+# poste se repete a cada 25 m da avenida inteira.
+LADOS_FUSTE = 8
 LADOS_BRACO = 6
 
-ALTURA = 9.0
-# Onde os bracos saem da coluna, e o desenho de cada um em (para fora, altura):
-# sobe saindo da coluna, faz a curva e cai na ponta, onde pendura a luminaria.
-# A ponta fica a 2,6 m da coluna - com o poste a 0,8 m do meio-fio, o globo da
-# pista fica sobre a faixa da direita, onde a moto anda.
-BRACO = [(0.0, 7.4), (0.35, 7.85), (0.9, 8.3), (1.6, 8.55), (2.2, 8.5), (2.6, 8.3)]
-RAIO_BRACO = 0.07
+# Onde o fuste abre nos dois bracos.
+GARFO = 6.8
+# Cada braco e uma curva de Bezier quadratica em (para fora, altura): sai do
+# garfo quase em pe, puxado pelo controle bem acima dele, e chega deitado na
+# ponta. A ponta fica a 3,2 m do fuste - com o poste a 0,6 m do meio-fio, a
+# cabeca da pista fica sobre a faixa da direita, por onde a moto passa.
+BRACO_CONTROLE = (0.0, 9.7)
+BRACO_PONTA = (3.2, 10.0)
+RAIO_BRACO = 0.06
+# A cabeca de LED: comprida no sentido do braco, chata e mais larga que ele.
+CABECA = (0.75, 0.28, 0.12)
+
+
+def bezier(a, b, c, t) -> tuple:
+    u = 1.0 - t
+    return tuple(u * u * a[k] + 2.0 * u * t * b[k] + t * t * c[k] for k in range(2))
 
 
 class Peca:
@@ -154,6 +161,15 @@ class Peca:
                 j = (i + 1) % lados
                 self._face([aneis[k][i], aneis[k][j], aneis[k + 1][j], aneis[k + 1][i]], meio, material)
 
+    def caixa(self, centro, tamanho, material) -> None:
+        verts = bmesh.ops.create_cube(self.bm, size=1.0)["verts"]
+        for v in verts:
+            v.co = Vector(centro) + Vector((v.co.x * tamanho[0], v.co.y * tamanho[1], v.co.z * tamanho[2]))
+        for face in {f for v in verts for f in v.link_faces}:
+            face.material_index = material
+            # Caixa e chapa: quina dura, senao a cabeca vira sabonete.
+            face.smooth = False
+
     def objeto(self, materiais, colecao) -> bpy.types.Object:
         bm = self.bm
         bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method="FIXED", ngon_method="EAR_CLIP")
@@ -178,42 +194,29 @@ class Peca:
 
 def poste() -> Peca:
     p = Peca("Poste")
-    # Pedestal, coluna afinando e o pinaculo. O anel a 3 m e o que o poste
-    # antigo de verdade tem onde a coluna troca de grossura.
+    # Base, fuste afinando ate o garfo e a tampa onde os bracos nascem.
     p.torno(
         (0, 0, 0),
         [
-            (-0.5, 0.30),
-            (0.9, 0.30),
-            (0.9, 0.22),
-            (1.2, 0.15),
-            (3.0, 0.13),
-            (3.0, 0.17),
-            (3.2, 0.17),
-            (3.2, 0.12),
-            (7.3, 0.09),
-            (7.3, 0.14),
-            (7.5, 0.14),
-            (7.5, 0.08),
-            (8.7, 0.07),
-            (8.7, 0.12),
-            (8.85, 0.12),
-            (ALTURA, 0.0),
+            (-0.5, 0.20),
+            (0.45, 0.20),
+            (0.45, 0.12),
+            (GARFO, 0.08),
+            (GARFO + 0.15, 0.08),
+            (GARFO + 0.25, 0.0),
         ],
-        LADOS_COLUNA,
+        LADOS_FUSTE,
         0,
     )
     for lado in (1.0, -1.0):
-        braco = [(0.0, lado * y, z) for y, z in BRACO]
-        p.tubo(braco, RAIO_BRACO, LADOS_BRACO, 0)
-        # Escora: do anel de baixo da coluna ao meio do braco. E o triangulo
-        # que faz o braco ler como ferro, e nao como galho.
-        p.tubo([(0.0, 0.0, 6.4), (0.0, lado * 0.55, 7.2), (0.0, lado * 0.9, 8.3)], 0.04, LADOS_BRACO, 0)
-        # Luminaria: o chapeu de ferro e o globo pendurado embaixo dele.
-        y, z = BRACO[-1]
-        ponta = (0.0, lado * y, z)
-        p.torno(ponta, [(-0.12, 0.0), (-0.12, 0.30), (0.02, 0.10), (0.08, 0.0)], LADOS_COLUNA, 0)
-        p.torno(ponta, [(-0.75, 0.0), (-0.6, 0.18), (-0.35, 0.22), (-0.12, 0.14), (-0.12, 0.0)], LADOS_COLUNA, 1)
+        curva = [bezier((0.0, GARFO), BRACO_CONTROLE, BRACO_PONTA, i / 10.0) for i in range(11)]
+        p.tubo([(0.0, lado * y, z) for y, z in curva], RAIO_BRACO, LADOS_BRACO, 0)
+        # A cabeca comeca um pouco antes da ponta, para o tubo morrer dentro
+        # dela, e a lente fica colada por baixo.
+        y, z = BRACO_PONTA
+        meio = lado * (y - 0.15 + CABECA[0] * 0.5)
+        p.caixa((0.0, meio, z), (CABECA[1], CABECA[0], CABECA[2]), 0)
+        p.caixa((0.0, meio, z - CABECA[2] * 0.5 - 0.01), (CABECA[1] - 0.06, CABECA[0] - 0.1, 0.02), 1)
     return p
 
 
@@ -245,7 +248,7 @@ def main() -> None:
     colecao = bpy.data.collections.new("Poste")
     bpy.context.scene.collection.children.link(colecao)
 
-    obj = poste().objeto([material("ferro", FERRO), material("globo", GLOBO)], colecao)
+    obj = poste().objeto([material("ferro", FERRO), material("lente", LENTE)], colecao)
     for o in bpy.data.objects:
         o.select_set(o is obj)
     bpy.context.view_layer.objects.active = obj

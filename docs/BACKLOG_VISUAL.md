@@ -533,15 +533,20 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   igual, porque é ele que serve ao combate (dá pra jogar rival no poste).
 
   - **Aceite:** o braço do poste cruza o topo do quadro na V04.
-  - **Resultado:** `arte/poste.py` gera o poste (`assets/poste/`): ferro
-    verde-garrafa, 9 m, pedestal, anéis, dois braços em pescoço de cisne de
-    2,6 m com escora e globo leitoso, um por cima da pista e outro da
-    calçada. O braço tem 14 cm, o dobro do real, para não piscar a 20 m.
-    `Poste.criar` divide a malha entre todos; só ela gira, e o corpo e a
-    caixa de 0,35 × 6 m ficam como eram, nos eixos do mundo. Na prova o
-    braço cruza o topo no quadro da ladeira. `selftest` sem variação;
-    baseline visual dentro da tolerância (`visual_familias_de_cor` +1,7%);
-    `fps` igual ao da master (p50 6,9 ms, p95 8,3 ms).
+  - **Resultado:** `arte/poste.py` gera o poste do vídeo
+    (`video_01/t1.0s.png`): fuste liso cinza-chumbo até 6,8 m, que abre em
+    dois braços em tulipa até 10 m, com cabeça chata de LED na ponta de cada
+    um. A primeira versão, verde com globo e pescoço de cisne, ficou longe
+    da referência e foi refeita. O braço tem 12 cm, o dobro do real, para não
+    piscar a 20 m. O poste saiu da faixa de serviço para 0,6 m do meio-fio
+    (`Poste.LATERAL`), como no vídeo. De lá a cabeça de 3,2 m chega sobre a
+    faixa da direita e cruza o topo do quadro. Na calçada, ele agora fica no
+    andável: quem sobe nela desvia. O colisor continua a caixa de
+    0,35 × 6 m, nos eixos do mundo. Rival que termina a corrida passou a
+    encostar depois da linha dos postes, senão parava em cima de um. A prova
+    de combate usava um rival de corrida já terminada e passou a correr com
+    ele. `selftest` sem variação; baseline visual dentro da tolerância;
+    `fps` igual ao da master, os dois no teto de 144.
 
 - [ ] **V16** — Palmeira e árvore de copa, inclusive por cima da pista
 
