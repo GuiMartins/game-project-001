@@ -56,6 +56,18 @@ também é resultado.
 
 Além do aceite próprio de cada um:
 
+- **Abrir as referências antes de modelar.** Cada item aberto tem uma linha
+  **Referências** com os arquivos de `docs/referencias/` onde o elemento
+  aparece: abra as imagens (não só o texto do item) antes de escrever o
+  primeiro script, e volte a elas a cada iteração. A descrição do item é o
+  resumo de quem olhou, e resumo perde forma, proporção e cor. A V14 e a V15
+  foram modeladas só a partir do texto e precisaram ser refeitas quando o
+  Guilherme perguntou "como é isso nas referências?". Item novo já nasce com
+  a sua linha **Referências**; se nenhuma referência mostra o elemento, a
+  linha diz isso, e de onde sai o alvo.
+- **`dev.py prova --referencia`**, não só a `prova`. Antes e depois mostra se
+  mudou; a folha lado a lado com a referência mostra se chegou mais perto,
+  que é a pergunta do backlog.
 - **`dev.py prova` antes e depois**, lado a lado. Toda mudança visual se julga
   no quadro congelado, não num print que calhou.
 - **`dev.py fps`** quando o item põe coisa na tela. Comparar a mesma máquina.
@@ -514,6 +526,10 @@ e no `git log`.
   gordo, de borda dura e base azulada, concentrado numa faixa baixa — e com
   banda de cor visível, que é o sotaque que o `DIRECAO_VISUAL.md` pede.
 
+  - **Referências:** as quatro paradas (`01_centro` e `02_praca_maua`, tufo
+    pequeno espalhado no céu todo; `03_viaduto`, cúmulo à direita;
+    `04_vertical`, véu fino à esquerda) e `video_01/t1.0s`, `t2.0s`, `t3.0s`
+    (cúmulo gordo no alto e acúmulo acinzentado perto do horizonte).
   - **O que fazer:** `ceu_nuvens.png` (2048×1024, equirretangular, alfa =
     cobertura, **já dithered**) gerado por script em `arte/`, ligado em
     `ProceduralSkyMaterial.sky_cover`, com `use_debanding` desligado.
@@ -532,6 +548,10 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   braços curvos com luminária. Substitui a caixa de 0,35 × 6 m. O colisor fica
   igual, porque é ele que serve ao combate (dá pra jogar rival no poste).
 
+  - **Referências:** `video_01/t1.0s` (o de dois braços curvos, na calçada
+    da direita) e `t0.0s`; `01_centro` (curvo no meio da avenida e de globo
+    na frente do teatro); `02_praca_maua` (braço único com luminária, à
+    esquerda); `04_vertical` (alto, à direita).
   - **Aceite:** o braço do poste cruza o topo do quadro na V04.
 
 - [ ] **V16** — Palmeira e árvore de copa, inclusive por cima da pista
@@ -540,6 +560,10 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   sobre a pista resolve o item 4 de *Como o vídeo vende velocidade*: passar
   **por baixo** de algo, que o jogo hoje não tem.
 
+  - **Referências:** `01_centro` (palmeira e copa larga à esquerda);
+    `02_praca_maua` (palmeiras no morro, copa no alto à esquerda);
+    `video_01/t1.0s` (palmeiras à esquerda), `t2.0s` (copa larga no
+    canteiro) e `t3.0s` (copa por cima, na borda esquerda).
   - **Como:** rota A do `DIRECAO_VISUAL.md` (numeroso, estático, visto de
     longe): `MultiMeshInstance3D` com quad billboard, ou low-poly se o
     billboard não aguentar a câmera baixa da V04. Decidir pela prova.
@@ -553,6 +577,10 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   de ponto de ônibus iluminado (usa o glow da V12), losango amarelo antes da
   curva, faixa de grama entre calçada e prédio nos trechos de praça.
 
+  - **Referências:** `01_centro` (mupi iluminado à esquerda, caçamba
+    vermelha dos dois lados, placa amarela); `video_01/t1.0s` (caçamba à
+    esquerda, lixeira à direita), `t2.0s` (losango amarelo e faixa de grama à
+    direita) e `t3.0s` (losango no alto à direita).
   - **Aceite:** o critério de densidade da seção, junto com V15 e V16.
 
 - [ ] **V18** — Por cima da pista: semáforo suspenso e placa verde
@@ -562,6 +590,10 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   propósito (`PROTOTIPO.md`, *O que não está aqui*). Nomes de via reais são
   livres; marca não.
 
+  - **Referências:** `02_praca_maua` (semáforo suspenso e placa verde e
+    azul por cima da pista); `03_viaduto` (placa verde em braço, viaduto por
+    cima); `04_vertical` (placa verde e azul); `video_01/t2.0s` e `t3.0s`
+    (semáforo em braço, com o losango).
   - **Aceite:** nos cruzamentos da V10, o braço do semáforo passa por cima da
     câmera.
 
@@ -570,6 +602,9 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   Textura de vida nos dois lados, em pé, andando e na esquina. Billboard em
   `MultiMesh`, sem lógica nenhuma, e ninguém atravessa a pista.
 
+  - **Referências:** `01_centro` (dezenas, dos dois lados e na escadaria);
+    `02_praca_maua` (nas duas calçadas); `video_01/t1.0s` (escadaria do
+    teatro) e `t3.0s` (esquina).
   - **Aceite:** gente visível na calçada nos quatro quadros da prova; o `fps`
     não regride além do orçamento com a calçada inteira povoada (V15–V19).
 
@@ -582,6 +617,9 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   veículos visíveis, 2–4 nos primeiros 20 m, corredor de menos de 1 m. Aqui os
   carros são obstáculos mais lentos, e o corredor vira um piscar.
 
+  - **Referências:** `video_01/folha` (a linha do tempo inteira),
+    `t0.0s` (táxi emparelhado), `t3.0s` (caminhão baú), `t4.5s` e `t5.0s`
+    (o corredor); `03_viaduto` e `04_vertical` (caminhão baú no fundo).
   - **O que fazer:** sessão de F3 com trânsito mais rápido e mais denso, com a
     raspada (`near_missed`) como métrica; o que ficar vira default. Lanterna
     sempre acesa (no vídeo todas estão), com o freio mais forte por cima.
@@ -598,6 +636,9 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   entregador de verdade, com antebraço de fora. A bag continua quadrada e
   rígida. Depois da V04, porque a 29% da tela a diferença mal aparece.
 
+  - **Referências:** `01_centro` e `02_praca_maua` (camiseta, bermuda jeans,
+    antebraço de fora), `04_vertical` (camiseta escura e calça) e
+    `video_01/moto_ampliada`.
   - **Decisão 👤:** a cor. Camiseta e bag vermelhas são a identidade de um app
     real, e o `PROTOTIPO.md` proíbe cor exata de app real. **Recomendação:**
     manter a bag na cor do corredor (é a troca de paleta dos rivais) e a
@@ -613,6 +654,8 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   argumento dela. A V03 já decidiu quanto de pixel; aqui se testa o que
   sobrou.
 
+  - **Referências:** `video_01.mp4` e `video_02.mp4`, **rodando**: cadência
+    é movimento, e quadro parado não decide nada aqui.
   - **O que fazer:** cadência do `Entregador` travada como opção (pose
     calculada a 60 Hz, aplicada a 12), com slider. Julgar **rodando**, com
     rivais e trânsito em volta.
@@ -620,8 +663,9 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
 
 ### Partículas
 
-As referências paradas têm fumaça, faísca e poeira (pilar 5); o vídeo não,
-porque nele ninguém derrapa nem cai. Ficam depois do cenário por isso, e
+Nenhuma referência do repositório mostra partícula: nas quatro paradas e nos
+dois vídeos ninguém derrapa nem cai. O pilar 5 vem do `DIRECAO_VISUAL.md`, não
+de uma imagem. Ficam depois do cenário por isso, e
 porque dependem do glow (V12). O catálogo inteiro e as quatro regras de
 partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
 
@@ -631,6 +675,8 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
   fumaça com alfa macio, `fixed_fps` em 12–15; marca como `Decal` (não
   `AtlasTexture`, que o `Decal` recusa).
 
+  - **Referências:** nenhuma das de `docs/referencias/` mostra fumaça. O alvo
+    sai do `DIRECAO_VISUAL.md`, *Partículas*.
   - **Aceite:** derrapou, fumaçou e marcou; andou reto, nada.
 
 - [ ] **V24** — Faísca, poeira de queda, impacto do soco e fogo
@@ -640,6 +686,8 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
   confirma se `GPUParticlesCollisionHeightField3D` enxerga mesh sem colisor;
   se não, a alternativa sem ferir o invariante do chão já está desenhada.
 
+  - **Referências:** nenhuma das de `docs/referencias/` mostra faísca, poeira
+    nem fogo. O alvo sai do `DIRECAO_VISUAL.md`, *Partículas*.
   - **Aceite:** cada efeito no evento certo; `fps` no **pior caso** (queda no
     meio do trânsito); nenhuma medida do `selftest` depende de partícula.
 
@@ -715,6 +763,9 @@ no passo de ampliar, não no render.
   embaixo, e ultrawide (21:9) ganha tarja dos lados. A alternativa é
   `aspect = expand`: o mundo cresce na largura ou na altura em vez de tarja.
 
+  - **Referências:** não se aplica, é a tela e não a cena. As paradas vêm em
+    proporções diferentes (`01` e `02` em 4:3, `03` em 16:9, `04` vertical),
+    e nenhuma serve de alvo para isso.
   - **O risco:** mexe no enquadramento da câmera (FOV horizontal muda com a
     proporção) e na HUD, que hoje é desenhada para 640×360 cravado. Os quatro
     cantos teriam de ancorar na borda real, e a `prova` e o `shots` teriam de
@@ -730,6 +781,8 @@ no passo de ampliar, não no render.
   720p) ou resolução interna escolhida pela tela (mais detalhe em 4K, o mesmo
   look em 1080p).
 
+  - **Referências:** as quatro paradas, para o tamanho do pixel que o look
+    pede; o pixel grande demais se julga na tela, não nelas.
   - **Decisão 👤:** se a resolução interna é fixa (o mesmo quadro para todo
     mundo) ou acompanha a tela. Fixa é mais fácil de afinar e de comparar na
     `prova`; variável muda o tamanho do dither e do pixel entre máquinas.
@@ -745,11 +798,15 @@ no passo de ampliar, não no render.
   reamostrar 640×360 briga com o pixel; só entra se a prova mostrar que não
   suja. Se sujar, marcar `[~]`.
 
+  - **Referências:** `video_02/folha` e `video_02/tempo_1`–`tempo_4` (o poste
+    curvando na borda, lente 0,5×).
+
 - [ ] **V27** — O veredito
 
   A P9. A folha da V02 com o estado final, e a pergunta "isso é o mesmo
   jogo?" feita a alguém que não trabalhou no protótipo.
 
+  - **Referências:** todas, pela folha do `dev.py prova --referencia`.
   - **Aceite:** a resposta escrita aqui e na `PROVA_VISUAL.md`, com a data.
     Sim ou não, as duas são resultado.
 
