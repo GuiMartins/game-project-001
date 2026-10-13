@@ -257,6 +257,7 @@ saber onde **não** há rede faz parte do contrato.
 | `arte/chao.py` | Gera as texturas de asfalto e calçada (`assets/visual/`). As regras de "visto a 180 km/h" estão no topo dele. |
 | `arte/paleta.py` | Gera o LUT de cor do dia (`assets/visual/lut_dia.png`). O clima da tela se ajusta ali. |
 | `scripts/paleta.gdshader` | Quantização e dither: o último passe do mundo, abaixo da HUD. |
+| `scripts/ceu.gdshader` | O céu: gradiente e nuvem em campo de tufos. Os números são sliders do grupo Ceu no F3 (`WorldTuning`). |
 | `scripts/prova.gd` | O quadro congelado da prova visual (`dev.py prova`). |
 | `tests/unit/` | Testes unitários. |
 | `tests/baseline.json` | Os números esperados. |

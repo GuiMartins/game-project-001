@@ -57,7 +57,7 @@ Leitura das imagens, cada uma traduzida para o que ela é tecnicamente. A coluna
 | 3 | Sol duro, céu azul saturado, sombra de contato sob cada veículo | Uma `DirectionalLight3D` com sombra ligada + ambiente vindo do céu | sol existe, **sombra desligada** |
 | 4 | Periferia borrada, faixas da pista esticadas em risco | Borrão radial em pós-processamento, mascarado por profundidade e stencil | **feito** (`borrao.gdshader`, V08) |
 | 5 | Fumaça, faísca, poeira, fogo | `GPUParticles3D` com flipbook e escala de tempo travada | falta |
-| 6 | Nuvens com bandas e dithering visíveis | Céu procedural com textura de cobertura + debanding desligado de propósito | falta (fundo é cor chapada) |
+| 6 | Nuvens com bandas e dithering visíveis | Céu procedural com textura de cobertura + debanding desligado de propósito | **feito**, mas em shader de céu próprio, não textura (`ceu.gdshader`, V14) |
 | 7 | HUD gorda, com contorno, barras segmentadas em degradê | Fonte bitmap + `ColorRect`s dentro do mesmo SubViewport | existe, mas magra e sem estilo |
 | 8 | Cor alta, contraste alto, paleta coerente entre tudo | LUT de correção de cor no `Environment` | falta |
 | 9 | Placa verde, mural, ônibus, palmeira, contêiner — leitura de Rio | Conteúdo, não tecnologia | falta |
@@ -567,6 +567,11 @@ primeiro já tem que ter sido desenhado.
 
 O fundo hoje é `BG_COLOR` chapado. As referências têm céu azul saturado com
 nuvem visivelmente em bandas — e a banda é intencional, é o sotaque de época.
+
+> **Feito na V14** (`BACKLOG_VISUAL.md`), por outro caminho: o
+> `ProceduralSkyMaterial` saiu e o céu é `scripts/ceu.gdshader`, com o mesmo
+> gradiente e a nuvem desenhada no shader. A textura com trama gravada nela
+> tremia andando (dither preso ao céu, que gira) e foi descartada jogando.
 
 **`ProceduralSkyMaterial`** dá o gradiente e tem duas propriedades que servem
 direto (verificadas): `sky_cover`, que aceita uma textura de nuvem — é onde
