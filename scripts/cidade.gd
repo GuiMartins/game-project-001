@@ -4,10 +4,10 @@ extends RefCounted
 ## a cruzam, com semaforo e a fila parada no vermelho.
 ##
 ## A avenida alterna dois trechos. No corredor, o predio vem na linha da
-## calcada, de qualquer altura, e o ceu so aparece em cima. No largo, a
-## fachada recua uns 10 m e fica baixa - sobrado e comercio -, e o quadro
-## abre. A alternancia e o ritmo do video de referencia: o corredor so parece
-## fechado porque o largo veio antes.
+## calcada, alto, e o ceu so aparece em cima. No largo, a fachada recua uns
+## 5 m e fica baixa - sobrado e comercio -, com uma praca de canteiros na
+## frente, e o quadro abre. A alternancia e o ritmo do video de referencia: o
+## corredor so parece fechado porque o largo veio antes.
 ##
 ## Nada aqui anda, mas tudo bate: predio, semaforo e carro parado tem colisor
 ## na camada do mundo, e a moto que sai da avenida acha eles pela frente. Serve
@@ -29,19 +29,31 @@ const LADO_AMBOS: float = 0.0
 ## resto da calcada. E o espaco onde vai morar poste, arvore e gente.
 const RECUO_FACHADA: float = 6.0
 ## Comprimento de cada trecho, em metros. O largo e curto: a 35 m/s sao uns
-## 3 s de respiro, e e o corredor que se quer na maior parte da volta. Mais
-## curto que isso o largo vira um buraco na fileira, e nao um trecho.
-const LARGO_COMPRIMENTO := Vector2(60.0, 130.0)
+## 2 s de respiro, e e o corredor que se quer na maior parte da volta. Mais
+## curto que isso o largo vira um buraco na fileira, e nao um trecho. Ja foi
+## de 60 a 130 m, e nas referencias nao ha trecho aberto desse tamanho
+## (V11a).
+const LARGO_COMPRIMENTO := Vector2(40.0, 80.0)
 const CORREDOR_COMPRIMENTO := Vector2(180.0, 380.0)
-## Quanto a fachada do largo recua alem do `RECUO_FACHADA`. O limite de cima e
-## o chao: com o predio mais fundo do largo (o sobrado, 12,5 m com o toldo), a
-## parede dos fundos ainda fica antes do fim da calcada (`RoadTrack.GROUND`).
-const LARGO_RECUO := Vector2(8.0, 12.0)
+## Quanto a fachada do largo recua alem do `RECUO_FACHADA`. Era 8 a 12 m de
+## pedra vazia, que nenhuma referencia tem; agora e o fundo de uma praca, com
+## canteiro na frente (`_monta_praca`), e cabe o canteiro e a passagem.
+const LARGO_RECUO := Vector2(4.0, 7.0)
 ## A altura sorteada em cada trecho, que o `_tipo_de_predio` vira tipo. No
 ## largo so cabe sobrado e comercio: predio alto recuado e so um corredor mais
 ## longe, e o que abre o quadro e o ceu que aparece por cima.
+## No corredor, de 12 m para cima: nas referencias ele e um canion de 8 a 15
+## andares saindo pelo topo do quadro (`video_01/t5.0s`), e sobrado no meio
+## dele abria janela de ceu no nivel da rua (V11a).
 const ALTURA_LARGO := Vector2(6.0, 16.0)
-const ALTURA_CORREDOR := Vector2(6.0, 26.0)
+const ALTURA_CORREDOR := Vector2(12.0, 30.0)
+## O canteiro da praca do largo: comprido ao longo da avenida, baixo o bastante
+## para nao esconder a loja atras e alto o bastante para ler como mureta a
+## 640x360. Um a cada `CANTEIRO_PASSO` metros, com passagem entre eles.
+const CANTEIRO := Vector3(2.2, 0.5, 6.0)
+const CANTEIRO_PASSO: float = 10.0
+const COR_CANTEIRO := Color(0.62, 0.60, 0.56)
+const COR_GRAMA := Color(0.30, 0.46, 0.18)
 
 var track: RoadTrack
 
@@ -59,6 +71,7 @@ func montar(rua: RandomNumberGenerator, props: Node3D) -> void:
 	_monta_ruas(cruzamentos, rua, props)
 	for side: float in [-1.0, 1.0]:
 		_monta_quarteirao(side, cruzamentos, trechos, rua, props)
+		_monta_praca(side, cruzamentos, trechos, props)
 
 
 ## Onde a avenida e largo e onde e corredor. Cada um e `[fim, recuo]`: o
@@ -170,6 +183,54 @@ func _monta_quarteirao(
 		var base := track.transform_at(o + passo * 0.5, lateral)
 		_predio(props, rua, tipo, base.origin, base.basis.x * -side)
 		o += passo + rua.randf_range(0.0, 0.5)
+
+
+## Os canteiros da praca no recuo de cada largo (V11a): o largo fica, mas como
+## praca, e nao como chao vazio. Arvore e gente vem com a V16 e a V19; o
+## canteiro e o que ja da escala e tira o descampado. Nao sorteia nada, para
+## nao mexer na cidade que vem depois no mesmo gerador.
+func _monta_praca(
+	side: float, cruzamentos: Array[Vector2], trechos: Array[Vector2], props: Node3D
+) -> void:
+	var edge := RoadTrack.half_width() + RoadTrack.SHOULDER
+	var meio := RUA_LARGURA * 0.5 + RUA_CALCADA
+	var caixa := BoxMesh.new()
+	caixa.size = CANTEIRO
+	caixa.material = RoadTrack.material_liso(COR_CANTEIRO)
+	var terra := BoxMesh.new()
+	terra.size = Vector3(CANTEIRO.x - 0.3, 0.02, CANTEIRO.z - 0.3)
+	terra.material = RoadTrack.material_liso(COR_GRAMA)
+	var inicio := 0.0
+	for t in trechos:
+		if t.y > 0.0:
+			# Na metade da faixa entre a calcada e a fachada recuada.
+			var lateral := (edge + RECUO_FACHADA + t.y * 0.5) * side
+			var o := inicio + CANTEIRO_PASSO * 0.5
+			while o < minf(t.x, track.length) - CANTEIRO.z:
+				var na_rua := false
+				for c in cruzamentos:
+					if _abre(c.y, side) and absf(o - c.x) < meio + CANTEIRO.z:
+						na_rua = true
+				if not na_rua:
+					_canteiro(props, track.transform_at(o, lateral), caixa, terra)
+				o += CANTEIRO_PASSO
+		inicio = t.x
+
+
+func _canteiro(props: Node3D, onde: Transform3D, caixa: BoxMesh, terra: BoxMesh) -> void:
+	var no := Node3D.new()
+	no.name = "Canteiro"
+	props.add_child(no)
+	no.global_transform = onde
+	var mureta := MeshInstance3D.new()
+	mureta.mesh = caixa
+	mureta.position.y = CANTEIRO.y * 0.5
+	no.add_child(mureta)
+	var grama := MeshInstance3D.new()
+	grama.mesh = terra
+	grama.position.y = CANTEIRO.y + 0.01
+	no.add_child(grama)
+	_colisor(no, AABB(Vector3(-CANTEIRO.x, 0.0, -CANTEIRO.z) * 0.5, CANTEIRO))
 
 
 ## Um predio com o pe em `pe`, a fachada olhando para `olha`, e o colisor dele.
@@ -461,10 +522,10 @@ static func _quad_deitado(st: SurfaceTool, cantos: Array[Vector3], uvs: Array[Ve
 			st.add_vertex(cantos[i])
 
 
-## Qual dos cinco predios cabe na altura sorteada. A faixa de cada um e a
-## proporcao dele no corredor (6 a 26 m): um quinto de sobrado, um quarto de
-## comercio, um quarto de deco, e torre so de vez em quando - torre demais
-## fecha o ceu, e o ceu e metade da leitura de velocidade. O largo sorteia so
+## Qual dos cinco predios cabe na altura sorteada. No corredor (12 a 30 m) sai
+## um quinto de comercio, um terco de deco, pouco escritorio e o resto torre:
+## o canion das referencias, que sai pelo topo do quadro. O ceu que sobra e o
+## de cima da avenida, e e ele que conta para a velocidade. O largo sorteia so
 ## ate 16 m, e fica no sobrado e no comercio.
 static func _tipo_de_predio(altura: float) -> Predio.Tipo:
 	if altura < 10.0:

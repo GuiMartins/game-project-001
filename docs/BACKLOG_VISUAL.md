@@ -677,7 +677,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     e o `baseline_visual.json` andou junto. `fps`: os dois no teto de 120 do
     monitor, p95 8,33 → 8,65 ms.
 
-- [ ] **V11a** 👤 — Refazer a fachada: cânion de pedra bege, não bloco pastel
+- [x] **V11a** 👤 — Refazer a fachada: cânion de pedra bege, não bloco pastel (13/10/2026, #95)
 
   A V11 fez a sequência colada e o térreo com loja, e isso fica. O que não
   lê como a referência é o prédio. No vídeo é um cânion de 8–15 andares em
@@ -700,6 +700,19 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     mural fora da fachada.
   - **Aceite:** na folha, o corredor do jogo ao lado de `t5.0s` lê como a
     mesma rua. `fps` medido.
+  - **Decisão (13/10/2026, Guilherme):** o largo **fica, como praça**.
+
+  **Resultado:** paredes só em pedra e reboco de pedra (bege, ocre, creme;
+  `Predio.PINTURAS`), cor viva só no toldo e no outdoor. O mural saiu da
+  empena do `Comercio`, que ficou lisa, e as cores dele saíram da paleta.
+  Cornija saliente com faixa de sombra embaixo no topo do `Comercio`, do
+  `Deco` e da `Torre` (o `Sobrado` já tinha). O corredor sorteia de 12 a
+  30 m, e não de 6 a 26: sai sobrado, entra mais deco e torre, e o cânion
+  sai pelo topo do quadro. O largo ficou mais curto (40–80 m, era 60–130) e
+  menos recuado (4–7 m, era 8–12), com canteiros de mureta e grama no
+  recuo, com colisor; árvore e gente ficam para a V16 e a V19. Janela com
+  moldura já existia. `fps` p50 8,33 ms (refresh de 120 Hz). Baseline sem
+  variação.
 
 - [x] **V12** — Glow: outdoor, lanterna e cromo brilhando (12/10/2026, #84)
 
