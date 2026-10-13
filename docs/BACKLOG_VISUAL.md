@@ -508,7 +508,7 @@ e no `git log`.
     `visual_familias_de_cor` 48,4 → 66,3, pelas cores de tela novas. `fps`
     igual, no teto de 120.
 
-- [ ] **V14** — Céu com nuvem
+- [x] **V14** — Céu com nuvem (12/10/2026)
 
   O céu de hoje é gradiente liso. O vídeo e as imagens têm cúmulo branco,
   gordo, de borda dura e base azulada, concentrado numa faixa baixa — e com
@@ -519,6 +519,22 @@ e no `git log`.
     `ProceduralSkyMaterial.sky_cover`, com `use_debanding` desligado.
   - **Aceite:** nuvem visível nos quatro quadros da prova, sem cintilar com a
     câmera andando. Baseline visual de céu anda, com o motivo.
+  - **Resultado:** `arte/ceu.py` gera 20 cúmulos grandes, um por fatia de
+    18° de longitude (sorteados soltos, se empilhavam num lado), e 18
+    pequenos mais altos, atrás deles. Cada cúmulo é uma fileira de bolhas
+    cortada por base reta, com bolhas menores na borda de cima; alfa 0 ou 1;
+    quatro tons da base azulada ao topo branco, com a passagem num Bayer 4×4
+    de célula 2×2 texels. A base fica entre 4° e 11°: começou em 1,5–7° e a
+    prova mostrou nuvem só de canto, porque o prédio de 4–5 andares cobre até
+    ~8°. O Godot **soma** a cobertura ao gradiente, então o rgb gravado é a
+    diferença para o céu daquela altura, recalculado com as cores do
+    `world.gd` — mudou a cor do céu, regere. A textura é ampliada na tela
+    (5,7 texels por grau contra ~7 pixels), por isso não cintila girando; o
+    `.import` tem `detect_3d/compress_to=0`, senão o Godot a comprimiria em
+    VRAM e borraria a trama. Nuvem nos cinco quadros da prova. Baseline
+    visual: `visual_fracao_ceu` 0,107 → 0,117 e `visual_luminancia` 0,474 →
+    0,497, pelo branco da nuvem e pela luz ambiente, que vem do céu e ficou
+    mais clara. Portão sem variação.
 
 ### A calçada povoada
 

@@ -86,6 +86,13 @@ O PNG é importado como `Texture3D` (`importer="3d_texture"`,
 textura 2D, o `preload` do `world.gd` quebra com erro de tipo, e não com tela
 estranha. Isso é bom.
 
+As nuvens (`assets/visual/ceu_nuvens.png`) são build de `arte/ceu.py`, do
+mesmo jeito:
+
+```bash
+python arte/ceu.py
+```
+
 ## CI
 
 | Workflow | Quando | O quê |

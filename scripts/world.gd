@@ -20,6 +20,10 @@ const SEMENTE: int = 20260831
 
 ## O LUT de cor do dia (`arte/paleta.py`), importado como `Texture3D`.
 const LUT_DIA: Texture3D = preload("res://assets/visual/lut_dia.png")
+## Cumulo em faixa baixa, ja em banda e dithered (`arte/ceu.py`). O rgb dela e
+## a diferenca para o gradiente abaixo, porque o ceu SOMA a cobertura: mudou a
+## cor do ceu, regere a textura.
+const CEU_NUVENS: Texture2D = preload("res://assets/visual/ceu_nuvens.png")
 
 ## A cor de cada rival: bag e moto nela, jaqueta num tom escuro dela (ver
 ## `Entregador.pintar`). Todos sao o mesmo modelo, e e a cor que separa um do
@@ -190,6 +194,7 @@ func _build_environment() -> void:
 	# Desligado de proposito: debanding e dither de sub-pixel para ESCONDER a
 	# banda do degrade, e aqui a banda e o sotaque de epoca.
 	ceu.use_debanding = false
+	ceu.sky_cover = CEU_NUVENS
 	var sky := Sky.new()
 	sky.sky_material = ceu
 
