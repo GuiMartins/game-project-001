@@ -184,19 +184,20 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 
 ## Altura mais baixa em que ha nuvem, em graus acima do horizonte. Abaixo de
 ## ~8 o predio de 4-5 andares tampa.
-@export_range(0.0, 60.0, 0.5) var ceu_altura_min: float = 8.0
+@export_range(0.0, 60.0, 0.5) var ceu_altura_min: float = 9.0
 ## Altura mais alta em que ha nuvem, em graus.
-@export_range(5.0, 90.0, 0.5) var ceu_altura_max: float = 40.0
+@export_range(5.0, 90.0, 0.5) var ceu_altura_max: float = 30.0
 ## Quanto da faixa e nuvem: 0 e ceu limpo, 1 e quase fechado.
-@export_range(0.0, 1.0, 0.01) var ceu_cobertura: float = 0.42
+@export_range(0.0, 1.0, 0.01) var ceu_cobertura: float = 0.6
 ## Tamanho de uma nuvem, em graus.
 @export_range(2.0, 40.0, 0.5) var ceu_tamanho: float = 16.0
 ## Largura sobre altura: 1 e bola, 3 e faixa comprida.
 @export_range(0.5, 5.0, 0.1) var ceu_achatamento: float = 2.0
 ## 0 e borda dura de recorte; 1 e borda lavada de foto.
 @export_range(0.0, 1.0, 0.01) var ceu_borda: float = 0.0
-## Camadas de ruido: 1 e bolha lisa, 6 e couve-flor rendada.
-@export_range(1.0, 6.0, 1.0) var ceu_detalhe: float = 4.0
+## Quanto o ruido quebra a borda das bolhas: 0 e bolha lisa de desenho, 6 e
+## borda roida.
+@export_range(0.0, 6.0, 0.1) var ceu_detalhe: float = 2.0
 ## Quanto a base da nuvem puxa para o azul do ceu: 0 e branca inteira.
 @export_range(0.0, 1.0, 0.01) var ceu_sombra: float = 0.5
 ## Brilho do topo: 1 e branco; acima, o tonemap estoura.

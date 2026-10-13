@@ -1,11 +1,18 @@
-// O ceu: gradiente de meio-dia e nuvem de ruido, com borda dura e base
-// azulada, andando devagar com o vento.
+// O ceu: gradiente de meio-dia e cumulo de base reta e topo em bolhas,
+// iluminado pelo sol, andando devagar com o vento.
 //
-// Substitui o ProceduralSkyMaterial porque a nuvem dele e textura: na
-// comparacao da V14 (atual, lisa, esparsa, ruido e objeto no mundo), a de
-// ruido foi a escolhida. O gradiente e o mesmo do procedural - mesmas cores,
+// Na comparacao da V14 (textura com trama, lisa, esparsa, ruido e objeto no
+// mundo) ganhou a nuvem feita no shader. Mas ruido recortado por limiar e
+// mancha: borda rendada, sem base, sem volume - "poca de leite derramado". O
+// que faz cumulo e a estrutura, e e ela que este shader desenha:
+// - base reta, porque e onde o ar chega no ponto de orvalho;
+// - topo em domo feito de bolhas, mais alto no meio;
+// - cada bolha com a sua normal, entao o sol acende um lado e o pe fica na
+//   sombra azulada.
+// O ruido so quebra a borda das bolhas (`detalhe`).
+//
+// O gradiente e o mesmo do ProceduralSkyMaterial de antes - mesmas cores,
 // mesma curva de 0,15 -, para a luz ambiente, que vem do ceu, nao mudar.
-//
 // Os numeros da nuvem sao sliders do F3 (`WorldTuning`, grupo Ceu), e o
 // `world.gd` repassa. Os defaults daqui so valem ate o primeiro quadro.
 shader_type sky;
@@ -17,8 +24,8 @@ uniform vec3 chao_fundo : source_color = vec3(0.24, 0.26, 0.25);
 
 uniform float altura_min = 8.0;
 uniform float altura_max = 40.0;
-uniform float cobertura = 0.35;
-uniform float tamanho = 10.0;
+uniform float cobertura = 0.42;
+uniform float tamanho = 16.0;
 uniform float achatamento = 2.0;
 uniform float borda = 0.0;
 uniform float detalhe = 4.0;
@@ -27,27 +34,35 @@ uniform float brilho = 1.1;
 uniform float faixas_de_tom = 0.0;
 uniform float vento = 0.15;
 
-float hash(vec3 p) {
+// Bolhas por cumulo: a fileira de baixo, que da a base e o domo, e as menores
+// por cima, que dao a couve-flor.
+const int FILEIRA = 6;
+const int TOPETES = 5;
+
+vec4 hash4(float n) {
+	return fract(sin(vec4(n, n + 1.31, n + 2.77, n + 4.13)) * vec4(43758.55, 22578.15, 19642.35, 68023.71));
+}
+
+float hash3(vec3 p) {
 	p = fract(p * 0.3183099 + 0.1);
 	p *= 17.0;
 	return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
 }
 
-// Ruido de valor em 3D, amostrado na DIRECAO do olhar: em longitude e
-// latitude ele teria costura atras da camera, e a pista faz curva.
+// Ruido de valor na DIRECAO do olhar, sem costura atras da camera.
 float ruido(vec3 p) {
 	vec3 i = floor(p);
 	vec3 f = fract(p);
 	vec3 u = f * f * (3.0 - 2.0 * f);
 	return mix(
 		mix(
-			mix(hash(i), hash(i + vec3(1, 0, 0)), u.x),
-			mix(hash(i + vec3(0, 1, 0)), hash(i + vec3(1, 1, 0)), u.x),
+			mix(hash3(i), hash3(i + vec3(1, 0, 0)), u.x),
+			mix(hash3(i + vec3(0, 1, 0)), hash3(i + vec3(1, 1, 0)), u.x),
 			u.y
 		),
 		mix(
-			mix(hash(i + vec3(0, 0, 1)), hash(i + vec3(1, 0, 1)), u.x),
-			mix(hash(i + vec3(0, 1, 1)), hash(i + vec3(1, 1, 1)), u.x),
+			mix(hash3(i + vec3(0, 0, 1)), hash3(i + vec3(1, 0, 1)), u.x),
+			mix(hash3(i + vec3(0, 1, 1)), hash3(i + vec3(1, 1, 1)), u.x),
 			u.y
 		),
 		u.z
@@ -55,19 +70,68 @@ float ruido(vec3 p) {
 }
 
 float fbm(vec3 p) {
-	float v = 0.0;
-	float a = 0.5;
-	float soma = 0.0;
-	for (int i = 0; i < 6; i++) {
-		if (float(i) >= detalhe) {
-			break;
-		}
-		v += a * ruido(p);
-		soma += a;
-		p = p * 2.03 + vec3(1.7, 9.2, 3.1);
-		a *= 0.5;
+	return ruido(p) * 0.6 + ruido(p * 2.1) * 0.3 + ruido(p * 4.3) * 0.1;
+}
+
+// Testa o ponto (lon, elev) contra o cumulo da celula `id` da camada.
+// Devolve (achou, normal x, normal y, altura relativa na nuvem).
+vec4 cumulo(float id, float camada, float celula, float lon, float elev, float quebra) {
+	vec4 h = hash4(id * 7.13 + camada * 101.7);
+	if (h.x > cobertura) {
+		return vec4(0.0);
 	}
-	return v / soma;
+	vec4 h2 = hash4(id * 3.71 + camada * 57.3 + 11.0);
+	float largura = tamanho * (0.6 + 0.8 * h.z);
+	float altura = largura / achatamento;
+	float base = mix(altura_min, max(altura_min, altura_max - altura), h.w);
+	// Perspectiva: nuvem perto do horizonte esta mais longe, e parece menor.
+	float longe = mix(0.55, 1.0, smoothstep(altura_min, altura_min + 25.0, base));
+	largura *= longe;
+	altura *= longe;
+	float centro = (id + 0.5 + (h.y - 0.5) * 0.6) * celula;
+	// Longitude encolhe com o cosseno da altura: e o que deixa a bolha redonda.
+	float esc = cos(radians(elev));
+	if (elev < base || abs(lon - centro) * esc > largura) {
+		return vec4(0.0);
+	}
+	float melhor = -2.0;
+	vec2 normal = vec2(0.0);
+	for (int i = 0; i < FILEIRA + TOPETES; i++) {
+		vec4 b = hash4(id * 13.7 + camada * 31.1 + float(i) * 1.618);
+		vec2 c;
+		float r;
+		if (i < FILEIRA) {
+			float f = (float(i) + 0.5) / float(FILEIRA);
+			float perfil = pow(sin(3.14159 * f), 0.7);
+			r = altura * (0.35 + 0.45 * perfil) * (0.85 + 0.3 * b.x);
+			c = vec2(centro + (f - 0.5) * largura * 0.85 / esc, base + r * 0.55);
+		} else {
+			// Topete: sentado na borda de cima de uma bolha do meio.
+			float f = 0.2 + 0.6 * b.y;
+			float perfil = pow(sin(3.14159 * f), 0.7);
+			float r0 = altura * (0.35 + 0.45 * perfil);
+			float a = mix(0.25, 0.75, b.z) * 3.14159;
+			r = r0 * (0.35 + 0.25 * b.x);
+			c = vec2(
+				centro + ((f - 0.5) * largura * 0.85 + cos(a) * r0 * 0.75) / esc,
+				base + r0 * 0.55 + sin(a) * r0 * 0.75
+			);
+		}
+		vec2 d = vec2((lon - c.x) * esc, elev - c.y);
+		float dist = length(d) + quebra * r;
+		if (dist < r) {
+			// A bolha mais por fora (normal mais para cima) decide a luz.
+			vec2 n = d / r;
+			if (n.y > melhor) {
+				melhor = n.y;
+				normal = n;
+			}
+		}
+	}
+	if (melhor < -1.5) {
+		return vec4(0.0);
+	}
+	return vec4(1.0, normal, clamp((elev - base) / altura, 0.0, 1.0));
 }
 
 void sky() {
@@ -78,48 +142,56 @@ void sky() {
 	if (elev < 0.0) {
 		float g = clamp(-elev / 90.0, 0.0, 1.0);
 		cor = mix(chao_horizonte, chao_fundo, clamp(1.0 - pow(1.0 - g, 1.0 / 0.02), 0.0, 1.0));
-	} else {
-		// O vento gira o ceu em volta do eixo vertical.
-		float giro = radians(TIME * vento);
-		vec3 d = vec3(
-			dir.x * cos(giro) - dir.z * sin(giro), dir.y, dir.x * sin(giro) + dir.z * cos(giro)
-		);
-		// Um radiano tem 57 graus: dividir por `tamanho` faz a nuvem ter mais
-		// ou menos esse tamanho em graus. Achatada no vertical, porque cumulo
-		// visto de longe e mais largo que alto.
-		vec3 p = vec3(d.x, d.y * achatamento, d.z) * (57.3 / tamanho);
-		float n = fbm(p);
-		// A faixa em que existe nuvem, com rampa nas duas pontas.
-		float rampa = max((altura_max - altura_min) * 0.25, 0.5);
-		float faixa =
-			smoothstep(altura_min, altura_min + rampa, elev)
-			* (1.0 - smoothstep(altura_max - rampa, altura_max, elev));
-		float dens = n * faixa;
-		// Cobertura 0 e ceu limpo, 1 e quase fechado. O fbm mora entre ~0,25 e
-		// ~0,75, e o limiar anda dentro disso.
-		float limiar = mix(0.72, 0.32, cobertura);
-		float alfa = smoothstep(limiar, limiar + 0.001 + borda * 0.15, dens);
-		if (alfa > 0.0) {
-			// Luz por cima: onde ha menos nuvem logo acima, e borda de cima e
-			// clareia; onde ha mais, e o pe dela, na sombra azulada.
-			float acima = fbm(p + vec3(0.0, 0.35, 0.0)) * faixa;
-			float t = clamp(0.45 + (dens - acima) * 6.0 + (dens - limiar) * 3.0, 0.0, 1.0);
+	} else if (elev < altura_max + tamanho) {
+		float lon = mod(degrees(atan(dir.x, dir.z)) + TIME * vento, 360.0);
+		// Uma nuvem por celula, e celulas inteiras na volta: sem costura.
+		float n_cel = max(floor(360.0 / (tamanho * 1.6)), 3.0);
+		float celula = 360.0 / n_cel;
+		// A borda quebrada: so encolhe a bolha, nunca cresce, para o ruido nao
+		// soltar fiapo fora da nuvem.
+		float quebra = max(fbm(dir * (57.3 / tamanho) * 3.0) - 0.3, 0.0) * 0.08 * detalhe;
+		vec4 hit = vec4(0.0);
+		// Duas camadas defasadas, para nem toda nuvem estar na mesma fileira.
+		for (int camada = 0; camada < 2; camada++) {
+			float l = lon + float(camada) * celula * 0.5;
+			float id = floor(l / celula);
+			for (int k = -1; k <= 1; k++) {
+				float idk = id + float(k);
+				// O id da volta: a celula n_cel e a celula 0.
+				float idw = mod(idk, n_cel);
+				vec4 r = cumulo(idw, float(camada), celula, l - (idk - idw) * celula, elev, quebra);
+				if (r.x > 0.5 && hit.x < 0.5) {
+					hit = r;
+				}
+			}
+		}
+		if (hit.x > 0.5) {
+			// Luz: a normal da bolha no espaco do olhar, contra o sol.
+			vec3 frente = normalize(vec3(dir.x, 0.0, dir.z));
+			vec3 lado = vec3(frente.z, 0.0, -frente.x);
+			vec2 n2 = hit.yz;
+			float nz = sqrt(max(1.0 - dot(n2, n2), 0.0));
+			vec3 n3 = normalize(lado * n2.x + vec3(0.0, n2.y, 0.0) - frente * nz);
+			float sol = LIGHT0_ENABLED ? dot(n3, LIGHT0_DIRECTION) : 0.5;
+			float t = clamp(0.25 + 0.45 * hit.w + 0.4 * sol + 0.25 * n2.y, 0.0, 1.0);
 			if (faixas_de_tom >= 2.0) {
-				t = floor(t * faixas_de_tom) / (faixas_de_tom - 1.0);
-				t = clamp(t, 0.0, 1.0);
+				t = clamp(floor(t * faixas_de_tom) / (faixas_de_tom - 1.0), 0.0, 1.0);
 			}
 			vec3 alto = vec3(brilho);
 			// A base e o branco puxado para o azul do horizonte.
 			vec3 base = mix(alto, horizonte * 0.8, sombra);
-			cor = mix(cor, mix(base, alto, t), alfa);
+			vec3 nuvem = mix(base, alto, t);
+			// Borda: 0 recorta seco; acima, a ponta da bolha some no ceu.
+			float alfa = 1.0 - smoothstep(1.0 - borda * 0.5, 1.0, length(n2));
+			cor = mix(cor, nuvem, borda > 0.0 ? alfa : 1.0);
 		}
-		// O sol: disco e um halo curto, o que o procedural tinha.
-		if (LIGHT0_ENABLED) {
-			float ang = degrees(acos(clamp(dot(dir, LIGHT0_DIRECTION), -1.0, 1.0)));
-			float disco = 1.0 - smoothstep(0.0, 1.5, ang);
-			float halo = pow(1.0 - smoothstep(0.0, 25.0, ang), 4.0) * 0.25;
-			cor += LIGHT0_COLOR * LIGHT0_ENERGY * (disco + halo);
-		}
+	}
+	// O sol: disco e um halo curto, o que o procedural tinha.
+	if (LIGHT0_ENABLED) {
+		float ang = degrees(acos(clamp(dot(dir, LIGHT0_DIRECTION), -1.0, 1.0)));
+		float disco = 1.0 - smoothstep(0.0, 1.5, ang);
+		float halo = pow(1.0 - smoothstep(0.0, 25.0, ang), 4.0) * 0.25;
+		cor += LIGHT0_COLOR * LIGHT0_ENERGY * (disco + halo);
 	}
 	COLOR = cor;
 }
