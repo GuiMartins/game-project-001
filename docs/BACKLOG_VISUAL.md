@@ -508,7 +508,7 @@ e no `git log`.
     `visual_familias_de_cor` 48,4 → 66,3, pelas cores de tela novas. `fps`
     igual, no teto de 120.
 
-- [x] **V14** — Céu com nuvem (12/10/2026)
+- [x] **V14** — Céu com nuvem (12/10/2026, #87)
 
   O céu de hoje é gradiente liso. O vídeo e as imagens têm cúmulo branco,
   gordo, de borda dura e base azulada, concentrado numa faixa baixa — e com
