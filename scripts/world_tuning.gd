@@ -23,7 +23,11 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## dobrou a densidade efetiva sem ninguem ter mexido no slider da densidade -
 ## o piloto do banco de provas passou a bater de frente em sequencia e a
 ## corrida caiu de 1345 m pra 960 m em 45 s.
-@export_range(0, 120, 1) var traffic_count: int = 10
+##
+## Subiu de 10 pra 25 na V20, junto com a velocidade: carro que anda quase
+## junto com a moto demora a ficar para tras, e o video mostra 8 a 15 na tela
+## e 2 a 4 nos primeiros 20 m.
+@export_range(0, 120, 1) var traffic_count: int = 25
 
 ## Espacamento minimo entre carros na largada, em metros.
 @export_range(3.0, 60.0, 0.5) var traffic_gap_min: float = 5.0
@@ -42,11 +46,18 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 
 ## Velocidade de cruzeiro mais alta que um carro do fluxo assume, em m/s.
 ##
-## 7 m/s e 25 km/h: transito de marginal em hora de pico. E o numero que decide
-## se o corredor e um tunel que anda ou uma parede que voce ultrapassa - alto
-## demais e os carros somem no retrovisor, zero e a avenida vira
-## estacionamento permanente.
-@export_range(0.0, 25.0, 0.5) var traffic_speed: float = 7.0
+## E o numero que decide se o corredor e um tunel que anda ou uma parede que
+## voce ultrapassa - alto demais e os carros somem no retrovisor, zero e a
+## avenida vira estacionamento permanente. Era 7 m/s (25 km/h), transito de
+## marginal em hora de pico, e o corredor durava um piscar. No video (V20) o
+## transito anda quase na velocidade da moto: o taxi fica emparelhado quase
+## 2 s e o corredor dura um segundo. 26 m/s sao 94 km/h; a 128 km/h a moto
+## ganha de 10 a 18 m/s, e um carro de 4,4 m passa do lado em meio segundo.
+@export_range(0.0, 45.0, 0.5) var traffic_speed: float = 26.0
+## A mais baixa: cada carro sorteia entre esta e a de cima. Era zero, e metade
+## do transito andava quase parada - obstaculo, e nao fluxo. 18 m/s sao
+## 65 km/h.
+@export_range(0.0, 45.0, 0.5) var traffic_speed_min: float = 18.0
 
 ## Aceleracao do carro do transito, em m/s^2.
 @export_range(0.5, 12.0, 0.1) var traffic_accel: float = 2.2
@@ -54,8 +65,10 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ##
 ## Maior que a aceleracao de proposito: carro que reage devagar a fila entra
 ## dentro do carro da frente, e duas caixas se atravessando em pixel grosso le
-## como bug, nao como transito.
-@export_range(1.0, 25.0, 0.1) var traffic_brake: float = 4.5
+## como bug, nao como transito. Era 4,5, freio de quem anda a 25 km/h; com o
+## transito a 90 km/h (V20) o carro mais rapido nao parava atras do mais
+## lento e entrava nele. 7 e freada forte de carro de rua.
+@export_range(1.0, 25.0, 0.1) var traffic_brake: float = 7.0
 ## Distancia centro a centro que o carro guarda do carro da frente, em metros.
 ##
 ## O carro tem 4,4 m, entao abaixo de 5 eles se encavalam. E este numero que

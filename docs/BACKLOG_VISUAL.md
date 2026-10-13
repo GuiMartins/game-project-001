@@ -978,7 +978,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
 
 ### O trânsito
 
-- [ ] **V20** — Trânsito do vídeo: denso, quase na velocidade da moto
+- [x] **V20** — Trânsito do vídeo: denso, quase na velocidade da moto (13/10/2026)
 
   No vídeo o táxi fica emparelhado quase 2 s e o corredor dura um segundo
   inteiro, porque o trânsito anda **quase na velocidade da moto**: 8–15
@@ -995,6 +995,29 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   - **Mexe no feel, e talvez no `selftest`** (densidade). Baseline com motivo.
   - **Aceite:** jogando, o corredor entre dois carros dura e puxa o jogador
     para dentro; a contagem de raspadas por corrida sobe.
+
+  **Resultado:** aprovado jogando pelo Guilherme (13/10/2026), na primeira
+  rodada. O fluxo sorteia entre 18 e 26 m/s (65–94 km/h; era 0 a 7 m/s),
+  com 25 carros (eram 10), e a lanterna fica acesa a 35% andando, com o
+  freio a 100% por cima. Para o carro rápido não entrar no lento: ele olha
+  à frente até a distância de frenagem (era 24 m fixos) e freia a 7 m/s²
+  (era 4,5). Baseline com motivo: raspadas 7 → 10 (o objetivo), corrida
+  solta +2,9% de distância, quique da batida traseira −2,7% (o freio novo)
+  e a disputa de 260 m de 1º para 6º, porque o trânsito andando segura o
+  piloto automático. Caminhão baú e van foram para a V20a.
+
+- [ ] **V20a** — Caminhão baú e van no elenco
+
+  A segunda metade da V20, separada para o feel entrar antes. O vídeo tem
+  caminhão baú (`video_01/t3.0s`) e as paradas também (`03_viaduto`,
+  `04_vertical`); o elenco do `arte/carros.py` só tem hatch, sedã, SUV,
+  táxi e ônibus.
+
+  - **Referências:** `video_01/t3.0s` (baú no fundo, na faixa da direita);
+    `03_viaduto`, `04_vertical`.
+  - **O que fazer:** baú e van em `arte/carros.py` com a mesma árvore de nós
+    dos outros (`Carro` não tem `if` por modelo), e o peso deles no sorteio.
+  - **Aceite:** na prova a 128 km/h, um baú lê como o da `t3.0s`.
 
 ### O ator
 

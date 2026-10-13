@@ -74,8 +74,10 @@ func test_roda_gira_para_a_frente() -> void:
 func test_freada_mergulha_o_nariz_e_acende_a_lanterna() -> void:
 	var carro := _carro()
 	_anda(carro, 2.0, 12.0)
+	# Andando, a lanterna fica acesa, mais fraca (V20); o freio e ela mais
+	# forte por cima.
 	var lanterna: Vector3 = _no(carro, "Lataria").get_instance_shader_parameter("luzes")
-	assert_float(lanterna.x).is_equal(0.0)
+	assert_float(lanterna.x).is_equal_approx(Carro.LANTERNA, 0.001)
 	_muda(carro, 12.0, 6.0, -4.5)
 	var nariz := _no(carro, "Carroceria").global_basis * Vector3.FORWARD
 	assert_float(nariz.y).is_less(-0.01)
