@@ -29,18 +29,21 @@ const PINTURA_FABRICA := Color(0.86, 0.78, 0.60)
 const LOJA_FABRICA := Color(0.15, 0.35, 0.68)
 const TELA_FABRICA := Color(0.20, 0.70, 0.95)
 
-## As cores de parede da avenida. Tons de reboco do Centro e da Zona Norte:
-## claros e um pouco sujos. Cor cheia aqui brigaria com a bag, que tem que ser
-## a coisa mais saturada da tela; o LUT do dia ja satura o resto.
+## As cores de parede da avenida: pedra e reboco de pedra, bege, ocre e creme
+## (V11a). Nas referencias o corredor e um canion dessa cor so (`video_01/t5.0s`,
+## `01_centro`), e a cor viva mora no toldo e no outdoor. Ja foram tons pastel
+## de Zona Norte - amarelo, rosa, azul, menta -, e a avenida lia como cenario
+## de brinquedo. Cor cheia aqui tambem brigaria com a bag, que tem que ser a
+## coisa mais saturada da tela.
 const PINTURAS: Array[Color] = [
 	Color(0.86, 0.78, 0.60),
-	Color(0.92, 0.78, 0.40),
-	Color(0.90, 0.62, 0.54),
-	Color(0.60, 0.74, 0.82),
-	Color(0.64, 0.80, 0.70),
-	Color(0.92, 0.90, 0.86),
-	Color(0.80, 0.60, 0.40),
-	Color(0.72, 0.71, 0.68),
+	Color(0.82, 0.70, 0.52),
+	Color(0.78, 0.62, 0.42),
+	Color(0.90, 0.84, 0.72),
+	Color(0.72, 0.64, 0.52),
+	Color(0.84, 0.66, 0.46),
+	Color(0.76, 0.72, 0.64),
+	Color(0.92, 0.88, 0.80),
 ]
 
 ## As cores de toldo e letreiro. Aqui pode saturar: loja quer ser vista.

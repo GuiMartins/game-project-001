@@ -16,7 +16,7 @@ referencias:
 | `Sobrado`    | 10 x 11 x 12,8 m         | o casario do Centro: loja nas portas em arco, |
 |              |                          | sacada em cima                                |
 | `Comercio`   | 13 x 10 x 18,8 m         | loja com toldo embaixo, apartamento em cima,  |
-|              |                          | empena cega com mural, outdoor no telhado     |
+|              |                          | empena cega lisa, outdoor no telhado          |
 | `Deco`       | 14 x 12 x 29,8 m         | o art deco de Copacabana: torreao no meio,    |
 |              |                          | friso vertical passando do telhado, loja,     |
 |              |                          | outdoor em bandeira sobre a calcada           |
@@ -61,8 +61,8 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BLEND = os.path.join(RAIZ, "arte", "predios.blend")
 SAIDA = os.path.join(RAIZ, "assets", "predios")
 
-# A mesma do mundo (`World.SEMENTE`): qual vidro reflete o ceu, onde tem ar
-# condicionado e o desenho do mural saem dela, e regerar da o mesmo modelo.
+# A mesma do mundo (`World.SEMENTE`): qual vidro reflete o ceu e onde tem ar
+# condicionado saem dela, e regerar da o mesmo modelo.
 SEMENTE = 20260831
 
 # --- Paleta ------------------------------------------------------------------
@@ -118,14 +118,6 @@ PALETA = {
     "porta_aco": ((0.52, 0.54, 0.56), NADA),
     "ar_condicionado": ((0.84, 0.84, 0.82), NADA),
     "caixa_dagua": ((0.48, 0.52, 0.56), NADA),
-    # O mural da empena. Cor cheia de proposito: e a unica coisa do mundo que
-    # pode competir com a bag em saturacao, e fica longe da pista.
-    "mural_rosa": ((0.90, 0.38, 0.62), NADA),
-    "mural_verde": ((0.16, 0.62, 0.40), NADA),
-    "mural_amarelo": ((0.97, 0.78, 0.18), NADA),
-    "mural_azul": ((0.20, 0.48, 0.86), NADA),
-    "mural_laranja": ((0.95, 0.48, 0.16), NADA),
-    "mural_roxo": ((0.48, 0.28, 0.70), NADA),
     # A tela do outdoor. Ciano de fabrica, que o `predio.gd` troca pela cor
     # sorteada; o desenho e branco e nao troca, e o que diz "tela" e nao
     # "parede pintada".
@@ -133,7 +125,6 @@ PALETA = {
     "tela_luz": ((0.97, 0.97, 0.94), LUZ),
 }
 CELULAS = {nome: i for i, nome in enumerate(PALETA)}
-MURAL = [nome for nome in PALETA if nome.startswith("mural_")]
 
 # Quanto cada camada pintada na parede fica na frente da anterior. Menos que
 # isso a 150 m e z-fighting: a janela pisca atras da parede.
@@ -503,7 +494,7 @@ def sobrado(rng) -> Peca:
 #
 # O predio misto de quatro andares que forra a avenida (referencia 2, lado
 # esquerdo): loja embaixo com toldo e letreiro, apartamento em cima com ar
-# condicionado pendurado, e a empena cega pintada de mural (referencia 1).
+# condicionado pendurado, e a empena cega lisa.
 
 
 def comercio(rng) -> Peca:
@@ -512,7 +503,7 @@ def comercio(rng) -> Peca:
     LOJA_ALTURA, ANDAR, ANDARES = 4.4, 3.0, 4
     TOPO = LOJA_ALTURA + ANDAR * ANDARES
     p.caixa((0, 0, (TOPO + 1.0) * 0.5), (W, D, TOPO + 1.0), "pintura")
-    p.caixa((0, 0, TOPO + 1.0), (W + 0.2, D + 0.2, 0.2), "friso")
+    cornija(p, W, D, TOPO + 1.0)
     p.caixa((0, 0, LOJA_ALTURA * 0.5), (W + 0.06, D + 0.06, LOJA_ALTURA), "pintura_sombra")
     p.caixa((2.5, -1.5, TOPO + 2.2), (2.4, 2.4, 2.2), "caixa_dagua")
 
@@ -536,10 +527,10 @@ def comercio(rng) -> Peca:
             if rng.random() < 0.35:
                 frente.caixa(p, s + 0.45, z + 0.55, 0.65, 0.45, 0.42, "ar_condicionado")
 
-    # Empena cega: os dois lados sao mural, porque o lado que a camera ve
-    # chegando depende de que lado da pista o predio cai.
-    for lado in (esquerda, direita):
-        mural(p, lado, rng, LOJA_ALTURA + 0.4, TOPO + 0.6)
+    # Empena cega lisa, na cor da fachada. Ja foi mural (V11a): nas
+    # referencias o grafite colorido so existe em muro de via expressa
+    # (`03_viaduto`, `04_vertical`), e na avenida ele brigava com a bag e
+    # puxava a rua para o pastel.
 
     # Outdoor de telhado, na ponta oposta a caixa d'agua, sobre dois pes de
     # ferro. 7 x 3,5 m e o padrao de rua (o "9 x 3" de beira de avenida,
@@ -554,35 +545,19 @@ def comercio(rng) -> Peca:
     return p
 
 
-def mural(p, parede, rng, z0, z1) -> None:
-    """Grafite de formas grandes: fundo de uma cor e manchas por cima.
+def cornija(p, largura, fundo, z) -> None:
+    """A cornija do topo: o beiral de pedra que fecha a fachada de cima.
 
-    Nada de desenho fino: a 640x360 o mural le como blocos de cor saturada, e
-    e exatamente o que as referencias mostram de longe. Cada forma fica uma
-    camada mais para fora que a anterior, para nao brigar no z-buffer.
+    Nas referencias todo predio do corredor termina numa faixa saliente com
+    sombra embaixo (`video_01/t5.0s`), e e ela que faz o bloco ler como pedra
+    trabalhada e nao como caixa pintada. A sombra e uma faixa escura de
+    verdade, e nao so a do sol: a 640x360 a sombra propria de 25 cm some
+    quando o predio esta do lado da sombra. Sai so 25 cm de cada lado, porque
+    o `cidade.gd` encosta um predio no outro pela caixa inteira, e cornija
+    larga abriria vao na altura da rua.
     """
-    meia = parede.largura * 0.5 - 0.4
-    cores = MURAL[:]
-    rng.shuffle(cores)
-    parede.placa(p, 0.0, (z0 + z1) * 0.5, meia * 2.0, z1 - z0, cores[0], CAMADA)
-    for k in range(7):
-        cor = cores[1 + k % (len(cores) - 1)]
-        raio = rng.uniform(1.2, 3.0)
-        cs = rng.uniform(-meia + raio * 0.6, meia - raio * 0.6)
-        cz = rng.uniform(z0 + raio * 0.6, z1 - raio * 0.6)
-        lados = rng.choice((3, 4, 8))
-        giro = rng.uniform(0.0, math.tau)
-        pontos = []
-        for i in range(lados):
-            a = giro + math.tau * i / lados
-            # Folha: o losango e esticado num eixo, o resto fica regular.
-            esticado = 1.6 if lados == 4 and i % 2 == 0 else 1.0
-            ds = math.cos(a) * raio * esticado
-            dz = math.sin(a) * raio * esticado
-            ds = max(-meia - cs, min(meia - cs, ds))
-            dz = max(z0 - cz, min(z1 - cz, dz))
-            pontos.append(parede.ponto(cs + ds, cz + dz, CAMADA * (2 + k)))
-        p.face(pontos, parede.n, cor)
+    p.caixa((0, 0, z - 0.25), (largura + 0.3, fundo + 0.3, 0.3), "pintura_sombra")
+    p.caixa((0, 0, z + 0.1), (largura + 0.5, fundo + 0.5, 0.4), "friso")
 
 
 # --- Deco --------------------------------------------------------------------
@@ -602,7 +577,7 @@ def deco(rng) -> Peca:
     PLATIBANDA = TOPO + 0.8
     TORREAO, SAIDA = 4.6, 0.7
     p.caixa((0, 0, PLATIBANDA * 0.5), (W, D, PLATIBANDA), "pintura")
-    p.caixa((0, 0, PLATIBANDA), (W + 0.2, D + 0.2, 0.3), "friso")
+    cornija(p, W, D, PLATIBANDA)
     # So 1 cm para fora da parede: a vitrine vai uma `CAMADA` adiante, e o
     # embasamento no mesmo plano dela piscaria.
     p.caixa((0, 0, LOJA_ALTURA * 0.5), (W + 0.02, D + 0.02, LOJA_ALTURA), "granito")
@@ -737,7 +712,8 @@ def torre(rng) -> Peca:
     TOPO = PILOTIS + ANDAR * ANDARES
     p.caixa((0, 0, PILOTIS * 0.5), (W - 2.0, D - 2.0, PILOTIS), "concreto_escuro")
     p.caixa((0, 0, PILOTIS + ANDAR * ANDARES * 0.5), (W, D, ANDAR * ANDARES), "pintura")
-    p.caixa((0, 0, TOPO + 0.45), (W + 0.3, D + 0.3, 0.9), "friso")
+    p.caixa((0, 0, TOPO + 0.45), (W, D, 0.9), "pintura")
+    cornija(p, W, D, TOPO + 0.9)
     p.caixa((0, -1.5, TOPO + 2.4), (5.0, 4.0, 3.0), "concreto")
     p.caixa((0, -1.5, TOPO + 4.9), (3.2, 3.2, 2.0), "caixa_dagua")
     p.caixa((4.5, 2.0, TOPO + 2.9), (0.12, 0.12, 4.0), "grade")  # antena
@@ -837,7 +813,7 @@ def main() -> None:
     mat = material(albedo)
 
     # Um sorteio por modelo, cada um com a sua semente: mexer no sobrado nao
-    # muda o mural do comercio. A semente e a da ordem em que o modelo nasceu,
+    # muda o vidro do comercio. A semente e a da ordem em que o modelo nasceu,
     # e nao a posicao na lista: o Deco entrou no meio e ficou com a 4, para o
     # vidro do Escritorio e da Torre nao mudar com ele.
     x = 0.0
