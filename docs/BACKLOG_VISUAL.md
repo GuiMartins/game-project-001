@@ -199,11 +199,10 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     níveis por canal e o Bayer inteiro (`forca = 1`). Comparadas em 1080p,
     contra "sem paleta" e "dither pela metade", a trama visível no céu e na
     neblina ganhou: é ela que diz pixel art, e não só a resolução. O default
-    do shader não mudou. As variantes continuam em `dev.py prova --variantes`
-    (folha, lupa e uma 1080p por variante) para quando a pergunta voltar,
-    por exemplo depois do céu com nuvem (V14).
+    do shader não mudou. As variantes da V03 saíram da
+    `dev.py prova --variantes` na V03a, que pôs as dela no lugar.
 
-- [ ] **V03a** 👤 — Trama de pixel só no gradiente, e mais grossa
+- [x] **V03a** 👤 — Trama de pixel só no gradiente, e mais grossa (13/10/2026, #90)
 
   A V03 foi decidida em 11/10, só com o vídeo: as quatro paradas entraram
   no #72. Nelas o pixel é 2–3× mais grosso que 640×360, mas só no céu, na
@@ -223,6 +222,16 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     detalhe) e mexer só na trama.
   - **Aceite:** a decisão escrita aqui; na prova, fachada sem retícula e céu
     com trama em tufo, perto do recorte da `01_centro`.
+  - **Decisão (13/10/2026, Guilherme):** **tufo de 2 px só no gradiente
+    suave**, entre quatro variantes no mesmo recorte de 1080p ao lado da
+    `01_centro`: Bayer por igual (o de antes), Bayer só no gradiente, Bayer
+    em célula de 2 px e ruído em célula de 2 px. O peso da trama mede, a
+    4 px, o quanto a cor anda (gradiente) e o quanto ela dobra (laplaciano):
+    céu e neblina andam sem dobrar e recebem trama; parede chapada não anda,
+    janela dobra, e as duas ficam lisas. Continua 640×360 e 16 níveis.
+  - **Resultado:** `fps` na mesma máquina p50 6,9 ms contra 8,3 ms antes,
+    dentro do ruído (quatro amostras a mais por pixel a 640×360). As
+    variantes perdedoras ficam em `dev.py prova --variantes`.
 
 ### Enquadramento
 

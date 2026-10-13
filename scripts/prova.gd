@@ -43,13 +43,16 @@ const REFERENCIAS: Dictionary = {
 ## Fundo do que sobra quando uma linha e mais curta que a mais longa. Cinza
 ## medio, e nao preto: preto se confunde com o tunel e a sombra do jogo.
 const FUNDO := Color(0.5, 0.5, 0.5)
-## As variantes da V03 do backlog visual ("quanto de pixel"), na ordem em que
-## entram na linha da comparacao: como esta, sem o passe de paleta, e com o
-## dither pela metade. `forca` negativa desliga o passe inteiro.
+## As variantes de trama da V03a do backlog visual, na ordem em que entram na
+## linha da comparacao. Cada uma e o conjunto de parametros do
+## `paleta.gdshader`; o que nao aparece volta ao default do shader, que e o
+## tufo de 2 px so no gradiente (decidido em 12/10/2026). As outras ficam para
+## quando a pergunta voltar; as da V03 (sem paleta, dither pela metade) sairam.
 const VARIANTES_PIXEL: Array[Dictionary] = [
-	{"nome": "atual", "forca": 1.0},
-	{"nome": "sem_paleta", "forca": -1.0},
-	{"nome": "dither_fraco", "forca": 0.5},
+	{"nome": "atual", "parametros": {}},
+	{"nome": "bayer_por_igual", "parametros": {"so_no_gradiente": 0.0, "celula": 1, "tufo": 0.0}},
+	{"nome": "gradiente", "parametros": {"celula": 1, "tufo": 0.0}},
+	{"nome": "gradiente_2px", "parametros": {"tufo": 0.0}},
 ]
 ## O recorte da lupa das variantes: ceu, neblina, fachada e asfalto da
 ## largada, onde a banda e o padrao do dither aparecem. Na folha inteira as
@@ -114,11 +117,11 @@ func _roda() -> void:
 		if variantes:
 			var linha: Array[Image] = []
 			for variante: Dictionary in VARIANTES_PIXEL:
-				_paleta(variante["forca"])
+				_paleta(variante["parametros"])
 				for i in QUADROS_DE_ESPERA:
 					await RenderingServer.frame_post_draw
 				linha.append(_captura())
-			_paleta(1.0)
+			_paleta({})
 			linha.append_array(_referencias(quadro["nome"]))
 			linhas_variantes.append(linha)
 		print("prova: %-8s offset %6.0f m" % [quadro["nome"], quadro["offset"]])
@@ -157,12 +160,17 @@ func _captura() -> Image:
 	return sub.get_texture().get_image()
 
 
-## Troca a forca do dither do passe de paleta; negativa esconde o passe.
-func _paleta(forca: float) -> void:
+## Poe o passe de paleta nos `parametros` dados, e o resto no default do
+## shader: assim uma variante nao herda o que a anterior mexeu.
+func _paleta(parametros: Dictionary) -> void:
 	var camada: CanvasLayer = (_main.get("sub_viewport") as Node).get_node("Paleta")
-	camada.visible = forca >= 0.0
-	var tela := camada.get_child(0) as ColorRect
-	(tela.material as ShaderMaterial).set_shader_parameter("forca", maxf(forca, 0.0))
+	var material := (camada.get_child(0) as ColorRect).material as ShaderMaterial
+	for uniforme: Dictionary in material.shader.get_shader_uniform_list():
+		var nome: String = uniforme["name"]
+		var valor: Variant = parametros.get(
+			nome, RenderingServer.shader_get_parameter_default(material.shader.get_rid(), nome)
+		)
+		material.set_shader_parameter(nome, valor)
 
 
 ## Deixa o mundo rodar exatamente `n` passos de fisica e congela de novo.
