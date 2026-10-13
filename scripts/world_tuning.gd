@@ -176,6 +176,37 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## a corrida esta encenada, porque esta.
 @export_range(0.0, 0.6, 0.01) var rival_rubber_band: float = 0.15
 
+@export_group("Ceu")
+
+## Os sliders da nuvem (`scripts/ceu.gdshader`), ao vivo. Nao mexem em fisica:
+## o banco de provas ignora todos. A camera de perseguicao ve do horizonte ate
+## ~20 graus, e a garupa um pouco mais.
+
+## Altura mais baixa em que ha nuvem, em graus acima do horizonte. Abaixo de
+## ~8 o predio de 4-5 andares tampa.
+@export_range(0.0, 60.0, 0.5) var ceu_altura_min: float = 8.0
+## Altura mais alta em que ha nuvem, em graus.
+@export_range(5.0, 90.0, 0.5) var ceu_altura_max: float = 40.0
+## Quanto da faixa e nuvem: 0 e ceu limpo, 1 e quase fechado.
+@export_range(0.0, 1.0, 0.01) var ceu_cobertura: float = 0.42
+## Tamanho de uma nuvem, em graus.
+@export_range(2.0, 40.0, 0.5) var ceu_tamanho: float = 16.0
+## Largura sobre altura: 1 e bola, 3 e faixa comprida.
+@export_range(0.5, 5.0, 0.1) var ceu_achatamento: float = 2.0
+## 0 e borda dura de recorte; 1 e borda lavada de foto.
+@export_range(0.0, 1.0, 0.01) var ceu_borda: float = 0.0
+## Camadas de ruido: 1 e bolha lisa, 6 e couve-flor rendada.
+@export_range(1.0, 6.0, 1.0) var ceu_detalhe: float = 4.0
+## Quanto a base da nuvem puxa para o azul do ceu: 0 e branca inteira.
+@export_range(0.0, 1.0, 0.01) var ceu_sombra: float = 0.5
+## Brilho do topo: 1 e branco; acima, o tonemap estoura.
+@export_range(0.5, 2.0, 0.05) var ceu_brilho: float = 1.1
+## Tons da base ao topo: 0 e degrade continuo (a paleta da tela ainda bandeia),
+## 2-6 e banda chapada desenhada.
+@export_range(0.0, 6.0, 1.0) var ceu_faixas_de_tom: float = 0.0
+## Velocidade com que o ceu gira, em graus por segundo.
+@export_range(0.0, 3.0, 0.05) var ceu_vento: float = 0.15
+
 
 static func load_or_default() -> WorldTuning:
 	if ResourceLoader.exists(SAVE_PATH):

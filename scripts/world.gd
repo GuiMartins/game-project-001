@@ -20,10 +20,21 @@ const SEMENTE: int = 20260831
 
 ## O LUT de cor do dia (`arte/paleta.py`), importado como `Texture3D`.
 const LUT_DIA: Texture3D = preload("res://assets/visual/lut_dia.png")
-## Cumulo em faixa baixa, ja em banda e dithered (`arte/ceu.py`). O rgb dela e
-## a diferenca para o gradiente abaixo, porque o ceu SOMA a cobertura: mudou a
-## cor do ceu, regere a textura.
-const CEU_NUVENS: Texture2D = preload("res://assets/visual/ceu_nuvens.png")
+const CEU: Shader = preload("res://scripts/ceu.gdshader")
+## Slider do `WorldTuning` para uniforme do `ceu.gdshader`.
+const CEU_SLIDERS: Dictionary = {
+	"ceu_altura_min": "altura_min",
+	"ceu_altura_max": "altura_max",
+	"ceu_cobertura": "cobertura",
+	"ceu_tamanho": "tamanho",
+	"ceu_achatamento": "achatamento",
+	"ceu_borda": "borda",
+	"ceu_detalhe": "detalhe",
+	"ceu_sombra": "sombra",
+	"ceu_brilho": "brilho",
+	"ceu_faixas_de_tom": "faixas_de_tom",
+	"ceu_vento": "vento",
+}
 
 ## A cor de cada rival: bag e moto nela, jaqueta num tom escuro dela (ver
 ## `Entregador.pintar`). Todos sao o mesmo modelo, e e a cor que separa um do
@@ -100,6 +111,7 @@ var rivals: Array[RivalBike] = []
 var _rng := RandomNumberGenerator.new()
 var _spawn_cursor: float = 0.0
 var _position_event_timer: float = 0.0
+var _ceu := ShaderMaterial.new()
 
 
 func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = SEMENTE) -> void:
@@ -136,10 +148,6 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	camera.add_child(borrao)
 	borrao.setup(tuning, player)
 	player.marcar_foco()
-	# Provisorio: a comparacao de nuvens da V14 (tecla 5).
-	var comparacao := CeuComparacao.new()
-	add_child(comparacao)
-	comparacao.setup(self)
 
 	_spawn_traffic()
 	_sync_rival_pool()
@@ -190,17 +198,17 @@ func grid_slot(index: int, base: float) -> Vector2:
 func _build_environment() -> void:
 	# Meio-dia de sol duro: e o que as referencias mostram, e o caso mais facil
 	# de iluminacao que existe. Um sol, e o resto e consequencia dele.
-	var ceu := ProceduralSkyMaterial.new()
-	ceu.sky_top_color = Color(0.16, 0.38, 0.82)
-	ceu.sky_horizon_color = Color(0.62, 0.74, 0.88)
-	ceu.ground_horizon_color = Color(0.55, 0.6, 0.62)
-	ceu.ground_bottom_color = Color(0.24, 0.26, 0.25)
-	# Desligado de proposito: debanding e dither de sub-pixel para ESCONDER a
-	# banda do degrade, e aqui a banda e o sotaque de epoca.
-	ceu.use_debanding = false
-	ceu.sky_cover = CEU_NUVENS
+	# O ceu e shader proprio, com a nuvem de ruido (`ceu.gdshader`). As cores
+	# sao as mesmas do ProceduralSkyMaterial de antes, e a neblina usa a do
+	# horizonte.
+	_ceu.shader = CEU
+	_aplica_ceu()
 	var sky := Sky.new()
-	sky.sky_material = ceu
+	sky.sky_material = _ceu
+	# Incremental: com o vento o ceu muda todo quadro, e refazer o mapa de luz
+	# ambiente inteiro a cada quadro e o que o modo em tempo real faria. Aqui
+	# ele se refaz aos poucos, e luz ambiente nao precisa de pressa.
+	sky.process_mode = Sky.PROCESS_MODE_INCREMENTAL
 
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
@@ -218,7 +226,7 @@ func _build_environment() -> void:
 	# profundidade, e de quebra esconde o fim do mundo sem precisar de LOD. Na
 	# cor do horizonte, para o predio do fundo sumir no ceu e nao num cinza.
 	env.fog_enabled = true
-	env.fog_light_color = ceu.sky_horizon_color
+	env.fog_light_color = Color(0.62, 0.74, 0.88)
 	env.fog_density = 0.0045
 	env.fog_aerial_perspective = 0.5
 	env.fog_sky_affect = 0.0
@@ -471,6 +479,19 @@ func _sync_rival_pool() -> void:
 
 
 ## --- Regras que precisam da visao geral -----------------------------------
+
+
+func _process(_delta: float) -> void:
+	_aplica_ceu()
+
+
+## Repassa os sliders do ceu ao shader, so o que mudou.
+func _aplica_ceu() -> void:
+	for slider: String in CEU_SLIDERS:
+		var valor: float = world_tuning.get(slider)
+		var uniforme: String = CEU_SLIDERS[slider]
+		if _ceu.get_shader_parameter(uniforme) != valor:
+			_ceu.set_shader_parameter(uniforme, valor)
 
 
 func _physics_process(delta: float) -> void:
