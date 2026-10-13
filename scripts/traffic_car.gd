@@ -288,17 +288,21 @@ func _approach_speed(distance: float) -> float:
 
 
 ## Pista livre a frente na faixa deste carro.
+##
+## Olha ate onde ainda da para parar, mais uma folga: a distancia de frenagem
+## no talo cresce com o quadrado da velocidade. Eram 24 m fixos, que bastavam
+## a 25 km/h; a 90 km/h (V20) o carro so via o da frente quando ja nao dava
+## para frear, e entrava dentro dele.
 func _gap_ahead(follow_gap: float) -> float:
 	if world == null or not world.has_method("path_clearance"):
 		return INF
-	var livre: float = world.path_clearance(offset, follow_gap + 24.0, lateral, self)
+	var alcance := follow_gap + maxf(24.0, speed * speed / (2.0 * _brake()) + 10.0)
+	var livre: float = world.path_clearance(offset, alcance, lateral, self)
 	# No meio da troca o carro ocupa as duas faixas, e o da frente na faixa
 	# nova tambem e o da frente. So quem esta a frente: o que vem atras na
 	# faixa nova e quem tem que frear, e contar ele aqui parava os dois.
 	if not is_equal_approx(_target_lateral, lateral):
-		livre = minf(
-			livre, world.path_clearance(offset, follow_gap + 24.0, _target_lateral, self, false)
-		)
+		livre = minf(livre, world.path_clearance(offset, alcance, _target_lateral, self, false))
 	return livre
 
 
@@ -364,9 +368,9 @@ func _reset_at(a_offset: float, a_lateral: float, a_parked: bool, a_porta: Porta
 	if a_parked:
 		cruise_speed = 0.0
 	else:
-		cruise_speed = _rng.randf_range(
-			0.0, world_tuning.traffic_speed if world_tuning != null else 7.0
-		)
+		var teto := world_tuning.traffic_speed if world_tuning != null else 26.0
+		var piso := world_tuning.traffic_speed_min if world_tuning != null else 18.0
+		cruise_speed = _rng.randf_range(minf(piso, teto), teto)
 	speed = cruise_speed
 	_gap_cache = INF
 	_porta = a_porta if a_parked else Porta.NENHUMA

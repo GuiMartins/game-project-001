@@ -109,6 +109,11 @@ const PISCA: float = 1.4
 ## Aceleracao, em m/s2, abaixo da qual a lanterna acende: freio de verdade, e
 ## nao o carro so tirando o pe.
 const FREIO: float = -0.6
+## Quanto a lanterna acende com o carro andando, sem frear (V20). No video toda
+## lanterna esta acesa, e o freio e a mesma luz mais forte por cima: apagada,
+## a traseira nao tinha nada para o freio "acender mais", e o aviso de que o
+## corredor vai fechar dependia de o jogador ver a luz nascer do nada.
+const LANTERNA: float = 0.35
 
 static var _moldes: Array[PackedScene] = []
 static var _material: ShaderMaterial
@@ -306,7 +311,7 @@ func atualizar(delta: float, velocidade: float, lateral: float, encostado: bool,
 	_a_long = lerpf(_a_long, clampf(a_long, -9.0, 6.0), filtro)
 	_a_lat = lerpf(_a_lat, clampf(a_lat, -6.0, 6.0), filtro)
 	# A lanterna nao filtra: acende no passo em que o carro freia.
-	_freio = 1.0 if a_long < FREIO or (absf(velocidade) < 0.3 and not encostado) else 0.0
+	_freio = 1.0 if a_long < FREIO or (absf(velocidade) < 0.3 and not encostado) else LANTERNA
 	var esterco_alvo := clampf(
 		atan(_entre_eixos * giro_total / maxf(absf(velocidade), 1.0)), -0.6, 0.6
 	)
