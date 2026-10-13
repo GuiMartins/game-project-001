@@ -136,6 +136,10 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	camera.add_child(borrao)
 	borrao.setup(tuning, player)
 	player.marcar_foco()
+	# Provisorio: a comparacao de nuvens da V14 (tecla 5).
+	var comparacao := CeuComparacao.new()
+	add_child(comparacao)
+	comparacao.setup(self)
 
 	_spawn_traffic()
 	_sync_rival_pool()

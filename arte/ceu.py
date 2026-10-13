@@ -35,11 +35,15 @@ regere isto.
 import math
 import os
 import random
+import sys
 
 from _png import grava
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SAIDA = os.path.join(RAIZ, "assets", "visual", "ceu_nuvens.png")
+# As variantes da comparacao da V14 (`--comparacao`): moram a parte para sair
+# inteiras quando a decisao for tomada.
+COMPARACAO = os.path.join(RAIZ, "assets", "visual", "comparacao")
 
 LARGURA, ALTURA = 2048, 1024
 SEMENTE = 20261012
@@ -120,35 +124,70 @@ def _cumulo(rng, lon, base, largura, altura):
     return bolhas, base
 
 
-def _nuvens(rng):
+def _nuvens(rng, grandes, pequenas, larguras):
     # Longitude estratificada: uma fatia de ceu por nuvem grande, com folga.
     # Sorteada solta, metade delas se empilhava num lado e o outro ficava
     # vazio - e a nuvem empilhada vira uma parede com a base de uma riscando
     # o meio da outra.
     nuvens = []
-    fatia = 360.0 / GRANDES
-    for i in range(GRANDES):
-        largura = min(rng.uniform(8.0, 22.0), fatia * 0.85)
+    fatia = 360.0 / grandes
+    for i in range(grandes):
+        largura = min(rng.uniform(*larguras), fatia * 0.85)
         altura = largura * rng.uniform(0.38, 0.55)
         base = rng.uniform(BASE_MIN, BASE_MAX)
         lon = (i + rng.uniform(0.3, 0.7)) * fatia
         nuvens.append(_cumulo(rng, lon, base, largura, altura))
-    for _ in range(PEQUENAS):
+    for _ in range(pequenas):
         largura = rng.uniform(3.0, 8.0)
         base = rng.uniform(13.0, 21.0)
         nuvens.append(_cumulo(rng, rng.uniform(0, 360), base, largura, largura * 0.35))
     # As pequenas, mais altas, ficam ATRAS: desenhada por ultimo ganha, e a
     # pequena por cima cortava a grande com a base reta dela.
-    return nuvens[GRANDES:] + nuvens[:GRANDES]
+    return nuvens[grandes:] + nuvens[:grandes]
 
 
-def main():
+def _tom(bolhas, base, topo, lon, elev, esc):
+    """Tom continuo de 0 (pe) a 1 (topo) naquele ponto, ou None fora da nuvem."""
+    if elev < base:
+        return None
+    melhor = None
+    for bx, be, br in bolhas:
+        dx = (lon - bx) * esc
+        de = elev - be
+        if dx * dx + de * de < br * br:
+            # A normal da bolha mais por fora decide a luz: o alto de cada
+            # bolha clareia, o pe dela escurece.
+            ny = de / br
+            if melhor is None or ny > melhor:
+                melhor = ny
+    if melhor is None:
+        return None
+    altura_rel = (elev - base) / max(topo - base, 0.1)
+    return min(max(0.55 * altura_rel + 0.45 * (0.5 + 0.5 * melhor), 0.0), 1.0)
+
+
+def _cor(t, x, y, trama):
+    """Cor linear do tom: em banda com trama, ou continua com `trama` None."""
+    tons = [tuple(_linear(c) for c in tc) for tc in TONS]
+    if trama is None:
+        # Liso: interpola entre os tons, e a banda fica por conta da paleta da
+        # tela, que ja quantiza e ja tem o Bayer preso a tela.
+        pos = t * (len(tons) - 1)
+        i = min(int(pos), len(tons) - 2)
+        f = pos - i
+        return tuple(a + (b - a) * f for a, b in zip(tons[i], tons[i + 1]))
+    limiar = (BAYER[((y // 2) % 4) * 4 + (x // 2) % 4] + 0.5) / 16.0 - 0.5
+    t += limiar * trama
+    return tons[sum(1 for c in CORTES if t >= c)]
+
+
+def panorama(saida, trama=TRAMA, grandes=GRANDES, pequenas=PEQUENAS, larguras=(8.0, 22.0)):
     rng = random.Random(SEMENTE)
     # Por texel: tom continuo (-1 = ceu limpo). Nuvem desenhada depois ganha
     # por cima, que e a mais perto na leitura de quem olha.
     tom = [-1.0] * (LARGURA * ALTURA)
     graus_por_texel = 360.0 / LARGURA
-    for bolhas, base in _nuvens(rng):
+    for bolhas, base in _nuvens(rng, grandes, pequenas, larguras):
         topo = max(e + r for _, e, r in bolhas)
         lon_min = min(x - r for x, _, r in bolhas)
         lon_max = max(x + r for x, _, r in bolhas)
@@ -156,31 +195,14 @@ def main():
         y1 = min(ALTURA // 2, int((90.0 - base) / graus_por_texel) + 1)
         for y in range(y0, y1):
             elev = 90.0 - (y + 0.5) * graus_por_texel
-            if elev < base:
-                continue
             # Longitude encolhe com o cosseno da altura: perto do horizonte
             # quase nada, mas e o que deixa a bolha redonda e nao oval.
             esc = math.cos(math.radians(elev))
             for xi in range(int(lon_min / graus_por_texel), int(lon_max / graus_por_texel) + 1):
-                lon = (xi + 0.5) * graus_por_texel
-                melhor = None
-                for bx, be, br in bolhas:
-                    dx = (lon - bx) * esc
-                    de = elev - be
-                    d2 = dx * dx + de * de
-                    if d2 < br * br:
-                        # A normal da bolha mais por fora decide a luz: o
-                        # alto de cada bolha clareia, o pe dela escurece.
-                        ny = de / br
-                        if melhor is None or ny > melhor:
-                            melhor = ny
-                if melhor is None:
-                    continue
-                altura_rel = (elev - base) / max(topo - base, 0.1)
-                t = 0.55 * altura_rel + 0.45 * (0.5 + 0.5 * melhor)
-                tom[y * LARGURA + xi % LARGURA] = min(max(t, 0.0), 1.0)
+                t = _tom(bolhas, base, topo, (xi + 0.5) * graus_por_texel, elev, esc)
+                if t is not None:
+                    tom[y * LARGURA + xi % LARGURA] = t
 
-    tons_lin = [tuple(_linear(c) for c in tc) for tc in TONS]
     pixels = [0] * (LARGURA * ALTURA * 4)
     for y in range(ALTURA // 2):
         ceu = _ceu(90.0 - (y + 0.5) * graus_por_texel)
@@ -188,19 +210,58 @@ def main():
             t = tom[y * LARGURA + x]
             if t < 0.0:
                 continue
-            limiar = (BAYER[((y // 2) % 4) * 4 + (x // 2) % 4] + 0.5) / 16.0 - 0.5
-            t += limiar * TRAMA
-            banda = sum(1 for c in CORTES if t >= c)
             k = (y * LARGURA + x) * 4
             pixels[k : k + 4] = [
-                min(255, round(_srgb(alvo - fundo) * 255)) for alvo, fundo in zip(tons_lin[banda], ceu)
+                min(255, round(_srgb(alvo - fundo) * 255))
+                for alvo, fundo in zip(_cor(t, x, y, trama), ceu)
             ] + [255]
-    grava(SAIDA, LARGURA, ALTURA, pixels, canais=4)
+    grava(saida, LARGURA, ALTURA, pixels, canais=4)
     # A faixa que a camera ve: do horizonte a 20 graus.
     y20 = int(70.0 / graus_por_texel)
     faixa = tom[y20 * LARGURA : (ALTURA // 2) * LARGURA]
     cobertas = sum(1 for t in faixa if t >= 0.0)
-    print("nuvens: %s (%.0f%% de 0 a 20 graus coberto)" % (SAIDA, 100.0 * cobertas / len(faixa)))
+    print("nuvens: %s (%.0f%% de 0 a 20 graus coberto)" % (saida, 100.0 * cobertas / len(faixa)))
+
+
+def sprites(saida):
+    """Quatro cumulos soltos, 512x256 cada, numa folha 1024x512.
+
+    Para a variante de nuvem como objeto no mundo: a cor e a final (o quad e
+    unshaded e desenha por cima do ceu), e nao a diferenca para o gradiente.
+    """
+    rng = random.Random(SEMENTE + 1)
+    cw, ch = 512, 256
+    w, h = cw * 2, ch * 2
+    pixels = [0] * (w * h * 4)
+    # Unidade da nuvem para pixel: 20 unidades de largura cabem na celula.
+    px_por_u = cw / 24.0
+    for celula in range(4):
+        cx0, cy0 = (celula % 2) * cw, (celula // 2) * ch
+        largura = rng.uniform(16.0, 20.0)
+        bolhas, base = _cumulo(rng, 12.0, 1.0, largura, largura * rng.uniform(0.38, 0.5))
+        topo = max(e + r for _, e, r in bolhas)
+        for y in range(ch):
+            elev = (ch - 1 - y + 0.5) / px_por_u
+            for x in range(cw):
+                t = _tom(bolhas, base, topo, (x + 0.5) / px_por_u, elev, 1.0)
+                if t is None:
+                    continue
+                k = ((cy0 + y) * w + cx0 + x) * 4
+                pixels[k : k + 4] = [
+                    min(255, round(_srgb(c) * 255)) for c in _cor(t, x, y, None)
+                ] + [255]
+    grava(saida, w, h, pixels, canais=4)
+    print("sprites: %s" % saida)
+
+
+def main():
+    panorama(SAIDA)
+    if "--comparacao" in sys.argv:
+        panorama(os.path.join(COMPARACAO, "ceu_lisa.png"), trama=None)
+        panorama(
+            os.path.join(COMPARACAO, "ceu_esparsa.png"), grandes=9, pequenas=6, larguras=(22.0, 34.0)
+        )
+        sprites(os.path.join(COMPARACAO, "nuvem_sprites.png"))
 
 
 main()
