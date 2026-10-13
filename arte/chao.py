@@ -20,7 +20,7 @@ tres regras, que valem para as duas texturas:
 
 1. **Detalhe fino corre ao longo da pista, nunca atravessado.** O grao do
    asfalto e quatro vezes mais comprido que largo, a marca de pneu e uma faixa
-   longitudinal, a junta da calcada corre junto com ela. Detalhe longitudinal parece rastro
+   longitudinal, e a pedra da calcada e sorteio, sem junta atravessada. Detalhe longitudinal parece rastro
    de velocidade em vez de piscar - e e o que o borrao da P7 vai esticar mais.
 2. **Contraste alto so no que e grande.** Grao fino tem amplitude baixa, para
    o mipmap engolir de longe sem deixar padrao; quem tem contraste e a marca de
@@ -185,29 +185,68 @@ def asfalto(rng):
 # quadrado, e o tile repete nos dois eixos: a calcada vai do meio-fio ate a
 # fachada, e o meio-fio e geometria propria no `road_track.gd`.
 #
-# Cimentado, e nao pedra portuguesa. A onda de Copacabana e calcadao de praia;
-# a calcada de avenida das referencias (`docs/referencias/video_01`) e lisa,
-# clara, sem desenho - quem da o ritmo nela e o que esta em cima: poste,
-# arvore, gente.
+# Pedra portuguesa lisa, sem desenho (V09a). A onda de Copacabana continua de
+# fora: e calcadao de praia, e o desenho dela repete em menos de 1,7 m. Mas a
+# avenida do Theatro (`01_centro`, `video_01/t0.0s`) e pedra clara e quente,
+# e o cimentado frio de antes lia como pista. Pedra miuda e sorteio, nao
+# padrao: nada se repete ao longo da pista, e o mipmap engole de longe.
 
 CALCADA_U = 128
 CALCADA_V = 256
-CIMENTO = (168, 164, 156)
+# Calcario claro puxando para o creme. Era (168, 164, 156), cimento frio; o LUT
+# esquenta, mas de um cinza neutro ele so tira um bege sujo.
+PEDRA = (180, 168, 148)
 # Manchas de metro, de chuva e de sujeira: quase sem contraste (regra 2).
 MANCHA = 16
-# Grao do cimento: 1x3 texels, comprido ao longo da pista (regra 1).
-GRAO_CIMENTO = 7
-# Junta de dilatacao so longitudinal, uma por tile (2,2 m). A transversal de
-# verdade vem a cada 1,5 m, e 1,5 m e exatamente o periodo que pisca.
-JUNTA = -26
+# Lado da pedra em texels: 4 sao 7 cm, a pedra portuguesa de verdade. 128 e
+# 256 sao multiplos de 4, entao a grade fecha nas bordas e o tile emenda.
+PEDRA_LADO = 4
+# Uma pedra e outra variam pouco, e o rejunte e so um pouco mais escuro: e
+# detalhe fino, e detalhe fino tem amplitude baixa (regra 2).
+PEDRA_VARIA = 12
+REJUNTE = -16
 # Chiclete e pingo de oleo: pontos escuros soltos, o que faz o liso ler como
 # chao pisado, e nao como plastico.
 PINGO = (0.012, -30)
 
 
+def _pedras(rng):
+    """Cada celula da grade tem uma pedra com o centro sorteado dentro dela."""
+    cx = CALCADA_U // PEDRA_LADO
+    cy = CALCADA_V // PEDRA_LADO
+    centros = [[(rng.random(), rng.random(), rng.random()) for _ in range(cx)] for _ in range(cy)]
+    return centros, cx, cy
+
+
+def _pedra_em(pedras, x, y):
+    """Devolve (tom da pedra mais perto, distancia ate a borda com a vizinha)."""
+    centros, cx, cy = pedras
+    gx = x / PEDRA_LADO
+    gy = y / PEDRA_LADO
+    ix = int(gx)
+    iy = int(gy)
+    d1 = d2 = 9.0
+    tom = 0.5
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            jx = ix + dx
+            jy = iy + dy
+            c = centros[jy % cy][jx % cx]
+            px = jx + 0.15 + c[0] * 0.7
+            py = jy + 0.15 + c[1] * 0.7
+            d = math.hypot(gx - px, gy - py)
+            if d < d1:
+                d2 = d1
+                d1 = d
+                tom = c[2]
+            elif d < d2:
+                d2 = d
+    return tom, d2 - d1
+
+
 def calcada(rng):
     mancha = [Ruido(rng, 2, 4), Ruido(rng, 4, 8), Ruido(rng, 8, 16)]
-    grao = [[rng.random() for _ in range(CALCADA_U)] for _ in range(CALCADA_V // 3 + 1)]
+    pedras = _pedras(rng)
     pingo = [[rng.random() for _ in range(CALCADA_U // 2)] for _ in range(CALCADA_V // 2)]
     pixels = [0] * (CALCADA_U * CALCADA_V * 3)
     for y in range(CALCADA_V):
@@ -216,15 +255,13 @@ def calcada(rng):
             k = (y * CALCADA_U + x) * 3
             u = (x + 0.5) / CALCADA_U
             ajuste = (fbm(mancha, u, v) - 0.5) * 2 * MANCHA
-            ajuste += (grao[y // 3][x] - 0.5) * GRAO_CIMENTO
+            tom, borda = _pedra_em(pedras, x + 0.5, y + 0.5)
+            ajuste += (tom - 0.5) * 2 * PEDRA_VARIA
+            if borda < 0.12:
+                ajuste += REJUNTE
             if pingo[y // 2][x // 2] < PINGO[0]:
                 ajuste += PINGO[1]
-            if x == 0:
-                ajuste += JUNTA
-            elif x == 1:
-                # A borda da placa do lado de la pega sol.
-                ajuste += 8
-            pixels[k : k + 3] = [_limita(c + ajuste) for c in CIMENTO]
+            pixels[k : k + 3] = [_limita(c + ajuste) for c in PEDRA]
     return pixels
 
 
