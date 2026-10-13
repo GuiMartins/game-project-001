@@ -167,3 +167,23 @@ func test_o_braco_do_portal_passa_por_cima_da_moto() -> void:
 	var ponta := Portal.LATERAL - Portal.BRACO_COMPRIMENTO
 	assert_float(ponta).is_less(meio - RoadTrack.LANE_WIDTH * 2.0)
 	assert_float(Portal.BRACO_SEMAFORO - 1.2).is_greater(3.2)
+
+
+func test_pedestres_na_calcada_e_ninguem_na_pista() -> void:
+	# A V19: gente dos dois lados, e ninguem na pista nem no andavel, por onde
+	# a moto foge. Le as posicoes, e nao o `MultiMesh`: sem tela ele nao guarda
+	# o que recebe.
+	var rua := RandomNumberGenerator.new()
+	rua.seed = 3
+	var onde := Pedestres.posicoes(_track, _track.cruzamentos, rua)
+	var gente := 0
+	var meio := RoadTrack.half_width() + RoadTrack.SHOULDER
+	for pose: Array in onde:
+		for pessoa: Array in pose:
+			gente += 1
+			var p := (pessoa[0] as Transform3D).origin
+			var perto := INF
+			for k in range(0, int(_track.length), 2):
+				perto = minf(perto, _track.sample_position(float(k)).distance_to(p))
+			assert_float(perto).is_greater(meio)
+	assert_int(gente).is_greater(100)
