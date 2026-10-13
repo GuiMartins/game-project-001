@@ -202,7 +202,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     do shader não mudou. As variantes da V03 saíram da
     `dev.py prova --variantes` na V03a, que pôs as dela no lugar.
 
-- [x] **V03a** 👤 — Trama de pixel só no gradiente, e mais grossa (13/10/2026)
+- [x] **V03a** 👤 — Trama de pixel só no gradiente, e mais grossa (13/10/2026, #90)
 
   A V03 foi decidida em 11/10, só com o vídeo: as quatro paradas entraram
   no #72. Nelas o pixel é 2–3× mais grosso que 640×360, mas só no céu, na
