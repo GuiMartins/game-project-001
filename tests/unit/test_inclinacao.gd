@@ -155,7 +155,7 @@ func test_rampa_zero_e_tecla_crua() -> void:
 	assert_float(PlayerBike.rampa_do_pedido(0.0, 1.0, PASSO, 0.0)).is_equal(1.0)
 
 
-## Com a rampa, a CG deita mais perto do video, que vai de 0 a 25 graus em
+## Com a rampa, a CG que aparece deita mais perto do video, que vai de 0 a 25 graus em
 ## ~1,6 s. A tecla crua chega la em ~0,3 s; a rampa de 0,8 s, em ~0,8 s. O
 ## numero exato e do slider, julgado jogando; o teste so guarda que a rampa
 ## esta no caminho e atrasa a entrada.

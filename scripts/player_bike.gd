@@ -51,6 +51,11 @@ var state_timer: float = 0.0
 var speed: float = 0.0  ## Escalar, m/s, sempre >= 0.
 var heading: float = 0.0  ## Guinada no mundo, radianos.
 var lean: float = 0.0  ## Inclinacao atual, radianos. + = direita.
+## A inclinacao que aparece: moto, piloto e camera (V05b). A `lean` e a da
+## fisica, e a guinada sai dela com a tecla crua; esta segue o pedido em rampa
+## e deita aos poucos, como o video. As duas na mesma mola: soltar e
+## contra-inclinar continuam iguais nas duas, so a entrada da tecla difere.
+var lean_visual: float = 0.0
 var track_offset: float = 0.0  ## Metros percorridos ao longo da curva.
 var track_lateral: float = 0.0
 var adrenaline: float = 0.0  ## 0..100, enche com raspada, gasta com boost.
@@ -71,8 +76,9 @@ var find_clear_lateral: Callable = Callable()
 var _vertical_speed: float = 0.0
 ## Velocidade angular da inclinacao, rad/s: a metade da mola que nao aparece.
 var _lean_vel: float = 0.0
-## O pedido de inclinacao depois da rampa do teclado, -1 a 1.
+## O pedido de inclinacao depois da rampa do teclado, -1 a 1. So o visual le.
 var _pedido_de_inclinacao: float = 0.0
+var _lean_visual_vel: float = 0.0
 ## A mola da inclinacao da moto montada. Nasce na CG, a moto do ator recem-criado.
 var _fisica := FisicaDaMoto.new()
 var _punch_timer: float = -1.0
@@ -204,21 +210,26 @@ func _physics_process(delta: float) -> void:
 			state_timer -= delta
 			if state_timer <= 0.0:
 				state = State.RIDING
+			_pedido_de_inclinacao = 0.0
 			_ride(delta, 0.0, 0.0, 0.0)
 		State.RIDING:
 			var steer := Controls.steer_axis()
-			if not Controls.analogico:
+			# A rampa e da arte, nao da curva: com ela na fisica a moto virava
+			# pouco e a direcao ficava dura. O analogico passa direto, porque o
+			# polegar ja dosa.
+			if Controls.analogico:
+				_pedido_de_inclinacao = steer
+			else:
 				_pedido_de_inclinacao = rampa_do_pedido(
 					_pedido_de_inclinacao, steer, delta, tuning.lean_input_ramp
 				)
-				steer = _pedido_de_inclinacao
 			var throttle := Input.get_action_strength("ride_throttle")
 			var brake := Input.get_action_strength("ride_brake")
 			_ride(delta, steer, throttle, brake)
 			_try_punch()
 			_acelerador = throttle
 			_freio = brake
-			_esterco = steer
+			_esterco = _pedido_de_inclinacao
 
 	# Caido, a moto desliza: a velocidade que o ator recebe e a do deslize, e e
 	# dela que ele desconta o voo do piloto, como no rival.
@@ -232,7 +243,7 @@ func _physics_process(delta: float) -> void:
 		_esterco,
 		state == State.CRASHED,
 		_lado_queda,
-		lean,
+		lean_visual,
 		_giro_queda,
 		_freio
 	)
@@ -251,16 +262,23 @@ func _ride(delta: float, steer: float, throttle: float, brake: float) -> void:
 
 
 func _update_lean(delta: float, steer: float) -> void:
-	var target := steer * deg_to_rad(tuning.max_lean)
-	var passo := passo_da_inclinacao(lean, _lean_vel, target, delta, tuning, _fisica)
+	var maximo := deg_to_rad(tuning.max_lean)
+	var passo := passo_da_inclinacao(lean, _lean_vel, steer * maximo, delta, tuning, _fisica)
 	lean = passo.x
 	_lean_vel = passo.y
+	passo = passo_da_inclinacao(
+		lean_visual, _lean_visual_vel, _pedido_de_inclinacao * maximo, delta, tuning, _fisica
+	)
+	lean_visual = passo.x
+	_lean_visual_vel = passo.y
 
 
 ## O pedido de inclinacao da tecla, em rampa: sobe ate `cru` a 1/`tempo` por
 ## segundo e cai seco. Soltar ou trocar de lado parte do zero na hora - a
 ## volta e a contra-inclinacao sao da mola, e a rampa so atrasaria a saida que
-## a V05 acertou. Estatica para o teste medir sem montar a moto.
+## a V05 acertou. So a `lean_visual` le: na fisica a rampa atrasava o
+## deslocamento na pista e a direcao ficava dura. Estatica para o teste medir
+## sem montar a moto.
 static func rampa_do_pedido(pedido: float, cru: float, delta: float, tempo: float) -> float:
 	if tempo <= 0.0:
 		return cru
@@ -410,7 +428,7 @@ func _integrate(delta: float) -> void:
 	move_and_slide()
 	velocity.y = 0.0
 
-	_visual.rotation = Vector3(0.0, 0.0, -lean)
+	_visual.rotation = Vector3(0.0, 0.0, -lean_visual)
 
 
 ## --- Impacto --------------------------------------------------------------
@@ -718,6 +736,8 @@ func place_on_track(at_offset: float, at_lateral: float, at_speed: float) -> voi
 	rotation = Vector3(0.0, heading + PI, 0.0)
 	lean = 0.0
 	_lean_vel = 0.0
+	lean_visual = 0.0
+	_lean_visual_vel = 0.0
 	_pedido_de_inclinacao = 0.0
 	speed = at_speed
 	velocity = Vector3(sin(heading), 0.0, cos(heading)) * at_speed

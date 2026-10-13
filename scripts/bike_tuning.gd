@@ -64,17 +64,20 @@ const SAVE_PATH: String = "user://tuning.tres"
 ## Deitando, a mola e amortecida no critico, sem passar do pedido: a 8, vai de
 ## 0 a 90% em ~0,5 s, com a arrancada macia de quem poe peso aos poucos. O
 ## video deita em ~1 s, mas numa curva suave e com o polegar dosando. Quem
-## dosa a tecla e a rampa (`lean_input_ramp`), nao esta mola: com ela lenta, a
-## troca de faixa curta tambem ficaria lenta, e 1 s fecharia o corredor.
+## dosa a tecla na tela e a rampa (`lean_input_ramp`), nao esta mola: com ela
+## lenta, a troca de faixa curta tambem ficaria lenta, e 1 s fecharia o
+## corredor.
 ## Os nomes mudaram junto com o sentido (eram `lean_rate`, taxa do `lerp`):
 ## um `tuning.tres` salvo antes nao injeta 7 numa frequencia.
 @export_range(2.0, 30.0, 0.25) var lean_freq: float = 8.0
-## Segundos para o pedido de inclinacao do teclado ir de 0 ao maximo (V05b).
+## Segundos para a inclinacao que aparece ir de 0 ao maximo com a tecla (V05b).
 ##
 ## A mola deita a ~60 graus/s quando o pedido chega inteiro de uma vez, e e o
 ## que a tecla faz; o video deita a 12-25 graus/s, porque o piloto poe peso
 ## aos poucos. A rampa e no pedido, nao na mola: soltar continua seco, e o
-## analogico passa direto, ja que o polegar dosa sozinho. 0 desliga.
+## analogico passa direto, ja que o polegar dosa sozinho. So na arte (moto,
+## piloto, camera): com a rampa na fisica a moto andava pouco de lado e a
+## direcao ficou dura, jogando. 0 desliga.
 @export_range(0.0, 2.0, 0.05) var lean_input_ramp: float = 0.8
 ## Frequencia da mola que levanta a moto quando o input solta (rad/s).
 ##
