@@ -879,7 +879,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
     ele. `selftest` sem variação; baseline visual dentro da tolerância;
     `fps` igual ao da master, os dois no teto de 144.
 
-- [ ] **V16** — Palmeira e árvore de copa, inclusive por cima da pista
+- [x] **V16** — Palmeira e árvore de copa, inclusive por cima da pista (13/10/2026, #97)
 
   O que mais diz "cidade quente" e "Rio". E a árvore de copa larga debruçada
   sobre a pista resolve o item 4 de *Como o vídeo vende velocidade*: passar
@@ -894,6 +894,18 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
     billboard não aguentar a câmera baixa da V04. Decidir pela prova.
   - **Aceite:** a copa passa por cima da câmera e escurece o quadro por um
     instante; palmeira em grupo de 2–3 na faixa de serviço.
+
+  **Resultado:** low-poly, e não billboard: `arte/arvores.py` gera a
+  palmeira (fuste de 9 m, onze folhas em arco, de face dupla) e a copa
+  (tronco inclinado e um cacho de bolas de vinte faces em dois verdes,
+  centrada 3 m para fora do tronco). O `Arvore` planta como o `Poste`, com
+  malha compartilhada e colisor só no pé. A cidade planta um grupo a cada
+  35–75 m de cada lado, na faixa de serviço: 40% copa, o resto duas ou três
+  palmeiras; sorteio no gerador da cidade, depois de tudo, para não mexer
+  em prédio nem no trânsito. A copa cobre a faixa da direita a partir de
+  4,5 m de altura. Um primeiro jeito, com a copa achatada, saiu cogumelo
+  ao lado da `t2.0s` e foi engrossado. `fps` p50 8,33 ms (refresh de
+  120 Hz). Baseline sem variação.
 
 - [ ] **V17** — Mobiliário: lixeira, mupi, placa de curva, canteiro
 

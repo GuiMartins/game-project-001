@@ -54,6 +54,13 @@ const CANTEIRO := Vector3(2.2, 0.5, 6.0)
 const CANTEIRO_PASSO: float = 10.0
 const COR_CANTEIRO := Color(0.62, 0.60, 0.56)
 const COR_GRAMA := Color(0.30, 0.46, 0.18)
+## A distancia entre um grupo de arvores e o seguinte, de cada lado.
+const ARVORE_PASSO := Vector2(35.0, 75.0)
+## A chance de o grupo ser uma copa, e nao palmeiras. Menos da metade: a copa
+## e o momento de passar por baixo, e momento repetido perde a graca.
+const ARVORE_COPA: float = 0.4
+## Entre uma palmeira e a do lado, no grupo.
+const PALMEIRA_PASSO: float = 4.0
 
 var track: RoadTrack
 
@@ -72,6 +79,9 @@ func montar(rua: RandomNumberGenerator, props: Node3D) -> void:
 	for side: float in [-1.0, 1.0]:
 		_monta_quarteirao(side, cruzamentos, trechos, rua, props)
 		_monta_praca(side, cruzamentos, trechos, props)
+	# Por ultimo, para os sorteios das arvores nao mexerem em predio nem rua.
+	for side: float in [-1.0, 1.0]:
+		_monta_arvores(side, cruzamentos, rua, props)
 
 
 ## Onde a avenida e largo e onde e corredor. Cada um e `[fim, recuo]`: o
@@ -215,6 +225,33 @@ func _monta_praca(
 					_canteiro(props, track.transform_at(o, lateral), caixa, terra)
 				o += CANTEIRO_PASSO
 		inicio = t.x
+
+
+## Palmeira em grupo de duas ou tres e arvore de copa debrucada sobre a pista,
+## na faixa de servico (V16). Um grupo a cada 35 a 75 m de cada lado: mais
+## que isso a avenida vira bosque e esconde a fachada, que e o referencial de
+## velocidade; menos e a copa por cima da camera vira acidente, e nao ritmo.
+func _monta_arvores(
+	side: float, cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props: Node3D
+) -> void:
+	# Na faixa de servico, 3 m depois do meio-fio: atras da linha dos postes
+	# (0,6 m) e da do rival que terminou a corrida (1,6 m).
+	var lateral := (
+		(RoadTrack.half_width() + RoadTrack.SHOULDER + RoadTrack.FAIXA_SERVICO * 0.5) * side
+	)
+	var o := rua.randf_range(20.0, 60.0)
+	while o < track.length - 20.0:
+		var copa := rua.randf() < ARVORE_COPA
+		var quantas := 1 if copa else rua.randi_range(2, 3)
+		for i in quantas:
+			var aqui := o + i * PALMEIRA_PASSO
+			if Cidade.na_boca(cruzamentos, aqui, side):
+				continue
+			var pe := track.point(aqui, lateral)
+			var para_a_pista := track.sample_basis(aqui).x * -side
+			var tipo := Arvore.Tipo.COPA if copa else Arvore.Tipo.PALMEIRA
+			props.add_child(Arvore.criar(tipo, pe, para_a_pista))
+		o += rua.randf_range(ARVORE_PASSO.x, ARVORE_PASSO.y)
 
 
 func _canteiro(props: Node3D, onde: Transform3D, caixa: BoxMesh, terra: BoxMesh) -> void:
