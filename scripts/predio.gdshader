@@ -4,9 +4,9 @@
 // cada predio vem por instancia (`set_instance_shader_parameter`), e nao por
 // material: centenas de predios continuam sendo um material, um shader e uma
 // textura. A mascara diz onde cada cor entra: R = pintura da parede, G = toldo
-// e faixa do letreiro, B = o que acende no outdoor (1 a tela, que tambem leva
-// a cor; 0,4 o desenho branco). O resto - vidro, friso, telha, mural - fica
-// como foi pintado.
+// e faixa do letreiro, B = o que acende no outdoor (1 o fundo da tela, que
+// tambem leva a cor; 0,4 a foto, acesa na propria cor). O resto - vidro,
+// friso, telha - fica como foi pintado.
 shader_type spatial;
 // Mesma luz do resto do mundo: fosco e sem especular. Vidro com reflexo de sol
 // seria bonito e piscaria a cada quadro em 640x360.
@@ -30,6 +30,11 @@ uniform vec3 tela_fabrica : source_color = vec3(0.20, 0.70, 0.95);
 // para o outdoor ser o ponto mais claro abaixo do horizonte, como no video.
 // Ao contrario da lanterna, ele e area grande e chega inteiro ao limiar.
 uniform float tela_brilho = 4.0;
+// O quanto a foto por cima da tela acende (V13a). Menos que o fundo: a 4,
+// areia, pele e amarelo passavam do branco no tonemap, e a foto virava um
+// painel branco estourado. A 2 ela guarda a cor, e o fundo segue sendo o que
+// cruza o limiar do glow - o painel inteiro continua o mais claro da rua.
+uniform float foto_brilho = 2.0;
 
 instance uniform vec3 pintura : source_color = vec3(0.86, 0.78, 0.60);
 instance uniform vec3 loja : source_color = vec3(0.15, 0.35, 0.68);
@@ -57,5 +62,6 @@ void fragment() {
 	cor = troca(cor, tela_fabrica, tela, smoothstep(0.5, 1.0, m.b));
 	ALBEDO = cor;
 	ROUGHNESS = 1.0;
-	EMISSION = cor * smoothstep(0.0, 0.4, m.b) * tela_brilho;
+	float brilho = mix(foto_brilho, tela_brilho, smoothstep(0.5, 1.0, m.b));
+	EMISSION = cor * smoothstep(0.0, 0.4, m.b) * brilho;
 }

@@ -773,7 +773,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     `visual_familias_de_cor` 48,4 → 66,3, pelas cores de tela novas. `fps`
     igual, no teto de 120.
 
-- [ ] **V13a** — Outdoor deitado, de foto colorida
+- [x] **V13a** — Outdoor deitado, de foto colorida (13/10/2026, #96)
 
   Posição e brilho da V13 batem. O formato não: na referência o outdoor é
   deitado (~16:9), com moldura, e mostra uma foto colorida (gente, praia,
@@ -788,6 +788,14 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     sem vermelho dominante (vermelho aceso é freio).
   - **Aceite:** com o glow da V12, o outdoor continua o ponto mais claro
     abaixo do horizonte e, ao lado da `t3.0s`, lê como o dela.
+
+  **Resultado:** os dois outdoors deitados (telhado 7 × 4 m, bandeira
+  3,8 × 2,2 m, era 2,8 × 4,2 em pé), com moldura e uma "foto" inventada por
+  face, sorteada entre praia, produto e gente: manchas grandes em nove cores
+  novas (`foto_*`), nenhuma vermelha, sobre o fundo que cada prédio pinta.
+  A foto acende a 2 (`foto_brilho`) e o fundo a 4: a 4 a foto estourava em
+  branco no tonemap. `fps` p50 8,33 ms (refresh de 120 Hz). Baseline sem
+  variação.
 
 - [x] **V14** — Céu com nuvem (12/10/2026, #87)
 
