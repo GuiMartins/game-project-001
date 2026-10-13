@@ -182,9 +182,12 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## o banco de provas ignora todos. A camera de perseguicao ve do horizonte ate
 ## ~20 graus, e a garupa um pouco mais.
 
-## Abaixo desta altura, em graus, as nuvens rareiam ate sumir: o horizonte e
-## neblina, e nao parede de nuvem.
-@export_range(0.0, 20.0, 0.5) var ceu_altura_min: float = 4.0
+## Onde o banco do horizonte comeca, em graus; abaixo disso a ultima fresta
+## rareia e a neblina engole.
+@export_range(0.0, 20.0, 0.5) var ceu_altura_min: float = 2.0
+## Quanto a nuvem fecha perto do horizonte: 0 e o ceu igual de cima a baixo,
+## alto e um banco cinza de nuvem empilhada.
+@export_range(0.0, 0.6, 0.01) var ceu_banco: float = 0.35
 ## Quanto do ceu e nuvem: 0 e limpo, 1 e quase fechado.
 @export_range(0.0, 1.0, 0.01) var ceu_cobertura: float = 0.5
 ## Tamanho de um tufo a 15 graus de altura, em graus. Mais baixo ele encolhe.
@@ -199,12 +202,15 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 @export_range(0.0, 1.0, 0.01) var ceu_detalhe: float = 0.6
 ## Largura da borda que se desfaz em pixel solto: 0 e recorte liso.
 @export_range(0.0, 1.0, 0.01) var ceu_trama: float = 0.5
-## Quanto o baixo do tufo puxa para o azul do ceu: 0 e branco inteiro.
+## Quanto o cinza mais escuro puxa para o azul-acinzentado escuro.
 @export_range(0.0, 1.0, 0.01) var ceu_sombra: float = 0.5
+## Quanto a nuvem empilhada escurece: 0 e tudo branco; alto, o meio das massas
+## e o banco do horizonte ficam cinza.
+@export_range(0.0, 1.5, 0.01) var ceu_cinza: float = 1.0
 ## Brilho do topo: 1 e branco; acima, o tonemap estoura.
 @export_range(0.5, 2.0, 0.05) var ceu_brilho: float = 1.1
 ## Tons do baixo ao topo: 0 e degrade continuo, 2-6 e banda chapada.
-@export_range(0.0, 6.0, 1.0) var ceu_faixas_de_tom: float = 3.0
+@export_range(0.0, 6.0, 1.0) var ceu_faixas_de_tom: float = 5.0
 ## Velocidade com que o ceu gira, em graus por segundo.
 @export_range(0.0, 3.0, 0.05) var ceu_vento: float = 0.15
 

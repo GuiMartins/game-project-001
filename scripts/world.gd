@@ -31,6 +31,8 @@ const CEU_SLIDERS: Dictionary = {
 	"ceu_detalhe": "detalhe",
 	"ceu_trama": "trama",
 	"ceu_sombra": "sombra",
+	"ceu_cinza": "cinza",
+	"ceu_banco": "banco",
 	"ceu_brilho": "brilho",
 	"ceu_faixas_de_tom": "faixas_de_tom",
 	"ceu_vento": "vento",
