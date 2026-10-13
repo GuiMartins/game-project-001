@@ -434,7 +434,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     que puxava a manete ao soltar o gás em alta e em toda batida. E o rival
     em cruzeiro segura meio gás, em vez do pulso fechado de quem embala.
 
-- [ ] **V07b** — Bag do vídeo: mais larga que alta, capacete por cima
+- [x] **V07b** — Bag do vídeo: mais larga que alta, capacete por cima (13/10/2026)
 
   A postura da V07 bate. A bag não: no vídeo ela é mais larga que alta,
   assenta nos ombros e o capacete fica inteiro acima dela; no jogo é quase
@@ -447,6 +447,12 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     (dimensões em `"bag"` e o `altura_bag`), nas três motos, e regerar.
   - **Aceite:** na prova de trás o capacete aparece inteiro acima da bag, e
     os cotovelos continuam passando dela.
+
+  **Resultado:** a `Bag` foi de 0,45 × 0,43 m, com o topo na nuca, para
+  0,51 × 0,36 m (~1,4 para 1), com o topo na linha do ombro e a base perto
+  do banco. Na prova de trás o capacete sobra inteiro acima dela, e os
+  cotovelos ainda passam das bordas. Regeradas a CG, a XRE e a PCX. Só
+  malha, sem peça nova: baseline sem variação, sem `fps`.
 
 ### Velocidade
 

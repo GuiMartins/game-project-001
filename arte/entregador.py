@@ -1002,12 +1002,19 @@ def piloto(
     # A borda de cima para abaixo do pescoco de proposito. A camera de jogo fica
     # 2,25 m acima e 6,4 m atras: com a bag ate a nuca, o capacete some atras
     # dela e o personagem vira uma caixa laranja andando sozinha.
-    altura_bag = TORSO * 0.52
-    centro_bag = QUADRIL + eixo * altura_bag + costas * 0.27
+    #
+    # Proporcao do video (`video_01/moto_ampliada`, V07b): mais larga que alta,
+    # ~1,4 para 1, e com quase dois capacetes de largura. O topo assenta na
+    # linha do ombro, e nao na nuca: vista de cima, a tampa ja come uns
+    # centimetros da cabeca, e o capacete tem de sobrar inteiro acima dela.
+    # A base desce ate perto do banco, como no video, onde ela encosta no
+    # quadril. Mais funda que isso e a tampa vira um telhado visto de cima.
+    altura_bag = TORSO * 0.47
+    centro_bag = QUADRIL + eixo * altura_bag + costas * 0.26
     na_bag = Matrix.Translation(centro_bag) @ Matrix.Rotation(-INCLINACAO_TORSO, 4, "X")
     bag = Peca("Bag", QUADRIL + eixo * altura_bag + costas * 0.11)
     bag.casco(
-        [(-0.21, 0.0, 0.44, 0.32), (0.19, 0.0, 0.44, 0.32)],
+        [(-0.18, 0.0, 0.50, 0.30), (0.15, 0.0, 0.50, 0.30)],
         "bag",
         eixo="z",
         expoente=7.0,
@@ -1015,14 +1022,14 @@ def piloto(
         matriz=na_bag,
     )
     bag.casco(
-        [(0.19, 0.0, 0.45, 0.33), (0.225, 0.0, 0.45, 0.33)],
+        [(0.15, 0.0, 0.51, 0.31), (0.18, 0.0, 0.51, 0.31)],
         "bag_tampa",
         eixo="z",
         expoente=7.0,
         gomos=16,
         matriz=na_bag,
     )
-    bag.caixa(centro_bag + costas * 0.16, (0.36, 0.012, 0.05), "bag_faixa", rot_x=rot)
+    bag.caixa(centro_bag + costas * 0.15, (0.42, 0.012, 0.05), "bag_faixa", rot_x=rot)
     bag.objeto(material, colecao, obj_tronco)
 
     for lado, sufixo in ((-1.0, "E"), (1.0, "D")):
