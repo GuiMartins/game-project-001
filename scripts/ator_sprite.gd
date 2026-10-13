@@ -18,10 +18,10 @@ const SHADER_FOCO: Shader = preload("res://scripts/ator_sprite_foco.gdshader")
 
 ## As medidas do atlas, as mesmas de `arte/sprites_flow.gd`: quantos quadros,
 ## o tamanho de cada celula, onde fica o pe do pneu traseiro nela e a altura
-## do piloto em pixels. Mudou la, muda aqui.
+## do piloto que pilota reto, em pixels. Mudou la, muda aqui.
 const QUADROS: int = 11
-const CELULA := Vector2(176.0, 132.0)
-const PE := Vector2(88.0, 128.0)
+const CELULA := Vector2(192.0, 160.0)
+const PE := Vector2(96.0, 156.0)
 const ALTURA_PX: float = 120.0
 
 ## Os cinco quadros da curva, de deitado para a esquerda a deitado para a
@@ -32,11 +32,17 @@ const RETO: int = 2
 const PASSO_DA_CURVA: float = 15.0
 ## Os tres quadros do soco por lado (arma, estica, recolhe), -1 esquerda.
 const SOCO: Dictionary[int, Array] = {-1: [5, 6, 7], 1: [8, 9, 10]}
+## Quanto o afundamento da suspensao e exagerado no sprite. Na escala real, os
+## 4 cm de garfo da freada sao 3 px de piloto: existem, mas nao se veem, e o
+## sprite parado num quadro so le como recorte colado na pista.
+const GINGA: float = 2.5
 
 var _material := ShaderMaterial.new()
 ## O modelo que este sprite substitui agora, e se o sprite estava na tela.
 var _modelo: Node3D
 var _na_tela: bool = false
+## A altura do piloto em metros, do ultimo `medir`.
+var _altura: float = 1.7
 
 
 func _init() -> void:
@@ -66,6 +72,7 @@ func medir(modelo: Node3D, ancestral: Node3D, recuo: float) -> void:
 			xform = (atual as Node3D).transform * xform
 			atual = atual.get_parent()
 		topo = maxf(topo, (xform * (malha as MeshInstance3D).get_aabb()).end.y)
+	_altura = topo
 	var m := topo / ALTURA_PX
 	var quad := mesh as QuadMesh
 	quad.size = CELULA * m
@@ -103,16 +110,28 @@ func marcar_foco(sim: bool) -> void:
 	_material.shader = SHADER_FOCO if sim else SHADER
 
 
-## O quadro deste passo. `inclinacao` em radianos, positiva para a direita;
-## `soco_lado` -1 ou 1, e `soco_fase` 0 armando, 1 esticado, 2 recolhendo, ou
-## -1 sem soco.
-func posar(inclinacao: float, soco_lado: int, soco_fase: int) -> void:
+## O quadro deste passo, e o quanto ele gira, desliza e afunda.
+##
+## `inclinacao` em radianos, positiva para a direita; `soco_lado` -1 ou 1, e
+## `soco_fase` 0 armando, 1 esticado, 2 recolhendo, ou -1 sem soco. `ginga` e
+## o que o corpo faz por cima da moto, do mesmo estado que posa o modelo 3D:
+## rolagem em radianos (+ direita), deslize lateral e afundamento, em metros.
+func posar(inclinacao: float, soco_lado: int, soco_fase: int, ginga: Vector3) -> void:
 	if not _na_tela:
 		return
 	var quadro := RETO
+	var desenhado := 0.0
 	if soco_fase >= 0:
 		quadro = SOCO[-1 if soco_lado < 0 else 1][clampi(soco_fase, 0, 2)]
 	else:
-		var passos := roundi(rad_to_deg(inclinacao) / PASSO_DA_CURVA)
-		quadro = RETO + clampi(passos, -RETO, RETO)
+		var passos := clampi(roundi(rad_to_deg(inclinacao) / PASSO_DA_CURVA), -RETO, RETO)
+		quadro = RETO + passos
+		desenhado = deg_to_rad(passos * PASSO_DA_CURVA)
 	_material.set_shader_parameter("quadro", quadro)
+	# O quadro desenha a inclinacao de 15 em 15 graus, e o resto o quad gira
+	# na mao, em volta do pneu: entre dois quadros a moto continua deitando, e
+	# passa do ultimo. Sem isto a curva anda aos saltos de 15 graus.
+	_material.set_shader_parameter("rolagem", inclinacao - desenhado + ginga.x)
+	_material.set_shader_parameter("desvio", ginga.y)
+	# Encolhe em volta do pneu, que fica no chao: quem afunda e o resto.
+	_material.set_shader_parameter("estica", 1.0 - ginga.z * GINGA / _altura)

@@ -989,4 +989,12 @@ func _mostra_sprite() -> void:
 	if _soco_t >= 0.0:
 		fase = 0 if _soco_t < _soco_preparo else (1 if _soco_t < _soco_preparo + _soco_ativo else 2)
 	_sprite.mostrar(_modelo, sprite and is_zero_approx(_queda) and not _voando)
-	_sprite.posar(_inclinacao, _soco_lado, fase)
+	# O tronco jogado pela curva e pela pancada, e o bamboleio do guidao,
+	# viram o sprite inteiro gingando; a suspensao e o tremor, ele afundando.
+	var tremido := deg_to_rad(BAMBOLEIO * _bamboleio * sin(_relogio * TAU * BAMBOLEIO_HZ))
+	var ginga := Vector3(
+		atan(_massa.x / TRONCO_ALAVANCA) * 0.5 + tremido * 0.5,
+		_massa.x * 0.5,
+		(_susp.x + _susp.y + _treme.x + _treme.y) * 0.5 - _massa.y
+	)
+	_sprite.posar(_inclinacao, _soco_lado, fase, ginga)

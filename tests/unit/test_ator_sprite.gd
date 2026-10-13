@@ -82,3 +82,20 @@ func test_o_sprite_cresce_com_a_moto() -> void:
 	assert_float(alturas[Entregador.Modelo.XRE_300]).is_greater(alturas[Entregador.Modelo.CG_160])
 	for altura in alturas:
 		assert_float(altura).is_between(1.4, 2.6)
+
+
+func test_entre_dois_quadros_o_quad_gira_o_que_falta() -> void:
+	var ator := _ator(Entregador.Modelo.CG_160)
+	var material := _sprite(ator).material_override as ShaderMaterial
+	var rolagens: Array[float] = []
+	# De 5 em 5 graus, passando pela troca de quadro em 7,5: o desenho mais o
+	# giro tem de andar junto com a moto, sem saltar para tras na troca.
+	for graus: float in [0.0, 5.0, 10.0, 20.0, 40.0]:
+		ator.atualizar(PASSO, 20.0, 0.5, 0.0, false, 1.0, deg_to_rad(graus))
+		var desenhado := (_quadro(ator) - AtorSprite.RETO) * AtorSprite.PASSO_DA_CURVA
+		var total := desenhado + rad_to_deg(material.get_shader_parameter("rolagem"))
+		# A ginga do tronco soma uns graus; a moto manda no resto.
+		assert_float(total).is_equal_approx(graus, 3.0)
+		rolagens.append(total)
+	for i in rolagens.size() - 1:
+		assert_float(rolagens[i + 1]).is_greater(rolagens[i])
