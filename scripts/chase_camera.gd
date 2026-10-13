@@ -109,7 +109,7 @@ func _process(delta: float) -> void:
 	var pos := _base() + _offset + _tremor_de_batida(delta)
 
 	# O giro PERSEGUE a inclinacao em vez de copia-la: ver `cam_lean_rate`.
-	var roll_alvo := -target.lean * tuning.cam_lean_follow
+	var roll_alvo := -target.lean_visual * tuning.cam_lean_follow
 	_roll = lerpf(_roll, roll_alvo, 1.0 - exp(-tuning.cam_lean_rate * delta))
 	_aplica(pos)
 
@@ -129,7 +129,7 @@ func encaixar() -> void:
 	_offset = alvo[0] - target.global_position
 	_mira_offset = alvo[1] - target.global_position
 	_altura = target.global_position.y
-	_roll = -target.lean * tuning.cam_lean_follow
+	_roll = -target.lean_visual * tuning.cam_lean_follow
 	_aplica(_base() + _offset)
 
 

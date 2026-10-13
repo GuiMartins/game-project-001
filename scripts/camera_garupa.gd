@@ -204,7 +204,7 @@ static func ler(moto: PlayerBike, transito: Array[TrafficCar] = []) -> Leitura:
 	var passo := Vector3(depois.x - antes.x, 0.0, depois.z - antes.z)
 	var metros_por_metro := maxf(passo.length(), 0.01)
 	leitura.velocidade = moto.speed * frente.dot(passo / metros_por_metro) / metros_por_metro
-	leitura.inclinacao = moto.lean
+	leitura.inclinacao = moto.lean_visual
 	# O visual da moto fica no chao (`PlayerBike._visual`), e e em volta do
 	# chao que ela inclina: o contato nao anda com a inclinacao.
 	leitura.contato = (

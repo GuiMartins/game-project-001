@@ -18,7 +18,7 @@ func _camera() -> Array:
 	# ligar o giro no F3.
 	tuning.cam_lean_follow = 0.2
 	# Na arvore: a camera le a posicao global da moto. Sem pista, a moto nao
-	# roda fisica - so o `lean` que o teste escreve importa.
+	# roda fisica - so o `lean_visual` que o teste escreve importa.
 	var moto: PlayerBike = auto_free(PlayerBike.new())
 	add_child(moto)
 	var camera: ChaseCamera = auto_free(ChaseCamera.new())
@@ -39,7 +39,7 @@ func test_curva_segurada_chega_inteira() -> void:
 	var camera: ChaseCamera = partes[0]
 	var moto: PlayerBike = partes[1]
 	var tuning: BikeTuning = partes[2]
-	moto.lean = deg_to_rad(30.0)
+	moto.lean_visual = deg_to_rad(30.0)
 	for i in int(3.0 / PASSO):
 		camera._process(PASSO)
 	var esperado := deg_to_rad(30.0) * tuning.cam_lean_follow
@@ -55,7 +55,7 @@ func test_correcao_rapida_quase_nao_chega() -> void:
 	# acertando a moto no corredor.
 	var pior := 0.0
 	for i in int(2.0 / PASSO):
-		moto.lean = deg_to_rad(30.0) * sin(TAU * 3.0 * float(i) * PASSO)
+		moto.lean_visual = deg_to_rad(30.0) * sin(TAU * 3.0 * float(i) * PASSO)
 		camera._process(PASSO)
 		if float(i) * PASSO > 1.0:
 			pior = maxf(pior, absf(_giro(camera)))

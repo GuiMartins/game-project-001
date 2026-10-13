@@ -138,7 +138,7 @@ func test_pino_no_pneu_traseiro() -> void:
 	var largura := float(camera.get_viewport().get_visible_rect().size.x)
 	var pior := 0.0
 	for i in int(4.0 / PASSO):
-		moto.lean = deg_to_rad(30.0) * sin(TAU * float(i) * PASSO)
+		moto.lean_visual = deg_to_rad(30.0) * sin(TAU * float(i) * PASSO)
 		camera._process(PASSO)
 		var contato := CameraGarupa.ler(moto).contato
 		var x := camera.unproject_position(contato).x / largura
