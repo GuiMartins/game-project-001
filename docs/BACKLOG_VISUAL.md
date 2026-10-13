@@ -978,7 +978,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
 
 ### O trânsito
 
-- [x] **V20** — Trânsito do vídeo: denso, quase na velocidade da moto (13/10/2026)
+- [x] **V20** — Trânsito do vídeo: denso, quase na velocidade da moto (13/10/2026, #101)
 
   No vídeo o táxi fica emparelhado quase 2 s e o corredor dura um segundo
   inteiro, porque o trânsito anda **quase na velocidade da moto**: 8–15
