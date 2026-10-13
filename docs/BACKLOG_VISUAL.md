@@ -907,7 +907,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   ao lado da `t2.0s` e foi engrossado. `fps` p50 8,33 ms (refresh de
   120 Hz). Baseline sem variação.
 
-- [x] **V17** — Mobiliário: lixeira, mupi, placa de curva, canteiro (13/10/2026)
+- [x] **V17** — Mobiliário: lixeira, mupi, placa de curva, canteiro (13/10/2026, #98)
 
   Barato, e cada um é um bloco de cor que marca distância: caçamba
   vermelho-alaranjada (cuidado para não competir com a bag do jogador), mupi
