@@ -485,7 +485,7 @@ e no `git log`.
     lanterna da moto também: o shader do entregador não tem canal de
     máscara livre para emissão. Outdoor é a V13, já em cima deste limiar.
 
-- [x] **V13** — Outdoor luminoso e letreiro (12/10/2026)
+- [x] **V13** — Outdoor luminoso e letreiro (12/10/2026, #85)
 
   Depois do céu, a coisa mais clara do quadro do vídeo. Retângulo emissivo nas
   fachadas e no topo dos prédios, com cor viva. Conteúdo inventado: nenhuma
