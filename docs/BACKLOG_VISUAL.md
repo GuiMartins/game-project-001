@@ -526,7 +526,7 @@ O critério dos cinco itens abaixo é um só, e vem do vídeo: **algo passa ao
 lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
 ~0,75 s, de um lado só por vez. Cada item mede isso e o `fps`.
 
-- [x] **V15** — Poste de dois braços (12/10/2026)
+- [x] **V15** — Poste de dois braços (12/10/2026, #88)
 
   O referencial de velocidade mais limpo do vídeo: ornamental, 8–10 m, dois
   braços curvos com luminária. Substitui a caixa de 0,35 × 6 m. O colisor fica
