@@ -326,7 +326,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
   6,6 / 4,6 / 2,0. O rival trocou o `lerp` pela mesma mola, na moto sorteada.
   Baseline sem variação (o banco roda na CG, que dá 1).
 
-- [x] **V05b** 👤 — Rampa no pedido de inclinação do teclado (13/10/2026)
+- [x] **V05b** 👤 — Rampa no pedido de inclinação do teclado (13/10/2026, #91)
 
   A saída (~0,17 s) e a contra-inclinação (−4,6°) da V05 batem com o vídeo.
   A entrada não: com a tecla, o pedido vai a 100% na hora e a moto deita a
