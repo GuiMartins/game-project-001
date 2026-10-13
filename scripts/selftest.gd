@@ -113,6 +113,12 @@ func setup(main: Node) -> void:
 	# Nada aqui sorteia nada: o que varia de uma rodada pra outra mora no
 	# mundo, e a semente dele e fixa (World.setup), com os rivais herdando
 	# dela. Sem isso "regrediu" e "deu azar" viram a mesma coisa.
+	# O banco dirige como analogico, sem a rampa da tecla (V05b): o piloto
+	# automatico e um controlador que liga e desliga a acao a cada passo, e em
+	# toques curtos a rampa nunca sobe - na calcada ele nem chegava a subir. A
+	# rampa e do polegar no teclado; a rede dela e o `test_inclinacao.gd`, e
+	# o que o banco mede continua sendo a mola.
+	Controls.analogico = true
 	_bench_begin()
 	_read_phase_arg()
 	if _fps:

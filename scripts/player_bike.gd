@@ -71,6 +71,8 @@ var find_clear_lateral: Callable = Callable()
 var _vertical_speed: float = 0.0
 ## Velocidade angular da inclinacao, rad/s: a metade da mola que nao aparece.
 var _lean_vel: float = 0.0
+## O pedido de inclinacao depois da rampa do teclado, -1 a 1.
+var _pedido_de_inclinacao: float = 0.0
 ## A mola da inclinacao da moto montada. Nasce na CG, a moto do ator recem-criado.
 var _fisica := FisicaDaMoto.new()
 var _punch_timer: float = -1.0
@@ -205,6 +207,11 @@ func _physics_process(delta: float) -> void:
 			_ride(delta, 0.0, 0.0, 0.0)
 		State.RIDING:
 			var steer := Controls.steer_axis()
+			if not Controls.analogico:
+				_pedido_de_inclinacao = rampa_do_pedido(
+					_pedido_de_inclinacao, steer, delta, tuning.lean_input_ramp
+				)
+				steer = _pedido_de_inclinacao
 			var throttle := Input.get_action_strength("ride_throttle")
 			var brake := Input.get_action_strength("ride_brake")
 			_ride(delta, steer, throttle, brake)
@@ -248,6 +255,20 @@ func _update_lean(delta: float, steer: float) -> void:
 	var passo := passo_da_inclinacao(lean, _lean_vel, target, delta, tuning, _fisica)
 	lean = passo.x
 	_lean_vel = passo.y
+
+
+## O pedido de inclinacao da tecla, em rampa: sobe ate `cru` a 1/`tempo` por
+## segundo e cai seco. Soltar ou trocar de lado parte do zero na hora - a
+## volta e a contra-inclinacao sao da mola, e a rampa so atrasaria a saida que
+## a V05 acertou. Estatica para o teste medir sem montar a moto.
+static func rampa_do_pedido(pedido: float, cru: float, delta: float, tempo: float) -> float:
+	if tempo <= 0.0:
+		return cru
+	if cru * pedido <= 0.0:
+		pedido = 0.0
+	if absf(cru) <= absf(pedido):
+		return cru
+	return move_toward(pedido, cru, delta / tempo)
 
 
 ## Um passo da mola da inclinacao: devolve (angulo, velocidade angular).
@@ -697,6 +718,7 @@ func place_on_track(at_offset: float, at_lateral: float, at_speed: float) -> voi
 	rotation = Vector3(0.0, heading + PI, 0.0)
 	lean = 0.0
 	_lean_vel = 0.0
+	_pedido_de_inclinacao = 0.0
 	speed = at_speed
 	velocity = Vector3(sin(heading), 0.0, cos(heading)) * at_speed
 	_vertical_speed = 0.0

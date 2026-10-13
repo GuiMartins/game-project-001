@@ -35,6 +35,12 @@ const JOY_ACTIONS: Dictionary = {
 	"hit_right": JOY_BUTTON_Y,
 }
 
+## O ultimo pedido de inclinacao veio do stick. O analogico dosa o peso
+## sozinho e nao passa pela rampa do teclado (`BikeTuning.lean_input_ramp`).
+## Comeca falso: quem nunca mexeu no stick esta no teclado - e o banco de
+## provas, que aperta acao sem evento, tambem.
+var analogico: bool = false
+
 
 func _ready() -> void:
 	for action_name: String in ACTIONS:
@@ -53,6 +59,19 @@ func _ready() -> void:
 	# Analogico: stick esquerdo controla a inclinacao.
 	_add_axis("ride_left", JOY_AXIS_LEFT_X, -1.0)
 	_add_axis("ride_right", JOY_AXIS_LEFT_X, 1.0)
+
+
+func _input(event: InputEvent) -> void:
+	# Stick em repouso tambem manda evento de eixo, com ruido perto do zero; so
+	# conta quem passou da deadzone, senao o controle largado na mesa roubava o
+	# teclado.
+	if event is InputEventJoypadMotion:
+		var eixo := event as InputEventJoypadMotion
+		if eixo.axis == JOY_AXIS_LEFT_X and absf(eixo.axis_value) > 0.5:
+			analogico = true
+	elif event is InputEventKey:
+		if event.is_action("ride_left") or event.is_action("ride_right"):
+			analogico = false
 
 
 func _add_axis(action_name: String, axis: JoyAxis, value: float) -> void:

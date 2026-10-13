@@ -132,3 +132,48 @@ func test_cg_e_a_referencia() -> void:
 	assert_float(cg.deitar).is_equal_approx(1.0, 1e-6)
 	assert_float(cg.voltar).is_equal_approx(1.0, 1e-6)
 	assert_float(cg.amortecer).is_equal_approx(1.0, 1e-6)
+
+
+## A rampa do pedido de tecla (V05b): sobe no tempo do slider e cai seco.
+func test_rampa_sobe_no_tempo_do_slider() -> void:
+	var pedido := 0.0
+	var passos := 0
+	while pedido < 1.0 and passos < 1000:
+		pedido = PlayerBike.rampa_do_pedido(pedido, 1.0, PASSO, 0.8)
+		passos += 1
+	assert_float(passos * PASSO).is_equal_approx(0.8, PASSO)
+
+
+func test_rampa_solta_seco_e_troca_de_lado_do_zero() -> void:
+	assert_float(PlayerBike.rampa_do_pedido(0.6, 0.0, PASSO, 0.8)).is_equal(0.0)
+	# Trocar de lado nao desce a rampa ate o zero: parte dele, ja no lado novo.
+	var trocado := PlayerBike.rampa_do_pedido(0.6, -1.0, PASSO, 0.8)
+	assert_float(trocado).is_equal_approx(-PASSO / 0.8, 0.0001)
+
+
+func test_rampa_zero_e_tecla_crua() -> void:
+	assert_float(PlayerBike.rampa_do_pedido(0.0, 1.0, PASSO, 0.0)).is_equal(1.0)
+
+
+## Com a rampa, a CG deita mais perto do video, que vai de 0 a 25 graus em
+## ~1,6 s. A tecla crua chega la em ~0,3 s; a rampa de 0,8 s, em ~0,8 s. O
+## numero exato e do slider, julgado jogando; o teste so guarda que a rampa
+## esta no caminho e atrasa a entrada.
+func test_rampa_deita_devagar_como_o_video() -> void:
+	var tuning := BikeTuning.new()
+	var alvo := deg_to_rad(tuning.max_lean)
+	var vinte_e_cinco := deg_to_rad(25.0)
+	var tempos: Array[float] = []
+	for rampa: float in [0.0, tuning.lean_input_ramp]:
+		var estado := Vector2.ZERO
+		var pedido := 0.0
+		var t := 0.0
+		while estado.x < vinte_e_cinco and t < 5.0:
+			pedido = PlayerBike.rampa_do_pedido(pedido, 1.0, PASSO, rampa)
+			estado = PlayerBike.passo_da_inclinacao(
+				estado.x, estado.y, pedido * alvo, PASSO, tuning
+			)
+			t += PASSO
+		tempos.append(t)
+	print("tempo ate 25 graus: tecla crua %.2f s, rampa %.2f s" % tempos)
+	assert_float(tempos[1]).is_greater(tempos[0] * 1.5)
