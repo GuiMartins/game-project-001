@@ -105,8 +105,8 @@ comparado com `dev.py prova --referencia` (a 90 km/h, que é a da prova, e a
 vídeo (`REFERENCIA_VIDEO.md`) contra os números do `selftest`; jogando, o
 veredito continua com o Guilherme.
 
-**Levantamento, aguardando aprovação.** Desvio e refação viram item novo
-logo abaixo do original (`V08a`, `V11a`) só depois do aval.
+**Aprovado pelo Guilherme em 12/10/2026.** Cada desvio e refação virou item
+aberto logo abaixo do original: V03a, V05b, V07b, V08a, V09a, V11a e V13a.
 
 | Item | Classificação | O que falta |
 | --- | --- | --- |
@@ -203,6 +203,27 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     (folha, lupa e uma 1080p por variante) para quando a pergunta voltar,
     por exemplo depois do céu com nuvem (V14).
 
+- [ ] **V03a** 👤 — Trama de pixel só no gradiente, e mais grossa
+
+  A V03 foi decidida em 11/10, só com o vídeo: as quatro paradas entraram
+  no #72. Nelas o pixel é 2–3× mais grosso que 640×360, mas só no céu, na
+  nuvem e no asfalto borrado, e a trama é em tufo, não grade; a fachada é
+  lisa. O jogo põe o Bayer fino por igual, fachada inclusive, e de perto
+  lê como retícula de jornal, não pixel art.
+
+  - **Referências:** `01_centro` (céu, nuvem e fachada do Theatro),
+    `02_praca_maua` (céu e asfalto da zebra), `03_viaduto`, `04_vertical`
+    (asfalto em bloco); recorte lado a lado em *Revisão dos itens
+    fechados*.
+  - **O que fazer:** variantes no `paleta.gdshader` na
+    `dev.py prova --variantes`: trama pesada pelo gradiente local (some em
+    superfície lisa), e matriz maior ou em bloco de 2 px. Levar a folha com
+    as paradas ao lado para a decisão.
+  - **Recomendação:** manter 640×360 (a fachada da referência tem esse
+    detalhe) e mexer só na trama.
+  - **Aceite:** a decisão escrita aqui; na prova, fachada sem retícula e céu
+    com trama em tufo, perto do recorte da `01_centro`.
+
 ### Enquadramento
 
 - [x] **V04** — Câmera de perseguição perto e baixa (12/10/2026, #68)
@@ -296,6 +317,25 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
   6,6 / 4,6 / 2,0. O rival trocou o `lerp` pela mesma mola, na moto sorteada.
   Baseline sem variação (o banco roda na CG, que dá 1).
 
+- [ ] **V05b** 👤 — Rampa no pedido de inclinação do teclado
+
+  A saída (~0,17 s) e a contra-inclinação (−4,6°) da V05 batem com o vídeo.
+  A entrada não: com a tecla, o pedido vai a 100% na hora e a moto deita a
+  ~60°/s; no vídeo ela deita a 12–25°/s, porque o piloto põe peso aos
+  poucos. A mola está certa; quem entra seco é o pedido.
+
+  - **Referências:** `video_01.mp4` de 2,0 a 3,9 s (0° → 25° em ~1,6 s) e
+    `video_01/moto_ampliada`; números em `REFERENCIA_VIDEO.md`, *A
+    inclinação*.
+  - **O que fazer:** o pedido vem de `Controls.steer_axis()` e entra cru
+    em `PlayerBike._update_lean`. Rampa no pedido de tecla: sobe enquanto
+    segurada e solta seco; analógico passa direto. A taxa vira slider.
+  - **Decisão 👤:** a taxa, jogando. Partida: 0 → máximo em ~0,8 s.
+  - **Mexe no `selftest`** se a rampa ficar no caminho que a prova usa:
+    o baseline anda com o motivo, ou a rampa fica só na leitura da tecla.
+  - **Aceite:** jogando, a troca de faixa curta continua viva e a curva
+    longa deita aos poucos.
+
 - [x] **V06** — Vibração miúda, roda lisa em alta e cabeça no horizonte (12/10/2026, #76)
 
   Três coisas pequenas de pose, todas no `Entregador`, nenhuma na física.
@@ -385,6 +425,20 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     que puxava a manete ao soltar o gás em alta e em toda batida. E o rival
     em cruzeiro segura meio gás, em vez do pulso fechado de quem embala.
 
+- [ ] **V07b** — Bag do vídeo: mais larga que alta, capacete por cima
+
+  A postura da V07 bate. A bag não: no vídeo ela é mais larga que alta,
+  assenta nos ombros e o capacete fica inteiro acima dela; no jogo é quase
+  quadrada, sobe acima do ombro e esconde meio capacete, e a silhueta perde
+  a cabeça.
+
+  - **Referências:** `video_01/moto_ampliada` (os oito quadros),
+    `video_01/t1.0s`; `01_centro`, `02_praca_maua`, `04_vertical`.
+  - **O que fazer:** proporção e altura da `Bag` em `arte/entregador.py`
+    (dimensões em `"bag"` e o `altura_bag`), nas três motos, e regerar.
+  - **Aceite:** na prova de trás o capacete aparece inteiro acima da bag, e
+    os cotovelos continuam passando dela.
+
 ### Velocidade
 
 - [x] **V08** — Borrão radial com máscara de profundidade (12/10/2026)
@@ -427,6 +481,23 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     portão visual em 4 rodadas: não medido** — o `shots` travou nesta
     máquina com 0 quadros, inclusive na `master`; fica com o CI.
 
+- [ ] **V08a** — Borrão que risca o asfalto já em cruzeiro
+
+  A 128 km/h as referências têm o terço de baixo do asfalto todo em risco e
+  a zebra riscada. O jogo, na mesma velocidade (`dev.py prova --kmh 128`),
+  deixa asfalto e zebra quase nítidos e só borra o rival na borda. Duas
+  causas: a força ainda é baixa em cruzeiro, e o asfalto quase liso não tem
+  contraste para virar risco.
+
+  - **Referências:** `01_centro`, `02_praca_maua`, `04_vertical` (asfalto
+    em risco de bloco no terço de baixo); `video_01/t3.0s` a `t6.0s`
+    (zebra e linha virando risco).
+  - **O que fazer:** curva da força em `Borrao` e `borrao.gdshader` (o
+    terço de baixo borra mais que a periferia de cima), e o contraste do
+    asfalto em `arte/chao.py` se o risco não aparecer.
+  - **Aceite:** na folha a 128 km/h o chão lê como a referência; o piloto
+    continua nítido e o rival a 15 m legível. `fps` medido.
+
 ### A rua
 
 - [x] **V09** — Calçada larga até a fachada
@@ -454,6 +525,25 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     estava. A pedido do Guilherme o guard-rail saiu: a moto vai até a fachada
     e bate no prédio, que tem colisor (`scripts/cidade.gd`). A faixa de
     serviço está desenhada, mas não bloqueia — quem bloqueia é o que mora nela.
+
+- [ ] **V09a** — Meio-fio que lê, e calçada de pedra quente
+
+  A largura da V09 bate no corredor. Falta o resto: na referência o
+  meio-fio é alto, com sombra embaixo, e às vezes pintado de amarelo; a
+  calçada é clara e quente, em pedra portuguesa na avenida do Theatro e em
+  placa no *downtown*. No jogo a calçada lê no nível da pista, num
+  cimentado frio. E no largo da V11 ela vira descampado, que nenhuma
+  referência mostra.
+
+  - **Referências:** `01_centro`, `video_01/t0.0s` e `t1.0s` (pedra
+    portuguesa, meio-fio alto com sombra); `t3.0s` (meio-fio amarelo);
+    `t5.0s`, `t6.0s` (placa lisa de *downtown*); `02_praca_maua` (meio-fio
+    alto na curva).
+  - **O que fazer:** altura e face do meio-fio em `road_track.gd`; textura
+    da calçada em `arte/chao.py` com junta de placa e trecho de pedra
+    portuguesa, respeitando a regra de "visto a 180 km/h" do topo dele.
+  - **Aceite:** na prova o meio-fio separa pista e calçada sem a linha de
+    bordo, e o tom da calçada fica perto do da `01_centro`.
 
 - [x] **V10** — Faixa de pedestres e linha de bordo (12/10/2026, #81)
 
@@ -539,6 +629,30 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     e o `baseline_visual.json` andou junto. `fps`: os dois no teto de 120 do
     monitor, p95 8,33 → 8,65 ms.
 
+- [ ] **V11a** 👤 — Refazer a fachada: cânion de pedra bege, não bloco pastel
+
+  A V11 fez a sequência colada e o térreo com loja, e isso fica. O que não
+  lê como a referência é o prédio. No vídeo é um cânion de 8–15 andares em
+  pedra bege e ocre, com cornija, janela com moldura e toldo de cor lisa
+  em todo o térreo, saindo pelo topo do quadro. No jogo são blocos pastel
+  (amarelo, rosa, menta, lilás) de janela chapada, com mural de triângulos
+  que nenhuma referência tem, e o largo com recuo de 8–12 m abre céu e
+  chão vazio.
+
+  - **Referências:** `video_01/t3.0s` a `t6.0s` (o corredor); `01_centro`,
+    `video_01/t0.0s` e `t1.0s` (Theatro e sobrado colonial); `02_praca_maua`
+    (casario e muro). O mural colorido só existe no `03_viaduto` e no
+    `04_vertical`, em muro de via expressa, não em fachada.
+  - **Decisão 👤:** o largo fica (mais curto e sem o recuo vazio) ou sai?
+    **Recomendação:** fica, mas como praça com árvore e gente (V16, V19), e
+    não como chão vazio.
+  - **O que fazer:** paleta e material das fachadas em `arte/predios.py` e
+    `predio.gd` (pedra bege, ocre, creme; cor viva só no toldo e no
+    outdoor), cornija e moldura de janela, prédios de corredor mais altos,
+    mural fora da fachada.
+  - **Aceite:** na folha, o corredor do jogo ao lado de `t5.0s` lê como a
+    mesma rua. `fps` medido.
+
 - [x] **V12** — Glow: outdoor, lanterna e cromo brilhando (12/10/2026, #84)
 
   O vídeo tem *bloom* nos outdoors, nos carros brancos e no cromo. O jogo não
@@ -597,6 +711,22 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     só o outdoor. Baseline visual:
     `visual_familias_de_cor` 48,4 → 66,3, pelas cores de tela novas. `fps`
     igual, no teto de 120.
+
+- [ ] **V13a** — Outdoor deitado, de foto colorida
+
+  Posição e brilho da V13 batem. O formato não: na referência o outdoor é
+  deitado (~16:9), com moldura, e mostra uma foto colorida (gente, praia,
+  produto); no jogo a bandeira é em pé (2,8 × 4,2 m) e a tela é de uma cor
+  só com disco e barras, puxando para o rosa.
+
+  - **Referências:** `video_01/t3.0s` (na esquina, virado para a rua),
+    `t5.0s` e `t6.0s` (na fachada); `01_centro` (mupi iluminado com foto de
+    praia); `03_viaduto` (painel de LED de texto).
+  - **O que fazer:** em `arte/predios.py` (`outdoor`), painel deitado e
+    textura de "foto" inventada, várias cores por tela, sem marca real e
+    sem vermelho dominante (vermelho aceso é freio).
+  - **Aceite:** com o glow da V12, o outdoor continua o ponto mais claro
+    abaixo do horizonte e, ao lado da `t3.0s`, lê como o dela.
 
 - [ ] **V14** — Céu com nuvem
 
