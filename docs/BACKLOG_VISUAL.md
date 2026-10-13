@@ -933,7 +933,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   `fps` p50 8,33 ms (refresh de 120 Hz), com um pico isolado de 76 ms,
   provavelmente compilação de shader. Baseline sem variação.
 
-- [ ] **V18** — Por cima da pista: semáforo suspenso e placa verde
+- [x] **V18** — Por cima da pista: semáforo suspenso e placa verde (13/10/2026)
 
   O "portal" de cruzamento do vídeo e a placa verde de rodovia das imagens
   paradas (pilar 9). **Só cenário**: semáforo com lógica saiu do protótipo de
@@ -946,6 +946,14 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
     (semáforo em braço, com o losango).
   - **Aceite:** nos cruzamentos da V10, o braço do semáforo passa por cima da
     câmera.
+
+  **Resultado:** `Portal` (só cenário, foco sempre no verde): em cada
+  cruzamento, na retenção, um poste do lado direito com braço de 9 m a 6 m
+  de altura e dois focos pendurados encarando quem vem; em cruzamento sim,
+  cruzamento não, um pórtico 30 m antes com a placa verde e azul de 5,4 ×
+  2,6 m sobre as faixas da direita, com nomes de via do Rio em `Label3D`
+  (Linha Vermelha, Av. Brasil, Rodoviária…), sem marca. Colisor só no
+  fuste. `fps` p50 8,33 ms (refresh de 120 Hz). Baseline sem variação.
 
 - [ ] **V19** — Pedestres
 
