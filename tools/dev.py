@@ -929,8 +929,8 @@ def main() -> int:
     p_prova.add_argument("--referencia", action="store_true",
                          help="gera tambem comparacao.png: cada quadro ao lado da referencia")
     p_prova.add_argument("--variantes", action="store_true",
-                         help="gera variantes.png: cada quadro com e sem paleta, dither "
-                              "fraco e a referencia (V03)")
+                         help="gera variantes.png: cada quadro com as variantes de trama "
+                              "do passe de paleta e a referencia (V03a)")
     p_prova.add_argument("--kmh", type=float, default=None,
                          help="velocidade dos quadros andando (padrao 90 km/h)")
     sub.add_parser("fps", help="tempo de quadro da corrida solta, com tela e sem vsync")
