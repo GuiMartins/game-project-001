@@ -31,6 +31,25 @@ func test_a_fachada_olha_para_menos_z() -> void:
 		assert_float(Predio.frente(tipo)).is_greater(caixa.end.z + 0.3)
 
 
+func test_o_outdoor_nao_afasta_o_predio() -> void:
+	# A bandeira do `Deco` avanca 3,5 m da fachada, a 6 m do chao. Se o
+	# `frente` voltar a ser o AABB, o predio recua 2 m e abre um buraco no
+	# corredor - e o jogo continua rodando, so com a rua mais larga ali.
+	var caixa := Predio.malha(Predio.Tipo.DECO).get_aabb()
+	assert_float(Predio.frente(Predio.Tipo.DECO)).is_less(-caixa.position.z - 1.5)
+	# E o toldo ainda conta: ele fica na altura da rua.
+	for tipo: int in Predio.Tipo.values():
+		assert_float(Predio.frente(tipo)).is_greater(1.0)
+
+
+func test_tela_do_outdoor_nao_imita_lanterna() -> void:
+	# Vermelho aceso na altura da rua e freio: e o aviso de que o corredor vai
+	# fechar, e um outdoor vermelho do lado da pista o falsificaria.
+	for cor in Predio.TELAS:
+		var distancia := minf(cor.h, 1.0 - cor.h)
+		assert_float(distancia).is_greater(0.05)
+
+
 func test_a_base_fica_no_chao() -> void:
 	for tipo: int in Predio.Tipo.values():
 		assert_float(Predio.malha(tipo).get_aabb().position.y).is_equal_approx(0.0, 0.01)
@@ -45,7 +64,7 @@ func test_cores_de_fabrica_batem_com_a_textura() -> void:
 	var mascara := Image.load_from_file(
 		ProjectSettings.globalize_path("res://assets/predios/predios_mascara.png")
 	)
-	var fabrica: Array[Color] = [Predio.PINTURA_FABRICA, Predio.LOJA_FABRICA]
+	var fabrica: Array[Color] = [Predio.PINTURA_FABRICA, Predio.LOJA_FABRICA, Predio.TELA_FABRICA]
 	for canal in fabrica.size():
 		var mais_clara := Color.BLACK
 		for y in range(4, albedo.get_height(), 8):
