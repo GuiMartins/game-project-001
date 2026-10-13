@@ -472,7 +472,11 @@ folhas geradas no Google Flow a partir de uma imagem de referência
 ([`arte/flow/`](../arte/flow)), recortadas por
 [`arte/sprites_flow.gd`](../arte/sprites_flow.gd) (`python tools/dev.py
 sprites`): fundo verde fora, borda dura, todos os desenhos alinhados pelo pé
-do pneu traseiro e reduzidos à mesma altura de piloto.
+do pneu traseiro e reduzidos, quadro a quadro, à mesma área de silhueta. A
+IA não desenha o piloto duas vezes no mesmo tamanho (os quadros deitados
+saíram 12% maiores que o reto, e a folha de combate veio com a câmera mais
+baixa), e igualado por folha ou por altura ele inchava a cada troca de
+quadro.
 
 O que o sprite mostra sai do mesmo estado do ator 3D, e por isso mora dentro
 do `Entregador` ([`scripts/ator_sprite.gd`](../scripts/ator_sprite.gd)):

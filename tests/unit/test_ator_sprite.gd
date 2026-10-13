@@ -99,3 +99,29 @@ func test_entre_dois_quadros_o_quad_gira_o_que_falta() -> void:
 		rolagens.append(total)
 	for i in rolagens.size() - 1:
 		assert_float(rolagens[i + 1]).is_greater(rolagens[i])
+
+
+## Pixels opacos do quadro `q` do atlas.
+func _area(atlas: Image, q: int) -> int:
+	var area := 0
+	for y in int(AtorSprite.CELULA.y):
+		for x in int(AtorSprite.CELULA.x):
+			if atlas.get_pixel(q * int(AtorSprite.CELULA.x) + x, y).a > 0.5:
+				area += 1
+	return area
+
+
+func test_todo_quadro_tem_o_tamanho_do_reto() -> void:
+	# A IA desenha cada quadro num tamanho, e o recorte (`arte/sprites_flow.gd`)
+	# e quem iguala. Sem isso o piloto incha e desincha a cada troca de quadro,
+	# e nenhum outro teste ve: o jogo continua rodando.
+	var atlas := AtorSprite.ATLAS.get_image()
+	if atlas.is_compressed():
+		atlas.decompress()
+	var reto := float(_area(atlas, AtorSprite.RETO))
+	for q in AtorSprite.RETO * 2 + 1:
+		assert_float(_area(atlas, q) / reto).is_between(0.97, 1.03)
+	# O soco tem o braco para fora: pode ter mais area, nunca menos.
+	for lado: int in AtorSprite.SOCO:
+		for q: int in AtorSprite.SOCO[lado]:
+			assert_float(_area(atlas, q) / reto).is_between(0.97, 1.15)
