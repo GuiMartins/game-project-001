@@ -1081,8 +1081,10 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   antigos saem byte a byte iguais); com 0 é o esqueleto (laje, pilar, miolo
   do elevador, ferro de espera no topo) e com 8 é a meia-obra, metade de
   baixo vestida. Só o ferro no topo fazia a obra parecer prédio com defeito
-  no último andar, então o corpo inteiro vira obra: **andaime tubular** na
-  frente e nos dois lados (1,2 m para fora, montantes até acima do topo,
+  no último andar, então o corpo inteiro vira obra: **andaime tubular** só
+  na frente, dentro da largura do corpo (o quarteirão encosta um prédio no
+  outro, e andaime nas laterais entrava na parede do vizinho; 1,2 m para
+  fora, montantes até acima do topo,
   piso de tábua a cada 4 m, diagonais alternadas), **lona laranja ou azul**
   semitransparente (alpha de 0,62, numa segunda superfície da malha com
   material próprio; o xadrez de pixel furado que veio antes lia como ruído)
@@ -1098,8 +1100,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   sequencial, e a obra gasta os mesmos dois sorteios da torre que
   substitui, então a cidade que vem depois é a mesma. A planta e o colisor
   são os da torre (o passo e o `lateral` do quarteirão ainda saem da malha
-  dela): o andaime entra 1,2 m no vizinho, e o tapume sai para a calçada sem
-  colisor. O guindaste é o `Guindaste.criar(altura, lanca, giro)`: trechos
+  dela): o andaime e a lona ficam só na frente, dentro da largura do corpo. O guindaste é o `Guindaste.criar(altura, lanca, giro)`: trechos
   de mastro (3 m) e de lança (4 m) repetidos, mais o topo (cabine, torre em
   A, contra-lança com concreto) e o gancho, do mesmo `.glb` e do mesmo
   material, sem sombra (treliça projetada no chão cintila). Em cima da obra

@@ -829,7 +829,7 @@ def torre(rng, prontos=ANDARES_DA_TORRE, nome="Torre", lona=None) -> Peca:
     gerador, e nao um modelo a parte, para a obra ter exatamente a planta, a
     altura e a loja do terreo da torre que ela vai virar.
 
-    Com `lona`, a obra ganha andaime em volta, descendo ate a calcada, e
+    Com `lona`, a obra ganha andaime na frente, descendo ate a calcada, e
     lona na cor dada (V17a, segunda passada): so o ferro no topo fazia a obra
     parecer um predio com defeito no ultimo andar, e o que le "obra" no
     quadro e o corpo inteiro embrulhado.
@@ -901,17 +901,20 @@ ANDAIME_FORA = 1.2
 
 
 def andaime_e_lona(p, rng, W, D, TOPO, lona) -> None:
-    """Andaime tubular na frente e nos dois lados, com lona por cima.
+    """Andaime tubular na frente da obra, com lona por cima.
 
-    O andaime sai 1,2 m da parede e a lona 8 cm alem dele, em paineis de uma
-    baia por tres andares com falhas sorteadas: lona inteira vira caixa
-    colorida, e as falhas deixam ver o concreto por tras. Os dois andares de
-    cima ficam sem lona, que e como a obra real termina: a tela sobe atras do
-    pedreiro. Sem tapume nem marquise na calcada: tampa de madeira de 2,4 m
-    escondia o andaime do chao, que e justamente o que le "obra" de perto.
+    So a frente, e dentro da largura do corpo: o `cidade.gd` encosta um
+    predio no outro, e andaime ou lona nas laterais entravam na parede do
+    vizinho. O andaime sai 1,2 m da parede e a lona 8 cm alem dele, em
+    paineis de uma baia por tres andares com falhas sorteadas: lona inteira
+    vira caixa colorida, e as falhas deixam ver o concreto por tras. Os dois
+    andares de cima ficam sem lona, que e como a obra real termina: a tela
+    sobe atras do pedreiro. Sem tapume nem marquise na calcada: tampa de
+    madeira de 2,4 m escondia o andaime do chao, que e justamente o que le
+    "obra" de perto.
     """
     F = ANDAIME_FORA
-    X0, Y0 = W * 0.5 + F, D * 0.5 + F
+    X0, Y0 = W * 0.5 - 0.05, D * 0.5 + F
     ALTURA = TOPO + 2.0
     NIVEL = 4.0
     niveis = [2.0 + NIVEL * i for i in range(int((TOPO - 2.0) // NIVEL) + 1)]
@@ -920,20 +923,13 @@ def andaime_e_lona(p, rng, W, D, TOPO, lona) -> None:
         return [a + (b - a) * i / (n - 1) for i in range(n)]
 
     frente_x = espaco(-X0, X0, 7)
-    lado_y = espaco(-D * 0.5, Y0, 5)
     # Montantes: um tubo inteiro por prumada, do chao ate acima do topo.
     for x in frente_x:
         p.caixa((x, Y0, ALTURA * 0.5), (0.1, 0.1, ALTURA), "aluminio")
-    for lado in (-1.0, 1.0):
-        for y in lado_y[:-1]:
-            p.caixa((lado * X0, y, ALTURA * 0.5), (0.1, 0.1, ALTURA), "aluminio")
     for z in niveis:
-        # Travessas e o piso de tabua de cada nivel.
+        # Travessa e piso de tabua de cada nivel.
         p.caixa((0, Y0, z), (X0 * 2.0, 0.08, 0.08), "aluminio")
         p.caixa((0, D * 0.5 + F * 0.5, z - 0.06), (X0 * 2.0, F, 0.05), "madeira")
-        for lado in (-1.0, 1.0):
-            p.caixa((lado * X0, (Y0 - D * 0.5) * 0.5, z), (0.08, D + F, 0.08), "aluminio")
-            p.caixa((lado * (W * 0.5 + F * 0.5), (Y0 - D * 0.5) * 0.5, z - 0.06), (F, D + F, 0.05), "madeira")
     # Diagonais, uma baia sim e outra nao, alternando o sentido.
     baia = frente_x[1] - frente_x[0]
     ang = math.degrees(math.atan2(baia, NIVEL))
@@ -942,18 +938,12 @@ def andaime_e_lona(p, rng, W, D, TOPO, lona) -> None:
         for b in range(len(frente_x) - 1):
             if (b + i) % 2 == 0:
                 x = (frente_x[b] + frente_x[b + 1]) * 0.5
-                p.caixa((x, Y0, z + NIVEL * 0.5), (0.06, 0.06, comprimento), "aluminio",
-                        rot_y=ang if b % 2 == 0 else -ang)
-    baia_y = lado_y[1] - lado_y[0]
-    ang_y = math.degrees(math.atan2(baia_y, NIVEL))
-    comp_y = math.hypot(baia_y, NIVEL) - 0.14
-    for i, z in enumerate(niveis[:-1]):
-        for b in range(len(lado_y) - 1):
-            if (b + i) % 2 == 1:
-                y = (lado_y[b] + lado_y[b + 1]) * 0.5
-                for lado in (-1.0, 1.0):
-                    p.caixa((lado * X0, y, z + NIVEL * 0.5), (0.06, 0.06, comp_y), "aluminio",
-                            rot_x=ang_y if b % 2 == 0 else -ang_y)
+                p.caixa(
+                    (x, Y0, z + NIVEL * 0.5),
+                    (0.06, 0.06, comprimento),
+                    "aluminio",
+                    rot_y=ang if b % 2 == 0 else -ang,
+                )
 
     # Lona: paineis de uma baia por tres andares, com falhas.
     bloco = 9.0
@@ -965,13 +955,8 @@ def andaime_e_lona(p, rng, W, D, TOPO, lona) -> None:
             if rng.random() < 0.18:
                 continue
             origem = Vector((frente_x[b], Y0 + 0.08, z))
-            painel_de_lona(p, rng, origem, Vector((frente_x[b + 1] - frente_x[b], 0, 0)), z1 - z, Vector((0, 1, 0)), lona)
-        for lado in (-1.0, 1.0):
-            for b in range(len(lado_y) - 1):
-                if rng.random() < 0.18:
-                    continue
-                origem = Vector((lado * (X0 + 0.08), lado_y[b], z))
-                painel_de_lona(p, rng, origem, Vector((0, lado_y[b + 1] - lado_y[b], 0)), z1 - z, Vector((lado, 0, 0)), lona)
+            largura = Vector((frente_x[b + 1] - frente_x[b], 0, 0))
+            painel_de_lona(p, rng, origem, largura, z1 - z, Vector((0, 1, 0)), lona)
         z = z1
 
 
