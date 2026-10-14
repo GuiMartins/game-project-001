@@ -1120,6 +1120,14 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   fica em p50 8,33 ms e pior quadro 9,09 ms (refresh de 120 Hz). Baseline
   sem variação.
 
+  **Depois (#111):** o "sem lógica" e o "ninguém atravessa a pista" caíram.
+  A gente do `MultiMesh` anda e vira no vértice (`pedestres.gdshader`,
+  relógio no `Multidao`); quem atravessa a rua, desce do carro, pula da
+  frente da moto ou voa no atropelo é a `Pessoa`, articulada, posada no
+  código. A travessia (`Travessia`) é 4 na zebra das transversais para 1
+  fora da faixa, na avenida. Todo pedestre tem atropelo, com mancha de
+  sangue (`Sangue`), e a calçada perdeu o teto de velocidade.
+
 ### O trânsito
 
 - [x] **V20** — Trânsito do vídeo: denso, quase na velocidade da moto (13/10/2026, #101)

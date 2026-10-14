@@ -256,6 +256,11 @@ saber onde **não** há rede faz parte do contrato.
 | `scripts/carro.gd` | Os carros do trânsito por dentro: roda, mola, porta, luz e quem dirige. |
 | `arte/carros.py` | Gera hatch, sedã, SUV, táxi, ônibus, baú e van no Blender. Fonte do `assets/carros/`, que é build. |
 | `scripts/ik.gd` | IK de dois ossos, dos braços do piloto e de quem dirige. |
+| `scripts/pedestres.gd`, `scripts/multidao.gd` | A gente da calçada, em `MultiMesh`: onde nasce, o relógio e o atropelo. Quem anda é o `pedestres.gdshader`, no vértice, e o `Multidao` refaz a conta dele para saber onde cada um está. |
+| `scripts/pessoa.gd` | A pessoa articulada, posada no código: atravessa, desce do carro, pula da frente da moto e voa no atropelo. |
+| `scripts/travessia.gd` | Quem atravessa a rua: na zebra das transversais e fora da faixa, na avenida. |
+| `scripts/sangue.gd` | A mancha de quem foi atropelado, um `Decal`. O `World` limpa a cada largada. |
+| `arte/pedestres.py` | Gera a pessoa do `MultiMesh` e a articulada (`Articulada`). Fonte do `assets/pedestres/`, que é build. |
 | `arte/chao.py` | Gera as texturas de asfalto e calçada (`assets/visual/`). As regras de "visto a 180 km/h" estão no topo dele. |
 | `arte/paleta.py` | Gera os LUTs de cor de cada hora (`assets/visual/lut_*.png`). O clima da tela se ajusta ali. |
 | `scripts/paleta.gdshader` | Quantização e dither: o último passe do mundo, abaixo da HUD. |
