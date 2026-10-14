@@ -1,7 +1,8 @@
 class_name Pedestres
 extends RefCounted
 ## A gente da calcada (V19): parada e andando, dos dois lados, e mais gente na
-## esquina. Sem logica nenhuma, sem colisor, e ninguem atravessa a pista.
+## esquina. Sem logica nenhuma e sem colisor. Quem atravessa a rua, desce do
+## carro ou pula da frente da moto e a `Pessoa`, articulada, e sao poucas.
 ##
 ## Um `MultiMesh` por pose: sao mais de mil pessoas por corrida, e cada uma
 ## como no proprio seria mil chamadas de desenho. A malha e uma so, de pe, e
@@ -14,7 +15,8 @@ enum Pose { PARADO, ANDANDO }
 const CENA: PackedScene = preload("res://assets/pedestres/pedestres.glb")
 const SHADER: Shader = preload("res://scripts/pedestres.gdshader")
 const NOS: Array[String] = ["Parado", "Andando"]
-## O grupo dos `Multidao`, para o `World` repassar a cadencia do ator.
+## O grupo de quem anda na rua, `Multidao` e `Pessoa`, para o `World` repassar
+## a cadencia do ator.
 const GRUPO_NOS: StringName = &"pedestres"
 
 ## As camisas. Cor de roupa de rua: clara e lisa, e nenhuma mais saturada que
@@ -36,6 +38,7 @@ const GRUPO := Vector2i(1, 3)
 const ESQUINA := Vector2i(3, 6)
 
 static var _malha: Mesh
+static var _materiais: Dictionary[String, ShaderMaterial] = {}
 
 
 ## Espalha a gente pela calcada da avenida em `props`. Entre a faixa de
@@ -125,14 +128,23 @@ static func malha() -> Mesh:
 		assert(no != null, "pedestres.glb sem o no Pessoa")
 		_malha = no.mesh
 		for s in _malha.get_surface_count():
-			var mat := _malha.surface_get_material(s) as BaseMaterial3D
-			var novo := ShaderMaterial.new()
-			novo.shader = SHADER
-			novo.set_shader_parameter(&"cor", mat.albedo_color)
-			novo.set_shader_parameter(&"roupa", mat.resource_name == "roupa")
-			_malha.surface_set_material(s, novo)
+			_malha.surface_set_material(s, material(_malha.surface_get_material(s)))
 		cena.free()
 	return _malha
+
+
+## O material do shader no lugar de `mat`, um por material do `.glb`, e o
+## mesmo para a malha do `MultiMesh` e para as pecas da `Pessoa`.
+static func material(mat: Material) -> ShaderMaterial:
+	var nome := mat.resource_name
+	if not _materiais.has(nome):
+		var novo := ShaderMaterial.new()
+		novo.shader = SHADER
+		novo.set_shader_parameter(&"cor", (mat as BaseMaterial3D).albedo_color)
+		novo.set_shader_parameter(&"roupa", nome == "roupa")
+		novo.set_shader_parameter(&"e_pele", nome == "pele")
+		_materiais[nome] = novo
+	return _materiais[nome]
 
 
 ## Os pedestres de uma pose. So o relogio deles mora aqui: com o mundo pausado,

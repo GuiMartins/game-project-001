@@ -80,8 +80,12 @@ class Peca:
         bmesh.ops.transform(self.bm, matrix=Matrix.Translation(Vector(centro)), verts=verts)
         self._pinta({f for v in verts for f in v.link_faces}, "pele", "corpo")
 
-    def objeto(self, materiais, colecao, x) -> bpy.types.Object:
+    def objeto(self, materiais, colecao, x, pai=None, origem=(0.0, 0.0, 0.0)) -> bpy.types.Object:
+        """`origem` e a articulacao, em metros da pessoa: a malha e levada para
+        ela ficar na origem do objeto, e o objeto vai para ela dentro do `pai`."""
         bm = self.bm
+        origem = Vector(origem)
+        bmesh.ops.translate(bm, vec=-origem, verts=bm.verts[:])
         bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method="FIXED", ngon_method="EAR_CLIP")
         bm.faces.index_update()
         posto = [0] * len(bm.faces)
@@ -95,7 +99,11 @@ class Peca:
         for mat in materiais:
             malha.materials.append(mat)
         obj = bpy.data.objects.new(self.nome, malha)
-        obj.location.x = x
+        obj.location = origem + Vector((x, 0.0, 0.0))
+        if pai is not None:
+            obj.parent = pai
+            obj.location = origem - Vector(pai["origem"])
+        obj["origem"] = origem
         colecao.objects.link(obj)
         return obj
 
@@ -119,6 +127,54 @@ def pessoa(nome: str, passo: float) -> Peca:
     p.cabeca((0.0, 0.01, ombro + 0.22))
     p.caixa((0.0, -0.02, ombro + 0.3), (0.22, 0.22, 0.08), "cabelo")
     return p
+
+
+# Joelho da articulada. Na de pe ele nao existe: a perna e uma caixa so.
+JOELHO = 0.48
+
+
+def articulada(materiais, colecao, x) -> bpy.types.Object:
+    """A mesma pessoa em pecas, cada uma com a origem na articulacao, para o
+    `Pessoa` do jogo posar no codigo: atravessar a rua, sair do carro, pular
+    da frente da moto. O `MultiMesh` nao serve para isso, e sao poucas.
+
+        Articulada          vazio, no chao entre os pes
+          Quadril           vazio, no quadril: sobe e desce ao sentar
+            Tronco          camisa, pescoco e cabeca; tomba para a frente
+              Braco_E/D     no ombro
+            Coxa_E/D        no quadril de cada lado
+              Canela_E/D    no joelho, com o sapato
+    """
+    raiz = bpy.data.objects.new("Articulada", None)
+    raiz.location.x = x
+    raiz["origem"] = Vector((0.0, 0.0, 0.0))
+    colecao.objects.link(raiz)
+    quadril, ombro = 0.92, 1.42
+    q = bpy.data.objects.new("Quadril", None)
+    q.parent = raiz
+    q.location = (0.0, 0.0, quadril)
+    q["origem"] = Vector((0.0, 0.0, quadril))
+    colecao.objects.link(q)
+
+    t = Peca("Tronco")
+    t.caixa((0.0, 0.0, (quadril + ombro) * 0.5 + 0.02), (0.44, 0.22, ombro - quadril + 0.08), "roupa")
+    t.caixa((0.0, 0.0, ombro + 0.06), (0.1, 0.1, 0.1), "pele")
+    t.cabeca((0.0, 0.01, ombro + 0.22))
+    t.caixa((0.0, -0.02, ombro + 0.3), (0.22, 0.22, 0.08), "cabelo")
+    tronco = t.objeto(materiais, colecao, 0.0, q, (0.0, 0.0, quadril))
+    for lado, nome in ((-1.0, "E"), (1.0, "D")):
+        b = Peca("Braco_" + nome)
+        b.caixa((lado * 0.27, 0.0, ombro - 0.3), (0.1, 0.11, 0.6), "pele")
+        b.caixa((lado * 0.27, 0.0, ombro - 0.08), (0.12, 0.13, 0.18), "roupa")
+        b.objeto(materiais, colecao, 0.0, tronco, (lado * 0.27, 0.0, ombro))
+        c = Peca("Coxa_" + nome)
+        c.caixa((lado * 0.1, 0.0, (quadril + JOELHO) * 0.5), (0.14, 0.16, quadril - JOELHO), "calca")
+        coxa = c.objeto(materiais, colecao, 0.0, q, (lado * 0.1, 0.0, quadril))
+        k = Peca("Canela_" + nome)
+        k.caixa((lado * 0.1, 0.0, JOELHO * 0.5), (0.13, 0.15, JOELHO), "calca")
+        k.caixa((lado * 0.1, 0.05, 0.04), (0.13, 0.26, 0.08), "cabelo")
+        k.objeto(materiais, colecao, 0.0, coxa, (lado * 0.1, 0.0, JOELHO))
+    return raiz
 
 
 def material(nome, cor) -> bpy.types.Material:
@@ -149,6 +205,8 @@ def main() -> None:
     bpy.context.scene.collection.children.link(colecao)
     materiais = [material(*m) for m in MATERIAIS]
     objetos = [pessoa("Pessoa", 0.0).objeto(materiais, colecao, 0.0)]
+    raiz = articulada(materiais, colecao, 1.5)
+    objetos += [raiz, *raiz.children_recursive]
     for o in bpy.data.objects:
         o.select_set(o in objetos)
     bpy.context.view_layer.objects.active = objetos[0]
@@ -167,6 +225,8 @@ def main() -> None:
         export_extras=False,
     )
     for obj in objetos:
+        if obj.type != "MESH":
+            continue
         dims = obj.dimensions
         print("%s: %d tris, %.1f x %.1f x %.1f m" % (obj.name, len(obj.data.polygons), dims.x, dims.y, dims.z))
 

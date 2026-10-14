@@ -348,6 +348,14 @@ func _set_door(open: bool) -> void:
 	if open:
 		_carro.abrir_porta(_door_side)
 		door_opened.emit()
+		# A porta na cara e alguem descendo: ela bate quando o timer acaba, e
+		# a mao de quem desceu chega nela nessa hora. A `ABERTA` fica aberta
+		# de vez, longe de quem olha, e nao tem ninguem saindo.
+		if _porta == Porta.NA_CARA and track != null:
+			var meio_fio := RoadTrack.half_width() * signf(lateral)
+			# O meio da calcada andavel, no X do carro.
+			var calcada_x := meio_fio - lateral + signf(lateral) * RoadTrack.SHOULDER * 0.5
+			_carro.desembarcar(_door_timer, calcada_x)
 	else:
 		_carro.fechar_portas()
 

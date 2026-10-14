@@ -11,6 +11,8 @@ shader_type spatial;
 uniform vec3 cor : source_color = vec3(1.0);
 // A camisa: so ela leva a cor da instancia, e pele, calca e cabelo nao.
 uniform bool roupa = false;
+// A pele, que a `Pessoa` troca para sair do carro com a pele de quem dirigia.
+uniform bool e_pele = false;
 
 // Segundos de jogo, e nao `TIME`: com o mundo pausado, ou congelado na prova
 // visual, a gente congela junto, e o quadro da prova sai igual toda vez.
@@ -21,6 +23,12 @@ instance uniform float tempo = 0.0;
 instance uniform float cadencia = 0.0;
 // 1 anda pela calcada; 0 fica parado, so passando o peso de um pe para outro.
 instance uniform float andando = 0.0;
+// A `Pessoa`, articulada, e posada no codigo: o vertice fica onde esta. Ela
+// nao e `MultiMesh`, entao a cor vem daqui, e nao do `COLOR`.
+instance uniform float articulado = 0.0;
+instance uniform vec3 camisa : source_color = vec3(1.0);
+// Alfa 0 e a pele do modelo.
+instance uniform vec4 pele : source_color = vec4(0.0);
 
 // Os pivos de `arte/pedestres.py`.
 const float QUADRIL = 0.92;
@@ -64,39 +72,44 @@ vec3 normal_x(vec3 n, float a) {
 
 
 void vertex() {
-	float id = float(INSTANCE_ID);
-	float s1 = sorteio(id);
-	float s2 = sorteio(id + 17.0);
-	float pose = cadencia > 0.0 ? floor(tempo * cadencia) / cadencia : tempo;
-	int parte = int(round(UV.x * 8.0));
-	float lado = (parte == 1 || parte == 3) ? -1.0 : 1.0;
-	if (andando > 0.5) {
-		// De 1,1 a 1,6 m/s: o passo de quem anda na rua, sem fila indiana.
-		float vel = mix(1.1, 1.6, s1);
-		float onde = mod(tempo * vel + s2 * TRECHO, TRECHO);
-		float a = BALANCO * sin(TAU * (pose * vel + s2 * TRECHO) / PASSADA);
-		if (parte == 1 || parte == 2) {
-			VERTEX = gira_x(VERTEX, QUADRIL, a * lado);
-			NORMAL = normal_x(NORMAL, a * lado);
-		} else if (parte == 3 || parte == 4) {
-			VERTEX = gira_x(VERTEX, OMBRO, -0.8 * a * lado);
-			NORMAL = normal_x(NORMAL, -0.8 * a * lado);
+	// A `Pessoa` e posada no codigo, e o Godot nao aceita `return` no
+	// `vertex()`: ela simplesmente nao entra.
+	if (articulado < 0.5) {
+		float id = float(INSTANCE_ID);
+		float s1 = sorteio(id);
+		float s2 = sorteio(id + 17.0);
+		float pose = cadencia > 0.0 ? floor(tempo * cadencia) / cadencia : tempo;
+		int parte = int(round(UV.x * 8.0));
+		float lado = (parte == 1 || parte == 3) ? -1.0 : 1.0;
+		if (andando > 0.5) {
+			// De 1,1 a 1,6 m/s: o passo de quem anda na rua, sem fila indiana.
+			float vel = mix(1.1, 1.6, s1);
+			float onde = mod(tempo * vel + s2 * TRECHO, TRECHO);
+			float a = BALANCO * sin(TAU * (pose * vel + s2 * TRECHO) / PASSADA);
+			if (parte == 1 || parte == 2) {
+				VERTEX = gira_x(VERTEX, QUADRIL, a * lado);
+				NORMAL = normal_x(NORMAL, a * lado);
+			} else if (parte == 3 || parte == 4) {
+				VERTEX = gira_x(VERTEX, OMBRO, -0.8 * a * lado);
+				NORMAL = normal_x(NORMAL, -0.8 * a * lado);
+			}
+			VERTEX *= clamp(min(onde, TRECHO - onde) / BROTA, 0.0, 1.0);
+			// A frente do modelo e -Z.
+			VERTEX.z -= onde - TRECHO * 0.5;
+		} else {
+			// O peso de um pe para o outro: o corpo inteiro tomba um fio para o
+			// lado, em volta dos pes, num ritmo de 2,5 a 4 s por ida e volta.
+			float a = 0.03 * sin(TAU * (pose / mix(2.5, 4.0, s1) + s2));
+			float c = cos(a);
+			float s = sin(a);
+			VERTEX = vec3(VERTEX.x * c - VERTEX.y * s, VERTEX.x * s + VERTEX.y * c, VERTEX.z);
+			NORMAL = vec3(NORMAL.x * c - NORMAL.y * s, NORMAL.x * s + NORMAL.y * c, NORMAL.z);
 		}
-		VERTEX *= clamp(min(onde, TRECHO - onde) / BROTA, 0.0, 1.0);
-		// A frente do modelo e -Z.
-		VERTEX.z -= onde - TRECHO * 0.5;
-	} else {
-		// O peso de um pe para o outro: o corpo inteiro tomba um fio para o
-		// lado, em volta dos pes, num ritmo de 2,5 a 4 s por ida e volta.
-		float a = 0.03 * sin(TAU * (pose / mix(2.5, 4.0, s1) + s2));
-		float c = cos(a);
-		float s = sin(a);
-		VERTEX = vec3(VERTEX.x * c - VERTEX.y * s, VERTEX.x * s + VERTEX.y * c, VERTEX.z);
-		NORMAL = vec3(NORMAL.x * c - NORMAL.y * s, NORMAL.x * s + NORMAL.y * c, NORMAL.z);
 	}
 }
 
 
 void fragment() {
-	ALBEDO = roupa ? cor * COLOR.rgb : cor;
+	vec3 c = roupa ? cor * COLOR.rgb * camisa : cor;
+	ALBEDO = e_pele && pele.a > 0.5 ? pele.rgb : c;
 }

@@ -113,6 +113,8 @@ var _crash_grace: float = 0.0
 
 
 func _ready() -> void:
+	# Quem esta na rua pula da frente dela (`Pessoa`).
+	add_to_group(Pessoa.GRUPO_MOTOS)
 	collision_layer = Layers.PLAYER
 	collision_mask = Layers.WORLD | Layers.RIVAL
 	motion_mode = CharacterBody3D.MOTION_MODE_FLOATING

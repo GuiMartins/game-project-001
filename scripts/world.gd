@@ -111,6 +111,7 @@ var run := RaceRun.new()
 
 var traffic: Array[TrafficCar] = []
 var rivals: Array[RivalBike] = []
+var travessia: Travessia
 var _rng := RandomNumberGenerator.new()
 var _spawn_cursor: float = 0.0
 var _position_event_timer: float = 0.0
@@ -152,6 +153,12 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	borrao.setup(tuning, player)
 	player.marcar_foco()
 
+	# Sorteio proprio, como a cidade: quem atravessa a rua nao mexe no `_rng`.
+	travessia = Travessia.new()
+	travessia.name = "Travessia"
+	add_child(travessia)
+	travessia.setup(self, track, hash(_rng.seed + 2))
+
 	_spawn_traffic()
 	_sync_rival_pool()
 	start_race()
@@ -180,6 +187,7 @@ func start_race(grid_offset: float = 0.0, at_speed: float = 0.0) -> void:
 		rivals[i].reset_race(rival_slot.x, rival_slot.y, run.distance_total)
 	_position_event_timer = 0.0
 	scatter_traffic_ahead(player.track_offset)
+	travessia.reiniciar()
 
 
 ## Onde o corredor `index` larga: fila dupla, corredores alternados, o de
@@ -520,9 +528,8 @@ func _aplica_ator() -> void:
 	# A gente da calcada pula de pose no mesmo ritmo, senao ela fica lisa num
 	# mundo travado, ou travada num liso.
 	for no in get_tree().get_nodes_in_group(Pedestres.GRUPO_NOS):
-		var multidao := no as Pedestres.Multidao
-		if multidao.cadencia != cadencia:
-			multidao.cadencia = cadencia
+		if no.get(&"cadencia") != cadencia:
+			no.set(&"cadencia", cadencia)
 
 
 func _physics_process(delta: float) -> void:
