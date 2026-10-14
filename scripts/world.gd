@@ -505,9 +505,9 @@ func _aplica_ceu() -> void:
 			_ceu.set_shader_parameter(uniforme, valor)
 
 
-## Sprite ou modelo, e a cadencia da pose, em todo corredor. A cada quadro, e nao so quando o slider
-## mexe: rival que entra depois (R) nasce em 3D e tem de ser trocado tambem. O
-## ator ignora o pedido que nao muda nada.
+## Sprite ou modelo, e a cadencia da pose, em todo corredor e nos pedestres. A
+## cada quadro, e nao so quando o slider mexe: rival que entra depois (R) nasce
+## em 3D e tem de ser trocado tambem. O ator ignora o pedido que nao muda nada.
 func _aplica_ator() -> void:
 	var ligado := world_tuning.ator_sprite == 1
 	var cadencia := float(world_tuning.ator_cadencia)
@@ -517,6 +517,12 @@ func _aplica_ator() -> void:
 	for rival in rivals:
 		rival.usar_sprite(ligado)
 		rival.usar_cadencia(cadencia)
+	# A gente da calcada pula de pose no mesmo ritmo, senao ela fica lisa num
+	# mundo travado, ou travada num liso.
+	for no in get_tree().get_nodes_in_group(Pedestres.GRUPO_NOS):
+		var multidao := no as Pedestres.Multidao
+		if multidao.cadencia != cadencia:
+			multidao.cadencia = cadencia
 
 
 func _physics_process(delta: float) -> void:

@@ -4,15 +4,18 @@ extends RefCounted
 ## esquina. Sem logica nenhuma, sem colisor, e ninguem atravessa a pista.
 ##
 ## Um `MultiMesh` por pose: sao mais de mil pessoas por corrida, e cada uma
-## como no proprio seria mil chamadas de desenho. A camisa e a superficie
-## `roupa` do modelo, branca, que a cor da instancia pinta: o
-## `vertex_color_use_as_albedo` faz o `MultiMesh` multiplicar a cor de cada
-## pessoa so ali, e pele, calca e cabelo ficam como foram pintados.
+## como no proprio seria mil chamadas de desenho. A malha e uma so, de pe, e
+## quem anda e balanca e o `pedestres.gdshader`, no vertice: `MultiMesh` nao
+## tem esqueleto. A camisa e a superficie `roupa` do modelo, branca, que a cor
+## da instancia pinta; pele, calca e cabelo ficam como foram pintados.
 
 enum Pose { PARADO, ANDANDO }
 
 const CENA: PackedScene = preload("res://assets/pedestres/pedestres.glb")
+const SHADER: Shader = preload("res://scripts/pedestres.gdshader")
 const NOS: Array[String] = ["Parado", "Andando"]
+## O grupo dos `Multidao`, para o `World` repassar a cadencia do ator.
+const GRUPO_NOS: StringName = &"pedestres"
 
 ## As camisas. Cor de roupa de rua: clara e lisa, e nenhuma mais saturada que
 ## a bag, que tem que ser a coisa mais viva da tela.
@@ -32,7 +35,7 @@ const GRUPO := Vector2i(1, 3)
 ## Na esquina junta mais gente, esperando para atravessar a rua que cruza.
 const ESQUINA := Vector2i(3, 6)
 
-static var _malhas: Array[Mesh] = []
+static var _malha: Mesh
 
 
 ## Espalha a gente pela calcada da avenida em `props`. Entre a faixa de
@@ -96,28 +99,56 @@ static func _multimesh(pose: Pose, gente: Array) -> MultiMeshInstance3D:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
-	mm.mesh = malha(pose)
+	mm.mesh = malha()
 	mm.instance_count = gente.size()
 	for i in gente.size():
 		mm.set_instance_transform(i, gente[i][0])
 		mm.set_instance_color(i, gente[i][1])
-	var mmi := MultiMeshInstance3D.new()
+	var mmi := Multidao.new()
 	mmi.name = "Pedestres" + NOS[pose]
 	mmi.multimesh = mm
+	mmi.set_instance_shader_parameter(&"andando", 1.0 if pose == Pose.ANDANDO else 0.0)
+	# O shader leva cada um ate meio trecho para frente ou para tras, longe do
+	# transform que o `MultiMesh` usa para saber o que esta na tela.
+	mmi.extra_cull_margin = 6.0
+	mmi.add_to_group(GRUPO_NOS)
 	return mmi
 
 
-static func malha(pose: Pose) -> Mesh:
-	if _malhas.is_empty():
+## A pessoa de pe, com o material de cada superficie trocado pelo shader na
+## mesma cor. Compartilhada por toda corrida: o que anima vem de cada
+## `Multidao`, e nao do material.
+static func malha() -> Mesh:
+	if _malha == null:
 		var cena := CENA.instantiate()
-		for nome in NOS:
-			var no := cena.find_child(nome, true, false) as MeshInstance3D
-			assert(no != null, "pedestres.glb sem o no %s" % nome)
-			var m := no.mesh
-			for s in m.get_surface_count():
-				var mat := m.surface_get_material(s) as BaseMaterial3D
-				if mat != null and mat.resource_name == "roupa":
-					mat.vertex_color_use_as_albedo = true
-			_malhas.append(m)
+		var no := cena.find_child("Pessoa", true, false) as MeshInstance3D
+		assert(no != null, "pedestres.glb sem o no Pessoa")
+		_malha = no.mesh
+		for s in _malha.get_surface_count():
+			var mat := _malha.surface_get_material(s) as BaseMaterial3D
+			var novo := ShaderMaterial.new()
+			novo.shader = SHADER
+			novo.set_shader_parameter(&"cor", mat.albedo_color)
+			novo.set_shader_parameter(&"roupa", mat.resource_name == "roupa")
+			_malha.surface_set_material(s, novo)
 		cena.free()
-	return _malhas[pose]
+	return _malha
+
+
+## Os pedestres de uma pose. So o relogio deles mora aqui: com o mundo pausado,
+## ou congelado na prova, ele para junto, e o `TIME` do shader nao pararia.
+class Multidao:
+	extends MultiMeshInstance3D
+
+	## Poses por segundo, repassada pelo `World` de `WorldTuning.ator_cadencia`.
+	var cadencia: float = 0.0:
+		set(valor):
+			cadencia = valor
+			set_instance_shader_parameter(&"cadencia", valor)
+	var _tempo: float = 0.0
+
+	# No passo de fisica, e nao no quadro: a prova roda um numero exato de
+	# passos, e o quadro dela tem de sair igual em toda maquina.
+	func _physics_process(delta: float) -> void:
+		_tempo += delta
+		set_instance_shader_parameter(&"tempo", _tempo)
