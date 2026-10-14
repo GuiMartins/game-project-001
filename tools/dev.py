@@ -758,7 +758,8 @@ def cmd_fps(args: argparse.Namespace) -> int:
     # A noite tem uma luz por poste e por farol: e a hora de medir com `--hora 1`.
     _pede_hora(args.hora)
     # Sem --headless: sem tela nao ha quadro para medir.
-    return _godot(binary, "--", "--selftest", "--fps")
+    extra = ["--queda"] if args.queda else []
+    return _godot(binary, "--", "--selftest", "--fps", *extra)
 
 
 def cmd_run(_: argparse.Namespace) -> int:
@@ -983,6 +984,8 @@ def main() -> int:
     p_fps = sub.add_parser("fps", help="tempo de quadro da corrida solta, com tela e sem vsync")
     p_fps.add_argument("--hora", type=float, default=None,
                        help="hora travada, de 0 (meio-dia) a 1 (noite)")
+    p_fps.add_argument("--queda", action="store_true",
+                       help="derruba jogador e rivais a cada 4 s: o pior caso das particulas")
     sub.add_parser("run", help="abre o jogo")
     sub.add_parser("export", help="exporta as tres plataformas")
     sub.add_parser("sprites", help="recorta as folhas do Google Flow no atlas do ator")

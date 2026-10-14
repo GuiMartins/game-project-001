@@ -184,7 +184,7 @@ func _quad() -> QuadMesh:
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	mat.vertex_color_use_as_albedo = true
-	mat.albedo_texture = _flipbook()
+	mat.albedo_texture = nuvem()
 	var quad := QuadMesh.new()
 	quad.size = Vector2(1.1, 1.1)
 	quad.material = mat
@@ -193,8 +193,9 @@ func _quad() -> QuadMesh:
 
 ## O flipbook gerado aqui, e nao pintado: quatro sopros lado a lado, cada um
 ## maior e mais ralo que o anterior, com a borda roida no fim. Sem sorteio: os
-## tufos estao em posicao fixa, e o mesmo codigo da o mesmo desenho.
-static func _flipbook() -> ImageTexture:
+## tufos estao em posicao fixa, e o mesmo codigo da o mesmo desenho. A poeira
+## da queda (`Estrago`) e a mesma nuvem, tingida de terra.
+static func nuvem() -> ImageTexture:
 	if _textura_da_fumaca != null:
 		return _textura_da_fumaca
 	var img := Image.create(LADO * QUADROS, LADO, false, Image.FORMAT_RGBA8)
