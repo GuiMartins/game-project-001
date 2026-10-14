@@ -101,6 +101,9 @@ const EXPRESSA_PLACA: float = 50.0
 const EXPRESSA_FOLGA: float = 15.0
 
 var track: RoadTrack
+## O fundo da cidade (V14a): os marcos que a `Marcos` planta no fim das retas.
+## Trocar de cidade e trocar este catalogo.
+var marcos: Array[Marcos.Marco] = Marcos.rio()
 ## Onde a pista e via expressa, `[de, ate, lado]`: o mesmo que vai para o
 ## `RoadTrack.expressas`.
 var expressas: Array[Vector3] = []
@@ -129,6 +132,7 @@ func montar(rua: RandomNumberGenerator, props: Node3D) -> void:
 		_monta_faixa_de_servico(side, cruzamentos, rua, props)
 	_monta_placas(cruzamentos, props)
 	_monta_portais(cruzamentos, props)
+	Marcos.montar(track, rua.seed, marcos, props)
 	Pedestres.montar(track, cruzamentos, rua, props)
 
 

@@ -945,7 +945,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     horizonte, puxado para a cor dele, fica parecido com o prédio distante na
     neblina). Portão sem variação; `fps` no teto de 120.
 
-- [ ] **V14a** — O fundo: serra, morro e marcos do Rio
+- [x] **V14a** — O fundo: serra, morro e marcos do Rio (14/10/2026, #PR)
 
   O que faz a tela ler "Rio" de longe é o que está atrás dos prédios, e o
   jogo hoje termina em torre e neblina. A `04_vertical` tem a serra azulada
@@ -972,6 +972,27 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
   - **Aceite:** a serra aparece no fim das retas dos quadros da prova sem
     cintilar andando; um marco, pelo menos, aparece numa corrida inteira
     sem repetir na mesma tela; `fps` igual.
+
+  **Resultado:** a serra mora no `ceu.gdshader`: duas fileiras (a de trás
+  alta e a da frente baixa e mais escura), perfil por azimute com ruído sobre
+  o círculo (sem emenda), semente da semente do mundo, borda em rampa de um
+  pixel (`fwidth`) como a da nuvem, e o sol não aparece através dela. Mais
+  clara que o céu ela sumia: a 6° o gradiente já está a 38% do topo, então a
+  cor é o ar escurecido (vale em qualquer hora). Sliders no F3, grupo Ceu:
+  `ceu_serra_altura` (9°) e `ceu_serra_rugosidade`. Os marcos são o catálogo
+  `Marcos.rio()` (igreja no morro, roda-gigante, museu, torre de igreja),
+  em primitivas montadas no código e não em modelo do Blender: a 200 m é
+  silhueta. A `Cidade` planta um no fim de cada reta, a 170–260 m e quase no
+  eixo, porque o canyon de prédios esconde tudo que está de lado; as peças
+  têm escala maior que o real pelo mesmo motivo, e não usam a neblina do
+  mundo (a 250 m ela cobre 67% e apagava a roda), e sim o azul do ar na
+  própria cor. Sorteio próprio, sem colisor, nunca a mesma peça duas vezes
+  seguidas, folga da pista medida. A prova ganhou o quadro `fundo`, onde a
+  roda-gigante aparece pela fresta do corredor. O canyon ainda esconde marco
+  baixo (o museu) enquanto a moto está no corredor; ele aparece nas
+  aberturas. Baseline visual dentro da tolerância (céu 0,100 → 0,096,
+  luminância 0,452 → 0,445). `selftest` sem variação; `fps` p50 8,33 ms,
+  igual.
 
 ### A calçada povoada
 

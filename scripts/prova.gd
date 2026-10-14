@@ -29,6 +29,8 @@ const QUADROS_DE_ESPERA: int = 3
 ## - `ladeira`: tambem nao ha ladeira; o `t1.0s` e o de horizonte mais alto.
 ## - `reta`: corredor de predio fechando no ponto de fuga, como no `t5.0s`.
 ## - `faixa`: a zebra chegando por baixo da moto, como no `t3.0s`.
+## - `fundo` (V14a): o fim de uma reta que da vista para um marco, com a serra
+##   no horizonte. As tres imagens paradas tem o fundo que o jogo quer.
 ## - `muro` e `viaduto`: a via expressa (V11b), cada um com a imagem parada
 ##   dele. Ate ela existir, a `04` ficava ao lado da curva e a `03` da
 ##   ladeira, por falta de quadro melhor.
@@ -44,6 +46,7 @@ const REFERENCIAS: Dictionary = {
 	"faixa": ["video_01/t3.0s.png"],
 	"muro": ["04_vertical.png"],
 	"viaduto": ["03_viaduto.png"],
+	"fundo": ["04_vertical.png", "02_praca_maua.png", "01_centro.png"],
 }
 ## Fundo do que sobra quando uma linha e mais curta que a mais longa. Cinza
 ## medio, e nao preto: preto se confunde com o tunel e a sombra do jogo.
@@ -99,7 +102,7 @@ func _roda() -> void:
 	# `dev.py prova --kmh`: os quadros andando em outra velocidade. A largada
 	# continua parada - e o quadro do piloto com o pe no chao.
 	var velocidade := OS.get_environment("RUSHFOOD_PROVA_VELOCIDADE")
-	for quadro: Dictionary in pontos(_world.track):
+	for quadro: Dictionary in pontos(_world.track, _marcos()):
 		var v: float = quadro["velocidade"]
 		if v > 0.0 and velocidade.is_valid_float():
 			v = velocidade.to_float()
@@ -138,7 +141,7 @@ func _roda() -> void:
 	if OS.get_environment("RUSHFOOD_PROVA_REFERENCIA") == "1":
 		var linhas: Array[Array] = []
 		for i in imagens.size():
-			var nome: String = pontos(_world.track)[i]["nome"]
+			var nome: String = pontos(_world.track, _marcos())[i]["nome"]
 			var linha: Array[Image] = [imagens[i]]
 			linha.append_array(_referencias(nome))
 			linhas.append(linha)
@@ -158,6 +161,14 @@ func _roda() -> void:
 			cheia.save_png("%s/variante_%d_%s.png" % [saida, i + 1, VARIANTES_PIXEL[i]["nome"]])
 		print("prova: variantes de pixel em %s/variantes.png" % saida)
 	get_tree().quit(0)
+
+
+## Os marcos plantados, para o quadro `fundo` achar o primeiro.
+func _marcos() -> Array[Node3D]:
+	var achados: Array[Node3D] = []
+	for no in get_tree().get_nodes_in_group(Marcos.GRUPO):
+		achados.append(no as Node3D)
+	return achados
 
 
 func _captura() -> Image:
@@ -201,7 +212,7 @@ func _passos(n: int) -> void:
 ##
 ## O pelotao larga do grid em cada ponto, entao todo quadro tem rival na frente
 ## - e o ator e metade do que a prova quer comparar.
-static func pontos(track: RoadTrack) -> Array[Dictionary]:
+static func pontos(track: RoadTrack, marcos: Array[Node3D] = []) -> Array[Dictionary]:
 	var lista: Array[Dictionary] = [{"nome": "largada", "offset": 0.0, "velocidade": 0.0}]
 	var usados: Array[float] = [0.0]
 
@@ -237,6 +248,11 @@ static func pontos(track: RoadTrack) -> Array[Dictionary]:
 		lista.append({"nome": "muro", "offset": e.x + 5.0, "velocidade": 25.0})
 		var embaixo := v.x + ViaExpressa.VIADUTO_CURVA + 10.0
 		lista.append({"nome": "viaduto", "offset": embaixo, "velocidade": 25.0})
+	# O fim da reta do primeiro marco, de onde ele e a serra aparecem: 60 m
+	# antes, com a avenida ainda aberta ate o ponto de fuga.
+	if not marcos.is_empty():
+		var fim: float = marcos[0].get_meta(&"fim")
+		lista.append({"nome": "fundo", "offset": maxf(fim - 60.0, 0.0), "velocidade": 25.0})
 	return lista
 
 
