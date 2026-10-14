@@ -1157,6 +1157,39 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
   51,5 → 45,8, só por tirar a HUD velha da conta. `fps` igual ao do `master`
   (p50 8,33 ms nos dois, mesma máquina).
 
+- [ ] **V25a** 👤 — Minimapa de GPS e nome da rua
+
+  A V25 fechou antes de as paradas existirem e leu "quatro cantos, centro
+  vazio" em todas. A `04_vertical` não é assim: no canto de baixo à esquerda
+  ela tem um **GPS de celular**, e é o elemento que mais diz "entregador de
+  app" na HUD inteira. Quadrado de ~16% da largura da imagem, moldura branca
+  grossa com contorno preto (a mesma linguagem das barras), quarteirões
+  azul-acinzentados com as ruas em branco, e uma seta vermelha fixa no centro
+  apontando para cima: o mapa gira em volta dela (*heading-up*), não ela no
+  mapa. Embaixo, o nome da rua em caixa alta (`AV. RODRIGUES ALVES`), na fonte
+  da HUD, branco e sem degradê.
+
+  - **Referências:** só a `04_vertical` (canto de baixo à esquerda). As
+    outras três e os dois vídeos não têm mapa.
+  - **De onde sai o mapa:** a `RoadTrack` já sabe tudo. A avenida é a
+    `curve`, e as transversais são os `cruzamentos` (`[offset, lados]`) com
+    a `boca`: dá para desenhar no próprio `Control` da HUD, em 2D, a partir
+    da curva amostrada em volta do jogador, sem câmera nem `SubViewport` a
+    mais. Os quarteirões são o fundo; as ruas, linhas brancas por cima.
+  - **Decisão 👤:** onde ele mora e de onde sai o nome.
+    **Recomendação:** coluna da esquerda, **em cima do `SPEED`**, que é onde
+    ficou espaço vazio entre o `BOOST` e as barras de baixo; ~72×72 a
+    640×360, com o nome da rua entre o mapa e a legenda `SPEED`. Não trocar
+    o `SPEED` de canto: a `01`, a `02` e a `03` põem ele ali. O nome sai de
+    uma lista de avenidas do Rio sorteada pela semente da pista (uma por
+    corrida, que hoje é uma avenida só), e as transversais não ganham nome.
+    Sem rota desenhada: a corrida é uma reta de A a B, e uma linha em cima
+    da avenida só repetiria a avenida.
+  - **Aceite:** o mapa gira junto com a moto na curva e a transversal passa
+    por ele quando o cruzamento passa na tela; legível a 640×360 sobre
+    asfalto claro, como a V25; não entra na medida do `shots` (que é sem
+    HUD); `fps` igual.
+
 ### Tela e resolução
 
 O mundo renderiza em 640×360 e a janela amplia. Custo de GPU fixo, seja a tela
