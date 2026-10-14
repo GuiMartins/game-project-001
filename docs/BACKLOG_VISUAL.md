@@ -1084,7 +1084,8 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   no último andar, então o corpo inteiro vira obra: **andaime tubular** na
   frente e nos dois lados (1,2 m para fora, montantes até acima do topo,
   piso de tábua a cada 4 m, diagonais alternadas), **lona laranja ou azul**
-  por cima em painéis de uma baia por três andares, com falhas sorteadas e
+  semitransparente (xadrez de um pixel no `predio.gdshader`, marcada pelo UV
+  de luz) por cima em painéis de uma baia por três andares, com falhas sorteadas e
   os dois andares de cima sem lona, e na calçada **tapume** de 2,4 m e
   **marquise** de proteção a 3,5 m. São quatro malhas (esqueleto ou
   meia-obra, laranja ou azul): a lona é geometria, e não pintura por

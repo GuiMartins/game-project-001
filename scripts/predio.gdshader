@@ -103,7 +103,20 @@ vec3 troca(vec3 cor, vec3 fabrica, vec3 nova, float peso) {
 }
 
 
+// A lona do andaime (V17a): o modelo marca as faces dela com a semente da luz
+// acima de 1 (`arte/predios.py`, `LONA_MARCA`). Metade dos pixels some, em
+// xadrez, e o resto fica: tela de protecao deixa ver o andaime e o concreto
+// por tras. Furo em vez de alpha porque o mundo e opaco e dithered - nada aqui
+// ordena transparencia - e porque o xadrez de um pixel de 640x360 e a mesma
+// trama que a paleta ja usa. De perto o xadrez anda com a camera; de longe o
+// mip e a quantizacao fecham ele numa cor so, e e assim que lona lê.
 void fragment() {
+	if (UV2.x > 1.5) {
+		ivec2 px = ivec2(FRAGCOORD.xy);
+		if (((px.x + px.y) & 1) == 0) {
+			discard;
+		}
+	}
 	vec3 cor = texture(albedo, UV).rgb;
 	vec3 m = texture(mascara, UV).rgb;
 	cor = troca(cor, pintura_fabrica, pintura, m.r);

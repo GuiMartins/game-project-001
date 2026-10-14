@@ -165,6 +165,10 @@ CELULAS = {nome: i for i, nome in enumerate(PALETA)}
 # A semente sai de um gerador so da luz, e nao do `rng` do predio: tirar
 # numero dele mudaria qual vidro reflete o ceu na avenida inteira.
 JANELA, VITRINE = 0.5, 1.0
+# A lona do andaime (V17a) e semitransparente no shader, e quem diz que uma
+# face e lona e o primeiro UV de luz, que ela nao usa: `LONA_MARCA` acima de 1.
+LONA = ("lona_laranja", "lona_azul")
+LONA_MARCA = 2.0
 ACENDE = {
     "vidro": JANELA,
     "vidro_ceu": JANELA,
@@ -275,6 +279,10 @@ class Peca:
             # tipo vai gravado de ponta-cabeca para chegar no shader do lado
             # certo. A semente vai no U, que ninguem mexe.
             luz = (face[self.luz], 1.0 - ACENDE.get(nomes[face[self.cor]], 0.0))
+            if nomes[face[self.cor]] in LONA:
+                # Marca de lona: o `predio.gdshader` ve a semente acima de 1,5
+                # e fura metade dos pixels, para ela ser tela e nao chapa.
+                luz = (LONA_MARCA, 1.0)
             for loop in face.loops:
                 loop[uv].uv = ponto
                 loop[uv_luz].uv = luz
