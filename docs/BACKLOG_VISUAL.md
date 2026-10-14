@@ -651,7 +651,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     eram desenhados na horizontal. A 10% de rampa, uma borda ficava 30 cm
     acima do asfalto e a outra enterrada; agora tudo segue o plano da rua.
 
-- [ ] **V10a** — Pintura de canalização e faixa azul
+- [~] **V10a** — Pintura de canalização e faixa azul (14/10/2026)
 
   O chão do cruzamento da `02_praca_maua` não é só zebra: a ilha entre as
   pistas tem área zebrada (hachura branca diagonal dentro de um contorno),
@@ -669,6 +669,9 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     da P4a (`arte/chao.py`) proíbe abaixo de 1,7 m de período. Espaçar e
     engrossar até não piscar, como a V10 conferiu a zebra.
   - **Aceite:** a hachura não pisca a 180 km/h, julgado rodando; `fps` igual.
+  - **Cancelada pelo Guilherme:** desnecessária. Chegou a ser feita (bico
+    hachurado na saída de cada rua e faixa azul em metade dos corredores) e
+    foi revertida sem entrar: a pintura que a avenida já tem basta.
 
 ### Os prédios e o céu
 
