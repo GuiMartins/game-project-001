@@ -23,6 +23,29 @@ const MOTO_SALVA: String = "user://moto.cfg"
 ## Tela cheia sobrevive ao fechar o jogo, no mesmo arquivo da moto: e escolha
 ## de quem joga, como ela, e nao slider de feel.
 const SECAO_TELA: String = "tela"
+## As chaves do visual que o menu liga e desliga, gravadas na secao `visual`
+## do mesmo arquivo. Tudo ligado e o jogo como ele e: desligar e para comparar,
+## e o banco de provas, que nao le o arquivo, mede sempre o jogo inteiro.
+const VISUAL: Array[String] = [
+	"pixel", "paleta", "msaa", "cor", "sombra", "neblina", "brilho", "borrao"
+]
+## Os nomes delas no menu, na mesma ordem.
+const NOMES_VISUAL: Array[String] = [
+	"PIXEL 640x360",
+	"PALETA",
+	"ANTISSERRILHO",
+	"COR DO DIA",
+	"SOMBRA",
+	"NEBLINA",
+	"BRILHO",
+	"BORRAO"
+]
+## As cadencias que as setas do menu percorrem, em poses por segundo; 0 e liso.
+## O F3 chega em qualquer uma de 0 a 30; o menu fica nas que valem comparar.
+const CADENCIAS: Array[int] = [0, 24, 15, 12, 8]
+## Passo das setas na linha do transito: de um em um, ir de 25 a 0 sao 25
+## toques.
+const PASSO_TRANSITO: int = 5
 
 var sub_viewport: SubViewport
 var container: SubViewportContainer
@@ -35,7 +58,9 @@ var world_tuning: WorldTuning
 ## De onde os valores vieram, pro relatorio do banco de provas dizer.
 var tuning_source: String = ""
 
-var _pixel_mode: bool = true
+## Cada chave de `VISUAL`, ligada ou nao.
+var _visual: Dictionary[String, bool] = {}
+var _paleta: CanvasItem
 ## Se a moto escolhida e lida e gravada no user://. Desligado no banco de
 ## provas e na prova visual, pelo mesmo motivo do tuning: medida que depende
 ## de qual moto alguem escolheu ontem nao compara com nada.
@@ -92,16 +117,35 @@ func _ready() -> void:
 	world.name = "World"
 	sub_viewport.add_child(world)
 	world.setup(tuning, world_tuning)
+	# A corrida anoitece, mas medida nao: banco de provas, shots e prova
+	# fotografam o meio-dia, salvo `--hora=X` / `RUSHFOOD_HORA` pedindo outra
+	# hora (0 e meio-dia, 1 e noite). Sem isto o quadro dependeria de quanto a
+	# moto andou ate a captura, e "regrediu" e "estava mais escuro" seriam a
+	# mesma coisa.
+	var hora := _hora_pedida(args)
+	if medindo or hora >= 0.0:
+		world.relogio.fixar(maxf(hora, 0.0))
 	_moto_salva = use_saved
 	if _moto_salva:
 		world.player.usar_modelo(_le_moto())
 		world_tuning.ator_sprite = int(_le_config("jogador", "ator", world_tuning.ator_sprite))
+		world_tuning.ator_cadencia = int(
+			_le_config("jogador", "cadencia", world_tuning.ator_cadencia)
+		)
+		world_tuning.rival_count = int(_le_config("jogador", "rivais", world_tuning.rival_count))
+		world_tuning.traffic_count = int(
+			_le_config("jogador", "transito", world_tuning.traffic_count)
+		)
+		world.aplica_ator()
 		# So fora das medidas: prova e shots fotografam a janela no tamanho do
 		# `project.godot`, e tela cheia mudaria o quadro que eles comparam.
 		if _le_config(SECAO_TELA, "cheia", false):
 			_aplica_tela_cheia(true)
 
 	_monta_paleta()
+	for chave in VISUAL:
+		_visual[chave] = true if not _moto_salva else bool(_le_config("visual", chave, true))
+	_aplica_visual()
 
 	hud = Hud.new()
 	hud.name = "Hud"
@@ -114,18 +158,8 @@ func _ready() -> void:
 	fluxo = RaceFlow.new()
 	fluxo.name = "RaceFlow"
 	sub_viewport.add_child(fluxo)
-	fluxo.descreve_pixel = func() -> String: return "LIGADO" if _pixel_mode else "DESLIGADO"
-	fluxo.descreve_camera = func() -> String: return world.camera.mode_name()
-	fluxo.descreve_moto = func() -> String: return Entregador.NOMES[world.player.modelo()]
-	fluxo.descreve_ator = func() -> String:
-		return "SPRITE" if world_tuning.ator_sprite == 1 else "3D"
-	fluxo.ator_trocado.connect(_trocar_ator)
-	fluxo.descreve_tela_cheia = func() -> String: return "LIGADA" if _tela_cheia() else "DESLIGADA"
-	fluxo.tela_cheia_alternada.connect(_alterna_tela_cheia)
-	fluxo.moto_trocada.connect(_trocar_moto)
+	_monta_opcoes()
 	fluxo.corrida_pedida.connect(_restart)
-	fluxo.pixel_alternado.connect(_toggle_pixel)
-	fluxo.camera_alternada.connect(world.camera.cycle_mode)
 	fluxo.tela_mudou.connect(_on_tela_mudou)
 
 	tuning_panel = TuningPanel.new()
@@ -152,6 +186,15 @@ func _ready() -> void:
 		prova.call("setup", self)
 
 
+## A hora pedida por `--hora=X` ou `RUSHFOOD_HORA`, ou -1 se ninguem pediu.
+static func _hora_pedida(args: PackedStringArray) -> float:
+	var texto := OS.get_environment("RUSHFOOD_HORA")
+	for arg in args:
+		if arg.begins_with("--hora="):
+			texto = arg.trim_prefix("--hora=")
+	return texto.to_float() if texto.is_valid_float() else -1.0
+
+
 ## O passe de quantizacao com dither (`paleta.gdshader`): o ultimo do mundo.
 ##
 ## Um ColorRect que le a tela ja desenhada, numa camada acima do 3D e abaixo da
@@ -170,19 +213,85 @@ func _monta_paleta() -> void:
 	material.shader = preload("res://scripts/paleta.gdshader")
 	tela.material = material
 	camada.add_child(tela)
+	_paleta = tela
 
 
-func _apply_pixel_mode() -> void:
-	container.stretch_shrink = PIXEL_SHRINK if _pixel_mode else 1
+## As linhas de opcao do menu, em duas colunas: o que muda a corrida e o que
+## muda so o visual. A ordem aqui e a ordem na tela.
+func _monta_opcoes() -> void:
+	fluxo.opcao("CORRIDA", "MOTO", _nome_da_moto, _trocar_moto)
+	fluxo.opcao(
+		"CORRIDA",
+		"PILOTO",
+		func() -> String: return "SPRITE" if world_tuning.ator_sprite == 1 else "3D",
+		func(_passo: int) -> void: _trocar_ator()
+	)
+	fluxo.opcao("CORRIDA", "ANIMACAO", _nome_da_cadencia, _trocar_cadencia)
+	fluxo.opcao("CORRIDA", "CAMERA", world.camera.mode_name, _trocar_camera)
+	fluxo.opcao(
+		"CORRIDA",
+		"RIVAIS",
+		func() -> String: return str(world_tuning.rival_count),
+		func(passo: int) -> void: _ajusta("rival_count", "rivais", passo, 12)
+	)
+	fluxo.opcao(
+		"CORRIDA",
+		"TRANSITO",
+		func() -> String: return str(world_tuning.traffic_count),
+		func(passo: int) -> void: _ajusta("traffic_count", "transito", passo * PASSO_TRANSITO, 120)
+	)
+	fluxo.opcao(
+		"CORRIDA",
+		"TELA CHEIA",
+		func() -> String: return "SIM" if _tela_cheia() else "NAO",
+		func(_passo: int) -> void: _alterna_tela_cheia()
+	)
+	for i in VISUAL.size():
+		var chave := VISUAL[i]
+		fluxo.opcao(
+			"VISUAL",
+			NOMES_VISUAL[i],
+			func() -> String: return "SIM" if _visual[chave] else "NAO",
+			func(_passo: int) -> void: _alterna_visual(chave)
+		)
+
+
+## Empurra o `_visual` para quem desenha. Cada chave e um interruptor so, sem
+## mexer no numero que o F3 ajusta: desligar o brilho e religar devolve o
+## brilho que estava.
+func _aplica_visual() -> void:
+	container.stretch_shrink = PIXEL_SHRINK if _visual["pixel"] else 1
+	_paleta.visible = _visual["paleta"]
+	sub_viewport.msaa_3d = Viewport.MSAA_4X if _visual["msaa"] else Viewport.MSAA_DISABLED
+	world.ambiente.adjustment_enabled = _visual["cor"]
+	world.sol.shadow_enabled = _visual["sombra"]
+	world.ambiente.fog_enabled = _visual["neblina"]
+	world.ambiente.glow_enabled = _visual["brilho"]
+	world.borrao.visible = _visual["borrao"]
+
+
+func _alterna_visual(chave: String) -> void:
+	_visual[chave] = not _visual[chave]
+	_aplica_visual()
+	if _moto_salva:
+		_grava_config("visual", chave, _visual[chave])
 
 
 func _toggle_pixel() -> void:
-	_pixel_mode = not _pixel_mode
-	_apply_pixel_mode()
-	hud.show_event("pixel %s" % ("ligado" if _pixel_mode else "desligado"), Color(0.7, 0.9, 1.0))
+	_alterna_visual("pixel")
+	hud.show_event(
+		"pixel %s" % ("ligado" if _visual["pixel"] else "desligado"), Color(0.7, 0.9, 1.0)
+	)
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# O mouse antes do filtro de tecla apertada: passar por cima seleciona, e
+	# movimento nao e "apertado". A conta leva o ponto da janela para o
+	# SubViewport, onde o menu mora.
+	if event is InputEventMouse:
+		var na_janela := (event as InputEventMouse).position - container.global_position
+		fluxo.apontar(event, na_janela / container.stretch_shrink)
+		return
 	if not event.is_pressed() or event.is_echo():
 		return
 	# O fluxo tem a primeira palavra: no menu, ENTER e seta nao sao do jogo.
@@ -234,8 +343,55 @@ func _trocar_moto(passo: int) -> void:
 ## joga; o slider so fica se alguem salvar o painel.
 func _trocar_ator() -> void:
 	world_tuning.ator_sprite = 1 - world_tuning.ator_sprite
+	# Na hora, e nao no proximo quadro do mundo: no menu o mundo esta
+	# congelado, e a troca e para ser vista ali, na moto parada na largada.
+	world.aplica_ator()
 	if _moto_salva:
 		_grava_config("jogador", "ator", world_tuning.ator_sprite)
+
+
+func _nome_da_moto() -> String:
+	return Entregador.NOMES[world.player.modelo()]
+
+
+func _nome_da_cadencia() -> String:
+	var hz := world_tuning.ator_cadencia
+	return "LISA" if hz <= 0 else "%d FPS" % hz
+
+
+## Anda pela lista `CADENCIAS`. Um valor fora dela, vindo do F3, entra na
+## lista pela vizinha mais proxima no sentido da seta.
+func _trocar_cadencia(passo: int) -> void:
+	var i := CADENCIAS.find(world_tuning.ator_cadencia)
+	if i < 0:
+		i = 0
+		for k in CADENCIAS.size():
+			if (
+				absi(CADENCIAS[k] - world_tuning.ator_cadencia)
+				< absi(CADENCIAS[i] - world_tuning.ator_cadencia)
+			):
+				i = k
+	else:
+		i = posmod(i + passo, CADENCIAS.size())
+	world_tuning.ator_cadencia = CADENCIAS[i]
+	world.aplica_ator()
+	if _moto_salva:
+		_grava_config("jogador", "cadencia", world_tuning.ator_cadencia)
+
+
+func _trocar_camera(passo: int) -> void:
+	# A camera so sabe andar para a frente; para tras e dar a volta.
+	for _i in posmod(passo, ChaseCamera.Mode.size()):
+		world.camera.cycle_mode()
+
+
+## Soma `passo` a um contador do `world_tuning`, entre 0 e `maximo`. O mundo
+## reconcilia a frota sozinho quando volta a andar (`_sync_traffic_pool`).
+func _ajusta(campo: String, chave: String, passo: int, maximo: int) -> void:
+	var novo := clampi(int(world_tuning.get(campo)) + passo, 0, maximo)
+	world_tuning.set(campo, novo)
+	if _moto_salva:
+		_grava_config("jogador", chave, novo)
 
 
 func _le_moto() -> int:

@@ -128,6 +128,20 @@ const FREIO: float = -0.6
 ## a traseira nao tinha nada para o freio "acender mais", e o aviso de que o
 ## corredor vai fechar dependia de o jogador ver a luz nascer do nada.
 const LANTERNA: float = 0.35
+## Quando o motorista acende o farol, no escuro da `Hora`: do comeco ao meio da
+## passagem, antes dos postes. Cada carro no seu, tirado da fase do pisca, que
+## ja e sorteada - sorteio novo mudaria a frota do banco de provas.
+const FAROL_DE: float = 0.12
+const FAROL_ATE: float = 0.45
+## O cone do farol: um so, no meio da frente, e nao dois, porque os dois cones
+## se somam numa mancha so a 640x360 e custariam o dobro. Alcance de rua
+## urbana (farol baixo), aberto o bastante para pintar a faixa da frente, e
+## um pouco para baixo, que e onde o farol baixo mira.
+const FAROL_ALCANCE: float = 28.0
+const FAROL_ANGULO: float = 34.0
+const FAROL_ENERGIA: float = 4.0
+const FAROL_MIRA: float = -6.0
+const COR_DO_FAROL := Color(1.0, 0.95, 0.85)
 
 static var _moldes: Array[PackedScene] = []
 static var _material: ShaderMaterial
@@ -139,6 +153,7 @@ var modelo: Modelo = Modelo.SEDA
 var _raiz: Node3D
 var _carroceria: Node3D
 var _lataria: MeshInstance3D
+var _farol: SpotLight3D
 var _malhas: Array[MeshInstance3D] = []
 var _repouso: Dictionary[Node3D, Transform3D] = {}
 ## DE, DD, TE, TD: as duas primeiras estercam.
@@ -236,6 +251,7 @@ func montar(a_modelo: Modelo, rng: RandomNumberGenerator) -> void:
 	_fase_pisca = rng.randf()
 	for i in 4:
 		_fase_asfalto[i] = rng.randf() * TAU
+	_acende_farol()
 	fechar_portas(true)
 	reiniciar()
 
@@ -537,6 +553,16 @@ func _acende(seta: int, encostado: bool) -> void:
 		_lataria.set_instance_shader_parameter("luzes", luzes)
 
 
+## O farol de noite: o limiar sai da fase do pisca, e o carro que nasce ja
+## escuro (reciclado na frente, parado na transversal) nasce aceso.
+func _acende_farol() -> void:
+	var quando := lerpf(FAROL_DE, FAROL_ATE, fposmod(_fase_pisca * 7.31, 1.0))
+	for malha in _malhas:
+		malha.set_instance_shader_parameter("farol_limiar", quando)
+	_farol.set_meta(&"limiar", quando)
+	Relogio.acender_uma(_farol, Relogio.escuro)
+
+
 func _instancia() -> void:
 	if _raiz != null:
 		_raiz.free()
@@ -596,6 +622,14 @@ func _instancia() -> void:
 		_giro_porta[no] = 0.0
 	# A dianteira primeiro: `abrir_porta` prefere ela.
 	_portas.sort_custom(func(a: Node3D, b: Node3D) -> bool: return a.position.z < b.position.z)
+
+	# O cone na frente da lataria, na altura do farol, preso a carroceria: ele
+	# mergulha na freada junto com o capo.
+	var frente := _repouso[_lataria] * _lataria.get_aabb()
+	_farol = LuzDaNoite.spot(COR_DO_FAROL, FAROL_ENERGIA, FAROL_ALCANCE, FAROL_ANGULO, 1.0)
+	_farol.position = Vector3(0.0, frente.position.y + frente.size.y * 0.4, frente.position.z)
+	_farol.rotation_degrees = Vector3(FAROL_MIRA, 0.0, 0.0)
+	_carroceria.add_child(_farol)
 
 
 func _prepara(no: Node) -> void:

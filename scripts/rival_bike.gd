@@ -90,6 +90,7 @@ var _credito_jogador: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _visual: Node3D
 var _ator: Entregador
+var _derrapagem: Derrapagem
 ## Gas e freio neste passo, de 0 a 1. So a pose le.
 var _acelerador: float = 0.0
 var _freio: float = 0.0
@@ -120,6 +121,9 @@ func _ready() -> void:
 	_ator = Entregador.new()
 	_visual.add_child(_ator)
 	_ator.pintar(bag_color)
+	_derrapagem = Derrapagem.new()
+	_derrapagem.position = Vector3(0.0, -SIZE.y * 0.5, Derrapagem.EIXO_TRASEIRO)
+	add_child(_derrapagem)
 
 	_hitbox = Area3D.new()
 	_hitbox.collision_layer = Layers.RIVAL_HIT
@@ -256,6 +260,9 @@ func _physics_process(delta: float) -> void:
 		0.0,
 		_freio
 	)
+	# Parametrico na curva, o rival nao escorrega: a roda vai sempre para onde
+	# a moto aponta.
+	_derrapagem.atualizar(delta, 0.0)
 
 
 func _drive(delta: float) -> void:

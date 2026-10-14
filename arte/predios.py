@@ -52,6 +52,7 @@ peitoril que joga sombra: e a sombra de 12 cm que faz a fachada ter fundo.
 import math
 import os
 import random
+import zlib
 
 import bmesh
 import bpy
@@ -140,6 +141,26 @@ PALETA = {
 }
 CELULAS = {nome: i for i, nome in enumerate(PALETA)}
 
+# --- Luz de noite --------------------------------------------------------------
+#
+# A corrida anoitece (`scripts/hora.gd`), e de noite janela e vitrine acendem.
+# Quais, e quando, quem decide e o shader, por janela e por predio: cada face
+# de vidro leva no segundo UV (`Luz`) uma semente propria e o que ela e - meio
+# para janela de andar, 1 para vitrine de loja, 0 para o resto. O mesmo modelo
+# se repete pela avenida, e a semente de cada janela somada a posicao do
+# predio faz cada copia acender um desenho diferente.
+#
+# A semente sai de um gerador so da luz, e nao do `rng` do predio: tirar
+# numero dele mudaria qual vidro reflete o ceu na avenida inteira.
+JANELA, VITRINE = 0.5, 1.0
+ACENDE = {
+    "vidro": JANELA,
+    "vidro_ceu": JANELA,
+    "cortina": JANELA,
+    "pele_ceu": JANELA,
+    "vitrine": VITRINE,
+}
+
 # Quanto cada camada pintada na parede fica na frente da anterior. Menos que
 # isso a 150 m e z-fighting: a janela pisca atras da parede.
 CAMADA = 0.03
@@ -167,6 +188,13 @@ class Peca:
         self.nome = nome
         self.bm = bmesh.new()
         self.cor = self.bm.faces.layers.int.new("cor")
+        self.luz = self.bm.faces.layers.float.new("luz")
+        self.sorteio_da_luz = random.Random(zlib.crc32(nome.encode()))
+
+    def _acende(self, face, cor) -> None:
+        if cor in ACENDE:
+            # Nunca zero: zero e "nao acende".
+            face[self.luz] = 0.001 + self.sorteio_da_luz.random() * 0.998
 
     def caixa(self, centro, tamanho, cor, rot_x=0.0) -> None:
         verts = bmesh.ops.create_cube(self.bm, size=1.0)["verts"]
@@ -178,6 +206,7 @@ class Peca:
         bmesh.ops.transform(self.bm, matrix=m, verts=verts)
         for face in {f for v in verts for f in v.link_faces}:
             face[self.cor] = CELULAS[cor]
+            self._acende(face, cor)
 
     def face(self, pontos, normal, cor) -> None:
         """Poligono convexo, virado para `normal`."""
@@ -187,6 +216,7 @@ class Peca:
         if f.normal.dot(Vector(normal)) < 0.0:
             f.normal_flip()
         f[self.cor] = CELULAS[cor]
+        self._acende(f, cor)
 
     def telhado(self, centro, largura, fundo, altura, cor, cor_oitao) -> None:
         """Telhado de quatro aguas, com a cumeeira no lado comprido."""
@@ -220,14 +250,22 @@ class Peca:
         bm.faces.sort(key=lambda f: posto[f.index])
 
         uv = bm.loops.layers.uv.new("UVMap")
+        uv_luz = bm.loops.layers.uv.new("Luz")
+        nomes = list(PALETA)
         for face in bm.faces:
             ponto = uv_da_celula(face[self.cor])
+            # O exportador do glTF vira o V (1 - v), e o jogo le como chega: o
+            # tipo vai gravado de ponta-cabeca para chegar no shader do lado
+            # certo. A semente vai no U, que ninguem mexe.
+            luz = (face[self.luz], 1.0 - ACENDE.get(nomes[face[self.cor]], 0.0))
             for loop in face.loops:
                 loop[uv].uv = ponto
+                loop[uv_luz].uv = luz
             # Predio e chapa: tudo duro. Liso, a quina vira degrade e a caixa
             # vira sabonete.
             face.smooth = False
         bm.faces.layers.int.remove(self.cor)
+        bm.faces.layers.float.remove(self.luz)
 
         malha = bpy.data.meshes.new(self.nome)
         bm.to_mesh(malha)

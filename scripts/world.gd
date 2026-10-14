@@ -18,8 +18,6 @@ const FINISH_MARGIN: float = 30.0
 ## que faz o banco de provas medir a mesma corrida toda vez.
 const SEMENTE: int = 20260831
 
-## O LUT de cor do dia (`arte/paleta.py`), importado como `Texture3D`.
-const LUT_DIA: Texture3D = preload("res://assets/visual/lut_dia.png")
 const CEU: Shader = preload("res://scripts/ceu.gdshader")
 ## Slider do `WorldTuning` para uniforme do `ceu.gdshader`.
 const CEU_SLIDERS: Dictionary = {
@@ -108,6 +106,14 @@ var track: RoadTrack
 var player: PlayerBike
 var camera: ChaseCamera
 var run := RaceRun.new()
+## A hora da corrida: o mundo larga ao meio-dia e anoitece (ver `Relogio`).
+var relogio := Relogio.new()
+## O que o menu liga e desliga no visual: o ambiente (cor do dia, neblina,
+## brilho), o sol (sombra) e o borrao de velocidade. Liga e desliga so: os
+## valores de cada um sao da hora, e quem poe e o `relogio`.
+var ambiente: Environment
+var sol: DirectionalLight3D
+var borrao: Borrao
 
 var traffic: Array[TrafficCar] = []
 var rivals: Array[RivalBike] = []
@@ -149,7 +155,7 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	add_child(camera)
 	camera.setup(tuning, player)
 	camera.current = true
-	var borrao := Borrao.new()
+	borrao = Borrao.new()
 	camera.add_child(borrao)
 	borrao.setup(tuning, player)
 	player.marcar_foco()
@@ -194,6 +200,7 @@ func start_race(grid_offset: float = 0.0, at_speed: float = 0.0) -> void:
 		rivals[i].reset_race(rival_slot.x, rival_slot.y, run.distance_total)
 	_position_event_timer = 0.0
 	scatter_traffic_ahead(player.track_offset)
+	relogio.zerar()
 	travessia.reiniciar()
 	# Largada nova, calcada nova: quem foi atropelado volta, e o chao e lavado.
 	get_tree().call_group(&"multidao", &"reiniciar")
@@ -218,11 +225,12 @@ func grid_slot(index: int, base: float) -> Vector2:
 
 
 func _build_environment() -> void:
-	# Meio-dia de sol duro: e o que as referencias mostram, e o caso mais facil
-	# de iluminacao que existe. Um sol, e o resto e consequencia dele.
-	# O ceu e shader proprio, com a nuvem de ruido (`ceu.gdshader`). As cores
-	# sao as mesmas do ProceduralSkyMaterial de antes, e a neblina usa a do
-	# horizonte.
+	# A largada e meio-dia de sol duro: e o que as referencias mostram, e o
+	# caso mais facil de iluminacao que existe. Um sol, e o resto e
+	# consequencia dele. Dali a corrida anoitece, e o que muda com a hora - ceu,
+	# sol, ambiente, neblina, LUT - mora na `Hora` e o `Relogio` aplica. Aqui
+	# fica o que vale o dia inteiro.
+	# O ceu e shader proprio, com a nuvem de ruido (`ceu.gdshader`).
 	_ceu.shader = CEU
 	_aplica_ceu()
 	var sky := Sky.new()
@@ -237,19 +245,11 @@ func _build_environment() -> void:
 	env.sky = sky
 	# A luz ambiente vem do CEU, e nao de uma cor escolhida: a sombra fica azul
 	# porque o ceu e azul. E a diferenca entre cena iluminada e cena pintada.
+	# Quanto dele, a cor e a neblina sao da hora (`Hora`), e o `Relogio` aplica.
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.5
-	# Metade do ceu, metade cinza neutro. So com o ceu, a sombra de um predio no
-	# asfalto saia azul royal: na sombra a unica luz e a do ceu, e o LUT ainda
-	# satura por cima. A sombra continua fria, so que fria de cinza.
-	env.ambient_light_sky_contribution = 0.5
-	env.ambient_light_color = Color(0.62, 0.63, 0.65)
 	# Neblina segurando o horizonte: em pixel grosso o fade e o que da
-	# profundidade, e de quebra esconde o fim do mundo sem precisar de LOD. Na
-	# cor do horizonte, para o predio do fundo sumir no ceu e nao num cinza.
+	# profundidade, e de quebra esconde o fim do mundo sem precisar de LOD.
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.62, 0.74, 0.88)
-	env.fog_density = 0.0045
 	env.fog_aerial_perspective = 0.5
 	env.fog_sky_affect = 0.0
 	# Glow so no que e luz: lanterna de freio, seta e, depois, outdoor e faisca.
@@ -285,19 +285,20 @@ func _build_environment() -> void:
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_white = 6.0
 	# A paleta: o LUT e o ponto unico onde o clima da tela se ajusta. Gerado
-	# por `arte/paleta.py`. Depois dele so vem a quantizacao com dither, que e
-	# do `main.gd` e e o ultimo passe de todos.
+	# por `arte/paleta.py`, um por hora-chave, e o `Relogio` escolhe ou mistura.
+	# Depois dele so vem a quantizacao com dither, que e do `main.gd` e e o
+	# ultimo passe de todos.
 	env.adjustment_enabled = true
-	env.adjustment_color_correction = LUT_DIA
 
+	ambiente = env
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
 
+	# O sol, que de noite e a lua: a mesma luz, porque duas direcionais com
+	# sombra custam o dobro e a lua nao divide o ceu com o sol. Direcao, cor e
+	# forca sao da hora.
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-42.0, 38.0, 0.0)
-	sun.light_energy = 2.0
-	sun.light_color = Color(1.0, 0.96, 0.88)
 	# Sombra de contato e o que poe veiculo no chao: sem ela, tudo flutua. Os
 	# numeros dela, do DIRECAO_VISUAL.md:
 	# - 250 m de alcance. Eram 70, contando que a neblina apagava o mundo dali
@@ -328,6 +329,11 @@ func _build_environment() -> void:
 	# a borda serrilha andando; mais e sombra de dia nublado.
 	sun.shadow_blur = 3.0
 	add_child(sun)
+	sol = sun
+
+	relogio.name = "Relogio"
+	add_child(relogio)
+	relogio.montar(env, sun, _ceu)
 
 
 func _build_scenery() -> void:
@@ -512,7 +518,13 @@ func _sync_rival_pool() -> void:
 
 func _process(_delta: float) -> void:
 	_aplica_ceu()
-	_aplica_ator()
+	aplica_ator()
+	relogio.andar(
+		player_progress() / maxf(run.distance_total, 1.0),
+		world_tuning.hora_comeca,
+		world_tuning.hora_fecha,
+		world_tuning.hora_forcada
+	)
 
 
 ## Repassa os sliders do ceu ao shader, so o que mudou.
@@ -527,7 +539,7 @@ func _aplica_ceu() -> void:
 ## Sprite ou modelo, e a cadencia da pose, em todo corredor e nos pedestres. A
 ## cada quadro, e nao so quando o slider mexe: rival que entra depois (R) nasce
 ## em 3D e tem de ser trocado tambem. O ator ignora o pedido que nao muda nada.
-func _aplica_ator() -> void:
+func aplica_ator() -> void:
 	var ligado := world_tuning.ator_sprite == 1
 	var cadencia := float(world_tuning.ator_cadencia)
 	if player != null:

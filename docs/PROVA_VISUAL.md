@@ -54,7 +54,7 @@ O que **não** entra, e por quê:
 | Animação do ator | Uma pose parada já responde "lê como digitalizado?". A cadência de 12 fps entra na P5 só se a pose passar |
 | Rivais com arte própria | Mesmo rig, paleta trocada. Se a troca de paleta falhar, isso aparece na P5 |
 | Menu, resultado, pausa | Já existem e não estão em questão |
-| Noite, chuva, asfalto molhado | Outro sistema de luz inteiro |
+| Chuva, asfalto molhado | Outro sistema de luz inteiro. A noite entrou depois, fora da prova (ver `DIRECAO_VISUAL.md`) |
 | Áudio | Metade do impacto, e assunto de outro documento |
 | Otimização | Medir sim, otimizar não. Otimizar antes de saber se presta é gastar duas vezes |
 
