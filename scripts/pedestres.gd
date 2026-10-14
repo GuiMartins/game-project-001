@@ -79,7 +79,11 @@ static func posicoes(
 					else rua.randf_range(-PI, PI)
 				)
 				var camisa := CAMISAS[rua.randi_range(0, CAMISAS.size() - 1)]
-				if Cidade.na_boca(cruzamentos, aqui, side):
+				# Na via expressa nao tem calcada: a borda e muro.
+				if (
+					Cidade.na_boca(cruzamentos, aqui, side)
+					or Cidade.expressa_em(track, aqui) != Vector3.ZERO
+				):
 					continue
 				var t := track.transform_at(aqui, lateral)
 				t.basis = t.basis * Basis(Vector3.UP, giro)

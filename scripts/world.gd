@@ -135,7 +135,12 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	track = RoadTrack.new()
 	track.name = "Track"
 	add_child(track)
-	track.build(ROUTE_LENGTH, _rng)
+	# A via expressa soma pista (V11b). A semente e a da cidade, que sai do
+	# `_rng` sem gastar sorteio dele; a pista a mais sai de um gerador proprio.
+	var semente_da_cidade := hash(_rng.seed + 1)
+	var extra := RandomNumberGenerator.new()
+	extra.seed = hash(_rng.seed + 5)
+	track.build(ROUTE_LENGTH, _rng, Cidade.extra_de_expressas(semente_da_cidade), extra)
 
 	_build_scenery()
 
@@ -350,14 +355,22 @@ func _build_scenery() -> void:
 	rua.seed = hash(_rng.seed + 1)
 	Cidade.new(track).montar(rua, props)
 
+	# Os postes da avenida saem do `_rng`, e os da pista que a via expressa
+	# somou, de um gerador proprio: assim o `_rng` gasta o mesmo que gastava
+	# sem ela, e o transito e os rivais que vem depois saem iguais.
+	var depois := RandomNumberGenerator.new()
+	depois.seed = hash(_rng.seed + 6)
 	var o := 30.0
 	while o < track.length - 10.0:
-		var side := 1.0 if _rng.randf() < 0.5 else -1.0
+		var gerador := _rng if o < track.comprimento_da_avenida - 10.0 else depois
+		var side := 1.0 if gerador.randf() < 0.5 else -1.0
 		var at := track.point(o, Poste.LATERAL * side)
 		var para_a_pista := track.sample_basis(o).x * -side
 		var na_rua := Cidade.na_boca(track.cruzamentos, o, side)
-		o += _rng.randf_range(18.0, 34.0)
-		if na_rua:
+		# Embaixo do viaduto o poste de 10 m fura o tabuleiro de 7.
+		var fura := Cidade.sob_viaduto(track, o, side)
+		o += gerador.randf_range(18.0, 34.0)
+		if na_rua or fura:
 			continue
 		props.add_child(Poste.criar(at, para_a_pista))
 
@@ -367,7 +380,7 @@ func _build_scenery() -> void:
 	# corrida inteira do banco de provas, que tem baseline por sistema
 	# operacional. A rua de verdade sai do `rua`, que e so dela.
 	o = 12.0
-	while o < track.length:
+	while o < track.comprimento_da_avenida:
 		for _side in 2:
 			if _rng.randf() < 0.35:
 				continue

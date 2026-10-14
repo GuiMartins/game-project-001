@@ -651,7 +651,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     eram desenhados na horizontal. A 10% de rampa, uma borda ficava 30 cm
     acima do asfalto e a outra enterrada; agora tudo segue o plano da rua.
 
-- [ ] **V10a** — Pintura de canalização e faixa azul
+- [~] **V10a** — Pintura de canalização e faixa azul (14/10/2026)
 
   O chão do cruzamento da `02_praca_maua` não é só zebra: a ilha entre as
   pistas tem área zebrada (hachura branca diagonal dentro de um contorno),
@@ -669,6 +669,9 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     da P4a (`arte/chao.py`) proíbe abaixo de 1,7 m de período. Espaçar e
     engrossar até não piscar, como a V10 conferiu a zebra.
   - **Aceite:** a hachura não pisca a 180 km/h, julgado rodando; `fps` igual.
+  - **Cancelada pelo Guilherme:** desnecessária. Chegou a ser feita (bico
+    hachurado na saída de cada rua e faixa azul em metade dos corredores) e
+    foi revertida sem entrar: a pintura que a avenida já tem basta.
 
 ### Os prédios e o céu
 
@@ -745,7 +748,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
   moldura já existia. `fps` p50 8,33 ms (refresh de 120 Hz). Baseline sem
   variação.
 
-- [ ] **V11b** 👤 — Trecho de via expressa: viaduto, muro com mural, mureta e cerca
+- [x] **V11b** 👤 — Trecho de via expressa: viaduto, muro com mural, mureta e cerca (14/10/2026)
 
   Metade das paradas não é avenida de centro. A `03_viaduto` corre embaixo
   de um tabuleiro elevado de concreto apoiado em pilares retangulares
@@ -781,6 +784,33 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     `03_viaduto` e outro como a `04_vertical`; a sombra do tabuleiro passa
     por cima da moto; `fps` medido no pior caso (embaixo do viaduto, com
     trânsito).
+  - **Decisão (14/10/2026, Guilherme):** tipo de trecho, como recomendado, e
+    **somando pista**: a expressa não toma o lugar de um corredor, a corrida
+    fica mais longa por ela.
+
+  **Resultado:** duas expressas por corrida, de 320 a 480 m, depois do
+  segundo e do quarto corredor (`Cidade.EXPRESSA_*`): a pista foi de 3,2 para
+  4,0 km com a semente fixa. Os 3,2 km da avenida saem idênticos e o gerador do
+  mundo gasta o mesmo que gastava (a pista a mais, os postes dela e os painéis
+  saem de geradores próprios); com as expressas desligadas o banco de provas
+  bate o baseline antigo sem variação. O kit é `arte/via_expressa.py` (atlas
+  de 16 painéis de mural e grafite, concreto com limo, tela de alambrado com
+  furo) e `scripts/via_expressa.gd`, extrudado na curva como o meio-fio: lado
+  fechado com grama, muro de 5,5 m e alambrado com aba de arame; lado aberto
+  com mureta, pilares pintados, pista de serviço e muro baixo; o tabuleiro de
+  7 m chega e vai embora de lado nos 60 m das pontas, e cobre a pista até
+  passar do eixo. O acostamento fica livre. Na expressa não há cruzamento,
+  prédio, pedestre nem travessia, e o poste do lado do viaduto não nasce
+  embaixo dele; a placa verde entra 50 m depois da entrada. A prova ganhou os
+  quadros `muro` (ao lado da `04`) e `viaduto` (da `03`), que saíram da curva
+  e da ladeira. Baseline: na corrida solta o piloto automático fugia do
+  trânsito pela calçada esquerda a 1028 m, onde agora há mureta; até ali as
+  duas corridas são iguais quadro a quadro, e a distância (−14%), a posição,
+  o líder e a batida que vem depois andaram por isso; o desnível subiu 0,9 m
+  com a pista a mais. Visual: fração de céu +22% de dia e +21% de noite, o céu
+  por cima do muro onde antes havia prédio. `fps` p50 8,33 ms, p95 8,39 ms
+  (teto de 120 Hz). Ficou para depois: prédio atrás do muro baixo (o fundo é
+  da V14a) e trânsito na pista de serviço.
 
 - [x] **V12** — Glow: outdoor, lanterna e cromo brilhando (12/10/2026, #84)
 

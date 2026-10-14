@@ -87,6 +87,14 @@ const RETENCAO_RECUO: float = 1.6
 
 var curve: Curve3D
 var length: float = 0.0
+## Ate onde vai a pista sem o `extra` do `build`: o que o mundo sorteia do
+## gerador dele (poste, os sorteios de greybox) para aqui, para o transito e os
+## rivais continuarem saindo dele iguais.
+var comprimento_da_avenida: float = 0.0
+## Onde a pista e via expressa (V11b), como a `Cidade` sorteou: `[de, ate,
+## lado]`, com o `lado` do viaduto e do perfil aberto. Quem anda na calcada e
+## quem atravessa a rua precisa saber: ali nao ha calcada nem travessia.
+var expressas: Array[Vector3] = []
 ## Onde a avenida e cruzada, como a `Cidade` sorteou: `[offset, lados]`, com os
 ## lados no sinal do `Cidade.LADO_*`. E dele que sai onde a pintura abre.
 var cruzamentos: Array[Vector2] = []
@@ -97,7 +105,17 @@ var _asphalt_mesh: MeshInstance3D
 var _pintura: MeshInstance3D
 
 
-func build(total_length: float, rng: RandomNumberGenerator) -> void:
+## `extra` metros de pista a mais depois dos `total_length`, sorteados de
+## `rng_extra`: e o que a via expressa soma a corrida (V11b). Gerador separado
+## para os primeiros `total_length` metros sairem identicos com ou sem ela, e
+## para o `rng` sair daqui no mesmo estado: transito e rivais vem dele depois,
+## e o banco de provas tem baseline deles.
+func build(
+	total_length: float,
+	rng: RandomNumberGenerator,
+	extra: float = 0.0,
+	rng_extra: RandomNumberGenerator = null
+) -> void:
 	# Quem nao e parametrico na curva e precisa do chao - o corpo que voa no
 	# atropelo (`Pessoa`) - acha a pista por aqui.
 	add_to_group(GRUPO)
@@ -119,19 +137,27 @@ func build(total_length: float, rng: RandomNumberGenerator) -> void:
 	var climb_per_m := 0.0
 	var step := 12.0
 
-	while travelled < total_length:
+	var avenida_pontos := 0
+	while travelled < total_length + extra:
+		var gerador := rng if travelled < total_length else rng_extra
+		if travelled < total_length:
+			avenida_pontos += 1
 		if segment_left <= 0.0:
-			segment_left = rng.randf_range(90.0, 260.0)
-			var kind := rng.randi() % 10
+			segment_left = gerador.randf_range(90.0, 260.0)
+			var kind := gerador.randi() % 10
 			if kind < 3:
 				turn_per_m = 0.0  # reta de marginal
 			elif kind < 8:
-				turn_per_m = rng.randf_range(0.12, 0.45) * (1.0 if rng.randf() < 0.5 else -1.0)
+				turn_per_m = (
+					gerador.randf_range(0.12, 0.45) * (1.0 if gerador.randf() < 0.5 else -1.0)
+				)
 			else:
 				# Teto de 0.6 graus/m nao e estetico: a 52 m/s isso da 31 graus/s de
 				# guinada exigida, logo abaixo do que a moto entrega no talo. Curvao
 				# passa raspando sem frear - qualquer coisa acima disso e injusto.
-				turn_per_m = rng.randf_range(0.45, 0.6) * (1.0 if rng.randf() < 0.5 else -1.0)
+				turn_per_m = (
+					gerador.randf_range(0.45, 0.6) * (1.0 if gerador.randf() < 0.5 else -1.0)
+				)
 
 		# A ladeira tem trecho PROPRIO, mais curto que o da curva.
 		#
@@ -140,8 +166,8 @@ func build(total_length: float, rng: RandomNumberGenerator) -> void:
 		# inteira tinha o mesmo ritmo. Separados, sobe no meio do curvao e
 		# empina na reta - e o relevo deixa de ser decorativo.
 		if hill_left <= 0.0:
-			hill_left = rng.randf_range(70.0, 200.0)
-			climb_per_m = _pick_grade(rng, pos.y)
+			hill_left = gerador.randf_range(70.0, 200.0)
+			climb_per_m = _pick_grade(gerador, pos.y)
 
 		heading += deg_to_rad(turn_per_m) * step
 		pitch = lerpf(pitch, climb_per_m, GRADE_BLEND)
@@ -154,6 +180,9 @@ func build(total_length: float, rng: RandomNumberGenerator) -> void:
 	# Suaviza os cantos: sem tangentes a curva vira poligonal e a moto "engasga".
 	_smooth_tangents()
 	length = curve.get_baked_length()
+	comprimento_da_avenida = length
+	if extra > 0.0:
+		comprimento_da_avenida = curve.get_closest_offset(curve.get_point_position(avenida_pontos))
 
 	_build_mesh()
 

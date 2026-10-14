@@ -29,16 +29,21 @@ const QUADROS_DE_ESPERA: int = 3
 ## - `ladeira`: tambem nao ha ladeira; o `t1.0s` e o de horizonte mais alto.
 ## - `reta`: corredor de predio fechando no ponto de fuga, como no `t5.0s`.
 ## - `faixa`: a zebra chegando por baixo da moto, como no `t3.0s`.
+## - `muro` e `viaduto`: a via expressa (V11b), cada um com a imagem parada
+##   dele. Ate ela existir, a `04` ficava ao lado da curva e a `03` da
+##   ladeira, por falta de quadro melhor.
 ##
 ## As imagens paradas (V01 do backlog visual) entram ao lado quando existirem;
 ## enquanto nao, ficam de fora sem reclamar, porque a folha continua servindo
 ## so com o video.
 const REFERENCIAS: Dictionary = {
 	"largada": ["video_01/t0.0s.png", "01_centro.png"],
-	"curva": ["video_01/t3.8s.png", "04_vertical.png"],
-	"ladeira": ["video_01/t1.0s.png", "03_viaduto.png"],
+	"curva": ["video_01/t3.8s.png"],
+	"ladeira": ["video_01/t1.0s.png"],
 	"reta": ["video_01/t5.0s.png", "02_praca_maua.png"],
 	"faixa": ["video_01/t3.0s.png"],
+	"muro": ["04_vertical.png"],
+	"viaduto": ["03_viaduto.png"],
 }
 ## Fundo do que sobra quando uma linha e mais curta que a mais longa. Cinza
 ## medio, e nao preto: preto se confunde com o tunel e a sombra do jogo.
@@ -222,6 +227,16 @@ static func pontos(track: RoadTrack) -> Array[Dictionary]:
 			var zebra := c.x - track.boca - RoadTrack.ZEBRA_ESQUINA - RoadTrack.ZEBRA_COMPRIMENTO
 			lista.append({"nome": "faixa", "offset": zebra - 38.0, "velocidade": 25.0})
 			break
+	# A primeira via expressa (V11b), que e a do viaduto pela esquerda e do
+	# muro alto pela direita, como as duas referencias. O `muro` olha para
+	# dentro dela da entrada, com a placa e o tabuleiro chegando de lado; o
+	# `viaduto`, ja embaixo do tabuleiro, depois que ele chegou.
+	if not track.expressas.is_empty():
+		var e := track.expressas[0]
+		var v := Cidade.viaduto_de(e)
+		lista.append({"nome": "muro", "offset": e.x + 5.0, "velocidade": 25.0})
+		var embaixo := v.x + ViaExpressa.VIADUTO_CURVA + 10.0
+		lista.append({"nome": "viaduto", "offset": embaixo, "velocidade": 25.0})
 	return lista
 
 
@@ -242,7 +257,12 @@ static func _melhor(track: RoadTrack, usados: Array[float], nota: Callable) -> f
 		for u in usados:
 			if absf(o - u) < 250.0:
 				longe = false
-		if longe:
+		# Os quadros da avenida ficam na avenida: a expressa tem os dela.
+		var na_expressa := (
+			Cidade.expressa_em(track, o) != Vector3.ZERO
+			or Cidade.expressa_em(track, o + 60.0) != Vector3.ZERO
+		)
+		if longe and not na_expressa:
 			var n: float = nota.call(o)
 			if n > melhor_nota:
 				melhor_nota = n

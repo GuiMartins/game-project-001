@@ -132,7 +132,7 @@ os 3,3 m do baseline eram ele indo embora ao levantar. Mora em
 `scripts/selftest_combate.gd`, pelo mesmo limite de linhas da `batida`.
 
 `disputa` é a mais nova e a mais barata pelo que cobre: larga o grid a 260 m da
-chegada em vez de pagar os 3,2 km da rota, e é a única prova de que a corrida
+chegada em vez de pagar os 4 km da rota, e é a única prova de que a corrida
 **termina**. Além de medir a colocação final, ela confere que quem cruzou a
 linha antes do jogador está na frente dele no resultado — se a ordenação do
 pelotão quebrar, o jogo continua rodando e o placar passa a mentir em silêncio.

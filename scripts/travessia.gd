@@ -106,7 +106,8 @@ static func planejar(a_track: RoadTrack, rng: RandomNumberGenerator) -> Array[Ev
 		for c in a_track.cruzamentos:
 			if absf(o - c.x) < 25.0:
 				perto = true
-		if perto:
+		# Nem na via expressa: ninguem atravessa entre dois muros.
+		if perto or Cidade.expressa_em(a_track, o) != Vector3.ZERO:
 			continue
 		var e := Evento.new()
 		e.tipo = Tipo.FORA
