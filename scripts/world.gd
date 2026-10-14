@@ -490,15 +490,18 @@ func _aplica_ceu() -> void:
 			_ceu.set_shader_parameter(uniforme, valor)
 
 
-## Sprite ou modelo, em todo corredor. A cada quadro, e nao so quando o slider
+## Sprite ou modelo, e a cadencia da pose, em todo corredor. A cada quadro, e nao so quando o slider
 ## mexe: rival que entra depois (R) nasce em 3D e tem de ser trocado tambem. O
 ## ator ignora o pedido que nao muda nada.
 func _aplica_ator() -> void:
 	var ligado := world_tuning.ator_sprite == 1
+	var cadencia := float(world_tuning.ator_cadencia)
 	if player != null:
 		player.usar_sprite(ligado)
+		player.usar_cadencia(cadencia)
 	for rival in rivals:
 		rival.usar_sprite(ligado)
+		rival.usar_cadencia(cadencia)
 
 
 func _physics_process(delta: float) -> void:

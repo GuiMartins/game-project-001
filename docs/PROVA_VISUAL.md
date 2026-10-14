@@ -416,6 +416,10 @@ O que é desta tarefa continua aberto: a cadência travada em 12 fps não existe
 e o aceite — julgar rodando — espera o resto da prova (luz, paleta) para valer.
 O como está em `docs/PROTOTIPO.md`, seção *O entregador*.
 
+**Estado (14/10/2026):** a cadência travada existe desde a V22 do
+`BACKLOG_VISUAL.md` (slider `ator_cadencia` no F3), com o default liso; o
+porquê está lá.
+
 ### P6 — Partículas
 
 **Assets:** todo o bloco de partículas.

@@ -256,6 +256,8 @@ var sprite: bool = false:
 			return
 		sprite = valor
 		_mostra_sprite()
+## Quantas poses por segundo chegam na tela; a fisica nao espera (`Cadencia`).
+var cadencia := Cadencia.new()
 
 var _modelo: Node3D
 var _material: ShaderMaterial
@@ -409,9 +411,12 @@ func _monta() -> void:
 	_piloto = _no("Piloto")
 	_rodas = [_no("Roda_Traseira"), _no("Roda_Dianteira")]
 	_lisas.clear()
+	# A textura lida uma vez so: e dela que o borrao tira a cor dos raios.
+	if _imagem_da_paleta == null:
+		_imagem_da_paleta = ALBEDO.get_image()
 	for i in 2:
 		_raios[i] = (_rodas[i] as MeshInstance3D).get_aabb().size.y * 0.5
-		_lisas.append(RodaLisa.new(_rodas[i], _paleta()))
+		_lisas.append(RodaLisa.new(_rodas[i], _imagem_da_paleta))
 	var eixo_tras := _no_relativo(_rodas[0], _moto)
 	var eixo_frente := _no_relativo(_rodas[1], _moto)
 	_altura_eixo = [eixo_tras.y, eixo_frente.y]
@@ -565,7 +570,8 @@ func atualizar(
 	_corpo(delta)
 	if _voando:
 		_voa(delta, velocidade)
-	_posa()
+	if cadencia.vez(delta):
+		_posa()
 
 
 func _suspensao(delta: float, v: float) -> void:
@@ -932,14 +938,6 @@ func _estica(d: Vector3, k: float) -> Basis:
 	return Basis(
 		Vector3.RIGHT + d * (m * d.x), Vector3.UP + d * (m * d.y), Vector3.BACK + d * (m * d.z)
 	)
-
-
-## A textura de paleta lida uma vez so: e dela que o borrao tira a cor dos
-## raios.
-static func _paleta() -> Image:
-	if _imagem_da_paleta == null:
-		_imagem_da_paleta = ALBEDO.get_image()
-	return _imagem_da_paleta
 
 
 func _suave(t: float) -> float:

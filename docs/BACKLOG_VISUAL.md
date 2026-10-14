@@ -1045,7 +1045,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   - **Aceite:** de trás, na câmera da V04, lê camiseta e bermuda; os rivais
     continuam um por cor (`dev.py prova`).
 
-- [ ] **V22** — Cadência do ator: 12 fps ou liso
+- [x] **V22** — Cadência do ator: 12 fps ou liso (14/10/2026)
 
   A P5 que ficou aberta. O `DIRECAO_VISUAL.md` diz que a cadência travada é o
   que faz o ator ler como digitalizado; o vídeo é liso a 24 fps e tira um
@@ -1058,6 +1058,18 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
     calculada a 60 Hz, aplicada a 12), com slider. Julgar **rodando**, com
     rivais e trânsito em volta.
   - **Aceite:** a decisão escrita aqui, com o default que ficou.
+  - **Feito:** `Cadencia` (`Entregador.cadencia.hz`), slider `ator_cadencia` no grupo
+    Ator do F3 (0 a 30; 0 é liso). Mola, roda, voo e soco seguem integrando
+    a 60 Hz; só a pose aplicada espera a vez, e quando sai é a do estado de
+    agora (o teste confere roda contra roda com o ator liso). Vale para
+    jogador e rivais, no 3D e no sprite.
+  - **Decisão: default liso (0).** Os dois vídeos de referência são lisos a
+    24 fps, e a cadência travada só alcança o miolo do ator: a moto anda,
+    inclina e chega a 60 Hz, porque quem inclina é o `Visual` do corpo.
+    Travado, o ator fica com roda, guidão e joelho pulando dentro de uma
+    moto que desliza, o que tende a ler como quadro perdido. Para revisitar
+    jogando, é o slider em 12; se convencer, troca-se o default e esta
+    linha. Baseline nenhum andou: com 0 o código é o de antes.
 
 ### Partículas
 
