@@ -252,7 +252,7 @@ saber onde **não** há rede faz parte do contrato.
 | `assets/entregador/` | O modelo e as texturas que o jogo carrega. Não edite à mão: regere pelo script. |
 | `scripts/ficha_da_moto.gd` | Ficha técnica real de cada moto. Moto nova começa por ela: as medidas guiam o modelo do Blender e a mola sai dela (`FisicaDaMoto`). Sem ficha, o teste reprova. |
 | `scripts/carro.gd` | Os carros do trânsito por dentro: roda, mola, porta, luz e quem dirige. |
-| `arte/carros.py` | Gera hatch, sedã, SUV, táxi e ônibus no Blender. Fonte do `assets/carros/`, que é build. |
+| `arte/carros.py` | Gera hatch, sedã, SUV, táxi, ônibus, baú e van no Blender. Fonte do `assets/carros/`, que é build. |
 | `scripts/ik.gd` | IK de dois ossos, dos braços do piloto e de quem dirige. |
 | `arte/chao.py` | Gera as texturas de asfalto e calçada (`assets/visual/`). As regras de "visto a 180 km/h" estão no topo dele. |
 | `arte/paleta.py` | Gera o LUT de cor do dia (`assets/visual/lut_dia.png`). O clima da tela se ajusta ali. |

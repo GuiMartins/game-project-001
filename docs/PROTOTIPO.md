@@ -494,18 +494,20 @@ motos: XRE e PCX aparecem com o desenho da CG, só mais altas.
 ## Os carros
 
 O trânsito saiu da caixa pelo mesmo motivo que o entregador: o que o carro
-mostra é o que o jogador lê para decidir se entra no corredor. São cinco
+mostra é o que o jogador lê para decidir se entra no corredor. São sete
 modelos ([`assets/carros/`](../assets/carros)), gerados por
 [`arte/carros.py`](../arte/carros.py) e posados a cada passo por
 [`scripts/carro.gd`](../scripts/carro.gd), filho de cada `TrafficCar`:
 
 | modelo | medida | na rua |
 | --- | --- | --- |
-| hatch de duas portas | 3,9 × 1,7 m | 25% |
-| sedã | 4,4 × 1,7 m | 25% |
-| SUV | 4,3 × 1,8 m | 18% |
-| táxi do Rio, amarelo com faixa azul e luminoso | 4,4 × 1,7 m | 18% |
-| ônibus urbano, porta dupla à direita | 12,2 × 2,5 m | 14% |
+| hatch de duas portas | 3,9 × 1,7 m | 22% |
+| sedã | 4,4 × 1,7 m | 22% |
+| SUV | 4,3 × 1,8 m | 15% |
+| táxi do Rio, amarelo com faixa azul e luminoso | 4,4 × 1,7 m | 15% |
+| ônibus urbano, porta dupla à direita | 12,2 × 2,5 m | 12% |
+| caminhão baú (VUC), cabine avançada e baú de alumínio | 6,3 × 2,2 m | 7% |
+| van de carga de teto alto | 5,4 × 2,05 m | 7% |
 
 O que se mexe, e por que cada um é aviso e não enfeite:
 

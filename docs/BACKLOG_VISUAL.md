@@ -1006,17 +1006,28 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   e a disputa de 260 m de 1º para 6º, porque o trânsito andando segura o
   piloto automático. Caminhão baú e van foram para a V20a.
 
-- [ ] **V20a** — Caminhão baú e van no elenco
+- [x] **V20a** — Caminhão baú e van no elenco (14/10/2026)
 
   A segunda metade da V20, separada para o feel entrar antes. O vídeo tem
   caminhão baú (`video_01/t3.0s`) e as paradas também (`03_viaduto`,
-  `04_vertical`); o elenco do `arte/carros.py` só tem hatch, sedã, SUV,
+  `04_vertical`); o elenco do `arte/carros.py` só tinha hatch, sedã, SUV,
   táxi e ônibus.
 
   - **Referências:** `video_01/t3.0s` (baú no fundo, na faixa da direita);
     `03_viaduto`, `04_vertical`.
-  - **O que fazer:** baú e van em `arte/carros.py` com a mesma árvore de nós
-    dos outros (`Carro` não tem `if` por modelo), e o peso deles no sorteio.
+  - **Feito:** `Bau` (VUC de 6,3 × 2,2 × 3,1 m, cabine avançada, baú de
+    alumínio com nervuras, portas de trás com as barras de trava, barra de
+    lanternas embaixo e rodado duplo) e `Van` (furgão de teto alto de 5,4 m,
+    porta corrediça só desenhada) em `arte/carros.py`, com a árvore de nós dos
+    outros. Na rua, 7% cada; a cabine sai da lista de frota de empresa, quase
+    toda branca. O baú ficou de fora dos carros parados das ruas laterais
+    (`cidade.gd`): lá o sorteio é outro, e mexer nele move a cidade inteira.
+  - **O que o banco de provas pegou:** com carro mais comprido na rua, um
+    carro entrou em outro três vezes. Eram três furos antigos no trânsito: o
+    `_desencosta` contava a frenagem pela diferença de velocidade, como se o
+    da frente não freasse, e não olhava quem estava trocando para a faixa; e o
+    carro de trás só enxergava quem entrava na frente dele quando a lataria já
+    estava na faixa. Os três consertados no `world.gd`.
   - **Aceite:** na prova a 128 km/h, um baú lê como o da `t3.0s`.
 
 ### O ator
