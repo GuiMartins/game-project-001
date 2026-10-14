@@ -556,8 +556,8 @@ func _predio(
 		caixa = Predio.malha(tipo).get_aabb()
 	else:
 		predio = Predio.criar_obra(obra as Predio.Obra, rua.randf(), rua.randf())
-		# O colisor e o corpo da torre: o andaime sai 1,2 m dela e na calcada
-		# ninguem bate num tubo a 3 m do chao.
+		# O colisor e o corpo da torre: o andaime sai 2,2 m dela, sobre a
+		# calcada, e ninguem anda de moto num tubo ali.
 		caixa = Predio.malha(Predio.Tipo.TORRE).get_aabb()
 	props.add_child(predio)
 	# Base 1 m abaixo da pista: na rampa o predio nao pode ficar com o pe no ar.

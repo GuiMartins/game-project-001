@@ -897,7 +897,9 @@ GUINDASTE_LANCA = 4.0
 CONTRAPESO = 8.0
 
 
-ANDAIME_FORA = 1.2
+# Sai 2,2 m da parede: o toldo da loja do terreo avanca 1,9 m e a varanda corrida
+# 1,2 m, e com o andaime mais perto eles furavam a lona e o piso.
+ANDAIME_FORA = 2.2
 
 
 def andaime_e_lona(p, rng, W, D, TOPO, lona) -> None:
@@ -905,7 +907,7 @@ def andaime_e_lona(p, rng, W, D, TOPO, lona) -> None:
 
     So a frente, e dentro da largura do corpo: o `cidade.gd` encosta um
     predio no outro, e andaime ou lona nas laterais entravam na parede do
-    vizinho. O andaime sai 1,2 m da parede e a lona 8 cm alem dele, em
+    vizinho. O andaime sai 2,2 m da parede e a lona 8 cm alem dele, em
     paineis de uma baia por tres andares com falhas sorteadas: lona inteira
     vira caixa colorida, e as falhas deixam ver o concreto por tras. Os dois
     andares de cima ficam sem lona, que e como a obra real termina: a tela
@@ -954,40 +956,10 @@ def andaime_e_lona(p, rng, W, D, TOPO, lona) -> None:
         for b in range(len(frente_x) - 1):
             if rng.random() < 0.18:
                 continue
-            origem = Vector((frente_x[b], Y0 + 0.08, z))
-            largura = Vector((frente_x[b + 1] - frente_x[b], 0, 0))
-            painel_de_lona(p, rng, origem, largura, z1 - z, Vector((0, 1, 0)), lona)
+            x0, x1 = frente_x[b], frente_x[b + 1]
+            y = Y0 + 0.08
+            p.face(((x0, y, z), (x1, y, z), (x1, y, z1), (x0, y, z1)), (0, 1, 0), lona)
         z = z1
-
-
-LONA_GRADE = (6, 8)
-
-
-def painel_de_lona(p, rng, origem, eixo_u, altura, normal, cor) -> None:
-    """Um painel de lona amarrado nos quatro cantos, com barriga e dobra.
-
-    Uma lona lisa e plana le como adesivo colado no andaime. Esta e uma malha
-    de 6 x 8 quadros presa nas quatro bordas (deslocamento zero) que incha
-    para fora no meio, como vento enchendo o pano, com dobras verticais por
-    cima - o pano cai em pregas entre as amarras. O deslocamento e sempre para
-    fora, para nunca entrar no andaime. As faces sao duras (o predio e chapa),
-    e e a quina entre elas que da luz e sombra ao volume.
-    """
-    nu, nv = LONA_GRADE
-    barriga = rng.uniform(0.15, 0.40)
-    dobras = rng.choice((2, 3))
-    fase = rng.uniform(0.0, math.tau)
-    prega = rng.uniform(0.05, 0.10)
-
-    def ponto(i, j):
-        u, v = i / nu, j / nv
-        borda = math.sin(math.pi * u) * math.sin(math.pi * v)
-        fora = barriga * borda ** 0.8 + prega * math.sin(math.tau * dobras * u + fase) * borda
-        return origem + eixo_u * u + Vector((0, 0, altura * v)) + normal * max(fora, 0.0)
-
-    for i in range(nu):
-        for j in range(nv):
-            p.face((ponto(i, j), ponto(i + 1, j), ponto(i + 1, j + 1), ponto(i, j + 1)), normal, cor)
 
 
 def esqueleto(p, W, D, PILOTIS, ANDAR, ANDARES, prontos) -> None:
