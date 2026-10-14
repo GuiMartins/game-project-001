@@ -1086,8 +1086,8 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   piso de tábua a cada 4 m, diagonais alternadas), **lona laranja ou azul**
   semitransparente (xadrez de um pixel no `predio.gdshader`, marcada pelo UV
   de luz) por cima em painéis de uma baia por três andares, com falhas sorteadas e
-  os dois andares de cima sem lona, e na calçada **tapume** de 2,4 m e
-  **marquise** de proteção a 3,5 m. São quatro malhas (esqueleto ou
+  os dois andares de cima sem lona, e o andaime desce até a calçada, sem tapume nem marquise (a tampa de madeira
+  escondia o andaime do chão). São quatro malhas (esqueleto ou
   meia-obra, laranja ou azul): a lona é geometria, e não pintura por
   instância. Vira obra uma torre em cada três do corredor
   (`Cidade.OBRA_UMA_EM`), por **hash** da semente e da posição

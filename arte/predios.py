@@ -827,7 +827,7 @@ def torre(rng, prontos=ANDARES_DA_TORRE, nome="Torre", lona=None) -> Peca:
     gerador, e nao um modelo a parte, para a obra ter exatamente a planta, a
     altura e a loja do terreo da torre que ela vai virar.
 
-    Com `lona`, a obra ganha andaime em volta, tapume e marquise na calcada e
+    Com `lona`, a obra ganha andaime em volta, descendo ate a calcada, e
     lona na cor dada (V17a, segunda passada): so o ferro no topo fazia a obra
     parecer um predio com defeito no ultimo andar, e o que le "obra" no
     quadro e o corpo inteiro embrulhado.
@@ -899,14 +899,14 @@ ANDAIME_FORA = 1.2
 
 
 def andaime_e_lona(p, rng, W, D, TOPO, lona) -> None:
-    """Andaime tubular na frente e nos dois lados, lona por cima e, na calcada,
-    tapume com marquise de protecao.
+    """Andaime tubular na frente e nos dois lados, com lona por cima.
 
     O andaime sai 1,2 m da parede e a lona 8 cm alem dele, em paineis de uma
     baia por tres andares com falhas sorteadas: lona inteira vira caixa
     colorida, e as falhas deixam ver o concreto por tras. Os dois andares de
     cima ficam sem lona, que e como a obra real termina: a tela sobe atras do
-    pedreiro. O tapume e a marquise ficam so na frente: a calcada e a de la.
+    pedreiro. Sem tapume nem marquise na calcada: tampa de madeira de 2,4 m
+    escondia o andaime do chao, que e justamente o que le "obra" de perto.
     """
     F = ANDAIME_FORA
     X0, Y0 = W * 0.5 + F, D * 0.5 + F
@@ -972,14 +972,6 @@ def andaime_e_lona(p, rng, W, D, TOPO, lona) -> None:
                 x = lado * (X0 + 0.08)
                 p.face(((x, y0, z), (x, y1, z), (x, y1, z1), (x, y0, z1)), (lado, 0, 0), lona)
         z = z1
-
-    # Calcada: tapume de 2,4 m na linha do andaime e marquise de protecao
-    # por cima, a 3,5 m, que sai 0,9 m alem dele.
-    tapume_y = Y0 + 0.9
-    p.caixa((0, tapume_y, 1.2), (X0 * 2.0, 0.08, 2.4), "madeira")
-    for x in espaco(-X0, X0, 6):
-        p.caixa((x, tapume_y, 1.75), (0.1, 0.1, 3.5), "madeira")
-    p.caixa((0, D * 0.5 + (F + 0.9) * 0.5, 3.5), (X0 * 2.0, F + 0.9, 0.1), "madeira")
 
 
 def esqueleto(p, W, D, PILOTIS, ANDAR, ANDARES, prontos) -> None:
