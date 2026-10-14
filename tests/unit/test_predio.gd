@@ -77,3 +77,30 @@ func test_cores_de_fabrica_batem_com_a_textura() -> void:
 		assert_float(mais_clara.r).is_equal_approx(fabrica[canal].r, 0.01)
 		assert_float(mais_clara.g).is_equal_approx(fabrica[canal].g, 0.01)
 		assert_float(mais_clara.b).is_equal_approx(fabrica[canal].b, 0.01)
+
+
+func test_a_obra_tem_a_planta_da_torre() -> void:
+	# A obra entra no lugar da torre sem a `Cidade` mexer na conta de passo:
+	# se a planta andar, abre vao ou encavala no corredor.
+	var torre := Predio.malha(Predio.Tipo.TORRE).get_aabb()
+	for fase: int in Predio.Obra.values():
+		var obra := Predio.malha_obra(fase as Predio.Obra).get_aabb()
+		assert_float(obra.size.x).is_between(torre.size.x - 1.0, torre.size.x)
+		assert_float(obra.position.y).is_equal_approx(0.0, 0.01)
+		assert_float(obra.size.y).is_greater(Predio.OBRA_LAJE_DO_TOPO)
+		assert_float(obra.size.y).is_less(torre.size.y + 1.0)
+
+
+func test_a_laje_do_topo_bate_com_o_gerador() -> void:
+	# O guindaste pisa em `OBRA_LAJE_DO_TOPO`: no esqueleto, a laje ali tem
+	# 0,3 m de espessura e nada acima dela alem do ferro e do miolo. Se a
+	# altura dos andares mudar no `arte/predios.py`, o guindaste fica
+	# flutuando ou enterrado - e o jogo continua rodando.
+	var vertices: PackedVector3Array = (
+		Predio.malha_obra(Predio.Obra.ESQUELETO).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	)
+	var achou := false
+	for v in vertices:
+		if is_equal_approx(v.y, Predio.OBRA_LAJE_DO_TOPO) and absf(v.x) > 7.0:
+			achou = true
+	assert_bool(achou).is_true()

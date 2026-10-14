@@ -16,11 +16,18 @@ extends RefCounted
 ## `cidade.gd`, que escolhe o tipo pela altura sorteada.
 enum Tipo { SOBRADO, COMERCIO, DECO, ESCRITORIO, TORRE }
 
+## A fase de uma torre em obra (V17a): so o esqueleto, ou a metade de baixo ja
+## vestida. Fora do `Tipo` de proposito: a obra tem a planta da `TORRE` e
+## entra no lugar dela, e nao e um quinto tamanho que o sorteio de altura
+## possa escolher.
+enum Obra { ESQUELETO, FACHADA }
+
 const CENA: PackedScene = preload("res://assets/predios/predios.glb")
 const SHADER: Shader = preload("res://scripts/predio.gdshader")
 const ALBEDO: Texture2D = preload("res://assets/predios/predios_albedo.png")
 const MASCARA: Texture2D = preload("res://assets/predios/predios_mascara.png")
 const NOS: Array[String] = ["Sobrado", "Comercio", "Deco", "Escritorio", "Torre"]
+const NOS_OBRA: Array[String] = ["ObraEsqueleto", "ObraFachada"]
 
 ## A cor pintada na textura em cada canal da mascara: a celula mais clara sob
 ## ele em `PALETA`, no `arte/predios.py`. O `test_predio.gd` le a textura e
@@ -72,7 +79,13 @@ const TELAS: Array[Color] = [
 ## quem anda, como a bandeira do outdoor do `Deco`, que comeca a 6 m.
 const ALTURA_DA_RUA: float = 5.0
 
+## A altura da laje do topo da obra: pilotis (4 m) mais 16 andares de 3 m, de
+## `arte/predios.py`. O guindaste pisa nela, e nao no ferro de espera que sobe
+## 1,6 m dos pilares; o `test_predio.gd` confere com a malha.
+const OBRA_LAJE_DO_TOPO: float = 52.0
+
 static var _malhas: Array[Mesh] = []
+static var _pecas: Dictionary = {}
 static var _frentes: Array[float] = []
 static var _material: ShaderMaterial
 
@@ -93,6 +106,41 @@ static func criar(tipo: Tipo, pintura: float, loja: float) -> MeshInstance3D:
 	mi.set_instance_shader_parameter("loja", _escolhe(LOJAS, loja))
 	mi.set_instance_shader_parameter("tela", _escolhe(TELAS, fposmod(loja * 7.0, 1.0)))
 	return mi
+
+
+## A obra no lugar de uma `TORRE`: mesma planta, so que no esqueleto ou meio
+## vestida. A pintura e a loja valem para a parte que ja tem fachada.
+static func criar_obra(fase: Obra, pintura: float, loja: float) -> MeshInstance3D:
+	var mi := peca(NOS_OBRA[fase])
+	mi.set_instance_shader_parameter("pintura", _escolhe(PINTURAS, pintura))
+	mi.set_instance_shader_parameter("loja", _escolhe(LOJAS, loja))
+	mi.set_instance_shader_parameter("tela", _escolhe(TELAS, fposmod(loja * 7.0, 1.0)))
+	return mi
+
+
+## A malha de uma peca avulsa do `.glb` - obra, mastro, lanca.
+static func malha_da_peca(nome: String) -> Mesh:
+	if not _pecas.has(nome):
+		var cena := CENA.instantiate()
+		var no := cena.find_child(nome, true, false) as MeshInstance3D
+		assert(no != null, "predios.glb sem o no %s" % nome)
+		_pecas[nome] = no.mesh
+		cena.free()
+	return _pecas[nome]
+
+
+## Uma peca avulsa ja com o material do predio. Sem pintura sorteada: quem
+## quiser cor chama `criar`/`criar_obra`.
+static func peca(nome: String) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.name = nome
+	mi.mesh = malha_da_peca(nome)
+	mi.material_override = _material_compartilhado()
+	return mi
+
+
+static func malha_obra(fase: Obra) -> Mesh:
+	return malha_da_peca(NOS_OBRA[fase])
 
 
 static func malha(tipo: Tipo) -> Mesh:

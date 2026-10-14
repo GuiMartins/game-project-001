@@ -24,6 +24,10 @@ referencias:
 | `Torre`      | 15 x 13 x 58,8 m         | o residencial de concreto com varanda corrida |
 |              |                          | e loja embaixo, dos dois lados da portaria    |
 
+Fora os cinco, a obra (V17a): `ObraEsqueleto` e `ObraFachada` sao a `Torre` com
+0 e 8 andares prontos, e `GuindasteMastro`, `GuindasteLanca`, `GuindasteTopo` e
+`GuindasteGancho` sao as pecas repetiveis do guindaste (ver `guindaste.gd`).
+
 Todo predio de rua tem loja com toldo no terreo: e o que passa na altura do
 olho, e a faixa de cor saturada que da ritmo a fachada (REFERENCIA_VIDEO.md,
 "Os predios"). So o `Escritorio` nao tem: a torre de vidro e do fundo, e
@@ -138,6 +142,9 @@ PALETA = {
     "foto_amarelo": ((0.99, 0.88, 0.24), LUZ),
     "foto_roxo": ((0.52, 0.30, 0.86), LUZ),
     "foto_escuro": ((0.14, 0.16, 0.24), LUZ),
+    # O amarelo do guindaste de torre (V17a): `04_vertical` e `03_viaduto`.
+    # Fica no fim da paleta para nenhuma outra celula mudar de lugar.
+    "guindaste": ((0.96, 0.74, 0.06), NADA),
 }
 CELULAS = {nome: i for i, nome in enumerate(PALETA)}
 
@@ -196,13 +203,18 @@ class Peca:
             # Nunca zero: zero e "nao acende".
             face[self.luz] = 0.001 + self.sorteio_da_luz.random() * 0.998
 
-    def caixa(self, centro, tamanho, cor, rot_x=0.0) -> None:
+    def caixa(self, centro, tamanho, cor, rot_x=0.0, rot_y=0.0, rot_z=0.0) -> None:
         verts = bmesh.ops.create_cube(self.bm, size=1.0)["verts"]
         for v in verts:
             v.co.x *= tamanho[0]
             v.co.y *= tamanho[1]
             v.co.z *= tamanho[2]
-        m = Matrix.Translation(Vector(centro)) @ Matrix.Rotation(math.radians(rot_x), 4, "X")
+        m = (
+            Matrix.Translation(Vector(centro))
+            @ Matrix.Rotation(math.radians(rot_z), 4, "Z")
+            @ Matrix.Rotation(math.radians(rot_y), 4, "Y")
+            @ Matrix.Rotation(math.radians(rot_x), 4, "X")
+        )
         bmesh.ops.transform(self.bm, matrix=m, verts=verts)
         for face in {f for v in verts for f in v.link_faces}:
             face[self.cor] = CELULAS[cor]
@@ -791,35 +803,50 @@ def escritorio(rng) -> Peca:
 # distancia.
 
 
-def torre(rng) -> Peca:
-    p = Peca("Torre")
+ANDARES_DA_TORRE = 16
+
+
+def torre(rng, prontos=ANDARES_DA_TORRE, nome="Torre") -> Peca:
+    """O residencial de concreto. `prontos` e a fase de obra (V17a): quantos
+    andares, de baixo para cima, ja tem fachada. Com todos, e a `Torre` de
+    sempre, byte a byte; com menos, o resto fica no esqueleto - laje, pilar e
+    o miolo do elevador -, e o topo perde cornija e caixa d'agua. E o mesmo
+    gerador, e nao um modelo a parte, para a obra ter exatamente a planta, a
+    altura e a loja do terreo da torre que ela vai virar.
+    """
+    p = Peca(nome)
     W, D = 15.0, 13.0
-    PILOTIS, ANDAR, ANDARES = 4.0, 3.0, 16
+    PILOTIS, ANDAR, ANDARES = 4.0, 3.0, ANDARES_DA_TORRE
     TOPO = PILOTIS + ANDAR * ANDARES
-    p.caixa((0, 0, PILOTIS * 0.5), (W - 2.0, D - 2.0, PILOTIS), "concreto_escuro")
-    p.caixa((0, 0, PILOTIS + ANDAR * ANDARES * 0.5), (W, D, ANDAR * ANDARES), "pintura")
-    p.caixa((0, 0, TOPO + 0.45), (W, D, 0.9), "pintura")
-    cornija(p, W, D, TOPO + 0.9)
-    p.caixa((0, -1.5, TOPO + 2.4), (5.0, 4.0, 3.0), "concreto")
-    p.caixa((0, -1.5, TOPO + 4.9), (3.2, 3.2, 2.0), "caixa_dagua")
-    p.caixa((4.5, 2.0, TOPO + 2.9), (0.12, 0.12, 4.0), "grade")  # antena
+    if prontos > 0:
+        p.caixa((0, 0, PILOTIS * 0.5), (W - 2.0, D - 2.0, PILOTIS), "concreto_escuro")
+        p.caixa((0, 0, PILOTIS + ANDAR * prontos * 0.5), (W, D, ANDAR * prontos), "pintura")
+    if prontos == ANDARES:
+        p.caixa((0, 0, TOPO + 0.45), (W, D, 0.9), "pintura")
+        cornija(p, W, D, TOPO + 0.9)
+        p.caixa((0, -1.5, TOPO + 2.4), (5.0, 4.0, 3.0), "concreto")
+        p.caixa((0, -1.5, TOPO + 4.9), (3.2, 3.2, 2.0), "caixa_dagua")
+        p.caixa((4.5, 2.0, TOPO + 2.9), (0.12, 0.12, 4.0), "grade")  # antena
+    else:
+        esqueleto(p, W, D, PILOTIS, ANDAR, ANDARES, prontos)
 
     frente, esquerda, direita = paredes(W, D)
     # Pilotis: pilares nos cantos e no meio, a portaria de vidro e uma loja de
     # cada lado dela, no plano recuado. O toldo sai de baixo da primeira
     # varanda e passa um pouco da linha dos pilares: e o terreo de qualquer
     # predio alto de Copacabana.
-    for s in (-W * 0.5 + 0.4, -W / 6.0, W / 6.0, W * 0.5 - 0.4):
-        frente.caixa(p, s, PILOTIS * 0.5, 0.8, 0.8, PILOTIS, "concreto", recuo=0.8)
-    frente.placa(p, 0.0, 1.5, 3.0, 2.8, "vitrine", -1.0 + CAMADA)
-    for lado in (-1.0, 1.0):
-        s = lado * (W / 6.0 + W * 0.5 - 0.4) * 0.5
-        vao_de_loja(p, frente, s, 3.4, 2.9, porta_aco=lado > 0.0 and rng.random() < 0.5, fora=-1.0)
-        letreiro(p, frente, s, 3.8, 3.6, fora=-1.0)
-        toldo(p, frente, s, 3.8, 3.15, saida=1.9, fora=-1.0)
+    if prontos > 0:
+        for s in (-W * 0.5 + 0.4, -W / 6.0, W / 6.0, W * 0.5 - 0.4):
+            frente.caixa(p, s, PILOTIS * 0.5, 0.8, 0.8, PILOTIS, "concreto", recuo=0.8)
+        frente.placa(p, 0.0, 1.5, 3.0, 2.8, "vitrine", -1.0 + CAMADA)
+        for lado in (-1.0, 1.0):
+            s = lado * (W / 6.0 + W * 0.5 - 0.4) * 0.5
+            vao_de_loja(p, frente, s, 3.4, 2.9, porta_aco=lado > 0.0 and rng.random() < 0.5, fora=-1.0)
+            letreiro(p, frente, s, 3.8, 3.6, fora=-1.0)
+            toldo(p, frente, s, 3.8, 3.15, saida=1.9, fora=-1.0)
 
     vaos_frente = colunas(5, W, 0.8)
-    for andar in range(ANDARES):
+    for andar in range(prontos):
         z = PILOTIS + andar * ANDAR
         # Varanda corrida: laje, guarda-corpo cheio e a porta de vidro atras.
         frente.caixa(p, 0.0, z + 0.1, W - 0.6, 1.2, 0.2, "concreto")
@@ -832,6 +859,131 @@ def torre(rng) -> Peca:
             lado.caixa(p, 0.0, z + 0.05, D, 0.08, 0.22, "friso")
             for s in colunas(4, D, 1.0):
                 lado.janela(p, s, z + 1.0, 1.2, 1.3, vidro_sorteado(rng, claro="cortina"), peitoril="friso")
+    return p
+
+
+# --- Obra e guindaste (V17a) -----------------------------------------------
+#
+# `04_vertical`: um predio de 20 andares no concreto cru, sem fachada, com dois
+# guindastes de torre amarelos; `03_viaduto`: um guindaste ao fundo, atras do
+# muro. E a silhueta que diz "cidade crescendo", e um marco alto que se ve de
+# longe. O esqueleto e a `torre` com menos andares prontos; o guindaste sao
+# pecas repetiveis, e quem decide a altura e o comprimento da lanca e o jogo.
+
+GUINDASTE_TRECHO = 3.0
+GUINDASTE_LANCA = 4.0
+CONTRAPESO = 8.0
+
+
+def esqueleto(p, W, D, PILOTIS, ANDAR, ANDARES, prontos) -> None:
+    """Laje, pilar e o miolo do elevador dos andares que ainda nao tem fachada.
+
+    O pilar so sobe ate a laje de cima, e cada laje tem um guarda-corpo de
+    tela verde nas tres bordas: sao as duas coisas que a 640x360 separam
+    esqueleto de obra de ruina - o resto e cinza sobre cinza.
+    """
+    xs = (-W * 0.5 + 0.5, -W / 6.0, W / 6.0, W * 0.5 - 0.5)
+    ys = (-D * 0.5 + 0.5, 0.0, D * 0.5 - 0.5)
+    TOPO = PILOTIS + ANDAR * ANDARES
+    base = PILOTIS + ANDAR * prontos if prontos > 0 else 0.0
+    if prontos == 0:
+        # Sem andar pronto nao ha pilotis: o terreo tambem e so pilar e laje.
+        for x in xs:
+            for y in ys:
+                p.caixa((x, y, (PILOTIS - 0.3) * 0.5), (0.7, 0.7, PILOTIS - 0.3), "concreto")
+        p.caixa((0, 0, PILOTIS - 0.15), (W, D, 0.3), "concreto")
+    for k in range(prontos, ANDARES):
+        z = PILOTIS + k * ANDAR
+        for x in xs:
+            for y in ys:
+                p.caixa((x, y, z + (ANDAR - 0.3) * 0.5), (0.7, 0.7, ANDAR - 0.3), "concreto")
+        topo_da_laje = z + ANDAR
+        p.caixa((0, 0, topo_da_laje - 0.15), (W, D, 0.3), "concreto")
+        if k < ANDARES - 1:
+            p.caixa((0, D * 0.5, topo_da_laje + 0.55), (W, 0.06, 1.1), "persiana")
+            for lado in (-1.0, 1.0):
+                p.caixa((lado * W * 0.5, 0, topo_da_laje + 0.55), (0.06, D, 1.1), "persiana")
+    # O miolo sobe a frente da laje, para ler como "ja foi concretado".
+    p.caixa((-3.0, 1.0, (base + TOPO + 3.0) * 0.5), (4.0, 5.0, TOPO + 3.0 - base), "concreto_escuro")
+    # Ferro de espera no topo dos pilares.
+    for x in xs:
+        for y in ys:
+            p.caixa((x, y, TOPO + 0.8), (0.1, 0.1, 1.6), "grade")
+
+
+def mastro() -> Peca:
+    """Um trecho do mastro do guindaste: 2 x 2 x 3 m, origem no pe.
+
+    Quatro montantes e uma diagonal em cada face. Empilhado pelo jogo: a
+    altura do guindaste e quantos trechos ele leva, e nao uma escala, que
+    esticaria a treliça e mudaria a espessura do perfil.
+    """
+    p = Peca("GuindasteMastro")
+    L, H = 2.0, GUINDASTE_TRECHO
+    m = L * 0.5 - 0.08
+    for x in (-m, m):
+        for y in (-m, m):
+            p.caixa((x, y, H * 0.5), (0.16, 0.16, H), "guindaste")
+    diag = math.hypot(2 * m, H) - 0.14  # as pontas nao passam do trecho
+    ang = math.degrees(math.atan2(2 * m, H))
+    for y in (-m, m):
+        p.caixa((0, y, H * 0.5), (0.08, 0.08, diag), "guindaste", rot_y=ang)
+    for x in (-m, m):
+        p.caixa((x, 0, H * 0.5), (0.08, 0.08, diag), "guindaste", rot_x=-ang)
+    for z in (0.05, H - 0.05):
+        for y in (-m, m):
+            p.caixa((0, y, z), (2 * m, 0.1, 0.1), "guindaste")
+        for x in (-m, m):
+            p.caixa((x, 0, z), (0.1, 2 * m, 0.1), "guindaste")
+    return p
+
+
+def lanca() -> Peca:
+    """Um trecho de lança: 4 m ao longo de +X, 1 m de altura, origem no pe."""
+    p = Peca("GuindasteLanca")
+    C = GUINDASTE_LANCA
+    for y in (-0.5, 0.5):
+        p.caixa((C * 0.5, y, 0.06), (C, 0.12, 0.12), "guindaste")
+    p.caixa((C * 0.5, 0, 1.0), (C, 0.12, 0.12), "guindaste")
+    diag = math.hypot(C * 0.5, 0.95) - 0.14  # as pontas nao passam do trecho
+    ang = math.degrees(math.atan2(C * 0.5, 0.95))
+    for y in (-0.25, 0.25):
+        p.caixa((C * 0.25, y, 0.5), (0.07, 0.07, diag), "guindaste", rot_y=ang)
+        p.caixa((C * 0.75, y, 0.5), (0.07, 0.07, diag), "guindaste", rot_y=-ang)
+    return p
+
+
+def topo_do_guindaste() -> Peca:
+    """O que gira no alto do mastro: cabine, torre em A e a contra-lança.
+
+    Origem no centro do mastro, na altura da junta. A lança sai para +X e a
+    contra-lança para -X, com os blocos de concreto na ponta: sem eles o
+    guindaste lê como gancho no ar.
+    """
+    p = Peca("GuindasteTopo")
+    p.caixa((0, 0, 0.3), (2.2, 2.2, 0.6), "guindaste")
+    p.caixa((1.6, -1.5, 1.4), (1.4, 1.6, 1.8), "vidro")
+    apice, perna = 7.0, 1.0
+    comprimento = math.hypot(perna, apice - 0.6)
+    ang = math.degrees(math.atan2(perna, apice - 0.6))
+    for lado, sinal in ((-1.0, 1.0), (1.0, -1.0)):
+        p.caixa((lado * perna * 0.5, 0, 0.6 + (apice - 0.6) * 0.5), (0.2, 0.2, comprimento), "guindaste", rot_y=sinal * ang)
+    p.caixa((0, 0, apice + 0.2), (0.4, 0.4, 0.4), "guindaste")
+    # Contra-lança: duas longarinas e a ponta com contrapeso.
+    for y in (-0.4, 0.4):
+        p.caixa((-CONTRAPESO * 0.5, y, 0.1), (CONTRAPESO, 0.12, 0.12), "guindaste")
+    p.caixa((-CONTRAPESO * 0.5, 0, 0.65), (CONTRAPESO, 0.12, 0.12), "guindaste")
+    for i in range(3):
+        p.caixa((-CONTRAPESO + 0.5 + i * 0.9, 0, -0.5), (0.8, 1.6, 1.0), "concreto_escuro")
+    return p
+
+
+def gancho() -> Peca:
+    """Carrinho, cabo e moitao pendurados na lança: origem no carrinho."""
+    p = Peca("GuindasteGancho")
+    p.caixa((0, 0, -0.1), (0.8, 1.0, 0.3), "guindaste")
+    p.caixa((0, 0, -4.0), (0.05, 0.05, 7.6), "grade")
+    p.caixa((0, 0, -8.0), (0.5, 0.5, 0.6), "guindaste")
     return p
 
 
@@ -908,6 +1060,19 @@ def main() -> None:
         peca = fabrica(random.Random(SEMENTE + n))
         obj = peca.objeto(mat, colecao, x)
         objetos.append(obj)
+        x += 22.0
+
+    # A obra e o guindaste, com semente propria: nada do que veio antes muda.
+    # O esqueleto fica na planta da `Torre` (so o corpo, sem a cornija), e a
+    # meia-obra tem a metade de baixo vestida.
+    for fabrica, nome, n in (
+        (lambda r: torre(r, prontos=0, nome="ObraEsqueleto"), "ObraEsqueleto", 5),
+        (lambda r: torre(r, prontos=ANDARES_DA_TORRE // 2, nome="ObraFachada"), "ObraFachada", 6),
+    ):
+        objetos.append(fabrica(random.Random(SEMENTE + n)).objeto(mat, colecao, x))
+        x += 22.0
+    for fabrica in (mastro, lanca, topo_do_guindaste, gancho):
+        objetos.append(fabrica().objeto(mat, colecao, x))
         x += 22.0
 
     for obj in bpy.data.objects:
