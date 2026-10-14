@@ -9,6 +9,11 @@ extends RefCounted
 ## frente, e o quadro abre. A alternancia e o ritmo do video de referencia: o
 ## corredor so parece fechado porque o largo veio antes.
 ##
+## E entre um corredor e o largo seguinte, de vez em quando, a via expressa
+## (V11b, `ViaExpressa`): muro de mural, mureta e viaduto, sem rua, calcada nem
+## gente. Ela soma pista, e nao toma o lugar de um corredor: a corrida fica
+## mais longa pelo comprimento das expressas (`plano_de_expressas`).
+##
 ## Nada aqui anda, mas tudo bate: predio, semaforo e carro parado tem colisor
 ## na camada do mundo, e a moto que sai da avenida acha eles pela frente. Serve
 ## ao olho, ao referencial de velocidade - a fachada passando do lado - e a
@@ -76,8 +81,29 @@ const CURVA_AVISO: float = 50.0
 const PORTICO_ANTES: float = 30.0
 ## Entre uma palmeira e a do lado, no grupo.
 const PALMEIRA_PASSO: float = 4.0
+## A via expressa (V11b): quantas por corrida, de que tamanho, e depois de qual
+## corredor (contando do zero) cada uma entra. Duas de 320 a 480 m somam uns
+## 800 m aos 3,2 km da avenida, uns 25 s a mais de corrida a 120 km/h: o
+## bastante para ser um trecho, e nao uma passagem, e pouco para a avenida
+## virar o intervalo. Depois do segundo corredor, e nao do primeiro: a
+## largada mostra a avenida antes.
+const EXPRESSAS: int = 2
+const EXPRESSA_COMPRIMENTO := Vector2(320.0, 480.0)
+const EXPRESSA_DEPOIS: Array[int] = [1, 3]
+## O viaduto ocupa a expressa menos 20 m de cada ponta, e chega de lado nos
+## 60 m seguintes (`ViaExpressa.VIADUTO_CURVA`). A placa verde fica 50 m
+## depois da entrada: ali o tabuleiro ainda vem 20 m para fora, e o braco dela
+## (9 m, a 7,4 m de altura) nao entra embaixo dele.
+const VIADUTO_PONTA: float = 20.0
+const EXPRESSA_PLACA: float = 50.0
+## Cruzamento a menos disso da expressa sai: a zebra e a retencao da avenida
+## ficam ate 12 m antes da rua.
+const EXPRESSA_FOLGA: float = 15.0
 
 var track: RoadTrack
+## Onde a pista e via expressa, `[de, ate, lado]`: o mesmo que vai para o
+## `RoadTrack.expressas`.
+var expressas: Array[Vector3] = []
 
 
 func _init(a_track: RoadTrack) -> void:
@@ -88,8 +114,11 @@ func _init(a_track: RoadTrack) -> void:
 ## mexe no transito nem nos rivais.
 func montar(rua: RandomNumberGenerator, props: Node3D) -> void:
 	var cruzamentos := _sorteia_cruzamentos(rua)
-	var trechos := _sorteia_trechos(rua)
+	var trechos := _sorteia_trechos(rua, plano_de_expressas(rua.seed))
+	track.expressas = expressas
+	cruzamentos = cruzamentos.filter(func(c: Vector2) -> bool: return not _perto_de_expressa(c.x))
 	track.pintar(cruzamentos, RUA_LARGURA * 0.5)
+	_monta_expressas(rua.seed, props)
 	_monta_ruas(cruzamentos, rua, props)
 	for side: float in [-1.0, 1.0]:
 		_monta_quarteirao(side, cruzamentos, trechos, rua, props)
@@ -111,17 +140,95 @@ func montar(rua: RandomNumberGenerator, props: Node3D) -> void:
 ##
 ## Comeca no largo, como o video: e a largada que respira, e o corredor
 ## chega depois.
-func _sorteia_trechos(rua: RandomNumberGenerator) -> Array[Vector2]:
+##
+## As `expressas` (comprimentos, de `plano_de_expressas`) entram depois dos
+## corredores do `EXPRESSA_DEPOIS`, como trecho sem recuo, e vao para
+## `self.expressas`. Os sorteios da avenida sao os mesmos com ou sem elas.
+func _sorteia_trechos(rua: RandomNumberGenerator, plano: Array[float] = []) -> Array[Vector2]:
 	var lista: Array[Vector2] = []
+	expressas = []
 	var o := 0.0
 	var largo := true
+	var corredor := 0
 	while o < track.length:
 		var faixa := LARGO_COMPRIMENTO if largo else CORREDOR_COMPRIMENTO
 		o += rua.randf_range(faixa.x, faixa.y)
 		var recuo := rua.randf_range(LARGO_RECUO.x, LARGO_RECUO.y) if largo else 0.0
 		lista.append(Vector2(o, recuo))
+		if not largo:
+			var k := EXPRESSA_DEPOIS.find(corredor)
+			if k >= 0 and k < plano.size() and o + plano[k] < track.length - 100.0:
+				# O lado do viaduto alterna: a primeira e a da `03`, pela esquerda.
+				var lado := LADO_ESQUERDA if k % 2 == 0 else LADO_DIREITA
+				expressas.append(Vector3(o, o + plano[k], lado))
+				o += plano[k]
+				lista.append(Vector2(o, 0.0))
+			corredor += 1
 		largo = not largo
 	return lista
+
+
+## O comprimento de cada via expressa da corrida, da semente da cidade. Sai
+## antes da pista existir: o `World` soma isso ao tamanho dela.
+static func plano_de_expressas(semente: int) -> Array[float]:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(semente + 3)
+	var plano: Array[float] = []
+	for i in EXPRESSAS:
+		plano.append(rng.randf_range(EXPRESSA_COMPRIMENTO.x, EXPRESSA_COMPRIMENTO.y))
+	return plano
+
+
+## Quanto as expressas somam a pista.
+static func extra_de_expressas(semente: int) -> float:
+	var total := 0.0
+	for c in plano_de_expressas(semente):
+		total += c
+	return total
+
+
+## A expressa em que cai `o`, ou `Vector3.ZERO`.
+static func expressa_em(pista: RoadTrack, o: float) -> Vector3:
+	for e in pista.expressas:
+		if o >= e.x and o <= e.y:
+			return e
+	return Vector3.ZERO
+
+
+## Onde corre o tabuleiro de uma expressa `[de, ate, lado]`.
+static func viaduto_de(e: Vector3) -> Vector2:
+	return Vector2(e.x + VIADUTO_PONTA, e.y - VIADUTO_PONTA)
+
+
+## Se o ponto `o` do lado `side` esta embaixo de um viaduto: poste ali fura o
+## tabuleiro.
+static func sob_viaduto(pista: RoadTrack, o: float, side: float) -> bool:
+	var e := expressa_em(pista, o)
+	if e == Vector3.ZERO or e.z != side:
+		return false
+	var v := viaduto_de(e)
+	return o >= v.x and o <= v.y
+
+
+func _perto_de_expressa(o: float) -> bool:
+	for e in expressas:
+		if o > e.x - EXPRESSA_FOLGA and o < e.y + EXPRESSA_FOLGA:
+			return true
+	return false
+
+
+## Cada expressa com o kit da `ViaExpressa`, os paineis de um gerador so dela,
+## e a placa verde da entrada.
+func _monta_expressas(semente: int, props: Node3D) -> void:
+	var paineis := RandomNumberGenerator.new()
+	paineis.seed = hash(semente + 4)
+	var mat := _materiais_de_semaforo()
+	for i in expressas.size():
+		var e := expressas[i]
+		ViaExpressa.montar(track, e.x, e.y, e.z, viaduto_de(e), paineis, props)
+		var destinos: Array = Portal.DESTINOS[i % Portal.DESTINOS.size()]
+		var onde := track.transform_at(e.x + EXPRESSA_PLACA, Portal.LATERAL)
+		props.add_child(Portal.placa(onde, mat, destinos))
 
 
 ## O recuo extra do trecho em que cai `o`; zero e corredor.
@@ -187,6 +294,9 @@ func _monta_quarteirao(
 		if _abre(c.y, side):
 			var meio := RUA_LARGURA * 0.5 + RUA_CALCADA
 			vaos.append(Vector2(c.x - meio, c.x + meio))
+	# Na expressa a borda e muro: predio nenhum dos dois lados.
+	for e in expressas:
+		vaos.append(Vector2(e.x, e.y))
 
 	var o := 12.0
 	while o < track.length - 10.0:
@@ -295,7 +405,7 @@ func _monta_faixa_de_servico(
 		var quantas := rua.randi_range(2, 3)
 		var para_a_pista := track.sample_basis(o).x * -side
 		var ao_longo := -track.sample_basis(o).z
-		if Cidade.na_boca(cruzamentos, o, side):
+		if Cidade.na_boca(cruzamentos, o, side) or _perto_de_expressa(o):
 			pass
 		elif sorteio < ARVORE_COPA:
 			props.add_child(Arvore.criar(Arvore.Tipo.COPA, track.point(o, lateral), para_a_pista))
