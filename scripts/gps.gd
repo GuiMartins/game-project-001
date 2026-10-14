@@ -14,6 +14,11 @@ extends Control
 ## mudar codigo. Nao ha rota desenhada: a corrida e uma reta de A a B, e uma
 ## linha em cima da avenida so repetiria a avenida.
 ##
+## Os rivais aparecem como um ponto na cor da bag de cada um: o mapa e o
+## unico lugar da tela que mostra quem vem colado atras, e a bag e o que
+## separa um rival do outro na pista tambem. Quem esta longe sai do recorte, e
+## e o certo: o `POS` ja diz a colocacao, o mapa diz quem esta por perto.
+##
 ## Desenhado em 2D, no proprio `Control`, com recorte: sem camera nem
 ## `SubViewport` a mais. E dentro da HUD, entao fica fora da medida do `shots`.
 
@@ -50,9 +55,14 @@ const COR_QUARTEIRAO := Color(0.34, 0.41, 0.53)
 const COR_RUA := Color(0.93, 0.94, 0.96)
 const COR_SETA := Color(0.92, 0.12, 0.10)
 const COR_CONTORNO := Color(0.03, 0.03, 0.05)
+## O ponto do rival: 3 px de cor com 1 px de contorno. Menor que a seta, que
+## e voce e tem de mandar no mapa.
+const RIVAL: int = 3
 
 var track: RoadTrack
 var player: Node3D
+## Quem mais corre: precisa de `global_position` e `bag_color`.
+var rivais: Array = []
 ## O ponto da avenida em que a moto esta, de um quadro para o outro: e o
 ## palpite da `RoadTrack.project`, que e busca local.
 var progresso: float = 0.0
@@ -66,9 +76,10 @@ func _init() -> void:
 
 
 ## Comeca de novo numa pista: o palpite volta para o comeco dela.
-func ligar(a_track: RoadTrack, a_player: Node3D) -> void:
+func ligar(a_track: RoadTrack, a_player: Node3D, a_rivais: Array = []) -> void:
 	track = a_track
 	player = a_player
+	rivais = a_rivais
 	progresso = 0.0
 
 
@@ -154,6 +165,16 @@ func _draw() -> void:
 		# ela e larga, e nao uma rua como as outras.
 		draw_polyline(avenida, COR_QUARTEIRAO.lerp(COR_RUA, 0.55), 1.0)
 
+	for rival: Node3D in rivais:
+		if not is_instance_valid(rival):
+			continue
+		var onde := no_mapa(rival.global_position, moto, frente, direita, centro).floor()
+		var cor: Color = rival.get("bag_color")
+		var meio := float(RIVAL / 2)
+		draw_rect(Rect2(onde - Vector2.ONE * (meio + 1.0), Vector2.ONE * (RIVAL + 2)), COR_CONTORNO)
+		draw_rect(Rect2(onde - Vector2.ONE * meio, Vector2.ONE * RIVAL), cor)
+
+	# A seta por ultimo: rival colado nao pode tapar voce.
 	_seta(centro)
 
 

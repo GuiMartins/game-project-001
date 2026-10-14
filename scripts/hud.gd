@@ -140,12 +140,15 @@ static func segmentos_acesos(fracao: float, total: int) -> int:
 	return clampi(ceili(clampf(fracao, 0.0, 1.0) * total - 0.001), 0, total)
 
 
-## `a_track` e a avenida, que o GPS desenha. Sem ela, nao ha mapa.
-func bind(a_run: RaceRun, a_player: PlayerBike, a_track: RoadTrack = null) -> void:
+## `a_track` e a avenida, que o GPS desenha, e `a_rivais` quem aparece nele.
+## Sem a pista, nao ha mapa.
+func bind(
+	a_run: RaceRun, a_player: PlayerBike, a_track: RoadTrack = null, a_rivais: Array = []
+) -> void:
 	run = a_run
 	player = a_player
 	_track = a_track
-	_gps.ligar(a_track, a_player)
+	_gps.ligar(a_track, a_player, a_rivais)
 	_gps.visible = a_track != null
 	# A lista de teclas some depois da largada: no meio do transito ela vira
 	# ruido em cima da pista.

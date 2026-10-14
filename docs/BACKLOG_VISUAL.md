@@ -1471,7 +1471,8 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
   `Cidade` (`AVENIDAS`, `VIAS_EXPRESSAS`), por hash da semente e não pelo
   gerador da cidade, que mudaria tudo o que sai dele depois; a via expressa
   ganha nome próprio (`RoadTrack.nome_em`). Nenhum nome é destino da placa
-  verde (teste). A lista de teclas da largada subiu para cima do mapa, que
+  verde (teste). Os rivais aparecem como ponto na cor da bag, por cima das ruas e por baixo
+  da seta (pedido do Guilherme). A lista de teclas da largada subiu para cima do mapa, que
   ela cobria. `selftest` sem variação, `shots` dentro da tolerância (é sem
   HUD), `fps` p50 8,33 ms (refresh de 120 Hz).
 

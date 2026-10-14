@@ -150,7 +150,7 @@ func _ready() -> void:
 	hud = Hud.new()
 	hud.name = "Hud"
 	sub_viewport.add_child(hud)
-	hud.bind(world.run, world.player, world.track)
+	hud.bind(world.run, world.player, world.track, world.rivals)
 
 	world.event_logged.connect(hud.show_event)
 	world.run_finished.connect(_on_run_finished)
@@ -437,4 +437,4 @@ func _grava_config(secao: String, chave: String, valor: Variant) -> void:
 func _restart() -> void:
 	world.set_physics_process(true)
 	world.restart()
-	hud.bind(world.run, world.player, world.track)
+	hud.bind(world.run, world.player, world.track, world.rivals)
