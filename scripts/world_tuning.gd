@@ -236,6 +236,13 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## slider de 0 a 1, e nao uma caixa de marcar, porque o painel so sabe
 ## desenhar slider.
 @export_range(0, 1, 1) var ator_sprite: int = 0
+## Poses do ator por segundo; 0 e liso, uma por passo de fisica (`Cadencia`).
+## Travado e o ator "digitalizado" do `DIRECAO_VISUAL.md`: a moto anda liso
+## pela pista, e tudo o que ela mostra - inclinacao, virada, roda, guidao,
+## joelho, soco, tombo - pula de pose em pose. 12 foi decidido jogando, na V22:
+## o liso era o que os videos de referencia tem, e o travado foi o que leu
+## melhor na tela de pixel.
+@export_range(0, 30, 1) var ator_cadencia: int = 12
 
 
 static func load_or_default() -> WorldTuning:

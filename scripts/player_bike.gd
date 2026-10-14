@@ -157,6 +157,11 @@ func usar_sprite(ligado: bool) -> void:
 	_ator.sprite = ligado
 
 
+## Poses do ator por segundo (`WorldTuning.ator_cadencia`); 0 e liso.
+func usar_cadencia(hz: float) -> void:
+	_ator.cadencia.hz = hz
+
+
 func _make_hitbox(side: int) -> Area3D:
 	var area := Area3D.new()
 	area.name = "Hit%s" % ("L" if side < 0 else "R")

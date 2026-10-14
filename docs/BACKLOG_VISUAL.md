@@ -1056,7 +1056,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   - **Aceite:** de trás, na câmera da V04, lê camiseta e bermuda; os rivais
     continuam um por cor (`dev.py prova`).
 
-- [ ] **V22** — Cadência do ator: 12 fps ou liso
+- [x] **V22** — Cadência do ator: 12 fps ou liso (14/10/2026, #106)
 
   A P5 que ficou aberta. O `DIRECAO_VISUAL.md` diz que a cadência travada é o
   que faz o ator ler como digitalizado; o vídeo é liso a 24 fps e tira um
@@ -1069,6 +1069,20 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
     calculada a 60 Hz, aplicada a 12), com slider. Julgar **rodando**, com
     rivais e trânsito em volta.
   - **Aceite:** a decisão escrita aqui, com o default que ficou.
+  - **Feito:** `Cadencia`, filha do `Entregador`, e o slider
+    `ator_cadencia` no grupo Ator do F3 (0 a 30; 0 é liso). Mola, roda, voo
+    e soco seguem integrando a 60 Hz; só a pose aplicada espera a vez, e
+    quando sai é a do estado de agora (o teste confere roda contra roda com
+    o ator liso). A trava segura também a rotação do ator no mundo, então a
+    inclinação do `Visual` e a virada do corpo pulam junto; só a posição na
+    pista fica lisa, porque a câmera segue o corpo a 60 Hz e a moto parada
+    enquanto a câmera anda tremeria a tela inteira. Vale para jogador e
+    rivais, no 3D e no sprite.
+  - **Decisão 👤, jogando: 12 é o default.** O primeiro corte travava só o
+    miolo (roda, guidão, joelho), com a inclinação lisa por fora, e o
+    Guilherme pediu a inclinação junto. Os vídeos de referência são lisos a
+    24 fps; na tela de pixel, o travado leu melhor. O `selftest` não anda
+    (física intocada).
 
 ### Partículas
 

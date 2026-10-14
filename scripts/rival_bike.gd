@@ -140,6 +140,11 @@ func usar_sprite(ligado: bool) -> void:
 	_ator.sprite = ligado
 
 
+## Poses do ator por segundo (`WorldTuning.ator_cadencia`); 0 e liso.
+func usar_cadencia(hz: float) -> void:
+	_ator.cadencia.hz = hz
+
+
 func setup(
 	a_track: RoadTrack,
 	a_tuning: BikeTuning,
