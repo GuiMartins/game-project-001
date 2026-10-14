@@ -1,18 +1,23 @@
 class_name Pedestres
 extends RefCounted
 ## A gente da calcada (V19): parada e andando, dos dois lados, e mais gente na
-## esquina. Sem logica nenhuma, sem colisor, e ninguem atravessa a pista.
+## esquina. Sem logica nenhuma e sem colisor. Quem atravessa a rua, desce do
+## carro ou pula da frente da moto e a `Pessoa`, articulada, e sao poucas.
 ##
 ## Um `MultiMesh` por pose: sao mais de mil pessoas por corrida, e cada uma
-## como no proprio seria mil chamadas de desenho. A camisa e a superficie
-## `roupa` do modelo, branca, que a cor da instancia pinta: o
-## `vertex_color_use_as_albedo` faz o `MultiMesh` multiplicar a cor de cada
-## pessoa so ali, e pele, calca e cabelo ficam como foram pintados.
+## como no proprio seria mil chamadas de desenho. A malha e uma so, de pe, e
+## quem anda e balanca e o `pedestres.gdshader`, no vertice: `MultiMesh` nao
+## tem esqueleto. A camisa e a superficie `roupa` do modelo, branca, que a cor
+## da instancia pinta; pele, calca e cabelo ficam como foram pintados.
 
 enum Pose { PARADO, ANDANDO }
 
 const CENA: PackedScene = preload("res://assets/pedestres/pedestres.glb")
+const SHADER: Shader = preload("res://scripts/pedestres.gdshader")
 const NOS: Array[String] = ["Parado", "Andando"]
+## O grupo de quem anda na rua, `Multidao` e `Pessoa`, para o `World` repassar
+## a cadencia do ator.
+const GRUPO_NOS: StringName = &"pedestres"
 
 ## As camisas. Cor de roupa de rua: clara e lisa, e nenhuma mais saturada que
 ## a bag, que tem que ser a coisa mais viva da tela.
@@ -32,7 +37,8 @@ const GRUPO := Vector2i(1, 3)
 ## Na esquina junta mais gente, esperando para atravessar a rua que cruza.
 const ESQUINA := Vector2i(3, 6)
 
-static var _malhas: Array[Mesh] = []
+static var _malha: Mesh
+static var _materiais: Dictionary[String, ShaderMaterial] = {}
 
 
 ## Espalha a gente pela calcada da avenida em `props`. Entre a faixa de
@@ -92,32 +98,37 @@ static func _na_esquina(cruzamentos: Array[Vector2], o: float, side: float) -> b
 	return false
 
 
-static func _multimesh(pose: Pose, gente: Array) -> MultiMeshInstance3D:
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_colors = true
-	mm.mesh = malha(pose)
-	mm.instance_count = gente.size()
-	for i in gente.size():
-		mm.set_instance_transform(i, gente[i][0])
-		mm.set_instance_color(i, gente[i][1])
-	var mmi := MultiMeshInstance3D.new()
+static func _multimesh(pose: Pose, gente: Array) -> Multidao:
+	var mmi := Multidao.new()
 	mmi.name = "Pedestres" + NOS[pose]
-	mmi.multimesh = mm
+	mmi.montar(gente, pose == Pose.ANDANDO)
 	return mmi
 
 
-static func malha(pose: Pose) -> Mesh:
-	if _malhas.is_empty():
+## A pessoa de pe, com o material de cada superficie trocado pelo shader na
+## mesma cor. Compartilhada por toda corrida: o que anima vem de cada
+## `Multidao`, e nao do material.
+static func malha() -> Mesh:
+	if _malha == null:
 		var cena := CENA.instantiate()
-		for nome in NOS:
-			var no := cena.find_child(nome, true, false) as MeshInstance3D
-			assert(no != null, "pedestres.glb sem o no %s" % nome)
-			var m := no.mesh
-			for s in m.get_surface_count():
-				var mat := m.surface_get_material(s) as BaseMaterial3D
-				if mat != null and mat.resource_name == "roupa":
-					mat.vertex_color_use_as_albedo = true
-			_malhas.append(m)
+		var no := cena.find_child("Pessoa", true, false) as MeshInstance3D
+		assert(no != null, "pedestres.glb sem o no Pessoa")
+		_malha = no.mesh
+		for s in _malha.get_surface_count():
+			_malha.surface_set_material(s, material(_malha.surface_get_material(s)))
 		cena.free()
-	return _malhas[pose]
+	return _malha
+
+
+## O material do shader no lugar de `mat`, um por material do `.glb`, e o
+## mesmo para a malha do `MultiMesh` e para as pecas da `Pessoa`.
+static func material(mat: Material) -> ShaderMaterial:
+	var nome := mat.resource_name
+	if not _materiais.has(nome):
+		var novo := ShaderMaterial.new()
+		novo.shader = SHADER
+		novo.set_shader_parameter(&"cor", (mat as BaseMaterial3D).albedo_color)
+		novo.set_shader_parameter(&"roupa", nome == "roupa")
+		novo.set_shader_parameter(&"e_pele", nome == "pele")
+		_materiais[nome] = novo
+	return _materiais[nome]

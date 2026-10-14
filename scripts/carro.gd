@@ -202,6 +202,11 @@ var _relogio: float = 0.0
 var _fase_pisca: float = 0.0
 var _luzes := Vector3(-1.0, -1.0, -1.0)
 var _olhar: float = 0.0
+var _camisa := Color.WHITE
+var _camisa2 := Color.WHITE
+var _pele := Color.WHITE
+## Quem desceu, ate o carro ser reciclado.
+var _desceu: Pessoa
 var _olhar_alvo: float = 0.0
 var _olhar_em: float = 3.0
 var _tronco_lado: float = 0.0
@@ -227,11 +232,18 @@ func montar(a_modelo: Modelo, rng: RandomNumberGenerator) -> void:
 	var camisa := CAMISAS[rng.randi() % CAMISAS.size()]
 	var camisa2 := CAMISAS[rng.randi() % CAMISAS.size()]
 	var pele := PELES[rng.randi() % PELES.size()]
+	_camisa = camisa
+	_camisa2 = camisa2
+	_pele = pele
 	for malha in _malhas:
 		malha.set_instance_shader_parameter("pintura", pintura)
 		malha.set_instance_shader_parameter("camisa", camisa)
 		malha.set_instance_shader_parameter("camisa2", camisa2)
 		malha.set_instance_shader_parameter("pele", pele)
+	if _desceu != null:
+		_desceu.queue_free()
+		_desceu = null
+	_no("Motorista").visible = true
 	# Taxi quase sempre com passageiro; seda as vezes; onibus sempre cheio.
 	var passageiro := _no_opcional("Passageiro")
 	if passageiro != null:
@@ -277,6 +289,59 @@ func abrir_porta(lado: int) -> void:
 			candidatas.append(porta)
 	# A da frente primeiro: e quem dirige que mais abre porta na rua.
 	_porta_ativa = candidatas[0] if candidatas.size() == 1 or _rng.randf() < 0.7 else candidatas[1]
+
+
+## Alguem desce pela porta que `abrir_porta` escolheu: o motorista, se for a
+## dele, e quem estiver no banco atras daquela porta, se for outra. `fecha_em`
+## e quando o `TrafficCar` bate a porta, e a mao de quem desceu chega nela
+## nessa hora. `calcada_x` e onde a calcada fica, em X do carro (o sinal diz o
+## lado): quem desce do lado da rua contorna a traseira para chegar nela.
+##
+## Pessoa a mais no banco nao se ve pelo vidro escuro em 640x360, entao nao ha
+## conta de quem estava sentado onde: o banco da porta que abriu tinha alguem.
+## O sorteio e do `_rng` deste carro, que so decide o que se ve; o do
+## `TrafficCar` escolhe o proximo modelo, e o tamanho dele e colisor.
+func desembarcar(fecha_em: float, calcada_x: float) -> void:
+	if _porta_ativa == null or _desceu != null:
+		return
+	var motorista := _no("Motorista")
+	var no_carro := _repouso[_carroceria]
+	var porta_motorista := _na_carroceria(_no("Porta_DE")).origin
+	var quadril := _na_carroceria(motorista).origin
+	var porta := _na_carroceria(_porta_ativa).origin
+	var lado := signf(porta.x)
+	# O banco de cada porta esta para ela como o do motorista esta para a dele.
+	var assento := (
+		no_carro
+		* Vector3(absf(quadril.x) * lado, quadril.y, porta.z + quadril.z - porta_motorista.z)
+	)
+	var camisa := _camisa
+	if _porta_ativa.name == "Porta_DE":
+		motorista.visible = false
+	else:
+		camisa = _camisa2
+		var passageiro := _no_opcional("Passageiro")
+		if passageiro != null and _porta_ativa.name == "Porta_DD":
+			passageiro.visible = false
+	var meia_largura := caixa().size.x * 0.5
+	var recuado_z := assento.z + 0.75
+	var sentido := 1.0 if _rng.randf() < 0.5 else -1.0
+	var saida := PackedVector3Array()
+	if signf(calcada_x) != lado:
+		# Do lado da rua: por tras do carro, que pela frente e a porta aberta.
+		var atras := caixa().end.z + 0.8
+		saida.append(Vector3(lado * (meia_largura + 0.35), 0.0, atras))
+		saida.append(Vector3(calcada_x, 0.0, atras))
+		saida.append(Vector3(calcada_x, 0.0, atras + 12.0 * sentido))
+	else:
+		saida.append(Vector3(calcada_x, 0.0, recuado_z + 0.6))
+		saida.append(Vector3(calcada_x, 0.0, recuado_z + 0.6 + 12.0 * sentido))
+	_desceu = Pessoa.new()
+	_desceu.name = "Desceu"
+	add_child(_desceu)
+	_desceu.sortear(_rng)
+	_desceu.vestir(camisa, _pele)
+	_desceu.desembarcar(assento, lado, meia_largura, fecha_em, saida)
 
 
 ## Fecha o que estiver aberto. `ja` bate a porta sem animar, para reciclar.

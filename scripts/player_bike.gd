@@ -117,6 +117,8 @@ var _crash_grace: float = 0.0
 
 
 func _ready() -> void:
+	# Quem esta na rua pula da frente dela (`Pessoa`).
+	add_to_group(Pessoa.GRUPO_MOTOS)
 	collision_layer = Layers.PLAYER
 	collision_mask = Layers.WORLD | Layers.RIVAL
 	motion_mode = CharacterBody3D.MOTION_MODE_FLOATING
@@ -581,13 +583,9 @@ func _quica(normal: Vector3, v_outro: Vector3, chegada: float) -> void:
 func _clamp_to_road() -> void:
 	if not road_bounds_enabled:
 		return
-	# Calcada: andavel, mas com teto de velocidade. E a valvula de escape
-	# quando o transito fecha - custa tempo, nao a corrida.
-	if absf(track_lateral) > RoadTrack.half_width():
-		var cap := tuning.max_speed * tuning.sidewalk_speed_factor
-		if speed > cap:
-			speed = maxf(speed - tuning.sidewalk_drag * get_physics_process_delta_time(), cap)
-
+	# A calcada nao tem teto de velocidade desde que o pedestre passou a ter
+	# atropelo: quem foge por ela paga no que encontra pela frente, e nao num
+	# freio invisivel (`docs/PROTOTIPO.md`, "A calcada").
 	var limit := RoadTrack.limite_do_mundo()
 	if absf(track_lateral) <= limit:
 		_off_road = false

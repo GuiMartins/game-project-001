@@ -106,6 +106,8 @@ var _fisica := FisicaDaMoto.new()
 
 
 func _ready() -> void:
+	# Quem esta na rua pula da frente dela (`Pessoa`).
+	add_to_group(Pessoa.GRUPO_MOTOS)
 	sync_to_physics = true
 	collision_layer = Layers.RIVAL
 	collision_mask = 0

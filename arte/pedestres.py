@@ -9,7 +9,13 @@ Apaga a cena, monta as duas poses, salva `arte/pedestres.blend` e exporta
 
 Textura de vida nos dois lados da avenida (V19; `01_centro`, `02_praca_maua`,
 `video_01/t1.0s`, `t3.0s`). Sem logica nenhuma, e ninguem atravessa a pista:
-sao centenas, e o `Pedestres` os desenha num `MultiMesh` por pose.
+sao centenas, e o `Pedestres` os desenha num `MultiMesh`.
+
+Uma malha so, de pe e parada: quem anima e o `pedestres.gdshader`, no
+vertice, porque `MultiMesh` nao tem esqueleto. Para ele saber o que gira em
+volta do quadril e o que gira em volta do ombro, cada peca leva o numero dela
+no U da UV (`PARTES`). Pela geometria nao da: a barra da camisa desce abaixo
+do quadril, e a mao, abaixo dela.
 
 A 640x360 uma pessoa a 20 m tem uns 20 px de altura: o que se le e a camisa,
 uma mancha de cor na altura do peito, a cabeca e as pernas escuras. Por isso
@@ -38,14 +44,19 @@ MATERIAIS = [
     ("roupa", (1.0, 1.0, 1.0)),
 ]
 M = {nome: i for i, (nome, _) in enumerate(MATERIAIS)}
+# A parte de cada peca, no U da UV, em oitavos: dentro de [0, 1] para a
+# compressao de malha do Godot nao mexer, e longe o bastante um do outro para
+# o shader arredondar sem erro. Tem de bater com o `pedestres.gdshader`.
+PARTES = {"corpo": 0, "perna_esq": 1, "perna_dir": 2, "braco_esq": 3, "braco_dir": 4}
 
 
 class Peca:
     def __init__(self, nome: str) -> None:
         self.nome = nome
         self.bm = bmesh.new()
+        self.uv = self.bm.loops.layers.uv.new("parte")
 
-    def caixa(self, centro, tamanho, material, giro_x=0.0, pivo=None) -> None:
+    def caixa(self, centro, tamanho, material, parte="corpo", giro_x=0.0, pivo=None) -> None:
         verts = bmesh.ops.create_cube(self.bm, size=1.0)["verts"]
         for v in verts:
             v.co = Vector((v.co.x * tamanho[0], v.co.y * tamanho[1], v.co.z * tamanho[2]))
@@ -55,19 +66,26 @@ class Peca:
             p = Vector(pivo)
             m = Matrix.Translation(p) @ Matrix.Rotation(giro_x, 4, "X") @ Matrix.Translation(Vector(centro) - p)
         bmesh.ops.transform(self.bm, matrix=m, verts=verts)
-        for face in {f for v in verts for f in v.link_faces}:
+        self._pinta({f for v in verts for f in v.link_faces}, material, parte)
+
+    def _pinta(self, faces, material, parte) -> None:
+        for face in faces:
             face.material_index = M[material]
             face.smooth = False
+            for loop in face.loops:
+                loop[self.uv].uv = (PARTES[parte] / 8.0, 0.0)
 
     def cabeca(self, centro) -> None:
         verts = bmesh.ops.create_icosphere(self.bm, subdivisions=1, radius=0.12)["verts"]
         bmesh.ops.transform(self.bm, matrix=Matrix.Translation(Vector(centro)), verts=verts)
-        for face in {f for v in verts for f in v.link_faces}:
-            face.material_index = M["pele"]
-            face.smooth = False
+        self._pinta({f for v in verts for f in v.link_faces}, "pele", "corpo")
 
-    def objeto(self, materiais, colecao, x) -> bpy.types.Object:
+    def objeto(self, materiais, colecao, x, pai=None, origem=(0.0, 0.0, 0.0)) -> bpy.types.Object:
+        """`origem` e a articulacao, em metros da pessoa: a malha e levada para
+        ela ficar na origem do objeto, e o objeto vai para ela dentro do `pai`."""
         bm = self.bm
+        origem = Vector(origem)
+        bmesh.ops.translate(bm, vec=-origem, verts=bm.verts[:])
         bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method="FIXED", ngon_method="EAR_CLIP")
         bm.faces.index_update()
         posto = [0] * len(bm.faces)
@@ -81,27 +99,82 @@ class Peca:
         for mat in materiais:
             malha.materials.append(mat)
         obj = bpy.data.objects.new(self.nome, malha)
-        obj.location.x = x
+        obj.location = origem + Vector((x, 0.0, 0.0))
+        if pai is not None:
+            obj.parent = pai
+            obj.location = origem - Vector(pai["origem"])
+        obj["origem"] = origem
         colecao.objects.link(obj)
         return obj
 
 
 def pessoa(nome: str, passo: float) -> Peca:
     """Uma pessoa de 1,72 m. `passo` e o balanco de perna e braco, em radianos:
-    zero e parado, de pe."""
+    zero e parado, de pe. O jogo usa so a de pe; o balanco e do shader. Os
+    pivos (quadril 0,92, ombro 1,42) estao copiados la."""
     p = Peca(nome)
     quadril, ombro = 0.92, 1.42
-    for lado in (-1.0, 1.0):
+    for lado, nome in ((-1.0, "esq"), (1.0, "dir")):
         giro = passo * lado
-        p.caixa((lado * 0.1, 0.0, quadril * 0.5), (0.14, 0.16, quadril), "calca", giro, (0, 0, quadril))
-        p.caixa((lado * 0.1, 0.05, 0.04), (0.13, 0.26, 0.08), "cabelo", giro, (0, 0, quadril))
-        p.caixa((lado * 0.27, 0.0, ombro - 0.3), (0.1, 0.11, 0.6), "pele", -giro * 0.8, (0, 0, ombro))
-        p.caixa((lado * 0.27, 0.0, ombro - 0.08), (0.12, 0.13, 0.18), "roupa", -giro * 0.8, (0, 0, ombro))
+        perna, braco = "perna_" + nome, "braco_" + nome
+        q, o = (0, 0, quadril), (0, 0, ombro)
+        p.caixa((lado * 0.1, 0.0, quadril * 0.5), (0.14, 0.16, quadril), "calca", perna, giro, q)
+        p.caixa((lado * 0.1, 0.05, 0.04), (0.13, 0.26, 0.08), "cabelo", perna, giro, q)
+        p.caixa((lado * 0.27, 0.0, ombro - 0.3), (0.1, 0.11, 0.6), "pele", braco, -giro * 0.8, o)
+        p.caixa((lado * 0.27, 0.0, ombro - 0.08), (0.12, 0.13, 0.18), "roupa", braco, -giro * 0.8, o)
     p.caixa((0.0, 0.0, (quadril + ombro) * 0.5 + 0.02), (0.44, 0.22, ombro - quadril + 0.08), "roupa")
     p.caixa((0.0, 0.0, ombro + 0.06), (0.1, 0.1, 0.1), "pele")
     p.cabeca((0.0, 0.01, ombro + 0.22))
     p.caixa((0.0, -0.02, ombro + 0.3), (0.22, 0.22, 0.08), "cabelo")
     return p
+
+
+# Joelho da articulada. Na de pe ele nao existe: a perna e uma caixa so.
+JOELHO = 0.48
+
+
+def articulada(materiais, colecao, x) -> bpy.types.Object:
+    """A mesma pessoa em pecas, cada uma com a origem na articulacao, para o
+    `Pessoa` do jogo posar no codigo: atravessar a rua, sair do carro, pular
+    da frente da moto. O `MultiMesh` nao serve para isso, e sao poucas.
+
+        Articulada          vazio, no chao entre os pes
+          Quadril           vazio, no quadril: sobe e desce ao sentar
+            Tronco          camisa, pescoco e cabeca; tomba para a frente
+              Braco_E/D     no ombro
+            Coxa_E/D        no quadril de cada lado
+              Canela_E/D    no joelho, com o sapato
+    """
+    raiz = bpy.data.objects.new("Articulada", None)
+    raiz.location.x = x
+    raiz["origem"] = Vector((0.0, 0.0, 0.0))
+    colecao.objects.link(raiz)
+    quadril, ombro = 0.92, 1.42
+    q = bpy.data.objects.new("Quadril", None)
+    q.parent = raiz
+    q.location = (0.0, 0.0, quadril)
+    q["origem"] = Vector((0.0, 0.0, quadril))
+    colecao.objects.link(q)
+
+    t = Peca("Tronco")
+    t.caixa((0.0, 0.0, (quadril + ombro) * 0.5 + 0.02), (0.44, 0.22, ombro - quadril + 0.08), "roupa")
+    t.caixa((0.0, 0.0, ombro + 0.06), (0.1, 0.1, 0.1), "pele")
+    t.cabeca((0.0, 0.01, ombro + 0.22))
+    t.caixa((0.0, -0.02, ombro + 0.3), (0.22, 0.22, 0.08), "cabelo")
+    tronco = t.objeto(materiais, colecao, 0.0, q, (0.0, 0.0, quadril))
+    for lado, nome in ((-1.0, "E"), (1.0, "D")):
+        b = Peca("Braco_" + nome)
+        b.caixa((lado * 0.27, 0.0, ombro - 0.3), (0.1, 0.11, 0.6), "pele")
+        b.caixa((lado * 0.27, 0.0, ombro - 0.08), (0.12, 0.13, 0.18), "roupa")
+        b.objeto(materiais, colecao, 0.0, tronco, (lado * 0.27, 0.0, ombro))
+        c = Peca("Coxa_" + nome)
+        c.caixa((lado * 0.1, 0.0, (quadril + JOELHO) * 0.5), (0.14, 0.16, quadril - JOELHO), "calca")
+        coxa = c.objeto(materiais, colecao, 0.0, q, (lado * 0.1, 0.0, quadril))
+        k = Peca("Canela_" + nome)
+        k.caixa((lado * 0.1, 0.0, JOELHO * 0.5), (0.13, 0.15, JOELHO), "calca")
+        k.caixa((lado * 0.1, 0.05, 0.04), (0.13, 0.26, 0.08), "cabelo")
+        k.objeto(materiais, colecao, 0.0, coxa, (lado * 0.1, 0.0, JOELHO))
+    return raiz
 
 
 def material(nome, cor) -> bpy.types.Material:
@@ -131,10 +204,9 @@ def main() -> None:
     colecao = bpy.data.collections.new("Pedestres")
     bpy.context.scene.collection.children.link(colecao)
     materiais = [material(*m) for m in MATERIAIS]
-    objetos = [
-        pessoa("Parado", 0.0).objeto(materiais, colecao, 0.0),
-        pessoa("Andando", 0.35).objeto(materiais, colecao, 1.5),
-    ]
+    objetos = [pessoa("Pessoa", 0.0).objeto(materiais, colecao, 0.0)]
+    raiz = articulada(materiais, colecao, 1.5)
+    objetos += [raiz, *raiz.children_recursive]
     for o in bpy.data.objects:
         o.select_set(o in objetos)
     bpy.context.view_layer.objects.active = objetos[0]
@@ -153,6 +225,8 @@ def main() -> None:
         export_extras=False,
     )
     for obj in objetos:
+        if obj.type != "MESH":
+            continue
         dims = obj.dimensions
         print("%s: %d tris, %.1f x %.1f x %.1f m" % (obj.name, len(obj.data.polygons), dims.x, dims.y, dims.z))
 

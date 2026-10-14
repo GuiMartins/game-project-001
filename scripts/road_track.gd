@@ -9,6 +9,8 @@ extends Node3D
 ## curva - a 50 m/s um CharacterBody3D atravessaria um trimesh. Colisores
 ## existem so pro que importa: carros, postes, semaforos e predios.
 
+## O grupo da pista, para quem precisa da altura do chao sem ter quem a passe.
+const GRUPO: StringName = &"pista"
 ## Rampa mais forte que a pista chega a ter, em altura por metro percorrido.
 ## 0.14 e ladeira de bairro alto: ingreme o bastante pra a moto perder folego
 ## subindo e ganhar de graca descendo, longe o bastante de virar parede.
@@ -96,6 +98,9 @@ var _pintura: MeshInstance3D
 
 
 func build(total_length: float, rng: RandomNumberGenerator) -> void:
+	# Quem nao e parametrico na curva e precisa do chao - o corpo que voa no
+	# atropelo (`Pessoa`) - acha a pista por aqui.
+	add_to_group(GRUPO)
 	curve = Curve3D.new()
 	curve.bake_interval = 1.0
 

@@ -117,6 +117,8 @@ var borrao: Borrao
 
 var traffic: Array[TrafficCar] = []
 var rivals: Array[RivalBike] = []
+var travessia: Travessia
+var _sangue: Node3D
 var _rng := RandomNumberGenerator.new()
 var _spawn_cursor: float = 0.0
 var _position_event_timer: float = 0.0
@@ -158,6 +160,18 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	borrao.setup(tuning, player)
 	player.marcar_foco()
 
+	# Onde ficam as manchas de quem foi atropelado, para a largada limpar.
+	_sangue = Node3D.new()
+	_sangue.name = "Sangue"
+	_sangue.add_to_group(Sangue.GRUPO)
+	add_child(_sangue)
+
+	# Sorteio proprio, como a cidade: quem atravessa a rua nao mexe no `_rng`.
+	travessia = Travessia.new()
+	travessia.name = "Travessia"
+	add_child(travessia)
+	travessia.setup(self, track, hash(_rng.seed + 2))
+
 	_spawn_traffic()
 	_sync_rival_pool()
 	start_race()
@@ -187,6 +201,11 @@ func start_race(grid_offset: float = 0.0, at_speed: float = 0.0) -> void:
 	_position_event_timer = 0.0
 	scatter_traffic_ahead(player.track_offset)
 	relogio.zerar()
+	travessia.reiniciar()
+	# Largada nova, calcada nova: quem foi atropelado volta, e o chao e lavado.
+	get_tree().call_group(&"multidao", &"reiniciar")
+	for mancha in _sangue.get_children():
+		mancha.queue_free()
 
 
 ## Onde o corredor `index` larga: fila dupla, corredores alternados, o de
@@ -517,9 +536,9 @@ func _aplica_ceu() -> void:
 			_ceu.set_shader_parameter(uniforme, valor)
 
 
-## Sprite ou modelo, e a cadencia da pose, em todo corredor. A cada quadro, e nao so quando o slider
-## mexe: rival que entra depois (R) nasce em 3D e tem de ser trocado tambem. O
-## ator ignora o pedido que nao muda nada.
+## Sprite ou modelo, e a cadencia da pose, em todo corredor e nos pedestres. A
+## cada quadro, e nao so quando o slider mexe: rival que entra depois (R) nasce
+## em 3D e tem de ser trocado tambem. O ator ignora o pedido que nao muda nada.
 func aplica_ator() -> void:
 	var ligado := world_tuning.ator_sprite == 1
 	var cadencia := float(world_tuning.ator_cadencia)
@@ -529,6 +548,11 @@ func aplica_ator() -> void:
 	for rival in rivals:
 		rival.usar_sprite(ligado)
 		rival.usar_cadencia(cadencia)
+	# A gente da calcada pula de pose no mesmo ritmo, senao ela fica lisa num
+	# mundo travado, ou travada num liso.
+	for no in get_tree().get_nodes_in_group(Pedestres.GRUPO_NOS):
+		if no.get(&"cadencia") != cadencia:
+			no.set(&"cadencia", cadencia)
 
 
 func _physics_process(delta: float) -> void:
