@@ -39,9 +39,13 @@ python tools/dev.py run
 Ou abra a pasta no editor do Godot e dê play. Detalhes de ambiente em
 [docs/AMBIENTE.md](docs/AMBIENTE.md).
 
-O jogo abre num menu: **JOGAR**, **CONFIGURACOES** (pixel, câmera e o painel de
-tuning) e **SAIR**. A corrida termina numa tela de resultado que oferece correr
-de novo ou voltar. `ESC` no meio da corrida congela e abre o menu.
+O jogo abre num menu de página única: **JOGAR**, as opções em duas colunas e
+**SAIR**. Em **CORRIDA**, moto, piloto 3D ou sprite, cadência da animação,
+câmera, rivais, trânsito e tela cheia; em **VISUAL**, cada passe do look (pixel,
+paleta, antisserrilho, cor do dia, sombra, neblina, brilho, borrão) liga e
+desliga para comparar. Setas `←` `→` mudam a linha selecionada, e a escolha
+fica gravada. A corrida termina numa tela de resultado que oferece correr de
+novo ou voltar. `ESC` no meio da corrida congela e abre o menu.
 
 ## Controles
 
@@ -58,7 +62,7 @@ de novo ou voltar. `ESC` no meio da corrida congela e abre o menu.
 | `1` ou `F1` | liga/desliga o pixel de 640×360 |
 | `2` ou `F2` | alterna câmera (perseguição / capacete / diagnóstico) |
 | `3` ou `F3` | painel de tuning (abre em janela separada) |
-| `4` ou `F11` | liga/desliga a tela cheia (também em Configurações) |
+| `4` ou `F11` | liga/desliga a tela cheia (também no menu) |
 
 No macOS as teclas de função são do sistema (brilho, Mission Control), então
 `F1`–`F3` só chegam no jogo com `Fn` segurado. Use `1`, `2` e `3`.

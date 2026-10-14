@@ -108,6 +108,11 @@ var track: RoadTrack
 var player: PlayerBike
 var camera: ChaseCamera
 var run := RaceRun.new()
+## O que o menu liga e desliga no visual: o ambiente (cor do dia, neblina,
+## brilho), o sol (sombra) e o borrao de velocidade.
+var ambiente: Environment
+var sol: DirectionalLight3D
+var borrao: Borrao
 
 var traffic: Array[TrafficCar] = []
 var rivals: Array[RivalBike] = []
@@ -147,7 +152,7 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	add_child(camera)
 	camera.setup(tuning, player)
 	camera.current = true
-	var borrao := Borrao.new()
+	borrao = Borrao.new()
 	camera.add_child(borrao)
 	borrao.setup(tuning, player)
 	player.marcar_foco()
@@ -271,6 +276,7 @@ func _build_environment() -> void:
 	env.adjustment_enabled = true
 	env.adjustment_color_correction = LUT_DIA
 
+	ambiente = env
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -309,6 +315,7 @@ func _build_environment() -> void:
 	# a borda serrilha andando; mais e sombra de dia nublado.
 	sun.shadow_blur = 3.0
 	add_child(sun)
+	sol = sun
 
 
 func _build_scenery() -> void:
@@ -493,7 +500,7 @@ func _sync_rival_pool() -> void:
 
 func _process(_delta: float) -> void:
 	_aplica_ceu()
-	_aplica_ator()
+	aplica_ator()
 
 
 ## Repassa os sliders do ceu ao shader, so o que mudou.
@@ -508,7 +515,7 @@ func _aplica_ceu() -> void:
 ## Sprite ou modelo, e a cadencia da pose, em todo corredor. A cada quadro, e nao so quando o slider
 ## mexe: rival que entra depois (R) nasce em 3D e tem de ser trocado tambem. O
 ## ator ignora o pedido que nao muda nada.
-func _aplica_ator() -> void:
+func aplica_ator() -> void:
 	var ligado := world_tuning.ator_sprite == 1
 	var cadencia := float(world_tuning.ator_cadencia)
 	if player != null:
