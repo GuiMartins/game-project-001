@@ -75,6 +75,18 @@ Além do aceite próprio de cada um:
   novo entra no mesmo commit, com o motivo no corpo da mensagem.
 - Itens de *feel* (câmera, inclinação, trânsito) se julgam **jogando**, e não
   em captura.
+- **Cenário é kit, não cenografia.** Todo elemento de cenário (prédio,
+  mobiliário, pintura, fundo, trecho de via, peça de HUD) sai como peça
+  **reaproveitável**: gerada por script em `arte/` com os números como
+  parâmetro, montada pela `Cidade` a partir da semente, e sem nada preso a
+  um ponto da pista, a uma imagem de referência ou a uma única corrida.
+  O teste é a próxima fase: se uma outra avenida, outra cidade ou outro
+  trecho não consegue usar a peça só mudando parâmetro e sorteio, ela foi
+  feita como cenografia e não serve. Vale a mesma régua do `CLAUDE.md` para
+  moto e piloto: o que muda de uma variante para outra sai de dado (lista,
+  paleta, atlas), nunca de `if` por lugar. *Por quê:* a fila ainda pede
+  via expressa, fundo e obra, e o jogo vai querer mais de uma rua; peça que
+  só existe para casar com uma parada vira refação na segunda.
 
 ## O que já está feito
 
@@ -639,6 +651,25 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     eram desenhados na horizontal. A 10% de rampa, uma borda ficava 30 cm
     acima do asfalto e a outra enterrada; agora tudo segue o plano da rua.
 
+- [ ] **V10a** — Pintura de canalização e faixa azul
+
+  O chão do cruzamento da `02_praca_maua` não é só zebra: a ilha entre as
+  pistas tem área zebrada (hachura branca diagonal dentro de um contorno),
+  e a `01_centro` tem uma faixa azul contínua colada ao meio-fio da direita.
+
+  - **Referências:** `02_praca_maua` (hachura em volta da ilha, à direita
+    do quadro, e a rua que abre em leque); `01_centro` (faixa azul junto ao
+    meio-fio da direita, do primeiro plano até o fundo).
+  - **Reaproveitável:** a hachura é um tipo de pintura da `RoadTrack.pintar`
+    (contorno + ângulo + espaçamento), não um decalque desenhado para um
+    cruzamento; a faixa azul é uma linha de bordo com cor e largura de
+    parâmetro, ligada por trecho. A mesma peça serve de ilha, de bifurcação
+    e de acesso de via expressa (V11b).
+  - **O risco:** hachura é coisa fina atravessada, justamente o que a regra
+    da P4a (`arte/chao.py`) proíbe abaixo de 1,7 m de período. Espaçar e
+    engrossar até não piscar, como a V10 conferiu a zebra.
+  - **Aceite:** a hachura não pisca a 180 km/h, julgado rodando; `fps` igual.
+
 ### Os prédios e o céu
 
 - [x] **V11** 👤 — Fachada contínua, térreo vivo (12/10/2026)
@@ -713,6 +744,43 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
   recuo, com colisor; árvore e gente ficam para a V16 e a V19. Janela com
   moldura já existia. `fps` p50 8,33 ms (refresh de 120 Hz). Baseline sem
   variação.
+
+- [ ] **V11b** 👤 — Trecho de via expressa: viaduto, muro com mural, mureta e cerca
+
+  Metade das paradas não é avenida de centro. A `03_viaduto` corre embaixo
+  de um tabuleiro elevado de concreto apoiado em pilares retangulares
+  pintados de mosaico (arara, rosto), com um canteiro de mureta de concreto
+  separando a pista ao lado e um muro comprido coberto de mural do outro. A
+  `04_vertical` é uma via expressa entre muros altos de mural e grafite, com
+  cerca de tela e arame farpado em cima do muro da direita, poste alto de
+  braço e grama na base do muro. A `02_praca_maua` tem o muro de pedra com
+  pichação. A V11a tirou o mural da fachada justamente porque ele é de muro
+  de via expressa, e nenhum item o pôs no lugar certo; o `DIRECAO_VISUAL.md`
+  já previa o viaduto na fase 7.
+
+  - **Referências:** `03_viaduto` (tabuleiro, pilares pintados, mureta,
+    muro de mural e contêiner); `04_vertical` (muros de mural, cerca com
+    arame, poste alto, grama); `02_praca_maua` (muro de pedra pichado à
+    esquerda e grafite na base do poste).
+  - **Decisão 👤:** como a via expressa entra na corrida.
+    **Recomendação:** como **tipo de trecho** que a `Cidade` sorteia ao lado
+    do quarteirão e da praça (`_sorteia_trechos`), e não como pista própria:
+    a mesma corrida passa de avenida para via expressa e volta, que é o
+    ritmo "aberto/fechado" que o vídeo pede, e o viaduto é um vão por cima
+    de parte do trecho. Na via expressa não há cruzamento, pedestre nem
+    calçada larga; a borda é muro.
+  - **Reaproveitável:** um kit em `arte/` (`via_expressa.py` ou dentro de
+    `predios.py`), com peças modulares: vão de tabuleiro de comprimento
+    paramétrico, pilar, módulo de muro, mureta, painel de cerca com arame,
+    poste alto. Os murais e o grafite saem de um **atlas** de painéis
+    gerado por script e sorteado por módulo, nunca um mural único pintado
+    para casar com o quadro da `03`. O muro segue a curva e a rampa da
+    `RoadTrack` como a calçada segue. Nada disso tem colisor de chão (o
+    invariante); muro e pilar têm colisor de parede, como a fachada.
+  - **Aceite:** na folha, um quadro da prova dentro do trecho lê como a
+    `03_viaduto` e outro como a `04_vertical`; a sombra do tabuleiro passa
+    por cima da moto; `fps` medido no pior caso (embaixo do viaduto, com
+    trânsito).
 
 - [x] **V12** — Glow: outdoor, lanterna e cromo brilhando (12/10/2026, #84)
 
@@ -847,6 +915,34 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     horizonte, puxado para a cor dele, fica parecido com o prédio distante na
     neblina). Portão sem variação; `fps` no teto de 120.
 
+- [ ] **V14a** — O fundo: serra, morro e marcos do Rio
+
+  O que faz a tela ler "Rio" de longe é o que está atrás dos prédios, e o
+  jogo hoje termina em torre e neblina. A `04_vertical` tem a serra azulada
+  no horizonte, no fim da avenida; a `02_praca_maua`, um morro de pedra e
+  mato com a igreja branca no alto e a roda-gigante e o prédio do museu
+  atrás do cruzamento; a `01_centro` e o vídeo, a torre de igreja e as
+  torres de vidro formando o *skyline* no fim da rua.
+
+  - **Referências:** `04_vertical` (serra no horizonte, azul de
+    distância); `02_praca_maua` (morro com igreja, roda-gigante, prédio
+    baixo do museu); `01_centro` e `video_01/t0.0s`–`t2.0s` (torre de
+    igreja, torres de vidro ao fundo).
+  - **O que fazer:** três camadas de distância. Serra como silhueta em anel
+    em volta do mundo (malha baixa ou faixa no shader do céu), com a cor
+    puxada para o horizonte do `ceu.gdshader`; marcos como peças 3D baixas
+    que aparecem no fim de reta; e o *skyline* de torres que já existe,
+    conferido contra a referência.
+  - **Reaproveitável:** a serra é um perfil gerado por semente e parâmetro
+    (altura, rugosidade, cor), não a silhueta de um morro real desenhada à
+    mão; os marcos são um **catálogo** (igreja no morro, roda-gigante,
+    museu, torre de igreja) que a `Cidade` posiciona onde a pista dá vista,
+    e trocar de cidade é trocar o catálogo. Nenhum marco nasce em
+    coordenada fixa.
+  - **Aceite:** a serra aparece no fim das retas dos quadros da prova sem
+    cintilar andando; um marco, pelo menos, aparece numa corrida inteira
+    sem repetir na mesma tela; `fps` igual.
+
 ### A calçada povoada
 
 O critério dos cinco itens abaixo é um só, e vem do vídeo: **algo passa ao
@@ -933,6 +1029,54 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   `fps` p50 8,33 ms (refresh de 120 Hz), com um pico isolado de 76 ms,
   provavelmente compilação de shader. Baseline sem variação.
 
+- [ ] **V17a** — Obra: prédio no esqueleto e guindaste
+
+  A `04_vertical` tem um prédio de 20 andares no concreto cru, sem fachada,
+  com dois guindastes de torre amarelos; a `03_viaduto` tem guindaste ao
+  fundo, atrás do muro. É a silhueta que diz "cidade crescendo" e um marco
+  alto que se vê de longe.
+
+  - **Referências:** `04_vertical` (prédio no esqueleto à esquerda, dois
+    guindastes); `03_viaduto` (guindaste ao fundo, à direita).
+  - **Reaproveitável:** o esqueleto é o mesmo gerador de prédio da V11a com
+    um parâmetro de "fase de obra" (só laje e pilar, laje com parte da
+    fachada, pronto), e não um modelo à parte; o guindaste é peça própria
+    com altura e lança de parâmetro, que a `Cidade` põe ao lado de qualquer
+    prédio em obra, na avenida ou na via expressa (V11b).
+  - **Aceite:** obra e guindaste aparecem na corrida e no fundo das retas;
+    `fps` igual.
+
+- [ ] **V17b** — BRT: estação e ônibus articulado
+
+  A `03_viaduto` tem a estação de BRT comprida, de cobertura metálica e
+  vidro, no canteiro da esquerda, com o articulado amarelo e branco parado
+  nela. O ônibus da V20 é o comum.
+
+  - **Referências:** `03_viaduto` (estação e articulado à esquerda,
+    embaixo do viaduto).
+  - **Reaproveitável:** a estação é modular (módulo de cobertura repetido
+    pelo comprimento, cabeceira com rampa), posta no canteiro de qualquer
+    trecho largo; o articulado entra no elenco do `arte/carros.py` como os
+    outros, com a sanfona sendo o mesmo `Carro` em dois corpos, e roda no
+    trânsito comum também, não só parado na estação. Cor de operadora sai
+    de paleta, sem marca.
+  - **Aceite:** a estação aparece onde há canteiro; o articulado anda no
+    trânsito sem atravessar a curva (dois corpos seguindo a pista); `fps`
+    igual.
+
+- [ ] **V17c** — Placa de regulamentação
+
+  A `02_praca_maua` tem a placa redonda de borda vermelha ("proibido virar
+  à direita") no poste do semáforo. A V17 fez só a de advertência (losango
+  amarelo de curva).
+
+  - **Referências:** `02_praca_maua` (placa redonda à direita, no alto).
+  - **Reaproveitável:** um gerador de placa por tipo (redonda de
+    regulamentação, losango de advertência, que já existe) e por símbolo,
+    num atlas; a `Cidade` escolhe a placa pelo que a pista tem ali
+    (cruzamento, curva), e não por posição.
+  - **Aceite:** placa lê a 640×360 a ~30 m; `fps` igual.
+
 - [x] **V18** — Por cima da pista: semáforo suspenso e placa verde (13/10/2026, #99)
 
   O "portal" de cruzamento do vídeo e a placa verde de rodovia das imagens
@@ -1006,17 +1150,28 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   e a disputa de 260 m de 1º para 6º, porque o trânsito andando segura o
   piloto automático. Caminhão baú e van foram para a V20a.
 
-- [ ] **V20a** — Caminhão baú e van no elenco
+- [x] **V20a** — Caminhão baú e van no elenco (14/10/2026)
 
   A segunda metade da V20, separada para o feel entrar antes. O vídeo tem
   caminhão baú (`video_01/t3.0s`) e as paradas também (`03_viaduto`,
-  `04_vertical`); o elenco do `arte/carros.py` só tem hatch, sedã, SUV,
+  `04_vertical`); o elenco do `arte/carros.py` só tinha hatch, sedã, SUV,
   táxi e ônibus.
 
   - **Referências:** `video_01/t3.0s` (baú no fundo, na faixa da direita);
     `03_viaduto`, `04_vertical`.
-  - **O que fazer:** baú e van em `arte/carros.py` com a mesma árvore de nós
-    dos outros (`Carro` não tem `if` por modelo), e o peso deles no sorteio.
+  - **Feito:** `Bau` (VUC de 6,3 × 2,2 × 3,1 m, cabine avançada, baú de
+    alumínio com nervuras, portas de trás com as barras de trava, barra de
+    lanternas embaixo e rodado duplo) e `Van` (furgão de teto alto de 5,4 m,
+    porta corrediça só desenhada) em `arte/carros.py`, com a árvore de nós dos
+    outros. Na rua, 7% cada; a cabine sai da lista de frota de empresa, quase
+    toda branca. O baú ficou de fora dos carros parados das ruas laterais
+    (`cidade.gd`): lá o sorteio é outro, e mexer nele move a cidade inteira.
+  - **O que o banco de provas pegou:** com carro mais comprido na rua, um
+    carro entrou em outro três vezes. Eram três furos antigos no trânsito: o
+    `_desencosta` contava a frenagem pela diferença de velocidade, como se o
+    da frente não freasse, e não olhava quem estava trocando para a faixa; e o
+    carro de trás só enxergava quem entrava na frente dele quando a lataria já
+    estava na faixa. Os três consertados no `world.gd`.
   - **Aceite:** na prova a 128 km/h, um baú lê como o da `t3.0s`.
 
 ### O ator
@@ -1045,7 +1200,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   - **Aceite:** de trás, na câmera da V04, lê camiseta e bermuda; os rivais
     continuam um por cor (`dev.py prova`).
 
-- [ ] **V22** — Cadência do ator: 12 fps ou liso
+- [x] **V22** — Cadência do ator: 12 fps ou liso (14/10/2026, #106)
 
   A P5 que ficou aberta. O `DIRECAO_VISUAL.md` diz que a cadência travada é o
   que faz o ator ler como digitalizado; o vídeo é liso a 24 fps e tira um
@@ -1058,6 +1213,20 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
     calculada a 60 Hz, aplicada a 12), com slider. Julgar **rodando**, com
     rivais e trânsito em volta.
   - **Aceite:** a decisão escrita aqui, com o default que ficou.
+  - **Feito:** `Cadencia`, filha do `Entregador`, e o slider
+    `ator_cadencia` no grupo Ator do F3 (0 a 30; 0 é liso). Mola, roda, voo
+    e soco seguem integrando a 60 Hz; só a pose aplicada espera a vez, e
+    quando sai é a do estado de agora (o teste confere roda contra roda com
+    o ator liso). A trava segura também a rotação do ator no mundo, então a
+    inclinação do `Visual` e a virada do corpo pulam junto; só a posição na
+    pista fica lisa, porque a câmera segue o corpo a 60 Hz e a moto parada
+    enquanto a câmera anda tremeria a tela inteira. Vale para jogador e
+    rivais, no 3D e no sprite.
+  - **Decisão 👤, jogando: 12 é o default.** O primeiro corte travava só o
+    miolo (roda, guidão, joelho), com a inclinação lisa por fora, e o
+    Guilherme pediu a inclinação junto. Os vídeos de referência são lisos a
+    24 fps; na tela de pixel, o travado leu melhor. O `selftest` não anda
+    (física intocada).
 
 ### Partículas
 
@@ -1067,7 +1236,7 @@ de uma imagem. Ficam depois do cenário por isso, e
 porque dependem do glow (V12). O catálogo inteiro e as quatro regras de
 partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
 
-- [ ] **V23** — Fumaça de pneu e marca de derrapagem
+- [x] **V23** — Fumaça de pneu e marca de derrapagem (14/10/2026, #108)
 
   Gatilho já existe: a derrapada de `player_bike.gd::_integrate`. Flipbook de
   fumaça com alfa macio, `fixed_fps` em 12–15; marca como `Decal` (não
@@ -1076,6 +1245,18 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
   - **Referências:** nenhuma das de `docs/referencias/` mostra fumaça. O alvo
     sai do `DIRECAO_VISUAL.md`, *Partículas*.
   - **Aceite:** derrapou, fumaçou e marcou; andou reto, nada.
+  - **Feito:** `Derrapagem` (`scripts/derrapagem.gd`), no corpo da moto
+    embaixo do eixo traseiro, em jogador e rival. Fumaça em
+    `GPUParticles3D` com flipbook de quatro quadros gerado no código, alfa
+    macio, 24 partículas, `fixed_fps` 12 (a cadência do ator) sem
+    interpolar, herdando 90% do embalo para nascer no pneu e ficar para trás
+    aos poucos. Marca em pool de 40 `Decal` de 0,8 m que desbotam em 6 s.
+    O gatilho é a componente **lateral** da derrapada de `_integrate` (a de
+    frente é a moto ganhando embalo): medida no piloto automático da
+    `corrida`, curva normal escorrega 1–3,5 m/s; a fumaça liga em 4 e enche
+    em 10, então sai na curva forçada e na pancada de lado. No ar e caído,
+    nada (o tombo é faísca, V24). O rival é paramétrico e manda zero.
+    `selftest` sem variação; teste próprio em `test_derrapagem.gd`.
 
 - [ ] **V24** — Faísca, poeira de queda, impacto do soco e fogo
 
@@ -1119,6 +1300,63 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
   subia a `fracao_ceu`): `fracao_ceu` 0,139 → 0,104 e `familias_de_cor`
   51,5 → 45,8, só por tirar a HUD velha da conta. `fps` igual ao do `master`
   (p50 8,33 ms nos dois, mesma máquina).
+
+- [ ] **V25a** 👤 — Minimapa de GPS e nome da rua
+
+  A V25 fechou antes de as paradas existirem e leu "quatro cantos, centro
+  vazio" em todas. A `04_vertical` não é assim: no canto de baixo à esquerda
+  ela tem um **GPS de celular**, e é o elemento que mais diz "entregador de
+  app" na HUD inteira. Quadrado de ~16% da largura da imagem, moldura branca
+  grossa com contorno preto (a mesma linguagem das barras), quarteirões
+  azul-acinzentados com as ruas em branco, e uma seta vermelha fixa no centro
+  apontando para cima: o mapa gira em volta dela (*heading-up*), não ela no
+  mapa. Embaixo, o nome da rua em caixa alta (`AV. RODRIGUES ALVES`), na fonte
+  da HUD, branco e sem degradê.
+
+  - **Referências:** só a `04_vertical` (canto de baixo à esquerda). As
+    outras três e os dois vídeos não têm mapa.
+  - **Reaproveitável:** o minimapa lê qualquer `RoadTrack` (curva,
+    cruzamentos, trecho de via expressa da V11b) e a lista de nomes é dado
+    por cidade: outra pista ou outra cidade usa o mesmo widget sem mudar
+    código.
+  - **De onde sai o mapa:** a `RoadTrack` já sabe tudo. A avenida é a
+    `curve`, e as transversais são os `cruzamentos` (`[offset, lados]`) com
+    a `boca`: dá para desenhar no próprio `Control` da HUD, em 2D, a partir
+    da curva amostrada em volta do jogador, sem câmera nem `SubViewport` a
+    mais. Os quarteirões são o fundo; as ruas, linhas brancas por cima.
+  - **Decisão 👤:** onde ele mora e de onde sai o nome.
+    **Recomendação:** coluna da esquerda, **em cima do `SPEED`**, que é onde
+    ficou espaço vazio entre o `BOOST` e as barras de baixo; ~72×72 a
+    640×360, com o nome da rua entre o mapa e a legenda `SPEED`. Não trocar
+    o `SPEED` de canto: a `01`, a `02` e a `03` põem ele ali. O nome sai de
+    uma lista de avenidas do Rio sorteada pela semente da pista (uma por
+    corrida, que hoje é uma avenida só), e as transversais não ganham nome.
+    Sem rota desenhada: a corrida é uma reta de A a B, e uma linha em cima
+    da avenida só repetiria a avenida.
+  - **Aceite:** o mapa gira junto com a moto na curva e a transversal passa
+    por ele quando o cruzamento passa na tela; legível a 640×360 sobre
+    asfalto claro, como a V25; não entra na medida do `shots` (que é sem
+    HUD); `fps` igual.
+
+- [ ] **V25b** 👤 — HUD da vertical: barra do entregador e local da fase
+
+  O resto da HUD da `04_vertical`, que a V25 e a V25a não pegam: no topo
+  esquerdo, `ENTREGADOR` com uma barra de vida de verde a vermelho; no topo
+  direito, `RIO DE JANEIRO` e `FASE 01`. O jogo hoje não tem vida nem fase,
+  então este item depende de decisão de produto antes de ser HUD.
+
+  - **Referências:** `04_vertical` (topo esquerdo e topo direito).
+  - **Decisão 👤:** o que a barra mede, e se "fase" existe.
+    **Recomendação:** a barra é a **integridade da moto**, que cai com
+    pancada e tombo e dá sentido ao soco e ao corredor apertado; a fase é a
+    corrida atual (cidade e número) até existir mais de uma, e então vira
+    seleção no menu. Se a barra não tiver efeito no jogo, ela não entra:
+    HUD que não muda decisão é enfeite.
+  - **Reaproveitável:** barra e rótulo de local são peças do `hud.gd` que
+    leem do `RaceRun` (nome da cidade, número da fase, integridade), sem
+    texto fixo; trocar de cidade ou de fase é trocar dado.
+  - **Aceite:** a barra reage à pancada no mesmo quadro; legível a 640×360
+    sobre asfalto claro, como a V25.
 
 ### Tela e resolução
 

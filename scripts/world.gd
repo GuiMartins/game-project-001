@@ -108,6 +108,12 @@ var camera: ChaseCamera
 var run := RaceRun.new()
 ## A hora da corrida: o mundo larga ao meio-dia e anoitece (ver `Relogio`).
 var relogio := Relogio.new()
+## O que o menu liga e desliga no visual: o ambiente (cor do dia, neblina,
+## brilho), o sol (sombra) e o borrao de velocidade. Liga e desliga so: os
+## valores de cada um sao da hora, e quem poe e o `relogio`.
+var ambiente: Environment
+var sol: DirectionalLight3D
+var borrao: Borrao
 
 var traffic: Array[TrafficCar] = []
 var rivals: Array[RivalBike] = []
@@ -147,7 +153,7 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	add_child(camera)
 	camera.setup(tuning, player)
 	camera.current = true
-	var borrao := Borrao.new()
+	borrao = Borrao.new()
 	camera.add_child(borrao)
 	borrao.setup(tuning, player)
 	player.marcar_foco()
@@ -265,6 +271,7 @@ func _build_environment() -> void:
 	# ultimo passe de todos.
 	env.adjustment_enabled = true
 
+	ambiente = env
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -303,6 +310,7 @@ func _build_environment() -> void:
 	# a borda serrilha andando; mais e sombra de dia nublado.
 	sun.shadow_blur = 3.0
 	add_child(sun)
+	sol = sun
 
 	relogio.name = "Relogio"
 	add_child(relogio)
@@ -425,14 +433,19 @@ func _desencosta(car: TrafficCar) -> void:
 		for outro in traffic:
 			if outro == car:
 				continue
+			# Quem esta indo para esta faixa tambem conta, como no `faixa_livre`:
+			# nascer do lado de um carro no meio da troca e ser fechado por ele.
 			var largura := outro.meia_largura() + car.meia_largura() + 0.3
-			if absf(outro.lateral - car.lateral) >= largura:
+			if (
+				absf(outro.lateral - car.lateral) >= largura
+				and absf(outro.destino() - car.lateral) >= largura
+			):
 				continue
 			# Nao basta nao nascer encostado: o de tras precisa de chao para
 			# frear ate a velocidade do da frente, senao entra nele logo depois.
 			var juntos := outro.meio_comprimento() + car.meio_comprimento() + 0.5
-			var na_frente := juntos + _frenagem(outro.speed - car.speed)
-			var atras := juntos + _frenagem(car.speed - outro.speed)
+			var na_frente := juntos + _frenagem(outro.speed, car.speed)
+			var atras := juntos + _frenagem(car.speed, outro.speed)
 			var d := car.offset - outro.offset
 			if (d >= 0.0 and d < na_frente) or (d < 0.0 and -d < atras):
 				empurra = maxf(empurra, outro.offset + na_frente - car.offset)
@@ -441,13 +454,23 @@ func _desencosta(car: TrafficCar) -> void:
 		car.posicionar(car.offset + empurra)
 
 
-## Metros que um carro do transito precisa para tirar `fecha` m/s de
-## diferenca, freando no talo, mais o atraso da consulta a pista
+## Metros que o carro de tras, a `rapido` m/s, perde de vao ate o da frente, a
+## `lento`, se os dois frearem no talo; mais o atraso da consulta a pista
 ## (`TrafficCar.PROBE_EVERY`, ~0,07 s) com folga.
-func _frenagem(fecha: float) -> float:
-	if fecha <= 0.0:
+##
+## E a diferenca dos quadrados, e nao o quadrado da diferenca: o da frente
+## tambem freia, e freando os dois no mesmo talo a diferenca de velocidade
+## nao fecha nunca - so acaba quando o da frente para. A conta antiga supunha o
+## da frente mantendo a velocidade, e uma van nascida 10 m atras de outra que
+## parava para um carro encostado entrava nela (V20a).
+func _frenagem(rapido: float, lento: float) -> float:
+	var parado := maxf(lento, 0.0)
+	if rapido <= parado:
 		return 0.0
-	return fecha * fecha / (2.0 * world_tuning.traffic_brake) + fecha * 0.2
+	return (
+		(rapido * rapido - parado * parado) / (2.0 * world_tuning.traffic_brake)
+		+ (rapido - parado) * 0.2
+	)
 
 
 ## Reconcilia a frota de rivais com o tuning, sem mexer em quem ja existe.
@@ -476,7 +499,7 @@ func _sync_rival_pool() -> void:
 
 func _process(_delta: float) -> void:
 	_aplica_ceu()
-	_aplica_ator()
+	aplica_ator()
 	relogio.andar(
 		player_progress() / maxf(run.distance_total, 1.0),
 		world_tuning.hora_comeca,
@@ -494,15 +517,18 @@ func _aplica_ceu() -> void:
 			_ceu.set_shader_parameter(uniforme, valor)
 
 
-## Sprite ou modelo, em todo corredor. A cada quadro, e nao so quando o slider
+## Sprite ou modelo, e a cadencia da pose, em todo corredor. A cada quadro, e nao so quando o slider
 ## mexe: rival que entra depois (R) nasce em 3D e tem de ser trocado tambem. O
 ## ator ignora o pedido que nao muda nada.
-func _aplica_ator() -> void:
+func aplica_ator() -> void:
 	var ligado := world_tuning.ator_sprite == 1
+	var cadencia := float(world_tuning.ator_cadencia)
 	if player != null:
 		player.usar_sprite(ligado)
+		player.usar_cadencia(cadencia)
 	for rival in rivals:
 		rival.usar_sprite(ligado)
+		rival.usar_cadencia(cadencia)
 
 
 func _physics_process(delta: float) -> void:
@@ -626,7 +652,16 @@ func path_clearance(
 			continue
 		if not emparelhado and car.offset < from_offset:
 			continue
-		if absf(car.lateral - lateral) < _faixa_de(car, exclude):
+		var faixa := _faixa_de(car, exclude)
+		var na_faixa := absf(car.lateral - lateral) < faixa
+		# Carro perguntando: o da frente que ja decidiu entrar nesta faixa ja e
+		# o carro da frente, como quem ve a seta. Esperar a lataria chegar e
+		# frear tarde: a troca anda 1,6 m/s de lado mesmo com o carro parado, e
+		# um hatch saindo da fila entrou num que vinha acelerando atras (V20a).
+		# So quem esta a frente: o de tras entrando e quem tem de esperar.
+		if not na_faixa and exclude is TrafficCar and car.offset > from_offset:
+			na_faixa = absf(car.destino() - lateral) < faixa
+		if na_faixa:
 			nearest = minf(nearest, maxf(gap, 0.0))
 	return nearest
 

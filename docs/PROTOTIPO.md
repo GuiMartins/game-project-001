@@ -286,28 +286,35 @@ release não lê o README. O protótipo é exportado para as três plataformas
 justamente para alguém sentar e responder *"está gostoso?"* — e essa pessoa
 estava esbarrando na porta antes de chegar na pergunta.
 
-Quatro telas, em [`scripts/race_flow.gd`](../scripts/race_flow.gd):
+Três telas, em [`scripts/race_flow.gd`](../scripts/race_flow.gd):
 
 | Tela | O que faz |
 | --- | --- |
-| `MENU` | JOGAR / CONFIGURACOES / SAIR |
+| `MENU` | JOGAR, as opções em colunas por seção, PAINEL DE TUNING e SAIR |
 | `CORRIDA` | o jogo; o fluxo não desenha nada |
-| `CONFIGURACOES` | pixel, câmera e painel de tuning — os três atalhos de `F1`–`F3` |
 | `RESULTADO` | o placar de `RaceRun.summary()`, com CORRER DE NOVO e MENU |
 
 Quatro decisões que não são óbvias:
 
-**As configurações mostram o que existe, e nada além.** As três linhas são os
-três atalhos de debug que já existiam e que ninguém achava sem o README. Um
-slider de volume numa tela sem áudio seria menu de mentira, e menu de mentira é
-pior que menu nenhum.
+**O menu é uma página só, e as opções são as diferenças do projeto.** Era
+JOGAR / CONFIGURACOES / SAIR, com pixel, câmera e tela cheia numa segunda tela.
+Só que o uso real do menu virou comparar: pixel ou não, piloto 3D ou sprite,
+ator liso ou a 12 fps, sombra, borrão. Escondido numa segunda tela, cada
+comparação custava três teclas a mais. Agora cada opção é uma linha (`←` `→`
+mudam), registrada pelo `Main` com `RaceFlow.opcao(secao, nome, valor, muda)`:
+quem sabe o estado é quem descreve e quem muda. O menu não tem limite de
+linhas — com mais do que cabe, fonte e passo encolhem juntos e a seção quebra
+em mais uma coluna. As opções de VISUAL são interruptores, e não sliders: o
+número de cada passe continua no F3, e desligar e religar devolve o que
+estava. Tudo ligado é o jogo como ele é, e o banco de provas, que não lê o
+`user://`, mede sempre ele.
 
 **`ESC` no meio da corrida congela, e `CONTINUAR` devolve a mesma corrida.**
 Menu de pausa que larga tudo de novo apagaria a colocação de quem pausou
 faltando 200 m — e menu que faz isso é menu que ninguém abre. Por isso a
 primeira linha troca de **nome** (JOGAR ↔ CONTINUAR) e nunca de lugar: mexer no
 número de itens moveria o índice que `_escolher` usa, e SAIR passaria a morar
-onde CONFIGURACOES morava. É um bug que continua desenhando lindamente, e que
+onde o PAINEL morava. É um bug que continua desenhando lindamente, e que
 só aparece quando alguém fecha o jogo sem querer.
 
 **O mundo congela por `process_mode` no `World`, não nó a nó.** Uma linha
@@ -496,18 +503,20 @@ motos: XRE e PCX aparecem com o desenho da CG, só mais altas.
 ## Os carros
 
 O trânsito saiu da caixa pelo mesmo motivo que o entregador: o que o carro
-mostra é o que o jogador lê para decidir se entra no corredor. São cinco
+mostra é o que o jogador lê para decidir se entra no corredor. São sete
 modelos ([`assets/carros/`](../assets/carros)), gerados por
 [`arte/carros.py`](../arte/carros.py) e posados a cada passo por
 [`scripts/carro.gd`](../scripts/carro.gd), filho de cada `TrafficCar`:
 
 | modelo | medida | na rua |
 | --- | --- | --- |
-| hatch de duas portas | 3,9 × 1,7 m | 25% |
-| sedã | 4,4 × 1,7 m | 25% |
-| SUV | 4,3 × 1,8 m | 18% |
-| táxi do Rio, amarelo com faixa azul e luminoso | 4,4 × 1,7 m | 18% |
-| ônibus urbano, porta dupla à direita | 12,2 × 2,5 m | 14% |
+| hatch de duas portas | 3,9 × 1,7 m | 22% |
+| sedã | 4,4 × 1,7 m | 22% |
+| SUV | 4,3 × 1,8 m | 15% |
+| táxi do Rio, amarelo com faixa azul e luminoso | 4,4 × 1,7 m | 15% |
+| ônibus urbano, porta dupla à direita | 12,2 × 2,5 m | 12% |
+| caminhão baú (VUC), cabine avançada e baú de alumínio | 6,3 × 2,2 m | 7% |
+| van de carga de teto alto | 5,4 × 2,05 m | 7% |
 
 O que se mexe, e por que cada um é aviso e não enfeite:
 

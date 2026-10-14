@@ -1,10 +1,10 @@
-"""Gerador do transito: hatch, seda, SUV, taxi e onibus, com gente dentro.
+"""Gerador do transito: hatch, seda, SUV, taxi, onibus, bau e van, com gente dentro.
 
 Roda dentro do Blender (5.2+), igual ao entregador:
 
     blender --background --factory-startup --python arte/carros.py
 
-Apaga a cena, monta os cinco, salva `arte/carros.blend` e exporta
+Apaga a cena, monta os sete, salva `arte/carros.blend` e exporta
 `assets/carros/carros.glb` mais as duas texturas. Mesma receita, mesmo `.glb`,
 byte a byte: este script e a fonte, o resto e build.
 
@@ -15,6 +15,8 @@ byte a byte: este script e a fonte, o resto e build.
 | `SUV`     | 4,30 x 1,80 x 1,66 m           | o SUV escuro do video 1                   |
 | `Taxi`    | 4,40 x 1,74 x 1,60 m           | o seda com a faixa azul e o luminoso do Rio |
 | `Onibus`  | 12,2 x 2,50 x 3,30 m           | o urbano de piso alto, porta a direita    |
+| `Bau`     | 6,30 x 2,20 x 3,10 m           | o VUC da `video_01/t3.0s`, bau branco     |
+| `Van`     | 5,41 x 2,05 x 2,42 m           | o furgao de teto alto, Ducato e Master    |
 
 Convencoes, as mesmas do `entregador.py` e pelos mesmos motivos:
 
@@ -28,7 +30,7 @@ Convencoes, as mesmas do `entregador.py` e pelos mesmos motivos:
 
 O que da para animar, e por onde:
 
-    Hatch | Seda | SUV | Taxi | Onibus
+    Hatch | Seda | SUV | Taxi | Onibus | Bau | Van
       Carroceria        a massa suspensa: arfa, mergulha e rola em volta daqui
         Lataria         casco, vidro fixo, interior, luzes. O colisor sai dela
         Volante         gira em volta da reta Volante -> Coluna
@@ -149,6 +151,11 @@ PALETA = {
     "pele_clara": ((0.80, 0.62, 0.50), NADA),
     "pele_media": ((0.62, 0.44, 0.32), NADA),
     "pele_escura": ((0.36, 0.24, 0.17), NADA),
+    # O bau de aluminio do caminhao, que nao troca de cor: a cabine e que e
+    # pintada. Branco sujo, e o friso das nervuras um tom abaixo, que e o que
+    # desenha o bau em faixas verticais a 40 m.
+    "bau": ((0.86, 0.87, 0.86), NADA),
+    "bau_friso": ((0.62, 0.64, 0.66), NADA),
 }
 CELULAS = {nome: i for i, nome in enumerate(PALETA)}
 
@@ -620,7 +627,9 @@ def cabine(m) -> dict:
     sair do lugar.
     """
     hb = m.hw - 0.075
-    ht = m.hw - 0.22
+    # Utilitario tem lateral quase reta: o recolhimento do carro de passeio,
+    # numa cabine de 2,5 m, viraria um telhado de duas aguas.
+    ht = m.hw - getattr(m, "recolhe", 0.22)
     return {
         "a": Vector((hb, m.parabrisa, m.cintura)),
         "b": Vector((ht, m.teto_frente, m.teto)),
@@ -690,7 +699,15 @@ def porta(m, colecao, mats, pai, nome, lado, y_frente, y_tras, retrovisor, faixa
         # A faixa azul do taxi corre pela porta: e a mesma linha que corre pelo
         # paralama, e com a porta fechada as duas emendam.
         p.caixa((lado * (hw + 0.004), (y0 + y1) * 0.5, m.faixa_z), (0.01, y1 - y0, 0.09), "faixa_taxi")
-    if retrovisor:
+    if retrovisor and getattr(m, "espelho_alto", False):
+        # O espelho de van e de caminhao: alto, num braco que sai da porta.
+        # E a orelha que se ve passar a 1,8 m do chao, na altura do capacete.
+        base = Vector((lado * (hw - 0.02), y1 - 0.10, zt + 0.02))
+        braco = base + Vector((lado * 0.24, 0.06, 0.16))
+        p.tubo(base, braco, 0.018, 0.018, "preto", lados=4)
+        p.caixa(braco + Vector((lado * 0.03, 0.0, 0.10)), (0.07, 0.11, 0.34), "preto")
+        p.caixa(braco + Vector((lado * 0.03, -0.058, 0.10)), (0.05, 0.008, 0.30), "cromo")
+    elif retrovisor:
         base = Vector((lado * (hw - 0.02), y1 - 0.12, zt + 0.04))
         p.caixa(base + Vector((lado * 0.05, 0.0, 0.0)), (0.10, 0.06, 0.05), "plastico")
         p.caixa(base + Vector((lado * 0.15, -0.02, 0.04)), (0.16, 0.08, 0.11), "pintura")
@@ -1044,6 +1061,345 @@ def suv_() -> Modelo:
     )
 
 
+# --- Utilitarios -------------------------------------------------------------
+#
+# A van de carga e o caminhao bau, o resto do transito do video (V20a). Os
+# dois sao uma cabine de duas portas, montada com as mesmas pecas do carro de
+# passeio (`casco`, `cabine`, `porta`), e o que vem atras dela: na van, o
+# furgao fechado no mesmo casco; no caminhao, o chassi e o bau de aluminio,
+# soltos da cabine. A arvore de nos e a dos carros - Carroceria, Lataria,
+# Volante, Motorista, Porta_DE/DD e as quatro rodas -, porque o `Carro` nao
+# tem `if` por modelo.
+#
+# O que muda do carro e o `topo` atras da porta: ele sobe ate o teto, e a
+# parede que no carro e o vidro de tras vira a frente do furgao ou o fundo da
+# cabine. A estufa entao acaba na porta, e o vidro da porta e o unico lateral.
+
+
+def van() -> Modelo:
+    """Furgao de teto alto, do tamanho de uma Ducato Cargo: 5,41 x 2,05 x 2,42 m.
+
+    Entre eixos de 3,45 m e pneu 215/70 R15 (0,68 m) da ficha. O teto alto
+    passa por cima da cabine, e e por isso que o vidro da porta acaba a 2,05 m
+    e o furgao vai a 2,42: e o degrau que diz "van" e nao "carro alto".
+    """
+    return Modelo(
+        nome="Van",
+        bau=False,
+        comprimento=5.41,
+        hw=1.025,
+        raio=0.34,
+        pneu=0.22,
+        raios=5,
+        arco=0.42,
+        fundo=0.22,
+        eixo_d=1.60,
+        eixo_t=-1.85,
+        # A porta acaba antes do arco da frente (1,60 - 0,42 - 0,03): o arco
+        # entrando na soleira da porta inverteria o anel dela.
+        soleira=0.45,
+        cintura=1.20,
+        teto=2.05,
+        teto_carga=2.42,
+        parabrisa=1.15,
+        teto_frente=0.55,
+        teto_tras=0.12,
+        vidro_tras=0.12,
+        recolhe=0.12,
+        espelho_alto=True,
+        portas=[(1.12, 0.12)],
+        topo=[(-2.705, 2.30), (-2.64, 2.42), (0.12, 2.42), (0.1201, 1.20), (1.15, 1.20), (2.20, 1.10), (2.60, 1.02), (2.705, 0.92)],
+        largura=[(-2.705, 0.99), (-2.62, 1.025), (2.20, 1.025), (2.55, 0.98), (2.705, 0.88)],
+        assento=1.02,
+        banco=0.32,
+        lado_banco=0.48,
+        volante=0.70,
+        volante_z=1.42,
+        aro=0.19,
+        coluna=(0.0, 0.55, -0.83),
+        reclina=10.0,
+        pe=(0.58, -0.50),
+        farol_z=0.82,
+        roda_x_t=None,
+    )
+
+
+def bau() -> Modelo:
+    """O VUC de entrega: cabine avancada e bau de aluminio, 6,30 x 2,20 x 3,10 m.
+
+    Veiculo Urbano de Carga e o caminhao que a regra de cidade deixa rodar no
+    centro: ate 6,30 m e 2,20 m de largura, que e a medida aqui. Entre eixos de
+    3,30 m e pneu 215/75 R17.5 (0,77 m), rodado duplo atras. A cabine e mais
+    estreita que o bau, e o bau mais alto que ela: de tras, a cabine some, e o
+    que se le e a parede branca com a barra de lanternas embaixo, como na
+    `video_01/t3.0s`.
+    """
+    return Modelo(
+        nome="Bau",
+        bau=True,
+        comprimento=6.30,
+        hw=1.00,
+        bau_hw=1.10,
+        raio=0.385,
+        pneu=0.22,
+        raios=5,
+        arco=0.46,
+        fundo=0.40,
+        eixo_d=2.05,
+        eixo_t=-1.25,
+        # Cabine sobre o eixo: a porta fica em cima da roda, e a soleira dela
+        # passa do arco (0,385 + 0,46). Embaixo, o degrau.
+        soleira=1.00,
+        cintura=1.55,
+        teto=2.30,
+        parabrisa=3.08,
+        teto_frente=3.00,
+        teto_tras=1.85,
+        vidro_tras=1.85,
+        recolhe=0.10,
+        espelho_alto=True,
+        portas=[(2.92, 1.85)],
+        cabine_tras=1.55,
+        bau_frente=1.45,
+        bau_base=1.10,
+        bau_topo=3.10,
+        topo=[(1.55, 2.30), (1.85, 2.30), (1.8501, 1.55), (3.10, 1.55), (3.15, 1.45)],
+        largura=[(1.55, 1.00), (3.05, 1.00), (3.15, 0.96)],
+        assento=1.45,
+        banco=2.15,
+        lado_banco=0.50,
+        volante=2.62,
+        volante_z=1.80,
+        aro=0.22,
+        coluna=(0.0, 0.40, -0.92),
+        reclina=6.0,
+        pe=(0.52, -0.42),
+        farol_z=0.80,
+        roda_x_t=0.93,
+    )
+
+
+def utilitario(m, colecao, mats) -> bpy.types.Object:
+    raiz = vazio(m.nome, (0.0, 0.0, 0.0), colecao)
+    carroceria = vazio("Carroceria", (0.0, 0.0, m.raio), colecao, raiz)
+    p = Peca("Lataria", (0.0, 0.0, m.raio))
+    hw = m.hw
+    yf, yt = m.comprimento * 0.5, -m.comprimento * 0.5
+    y_porta, y_porta_tras = m.portas[0]
+
+    def topo(y):
+        return "forro" if m.vidro_tras < y < m.parabrisa else "pintura"
+
+    cores = ["plastico", "pintura", "pintura", "pintura", topo, "pintura", "pintura", "pintura"]
+    casco(m, p, y_porta, yf, cores=cores, tampas=("forro", "pintura"))
+    soleira = ["plastico", "pintura_sombra", "pintura_sombra", "pintura_sombra", "forro"]
+    soleira += ["pintura_sombra", "pintura_sombra", "pintura_sombra"]
+    casco(m, p, y_porta_tras, y_porta, teto=m.soleira, cores=soleira, tampas=(None, None))
+    # Atras da porta, o casco vai ao teto: o furgao inteiro na van, so o fundo
+    # da cabine no caminhao. A tampa da frente e a parede atras dos bancos.
+    y_atras = m.cabine_tras if m.bau else yt
+    pintado = ["plastico"] + ["pintura"] * 7
+    casco(m, p, y_atras, y_porta_tras, cores=pintado, tampas=("pintura", "forro"))
+
+    miolo = hw - 0.30
+    p.caixa((0.0, m.eixo_d, m.fundo + 0.25), (miolo * 2.0, m.arco * 2.2, 0.5), "preto")
+    if not m.bau:
+        p.caixa((0.0, m.eixo_t, m.fundo + 0.25), (miolo * 2.0, m.arco * 2.2, 0.5), "preto")
+
+    c = cabine(m)
+    a, b, cc = c["a"], c["b"], c["c"]
+    p.face([espelha(a), a, b, espelha(b)], "vidro", (0.0, 1.0, 0.3))
+    p.placa([espelha(b), b, cc, espelha(cc)], (0.0, 0.0, 1.0), 0.04, "pintura", "forro")
+    p.tubo(espelha(a), a, 0.02, 0.02, "preto", lados=4)
+    p.caixa((0.0, m.parabrisa + 0.04, m.cintura - 0.01), (c["hb"] * 2.0, 0.10, 0.03), "preto")
+    for lado in (-1.0, 1.0):
+        p.tubo(lado_x(a, lado), lado_x(b, lado), 0.05, 0.045, "pintura", lados=6)
+
+    if m.bau:
+        # O teto da cabine: uma tampa acima do vidro, como na cabine avancada.
+        p.caixa((0.0, (m.cabine_tras + yf) * 0.5, m.teto + 0.12), (hw * 2.0 - 0.04, yf - m.cabine_tras - 0.06, 0.26), "pintura")
+    else:
+        # O teto alto do furgao avanca por cima da cabine, com a frente na
+        # mesma inclinacao do para-brisa: em caixa reta ele lia como um bau
+        # pousado no teto de um carro.
+        x = hw - 0.07
+        inclina = (m.parabrisa - m.teto_frente) / (m.teto - m.cintura)
+        ponta = m.teto_frente - (m.teto_carga - m.teto) * inclina
+        perfil = [(m.teto_tras, m.teto - 0.02), (m.teto_frente, m.teto - 0.02), (ponta, m.teto_carga), (m.teto_tras, m.teto_carga)]
+        p.placa([(x, y, z) for y, z in perfil], (1.0, 0.0, 0.0), x * 2.0, "pintura")
+
+    # Interior: painel e os dois bancos. O de quem vai ao lado fica vazio.
+    hb = c["hb"]
+    p.caixa((0.0, m.parabrisa - 0.22, m.cintura - 0.04), (hb * 2.0 - 0.06, 0.40, 0.20), "painel")
+    for x in (-m.lado_banco, m.lado_banco):
+        p.caixa((x, m.banco + 0.04, m.assento - 0.17), (0.48, 0.48, 0.12), "banco")
+        p.caixa((x, m.banco, (m.soleira + m.assento - 0.23) * 0.5), (0.36, 0.36, m.assento - 0.23 - m.soleira), "plastico")
+        p.caixa((x, m.banco - 0.26, m.assento + 0.22), (0.48, 0.10, 0.70), "banco", rot_x=-m.reclina)
+
+    if m.bau:
+        bau_e_chassi(m, p)
+    else:
+        furgao(m, p)
+    luzes_utilitario(m, p)
+    p.objeto(mats, colecao, carroceria)
+
+    centro = Vector((-m.lado_banco, m.volante, m.volante_z))
+    coluna = Vector(m.coluna).normalized()
+    volante = Peca("Volante", centro)
+    aro_volante(volante, centro, coluna, m.aro)
+    volante.tubo(centro, centro + coluna * 0.30, 0.025, 0.03, "painel")
+    obj_volante = volante.objeto(mats, colecao, carroceria)
+    vazio("Coluna", centro + coluna * 0.3, colecao, obj_volante)
+    maos = [mao_no_aro(centro, coluna, m.aro, lado) for lado in (-1.0, 1.0)]
+    quadril = Vector((-m.lado_banco, m.banco, m.assento))
+    pes = [quadril + Vector((lado * 0.11, m.pe[0], m.pe[1])) for lado in (-1.0, 1.0)]
+    pessoa(colecao, mats, carroceria, quadril, m.reclina, maos, pes, ("camisa", "pele", "calca", "cabelo"))
+
+    for lado, nome in ((1.0, "Porta_DD"), (-1.0, "Porta_DE")):
+        porta(m, colecao, mats, carroceria, nome, lado, y_porta, y_porta_tras, True, False)
+
+    x_t = m.roda_x_t or hw - 0.06 - m.pneu * 0.5
+    for nome, ya, lado, x in (
+        ("Roda_DE", m.eixo_d, -1.0, hw - 0.06 - m.pneu * 0.5),
+        ("Roda_DD", m.eixo_d, 1.0, hw - 0.06 - m.pneu * 0.5),
+        ("Roda_TE", m.eixo_t, -1.0, x_t),
+        ("Roda_TD", m.eixo_t, 1.0, x_t),
+    ):
+        x = lado * x
+        r = Peca(nome, (x, ya, m.raio))
+        r.roda((x, ya, m.raio), m.raio, m.pneu, lado, raios=m.raios)
+        if m.bau and ya == m.eixo_t:
+            # Rodado duplo, como no onibus: o segundo pneu para dentro.
+            xi = x - lado * 0.25
+            r.tubo((xi - 0.11, ya, m.raio), (xi + 0.11, ya, m.raio), m.raio, m.raio, "pneu", lados=16)
+        r.objeto(mats, colecao, raiz)
+    return raiz
+
+
+def furgao(m, p) -> None:
+    """A traseira e a lateral da van: portas de tras, porta corredica, friso."""
+    hw = m.hw
+    yt = -m.comprimento * 0.5
+    # Duas folhas atras, com a janelinha escura de cada uma. Escura e nao
+    # vidro: o vidro do jogo e transparente, e atras dele so ha a tampa do
+    # casco. E o que a traseira de van tem de rosto a 30 m.
+    p.caixa((0.0, yt - 0.004, 1.25), (0.016, 0.012, 1.90), "preto")
+    for lado in (-1.0, 1.0):
+        p.caixa((lado * 0.46, yt - 0.004, 1.86), (0.66, 0.012, 0.42), "preto")
+        p.caixa((lado * 0.10, yt - 0.01, 1.20), (0.12, 0.02, 0.04), "plastico")
+    # Porta corredica do lado da calcada, so as frestas: ela nao abre. A
+    # porta que abre no corredor e a do motorista, como em qualquer carro.
+    x = hw + 0.004
+    for y in (0.08, -1.12):
+        p.caixa((x, y, 1.22), (0.012, 0.02, 1.55), "preto")
+    p.caixa((x, -0.52, 2.00), (0.012, 1.20, 0.02), "preto")
+    p.caixa((x, -1.84, 1.36), (0.012, 1.44, 0.025), "preto")
+    p.caixa((hw + 0.01, 0.0, 1.18), (0.02, 0.14, 0.04), "plastico")
+    # Friso de borracha na altura do para-choque, fora das caixas de roda.
+    for lado in (-1.0, 1.0):
+        x = lado * (hw + 0.006)
+        for y0, y1 in ((m.eixo_t + m.arco + 0.06, m.portas[0][1] - 0.02), (yt + 0.10, m.eixo_t - m.arco - 0.06)):
+            p.caixa((x, (y0 + y1) * 0.5, 0.62), (0.02, y1 - y0, 0.08), "plastico")
+
+
+def bau_e_chassi(m, p) -> None:
+    """O bau de aluminio, o chassi embaixo dele e a traseira do caminhao."""
+    yt = -m.comprimento * 0.5
+    bw, z0, z1, y1 = m.bau_hw, m.bau_base, m.bau_topo, m.bau_frente
+    yc, comp = (yt + y1) * 0.5, y1 - yt
+    p.caixa((0.0, yc, (z0 + z1) * 0.5), (bw * 2.0, comp, z1 - z0), "bau")
+    # Nervuras: as faixas verticais do painel de aluminio, e o friso de cima.
+    passos = 8
+    for lado in (-1.0, 1.0):
+        x = lado * (bw + 0.008)
+        for k in range(passos + 1):
+            y = yt + 0.05 + (comp - 0.10) * k / passos
+            p.caixa((x, y, (z0 + z1) * 0.5), (0.016, 0.05, z1 - z0 - 0.04), "bau_friso")
+        p.caixa((lado * (bw + 0.01), yc, z1 - 0.04), (0.03, comp, 0.08), "bau_friso")
+        p.caixa((lado * (bw + 0.01), yc, z0 + 0.06), (0.03, comp, 0.12), "preto")
+    # As portas de tras: fresta no meio, moldura, as quatro barras de trava e
+    # as dobradicas. E o que o jogador encara a 20 m no corredor.
+    yb = yt - 0.006
+    p.caixa((0.0, yb, (z0 + z1) * 0.5), (0.02, 0.012, z1 - z0 - 0.10), "preto")
+    for z in (z0 + 0.03, z1 - 0.03):
+        p.caixa((0.0, yb, z), (bw * 2.0, 0.014, 0.06), "bau_friso")
+    for lado in (-1.0, 1.0):
+        p.caixa((lado * (bw - 0.03), yb, (z0 + z1) * 0.5), (0.06, 0.014, z1 - z0), "bau_friso")
+        for x in (0.25, 0.78):
+            p.tubo((lado * x, yt - 0.03, z0 + 0.10), (lado * x, yt - 0.03, z1 - 0.10), 0.014, 0.014, "cromo", lados=4)
+            p.caixa((lado * x, yt - 0.025, (z0 + z1) * 0.5 - 0.15), (0.05, 0.03, 0.14), "preto")
+        for z in (z0 + 0.35, (z0 + z1) * 0.5, z1 - 0.35):
+            p.caixa((lado * (bw - 0.05), yt - 0.02, z), (0.10, 0.03, 0.06), "preto")
+
+    # Chassi: as longarinas, o estrado que carrega o bau e o eixo de tras.
+    y_ch0, y_ch1 = yt + 0.10, m.cabine_tras + 0.20
+    for x in (-0.42, 0.42):
+        p.caixa((x, (y_ch0 + y_ch1) * 0.5, 0.80), (0.10, y_ch1 - y_ch0, 0.24), "preto")
+    p.caixa((0.0, yc, z0 - 0.06), (bw * 2.0 - 0.10, comp - 0.10, 0.12), "preto")
+    p.tubo((-0.70, m.eixo_t, m.raio), (0.70, m.eixo_t, m.raio), 0.07, 0.07, "preto", lados=6)
+    p.esfera((0.0, m.eixo_t, m.raio), (0.16, 0.14, 0.14), "preto", gomos=8, aneis=5)
+    # Tanque do lado do motorista e o protetor lateral entre os eixos, que e
+    # obrigatorio: sem ele o vao embaixo do bau vira um buraco preto.
+    p.caixa((-0.72, 0.55, 0.72), (0.34, 0.70, 0.40), "aro")
+    for lado in (-1.0, 1.0):
+        y0, y1 = m.eixo_t + m.arco + 0.15, m.eixo_d - m.arco - 0.10
+        for z in (0.62, 0.86):
+            p.caixa((lado * (bw - 0.04), (y0 + y1) * 0.5, z), (0.03, y1 - y0, 0.06), "bau_friso")
+        # Para-barro atras do rodado duplo.
+        p.caixa((lado * m.roda_x_t * 0.92, m.eixo_t - m.arco - 0.12, 0.42), (0.36, 0.02, 0.44), "preto")
+        # Degrau da cabine, atras da roda da frente.
+        p.caixa((lado * (m.hw - 0.10), m.cabine_tras + 0.16, 0.64), (0.18, 0.24, 0.04), "preto")
+
+    # Traseira de baixo: a barra das lanternas presa no estrado, a placa e o
+    # para-choque contra quem entra embaixo.
+    p.caixa((0.0, yt + 0.05, 0.92), (2.00, 0.08, 0.14), "preto")
+    for x in (-0.42, 0.42):
+        p.caixa((x, yt + 0.10, 0.68), (0.08, 0.08, 0.36), "preto")
+    p.caixa((0.0, yt + 0.06, 0.50), (1.90, 0.10, 0.16), "preto")
+
+
+def luzes_utilitario(m, p) -> None:
+    """Farol, seta, lanterna, re e placas da van e do caminhao."""
+    yf = m.comprimento * 0.5
+    yt = -m.comprimento * 0.5
+    hwf = interpola(m.largura, yf - 0.05)
+    zf = m.farol_z
+    for lado in (-1.0, 1.0):
+        seta = "seta_e" if lado < 0.0 else "seta_d"
+        p.caixa((lado * (hwf - 0.24), yf - 0.01, zf), (0.30, 0.06, 0.15), "farol")
+        p.caixa((lado * (hwf - 0.05), yf - 0.03, zf), (0.08, 0.08, 0.14), seta)
+        p.caixa((lado * (m.hw + 0.004), m.portas[0][0] + 0.10, m.cintura - 0.12), (0.01, 0.07, 0.03), seta)
+    # Grade, para-choque e placa da frente.
+    p.caixa((0.0, yf - 0.005, zf + 0.30 if m.bau else zf - 0.20), (hwf * 1.2, 0.03, 0.30 if m.bau else 0.16), "preto")
+    p.caixa((0.0, yf - 0.03, m.fundo + 0.12), (hwf * 1.96, 0.08, 0.24), "plastico")
+    p.caixa((0.0, yf + 0.012, m.fundo + 0.14), (0.40, 0.02, 0.13), "placa")
+    p.caixa((0.0, yf + 0.024, m.fundo + 0.19), (0.40, 0.006, 0.03), "placa_tarja")
+
+    if m.bau:
+        # Na barra embaixo do bau: lanterna na ponta, seta e re para dentro.
+        y = yt + 0.008
+        for lado in (-1.0, 1.0):
+            seta = "seta_e" if lado < 0.0 else "seta_d"
+            p.caixa((lado * 0.82, y, 0.92), (0.26, 0.03, 0.12), "lanterna")
+            p.caixa((lado * 0.56, y, 0.92), (0.18, 0.03, 0.12), seta)
+            p.caixa((lado * 0.40, y, 0.92), (0.10, 0.03, 0.12), "re")
+        p.caixa((0.0, yt + 0.004, 0.74), (0.40, 0.02, 0.13), "placa")
+        p.caixa((0.0, yt - 0.008, 0.79), (0.40, 0.006, 0.03), "placa_tarja")
+        return
+    # A van tem as lanternas em pe, nas quinas, e o brake-light no alto.
+    hwt = interpola(m.largura, yt + 0.05)
+    for lado in (-1.0, 1.0):
+        seta = "seta_e" if lado < 0.0 else "seta_d"
+        x = lado * (hwt - 0.07)
+        p.caixa((x, yt - 0.005, 1.05), (0.11, 0.04, 0.40), "lanterna")
+        p.caixa((x, yt - 0.005, 1.33), (0.11, 0.04, 0.14), seta)
+        p.caixa((x, yt - 0.005, 0.80), (0.11, 0.04, 0.10), "re")
+    p.caixa((0.0, yt - 0.005, m.teto_carga - 0.16), (0.30, 0.03, 0.05), "lanterna")
+    p.caixa((0.0, yt - 0.02, m.fundo + 0.14), (hwt * 1.96, 0.08, 0.24), "plastico")
+    p.caixa((0.0, yt - 0.065, m.fundo + 0.18), (0.40, 0.02, 0.13), "placa")
+    p.caixa((0.0, yt - 0.077, m.fundo + 0.23), (0.40, 0.006, 0.03), "placa_tarja")
+
+
 # --- Onibus ------------------------------------------------------------------
 #
 # O urbano de piso alto do Rio: 12,2 m, piso a 0,9 m com degrau na porta, faixa
@@ -1370,8 +1726,10 @@ def main() -> None:
         carro_de_passeio(suv_(), colecao, mats),
         carro_de_passeio(seda("Taxi", taxi_=True), colecao, mats),
         onibus(colecao, mats),
+        utilitario(bau(), colecao, mats),
+        utilitario(van(), colecao, mats),
     ]
-    # Lado a lado no .blend, so para dar para olhar os cinco. O jogo acha cada
+    # Lado a lado no .blend, so para dar para olhar os sete. O jogo acha cada
     # um pelo nome e zera a posicao.
     for i, raiz in enumerate(raizes):
         raiz.location.x = i * 4.0
