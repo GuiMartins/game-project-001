@@ -18,9 +18,10 @@ enum State { RIDING, STAGGERED, CRASHED }
 
 const SIZE := Vector3(0.75, 1.75, 2.1)
 const GRAVITY: float = 26.0
-## A cor do jogador. Laranja desde o primeiro cubo de greybox, e nenhum rival
-## de `World.RIVAL_COLORS` chega perto dela.
-const COR := Color(0.95, 0.42, 0.15)
+## A cor do jogador: o vermelho da bag das T-poses e das folhas do sprite
+## (`Entregador.BAG_FABRICA`), e nenhum rival de `World.RIVAL_COLORS` chega
+## perto dela. Foi laranja do primeiro cubo de greybox ate a roupa da V21.
+const COR := Color(0.82, 0.12, 0.10)
 ## Quanto da velocidade de aproximacao volta como tranco, numa batida que nao
 ## derruba. Na traseira de um carro voce fica com a velocidade dele menos isto:
 ## sem o tranco, encostar no para-choque so freava, e frear nao e bater.

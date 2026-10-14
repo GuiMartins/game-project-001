@@ -1032,22 +1032,29 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
 
 ### O ator
 
-- [ ] **V21** 👤 — A roupa do entregador
+- [x] **V21** — A roupa do entregador (14/10/2026)
 
   Camiseta de manga curta, bermuda jeans e tênis, no lugar da jaqueta: lê como
   entregador de verdade, com antebraço de fora. A bag continua quadrada e
-  rígida. Depois da V04, porque a 29% da tela a diferença mal aparece.
+  rígida.
 
-  - **Referências:** `01_centro` e `02_praca_maua` (camiseta, bermuda jeans,
-    antebraço de fora), `04_vertical` (camiseta escura e calça) e
-    `video_01/moto_ampliada`.
-  - **Decisão 👤:** a cor. Camiseta e bag vermelhas são a identidade de um app
-    real, e o `PROTOTIPO.md` proíbe cor exata de app real. **Recomendação:**
-    manter a bag na cor do corredor (é a troca de paleta dos rivais) e a
-    camiseta num tom escuro dela, como a jaqueta faz hoje.
-  - **Onde:** `arte/entregador.py` (fonte), regerar `assets/entregador/`.
+  - **Referências:** as T-poses de `docs/referencias/tpose/` (feitas no Google
+    Flow, a partir das folhas do sprite da #102), `01_centro` e
+    `02_praca_maua`.
+  - **Decisão 👤, tomada:** vermelho. Camiseta e bag vermelhas lisas, como
+    nas T-poses e no sprite, sem nome nem logo; a *Nota de marca* do
+    `PROTOTIPO.md` registra a troca. Das T-poses, a da bermuda e tênis, que
+    bate com o vídeo; as outras duas são de calça e bota.
+  - **Feito:** em `arte/entregador.py`, camiseta com boca de manga e braço de
+    pele, gola e pescoço, alças da bag cruzando o peito com tira de peito,
+    vivo escuro em volta da bag, bermuda com a barra dobrada, canela de fora,
+    tênis de sola clara e capacete preto de viseira fumê. Árvore de nós e
+    pivôs intactos, então as três motos regeraram sem tocar no ator.
+    `PlayerBike.COR` foi para o vermelho da bag, a camiseta escurece 0,1 da
+    cor do corredor (era 0,6: a jaqueta escura não era a roupa das folhas), e
+    o rival rosado virou laranja para não encostar no jogador.
   - **Aceite:** de trás, na câmera da V04, lê camiseta e bermuda; os rivais
-    continuam um por cor.
+    continuam um por cor (`dev.py prova`).
 
 - [ ] **V22** — Cadência do ator: 12 fps ou liso
 
@@ -1215,6 +1222,6 @@ no passo de ampliar, não no render.
 ## Fora do backlog
 
 Herdado dos estudos, e continua fora: chuva, noite, asfalto molhado e neon;
-áudio; semáforo com lógica; marca, logo ou cor exata de app real; shader de
+áudio; semáforo com lógica; marca ou logo de app real; shader de
 mundo curvo; e perseguir a referência pixel a pixel, porque o alvo é a
 leitura em meio segundo, não o quadro.

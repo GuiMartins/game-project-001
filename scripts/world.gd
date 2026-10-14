@@ -38,15 +38,16 @@ const CEU_SLIDERS: Dictionary = {
 	"ceu_vento": "vento",
 }
 
-## A cor de cada rival: bag e moto nela, jaqueta num tom escuro dela (ver
+## A cor de cada rival: bag e moto nela, camiseta um tom abaixo dela (ver
 ## `Entregador.pintar`). Todos sao o mesmo modelo, e e a cor que separa um do
-## outro de longe. Nenhuma encosta no laranja do jogador (`PlayerBike.COR`).
+## outro de longe. Nenhuma encosta no vermelho do jogador (`PlayerBike.COR`):
+## o rosado que havia aqui virou laranja quando o jogador ficou vermelho.
 const RIVAL_COLORS: Array[Color] = [
 	Color(0.25, 0.85, 0.45),
 	Color(0.95, 0.85, 0.2),
 	Color(0.6, 0.35, 0.95),
 	Color(0.2, 0.75, 0.95),
-	Color(0.95, 0.35, 0.45),
+	Color(0.95, 0.55, 0.12),
 ]
 
 ## Quanto tempo a HUD fica sem anunciar outra mudanca de posicao, em segundos.
