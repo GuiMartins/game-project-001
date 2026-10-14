@@ -24,10 +24,12 @@ signal door_opened
 enum Porta { NENHUMA, ABERTA, NA_CARA }
 
 ## Quanto de cada modelo sai na rua, na ordem do `Carro.Modelo`: hatch, seda,
-## SUV, taxi e onibus. Carro de passeio e o grosso; taxi e onibus sao o que da
-## cara de cidade, e um em sete e onibus porque ele e parede de 12 m - mais que
-## isso e o corredor virar fila de onibus.
-const FROTA: Array[float] = [0.25, 0.25, 0.18, 0.18, 0.14]
+## SUV, taxi, onibus, bau e van. Carro de passeio e o grosso; taxi e onibus sao
+## o que da cara de cidade, e um em oito e onibus porque ele e parede de 12 m -
+## mais que isso e o corredor virar fila de onibus. Bau e van sao um em sete
+## juntos: no video ha um bau entre os oito ou dez veiculos da tela
+## (`video_01/t3.0s`), e e ele que tapa a vista do corredor a frente.
+const FROTA: Array[float] = [0.22, 0.22, 0.15, 0.15, 0.12, 0.07, 0.07]
 
 ## Mistura na semente do carro para sortear o modelo e as cores. Sorteio a
 ## parte de proposito: tirar o modelo do `_rng` mudaria a hora de cada troca de

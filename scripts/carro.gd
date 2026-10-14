@@ -18,7 +18,7 @@ extends Node3D
 ## dizem que ele vai fechar o corredor, e o pisca-alerta diz que esta encostado
 ## - e encostado e quem pode abrir a porta.
 
-enum Modelo { HATCH, SEDA, SUV, TAXI, ONIBUS }
+enum Modelo { HATCH, SEDA, SUV, TAXI, ONIBUS, BAU, VAN }
 
 const CENA: PackedScene = preload("res://assets/carros/carros.glb")
 const SHADER: Shader = preload("res://scripts/carro.gdshader")
@@ -26,7 +26,7 @@ const SHADER_VIDRO: Shader = preload("res://scripts/vidro.gdshader")
 const ALBEDO: Texture2D = preload("res://assets/carros/carros_albedo.png")
 const MASCARA: Texture2D = preload("res://assets/carros/carros_mascara.png")
 ## Na ordem do `Modelo`.
-const NOS: Array[String] = ["Hatch", "Seda", "SUV", "Taxi", "Onibus"]
+const NOS: Array[String] = ["Hatch", "Seda", "SUV", "Taxi", "Onibus", "Bau", "Van"]
 
 ## A cor pintada na textura em cada troca: a celula mais clara sob ela em
 ## `PALETA`, no `arte/carros.py`. O `test_carro.gd` le a textura e reprova se
@@ -59,6 +59,17 @@ const PINTURAS_ONIBUS: Array[Color] = [
 	Color(0.93, 0.52, 0.12),
 	Color(0.92, 0.76, 0.12),
 ]
+## A cabine do caminhao bau e a van: frota de empresa e quase toda branca, e o
+## resto e o carro de trabalho de quem comprou usado.
+const PINTURAS_UTILITARIO: Array[Color] = [
+	Color(0.90, 0.90, 0.88),
+	Color(0.90, 0.90, 0.88),
+	Color(0.90, 0.90, 0.88),
+	Color(0.90, 0.90, 0.88),
+	Color(0.66, 0.67, 0.70),
+	Color(0.62, 0.11, 0.09),
+	Color(0.16, 0.25, 0.44),
+]
 const CAMISAS: Array[Color] = [
 	Color(0.82, 0.82, 0.80),
 	Color(0.12, 0.13, 0.16),
@@ -75,24 +86,27 @@ const PELES: Array[Color] = [
 ]
 
 ## Suspensao: frequencia natural em Hz, por modelo. 1,2 a 1,4 Hz e carro de
-## passeio de verdade; o onibus, com 12 m e mola de ar, balanca devagar.
-const FREQUENCIA: Array[float] = [1.4, 1.3, 1.15, 1.3, 0.85]
+## passeio de verdade; o onibus, com 12 m e mola de ar, balanca devagar. O bau
+## tem feixe de mola, mais duro que o ar do onibus e mais mole que o carro.
+const FREQUENCIA: Array[float] = [1.4, 1.3, 1.15, 1.3, 0.85, 1.0, 1.2]
 ## Fracao do amortecimento critico. Abaixo de 1 a carroceria passa do ponto e
 ## volta, e e esse "balanco" depois da freada que le como mola.
-const AMORTECIMENTO: Array[float] = [0.35, 0.35, 0.3, 0.35, 0.28]
+const AMORTECIMENTO: Array[float] = [0.35, 0.35, 0.3, 0.35, 0.28, 0.3, 0.32]
 ## Graus de mergulho por m/s2 de freada (negativo e o nariz descendo). Real
 ## seria uns 0,35; mais que isso aqui porque o carro e visto de tras, a 20 m,
 ## e e o mergulho que diz "o da frente esta freando" antes da distancia dizer.
-const MERGULHO: Array[float] = [0.6, 0.55, 0.65, 0.55, 0.45]
+const MERGULHO: Array[float] = [0.6, 0.55, 0.65, 0.55, 0.45, 0.5, 0.6]
 ## Graus de rolagem por m/s2 de aceleracao lateral. SUV e onibus, com o centro
-## de massa alto, rolam mais - e e a rolagem que anuncia a troca de faixa.
-const ROLAGEM: Array[float] = [1.3, 1.2, 1.7, 1.2, 2.0]
+## de massa alto, rolam mais - e e a rolagem que anuncia a troca de faixa. O
+## bau e a van tambem: sao as duas paredes mais altas depois do onibus.
+const ROLAGEM: Array[float] = [1.3, 1.2, 1.7, 1.2, 2.0, 1.9, 1.7]
 ## Quantas voltas de volante por volta de roda.
-const DIRECAO: Array[float] = [14.0, 15.0, 15.0, 15.0, 20.0]
+const DIRECAO: Array[float] = [14.0, 15.0, 15.0, 15.0, 20.0, 18.0, 16.0]
 ## Guinada maxima da carroceria na troca de faixa, em graus. O colisor nao gira
 ## junto, entao isto e o quanto a lataria pode sair da caixa de bater: no
-## onibus de 12 m, 3 graus ja jogam a frente 30 cm para o lado.
-const GUINADA_MAX: Array[float] = [8.0, 8.0, 8.0, 8.0, 3.0]
+## onibus de 12 m, 3 graus ja jogam a frente 30 cm para o lado; no bau de
+## 6,3 m, 5 graus jogam os mesmos 30 cm.
+const GUINADA_MAX: Array[float] = [8.0, 8.0, 8.0, 8.0, 3.0, 5.0, 7.0]
 ## Amplitude da irregularidade do asfalto em cada roda, em metros.
 const ASFALTO: float = 0.006
 
@@ -191,6 +205,8 @@ func montar(a_modelo: Modelo, rng: RandomNumberGenerator) -> void:
 			pintura = AMARELO_TAXI
 		Modelo.ONIBUS:
 			pintura = PINTURAS_ONIBUS[rng.randi() % PINTURAS_ONIBUS.size()]
+		Modelo.BAU, Modelo.VAN:
+			pintura = PINTURAS_UTILITARIO[rng.randi() % PINTURAS_UTILITARIO.size()]
 		_:
 			pintura = PINTURAS[rng.randi() % PINTURAS.size()]
 	var camisa := CAMISAS[rng.randi() % CAMISAS.size()]
@@ -573,7 +589,7 @@ static func molde(qual: Modelo) -> PackedScene:
 
 
 ## Poe `dono` como owner de toda a arvore e tira o sufixo que o Blender cola em
-## nome repetido: os cinco modelos tem uma `Porta_DE`, e no `.blend` so a
+## nome repetido: os sete modelos tem uma `Porta_DE`, e no `.blend` so a
 ## primeira fica com o nome limpo.
 static func _adota(no: Node, dono: Node) -> void:
 	if no != dono:

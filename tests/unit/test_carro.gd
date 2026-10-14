@@ -46,7 +46,7 @@ func _pos(carro: Carro, nome: String) -> Vector3:
 	return carro.to_local(_no(carro, nome).global_position)
 
 
-func test_cinco_modelos_do_menor_ao_onibus() -> void:
+func test_sete_modelos_do_menor_ao_onibus() -> void:
 	var comprimentos: Array[float] = []
 	for modelo: int in Carro.Modelo.values():
 		var caixa := _carro(modelo).caixa()
@@ -57,6 +57,14 @@ func test_cinco_modelos_do_menor_ao_onibus() -> void:
 		assert_float(caixa.get_center().z).is_equal_approx(0.0, 0.15)
 	assert_float(comprimentos[Carro.Modelo.HATCH]).is_less(comprimentos[Carro.Modelo.SEDA])
 	assert_float(comprimentos[Carro.Modelo.ONIBUS]).is_greater(11.0)
+	# O VUC cabe na regra de cidade, ate 6,3 m, e passa de todo carro de passeio.
+	assert_float(comprimentos[Carro.Modelo.BAU]).is_between(6.0, 6.45)
+	assert_float(comprimentos[Carro.Modelo.VAN]).is_greater(comprimentos[Carro.Modelo.SEDA])
+	# As paredes: o bau mais alto que a van, e a van mais que o SUV.
+	var bau := _carro(Carro.Modelo.BAU).caixa().size.y
+	var van := _carro(Carro.Modelo.VAN).caixa().size.y
+	assert_float(bau).is_greater(van)
+	assert_float(van).is_greater(_carro(Carro.Modelo.SUV).caixa().size.y + 0.5)
 	# O taxi e o seda com o luminoso: mais alto que ele.
 	var taxi := _carro(Carro.Modelo.TAXI).caixa().size.y
 	assert_float(taxi).is_greater(_carro(Carro.Modelo.SEDA).caixa().size.y + 0.1)
