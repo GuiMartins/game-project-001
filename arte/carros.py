@@ -78,7 +78,9 @@ SAIDA = os.path.join(RAIZ, "assets", "carros")
 #   motorista, 3 camisa do passageiro, 4 seta esquerda, 5 seta direita,
 #   6 lanterna. Degrau e nao canal porque so ha tres canais, e a seta da
 #   esquerda precisa piscar sem a da direita.
-# - B = sempre aceso: o luminoso do taxi e o letreiro do onibus.
+# - B = o que acende sozinho: 1 e sempre aceso (o luminoso do taxi e o
+#   letreiro do onibus), meio e so de noite (o farol). A corrida anoitece
+#   (`scripts/hora.gd`), e o farol acende quando escurece, cada carro no seu.
 
 TEXTURA = 256
 CELULA = 32
@@ -86,6 +88,7 @@ CELULA = 32
 PINTURA = (1.0, 0.0, 0.0)
 NADA = (0.0, 0.0, 0.0)
 ACESO = (0.0, 0.0, 1.0)
+FAROL = (0.0, 0.0, 0.5)
 
 
 def degrau(k: int) -> tuple:
@@ -111,7 +114,7 @@ PALETA = {
     "aro": ((0.58, 0.59, 0.61), NADA),
     "aro_vazado": ((0.10, 0.10, 0.11), NADA),
     "cromo": ((0.82, 0.83, 0.84), NADA),
-    "farol": ((0.90, 0.92, 0.92), NADA),
+    "farol": ((0.90, 0.92, 0.92), FAROL),
     "re": ((0.86, 0.86, 0.84), NADA),
     "lanterna": ((0.70, 0.05, 0.04), LANTERNA),
     "seta_e": ((0.95, 0.52, 0.06), SETA_E),

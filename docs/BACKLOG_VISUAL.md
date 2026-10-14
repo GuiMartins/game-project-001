@@ -1446,9 +1446,16 @@ no passo de ampliar, não no render.
   - **Aceite:** a resposta escrita aqui e na `PROVA_VISUAL.md`, com a data.
     Sim ou não, as duas são resultado.
 
+## Feito fora da fila
+
+- [x] **A corrida que anoitece.** Larga ao meio-dia e cruza a linha de noite,
+  com céu, lua, LUT, postes, faróis, lanternas, janelas e vitrines. Não estava
+  na fila: entrou por curiosidade, e o desenho está no `DIRECAO_VISUAL.md`.
+  Não muda a "próxima tarefa", que continua sendo o primeiro `[ ]` acima.
+
 ## Fora do backlog
 
-Herdado dos estudos, e continua fora: chuva, noite, asfalto molhado e neon;
+Herdado dos estudos, e continua fora: chuva, asfalto molhado e neon;
 áudio; semáforo com lógica; marca ou logo de app real; shader de
 mundo curvo; e perseguir a referência pixel a pixel, porque o alvo é a
 leitura em meio segundo, não o quadro.

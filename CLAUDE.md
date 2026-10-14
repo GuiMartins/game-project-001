@@ -32,8 +32,10 @@ qual binário usar, e no Windows escolhe a variante que não engole a saída.
 | `python tools/dev.py selftest` | Banco de provas: roda a moto de verdade e compara com o baseline. ~110 s. |
 | `python tools/dev.py selftest --fase curva` | Só até aquela fase. ~32 s, para iterar. |
 | `python tools/dev.py shots` | Regressão visual: roda com tela e mede o frame. |
+| `python tools/dev.py shots --noite` | A mesma regressão visual de noite, contra o `baseline_visual_noite.json`. |
 | `python tools/dev.py prova` | Os mesmos cinco quadros congelados, em `.dev/prova/`, para comparar visual antes e depois. |
-| `python tools/dev.py fps` | Tempo de quadro da corrida solta, com tela e sem vsync. Compara a mesma máquina. |
+| `python tools/dev.py prova --hora 1` | Os mesmos quadros em outra hora (0 meio-dia, 1 noite), em `.dev/prova/hora_X/`. |
+| `python tools/dev.py fps` | Tempo de quadro da corrida solta, com tela e sem vsync. Compara a mesma máquina. `--hora 1` mede a noite, que tem uma luz por poste e por farol. |
 | `python tools/dev.py lint` / `format` | gdlint e gdformat. |
 | `python tools/dev.py run` | Abre o jogo. |
 | `python tools/dev.py export` | Exporta as três plataformas. |
@@ -255,9 +257,11 @@ saber onde **não** há rede faz parte do contrato.
 | `arte/carros.py` | Gera hatch, sedã, SUV, táxi, ônibus, baú e van no Blender. Fonte do `assets/carros/`, que é build. |
 | `scripts/ik.gd` | IK de dois ossos, dos braços do piloto e de quem dirige. |
 | `arte/chao.py` | Gera as texturas de asfalto e calçada (`assets/visual/`). As regras de "visto a 180 km/h" estão no topo dele. |
-| `arte/paleta.py` | Gera o LUT de cor do dia (`assets/visual/lut_dia.png`). O clima da tela se ajusta ali. |
+| `arte/paleta.py` | Gera os LUTs de cor de cada hora (`assets/visual/lut_*.png`). O clima da tela se ajusta ali. |
 | `scripts/paleta.gdshader` | Quantização e dither: o último passe do mundo, abaixo da HUD. |
-| `scripts/ceu.gdshader` | O céu: gradiente e nuvem em campo de tufos. Os números são sliders do grupo Ceu no F3 (`WorldTuning`). |
+| `scripts/ceu.gdshader` | O céu: gradiente, nuvem em campo de tufos, estrelas e lua. A nuvem são sliders do grupo Ceu no F3 (`WorldTuning`); cor, estrela e lua são da hora. |
+| `scripts/hora.gd` | Os números de cada hora-chave (meio-dia, entardecer, hora azul, noite) e a mistura entre elas. O meio-dia é o mundo de antes, número por número. |
+| `scripts/relogio.gd` | A corrida anoitece: o relógio é o progresso do jogador, e é ele que aplica a hora e acende a cidade (parâmetro global `noite`). Medindo, a hora é fixa no meio-dia. |
 | `scripts/prova.gd` | O quadro congelado da prova visual (`dev.py prova`). |
 | `tests/unit/` | Testes unitários. |
 | `tests/baseline.json` | Os números esperados. |

@@ -16,10 +16,13 @@
 // do horizonte o mesmo tufo fica longe, menor e achatado. Projecao plana pura
 // (1/tan) achata demais; o expoente `perspectiva` dosa.
 //
-// O gradiente e o mesmo do ProceduralSkyMaterial de antes - mesmas cores,
-// mesma curva de 0,15 -, para a luz ambiente, que vem do ceu, nao mudar.
-// Os numeros sao sliders do F3 (`WorldTuning`, grupo Ceu), e o `world.gd`
-// repassa. Os defaults daqui so valem ate o primeiro quadro.
+// O gradiente do meio-dia e o mesmo do ProceduralSkyMaterial de antes -
+// mesmas cores, mesma curva de 0,15 -, para a luz ambiente, que vem do ceu,
+// nao mudar.
+// Os numeros da nuvem sao sliders do F3 (`WorldTuning`, grupo Ceu), e o
+// `world.gd` repassa. As cores, as estrelas e o disco do astro sao da hora
+// (`Hora`), e o `Relogio` repassa: a corrida anoitece. Os defaults daqui sao
+// o meio-dia, e so valem ate o primeiro quadro.
 shader_type sky;
 
 uniform vec3 topo : source_color = vec3(0.16, 0.38, 0.82);
@@ -40,6 +43,17 @@ uniform float banco = 0.35;
 uniform float brilho = 1.1;
 uniform float faixas_de_tom = 5.0;
 uniform float vento = 0.15;
+
+// Da hora. A nuvem multiplica pela luz e soma o laranja da cidade na barriga;
+// de dia, branco e preto, ou seja, nada.
+uniform vec3 nuvem_luz : source_color = vec3(1.0);
+uniform vec3 nuvem_baixo : source_color = vec3(0.0);
+uniform float estrelas = 0.0;
+// O disco do astro: raio em graus, quanto do halo, e o brilho proprio da lua
+// (a luz dela e fraca demais para o disco aparecer pela energia).
+uniform float astro_disco = 1.5;
+uniform float astro_halo = 0.25;
+uniform float lua = 0.0;
 
 vec2 hash2(vec2 p) {
 	p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
@@ -126,6 +140,23 @@ void sky() {
 	float elev = degrees(asin(clamp(dir.y, -1.0, 1.0)));
 	float c = clamp(elev / 90.0, 0.0, 1.0);
 	vec3 cor = mix(horizonte, topo, clamp(1.0 - pow(1.0 - c, 1.0 / 0.15), 0.0, 1.0));
+	// As estrelas, por baixo da nuvem: poucas, que e ceu de cidade, e de um
+	// pixel. Uma por celula de uma grade em volta da camera, com raio de ~1/4
+	// de grau - o pixel de 640x360 com a camera de perseguicao. Maior que isso
+	// vira confete; menor some e volta conforme a camera anda. So acima de
+	// 12 graus: perto do horizonte a poluicao luminosa apaga tudo.
+	if (estrelas > 0.0 && elev > 12.0) {
+		vec3 p = dir * 230.0;
+		vec3 cel = floor(p);
+		vec2 h = hash2(cel.xy + cel.z * 17.31);
+		if (h.x > 0.994) {
+			vec2 j = hash2(cel.yz + 3.7);
+			vec3 centro = cel + vec3(0.25 + 0.5 * j.x, 0.25 + 0.5 * j.y, 0.5);
+			float d = length(p - centro);
+			float brilho_estrela = (1.0 - smoothstep(0.2, 0.6, d)) * (0.35 + 0.65 * h.y);
+			cor += vec3(0.85, 0.9, 1.0) * brilho_estrela * estrelas * smoothstep(12.0, 30.0, elev);
+		}
+	}
 	if (elev < 0.0) {
 		float g = clamp(-elev / 90.0, 0.0, 1.0);
 		cor = mix(chao_horizonte, chao_fundo, clamp(1.0 - pow(1.0 - g, 1.0 / 0.02), 0.0, 1.0));
@@ -191,19 +222,22 @@ void sky() {
 		float largura = px_dens * (1.0 + trama * 3.0);
 		float alfa = smoothstep(0.0, max(largura, 1e-4), dens);
 		if (alfa > 0.0) {
-			vec3 nuvem = tom_da_nuvem(t);
+			// A hora tinge: a luz multiplica a nuvem inteira, e o laranja da
+			// cidade entra so por baixo, onde ela e grossa (t baixo).
+			vec3 nuvem = tom_da_nuvem(t) * nuvem_luz + nuvem_baixo * (1.0 - t);
 			// Perspectiva aerea: a nuvem do horizonte esta a dezenas de km, e o
 			// ar entre ela e a camera a puxa para a cor do horizonte.
 			nuvem = mix(nuvem, horizonte, (1.0 - smoothstep(0.0, 14.0, elev)) * 0.35);
 			cor = mix(cor, nuvem, alfa);
 		}
 	}
-	// O sol: disco e um halo curto, o que o procedural tinha.
+	// O sol: disco e um halo curto, o que o procedural tinha. De noite a
+	// mesma luz e a lua, e o disco dela brilha por conta propria.
 	if (LIGHT0_ENABLED) {
 		float ang = degrees(acos(clamp(dot(dir, LIGHT0_DIRECTION), -1.0, 1.0)));
-		float disco = 1.0 - smoothstep(0.0, 1.5, ang);
-		float halo = pow(1.0 - smoothstep(0.0, 25.0, ang), 4.0) * 0.25;
-		cor += LIGHT0_COLOR * LIGHT0_ENERGY * (disco + halo);
+		float disco = 1.0 - smoothstep(0.0, astro_disco, ang);
+		float halo = pow(1.0 - smoothstep(0.0, 25.0, ang), 4.0) * astro_halo;
+		cor += LIGHT0_COLOR * (LIGHT0_ENERGY * (disco + halo) + lua * disco * 1.5);
 	}
 	COLOR = cor;
 }

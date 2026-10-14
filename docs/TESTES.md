@@ -8,6 +8,7 @@ Três camadas, e nenhuma substitui a outra.
 | Banco de provas | `python tools/dev.py selftest` | ~110 s | A moto e o mundo rodando de verdade |
 | Baseline | (dentro do selftest) | — | O número *andou*, mesmo continuando na faixa jogável |
 | Regressão visual | `python tools/dev.py shots` | ~90 s | A tela ficou errada por inteiro |
+| Regressão visual de noite | `python tools/dev.py shots --noite` | ~90 s | A noite ficou errada por inteiro: tudo apagado, tudo aceso |
 
 ## Unitários (GdUnit4)
 
@@ -321,6 +322,31 @@ Consequência prática: **inserir fase antes da corrida obriga a regerar o
 baseline**, e a justificativa é essa. Não é regressão.
 
 
+## A noite
+
+A corrida anoitece, mas toda medida roda ao meio-dia: o `main.gd` trava a hora
+quando mede. O que cobre a noite:
+
+- `tests/unit/test_hora.gd` confere que o meio-dia da `Hora` é o de antes,
+  número por número. É o que segura o banco de provas e os shots.
+- `tests/unit/test_noite.gd` confere que cada lâmpada é achada e aponta para o
+  lugar certo: a cor do farol na paleta da moto, a marca do farol do carro, o
+  segundo UV das janelas.
+- `python tools/dev.py shots --noite` mede a corrida de noite contra o
+  `tests/baseline_visual_noite.json`. Baseline próprio, porque luminância de
+  noite não tem nada a ver com a do dia.
+
+### O `fps` não é determinístico
+
+O `dev.py fps` larga direto na corrida solta, com tela e sem vsync, e os
+primeiros quadros pagam a compilação de shader: passam de 130 ms. Acima de oito
+passos de física por quadro o Godot descarta o resto, e quantos ele descarta
+depende de quanto o quadro demorou. Então a corrida do `fps` muda com qualquer
+coisa que mexa no tempo de carga, mesmo sem tocar em física: na noite ela
+passou a ter dois carros entrando um no outro, numa corrida que o `selftest`
+headless não faz. O `selftest` segue determinístico, e é ele o portão. O que o
+`fps` acusa de trânsito é pista para investigar, não regressão.
+
 ## Variáveis de ambiente
 
 | Variável | |
@@ -328,4 +354,5 @@ baseline**, e a justificativa é essa. Não é regressão.
 | `RUSHFOOD_SELFTEST_TRACE=1` | Telemetria da corrida solta, segundo a segundo |
 | `RUSHFOOD_SELFTEST_SHOTS=<pasta>` | Despeja PNGs durante a corrida (precisa de display) |
 | `RUSHFOOD_SELFTEST_METRICS=<arquivo>` | Grava as medidas em JSON. O `dev.py` já faz isso. |
+| `RUSHFOOD_HORA=<0 a 1>` | Trava a hora (0 meio-dia, 1 noite), mesmo medindo. O `--hora` do `dev.py` usa isto. |
 | `GODOT_BIN=<caminho>` | Usa outro binário do Godot em vez do gerenciado |

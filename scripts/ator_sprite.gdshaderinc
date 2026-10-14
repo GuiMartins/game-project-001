@@ -27,6 +27,12 @@ uniform vec3 cor : source_color = vec3(0.82, 0.12, 0.10);
 // O vermelho da bag na folha, em linear: e o tom que vira a `cor` cheia. Mais
 // escuro que ele vira a `cor` sombreada na mesma proporcao.
 const float VERMELHO_REF = 0.75;
+// O sprite e `unshaded`: a luz esta pintada na folha, e e luz de dia. De
+// noite (`Relogio`) ele escurece para a luz da rua, ou sairia um entregador ao
+// sol no meio do breu.
+uniform vec3 luz_da_noite : source_color = vec3(0.24, 0.25, 0.32);
+
+global uniform float noite;
 
 void vertex() {
 	vec3 origem = MODEL_MATRIX[3].xyz;
@@ -54,6 +60,7 @@ void fragment() {
 	float dominio = c.r / max(max(c.g, c.b), 0.01);
 	float pinta = smoothstep(2.5, 5.0, dominio) * step(0.04, c.r);
 	ALBEDO = mix(c.rgb, cor * (c.r / VERMELHO_REF), pinta);
+	ALBEDO *= mix(vec3(1.0), luz_da_noite, noite);
 	ALPHA = c.a;
 	ALPHA_SCISSOR_THRESHOLD = 0.5;
 }

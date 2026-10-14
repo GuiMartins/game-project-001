@@ -1,23 +1,20 @@
 class_name Entregador
 extends Node3D
-## O ator: a moto e quem pilota, de `assets/entregador`, posados a cada passo de
-## fisica.
+## O ator: a moto e quem pilota, de `assets/entregador`, posados a cada passo.
 ##
 ## Mora no no `Visual` de `PlayerBike` e `RivalBike`, com a origem no chao,
-## embaixo do centro da moto. Quem inclina a moto nas curvas e o `Visual`, que
-## e do corpo; este no cuida do que acontece DENTRO da moto: roda girando,
-## guidao, suspensao, o corpo do piloto jogado pela freada, o soco, a pancada
-## que ele leva e o tombo da queda.
+## embaixo do centro da moto. Quem inclina a moto nas curvas e o `Visual`; este
+## no cuida do que acontece DENTRO da moto: roda girando, guidao, suspensao, o
+## piloto jogado pela freada, o soco, a pancada, o tombo e, de noite, o farol.
 ##
 ## Nada aqui e clipe de animacao. O modelo e de pecas rigidas com a origem na
-## articulacao (ver `arte/entregador.py`), e cada pose sai do estado da moto
-## por passo: velocidade, acelerador, esterco, inclinacao e se caiu. Pose lida
-## do estado nao desencontra da fisica - a roda gira exatamente na velocidade
-## em que a moto anda, o garfo afunda no passo em que ela freia e o pe toca o
-## chao no passo em que ela para.
+## articulacao (`arte/entregador.py`), e cada pose sai do estado da moto:
+## velocidade, acelerador, esterco, inclinacao e se caiu. Pose lida do estado
+## nao desencontra da fisica - a roda gira na velocidade em que a moto anda, o
+## garfo afunda no passo em que ela freia e o pe desce no passo em que ela para.
 ##
-## O que nao e estado continuo chega por evento: `socar` e `levar_golpe`, que
-## o corpo chama no mesmo passo em que abre a hitbox ou recebe o empurrao.
+## O que nao e estado continuo chega por evento: `socar` e `levar_golpe`,
+## chamados no mesmo passo em que o corpo abre a hitbox ou leva o empurrao.
 ##
 ## A moto e uma de `Modelo`, e todas tem a mesma arvore de nos (ver o topo do
 ## `arte/xre300.py`): o ator le do proprio modelo o que muda de uma para outra
@@ -261,6 +258,7 @@ var cadencia := Cadencia.new()
 
 var _modelo: Node3D
 var _material: ShaderMaterial
+var _farol := FarolDaMoto.new()
 var _sprite := AtorSprite.new()
 var _cores: Array[Color] = [BAG_FABRICA, CAMISA_FABRICA, MOTO_FABRICA]
 ## Transformacao de repouso de cada no do modelo. A posicao de cada filho e o
@@ -422,6 +420,7 @@ func _monta() -> void:
 	var eixo_frente := _no_relativo(_rodas[1], _moto)
 	_altura_eixo = [eixo_tras.y, eixo_frente.y]
 	_entre_eixos = eixo_tras.z - eixo_frente.z
+	_farol.montar(_moto, _material, eixo_frente, _raios[1])
 	_direcao = _no("Direcao")
 	# O garfo gira em volta da reta cabeca do garfo-eixo, e nao da vertical: a
 	# roda esterca sem sair do paralama. A bainha desliza na mesma reta.
@@ -536,6 +535,7 @@ func atualizar(
 		lisa.atualizar(v)
 	_acel.medir(delta, global_position, velocidade, inclinacao, caido)
 	_comandos.passo(delta, v, acelerador, freio, caido)
+	_farol.frear(freio, caido)
 
 	var parado := v < PARADO and not caido
 	_pe = move_toward(_pe, 1.0 if parado else 0.0, delta / TEMPO_DO_PE)

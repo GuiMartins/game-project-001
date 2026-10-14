@@ -138,12 +138,21 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: "1"
         run: xvfb-run -a --server-args="-screen 0 1280x720x24" python tools/dev.py shots
 
+      # A corrida anoitece, e a noite tem o seu baseline: e outra tela, com
+      # outras coisas para dar errado por inteiro - tudo apagado, tudo aceso.
+      - name: Regressao visual de noite
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: xvfb-run -a --server-args="-screen 0 1280x720x24" python tools/dev.py shots --noite
+
       - name: Guardar os frames
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: frames
-          path: .dev/shots/*.png
+          path: |
+            .dev/shots/*.png
+            .dev/shots_noite/*.png
           if-no-files-found: warn
           retention-days: 7
 
