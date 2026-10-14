@@ -945,7 +945,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     horizonte, puxado para a cor dele, fica parecido com o prédio distante na
     neblina). Portão sem variação; `fps` no teto de 120.
 
-- [x] **V14a** — O fundo: serra, morro e marcos do Rio (14/10/2026, #PR)
+- [x] **V14a** — O fundo: serra, morro e marcos do Rio (14/10/2026, #116)
 
   O que faz a tela ler "Rio" de longe é o que está atrás dos prédios, e o
   jogo hoje termina em torre e neblina. A `04_vertical` tem a serra azulada
