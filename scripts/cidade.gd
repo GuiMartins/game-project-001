@@ -120,6 +120,25 @@ const EXPRESSA_GUINDASTE_MASTRO: float = 36.0
 const EXPRESSA_GUINDASTE_LANCA: float = 24.0
 const EXPRESSA_GUINDASTE_EM: float = 0.4
 
+## Os nomes que o GPS escreve (V25a), em caixa alta como no celular. Lugar e
+## livre, marca nao (V18). A avenida e uma por corrida; a via expressa ganha
+## nome proprio, porque entrar nela e trocar de via. Fora daqui os nomes que
+## a placa verde aponta (`Portal.DESTINOS`), para a placa nao mandar o jogador
+## para a avenida em que ele ja esta.
+const AVENIDAS: Array[String] = [
+	"AV. RODRIGUES ALVES",
+	"AV. FRANCISCO BICALHO",
+	"AV. MARACANA",
+	"AV. DOS DEMOCRATICOS",
+	"RUA DO RIACHUELO",
+	"AV. MEM DE SA",
+]
+const VIAS_EXPRESSAS: Array[String] = [
+	"LINHA AMARELA",
+	"ELEVADO DO JOA",
+	"ELEVADO PAULO DE FRONTIN",
+]
+
 var track: RoadTrack
 ## O fundo da cidade (V14a): os marcos que a `Marcos` planta no fim das retas.
 ## Trocar de cidade e trocar este catalogo.
@@ -139,6 +158,7 @@ func montar(rua: RandomNumberGenerator, props: Node3D) -> void:
 	var cruzamentos := _sorteia_cruzamentos(rua)
 	var trechos := _sorteia_trechos(rua, plano_de_expressas(rua.seed))
 	track.expressas = expressas
+	_da_nomes(rua.seed)
 	cruzamentos = cruzamentos.filter(func(c: Vector2) -> bool: return not _perto_de_expressa(c.x))
 	track.pintar(cruzamentos, RUA_LARGURA * 0.5)
 	_monta_expressas(rua.seed, props)
@@ -154,6 +174,17 @@ func montar(rua: RandomNumberGenerator, props: Node3D) -> void:
 	_monta_portais(cruzamentos, props)
 	Marcos.montar(track, rua.seed, marcos, props)
 	Pedestres.montar(track, cruzamentos, rua, props)
+
+
+## Os nomes da avenida e das expressas, por hash da semente, e nao pelo `rua`:
+## sortear daquele gerador mudaria toda a cidade que sai dele depois.
+func _da_nomes(semente: int) -> void:
+	track.nome = AVENIDAS[hash(semente + 11) % AVENIDAS.size()]
+	var primeira := hash(semente + 13) % VIAS_EXPRESSAS.size()
+	var nomes: Array[String] = []
+	for i in expressas.size():
+		nomes.append(VIAS_EXPRESSAS[(primeira + i) % VIAS_EXPRESSAS.size()])
+	track.nomes_das_expressas = nomes
 
 
 ## Onde a avenida e largo e onde e corredor. Cada um e `[fim, recuo]`: o

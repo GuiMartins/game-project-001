@@ -100,6 +100,10 @@ var expressas: Array[Vector3] = []
 var cruzamentos: Array[Vector2] = []
 ## Meia largura da boca das ruas que cruzam, no meio-fio da avenida.
 var boca: float = 0.0
+## O nome da avenida e o de cada trecho de via expressa, na ordem de
+## `expressas`, como a `Cidade` deu. E o que o GPS escreve embaixo do mapa.
+var nome: String = ""
+var nomes_das_expressas: Array[String] = []
 
 var _asphalt_mesh: MeshInstance3D
 var _pintura: MeshInstance3D
@@ -293,6 +297,15 @@ func project(world_pos: Vector3, hint_offset: float) -> Vector2:
 	b = sample_basis(best_offset)
 	var lateral := (world_pos - sample_position(best_offset)).dot(b.x)
 	return Vector2(best_offset, lateral)
+
+
+## O nome da via em `offset`: o do trecho de expressa, se cair num, e o da
+## avenida no resto.
+func nome_em(offset: float) -> String:
+	for i in mini(expressas.size(), nomes_das_expressas.size()):
+		if offset >= expressas[i].x and offset <= expressas[i].y:
+			return nomes_das_expressas[i]
+	return nome
 
 
 ## Centro da faixa `index` (0 = mais a esquerda), em metros do eixo.
