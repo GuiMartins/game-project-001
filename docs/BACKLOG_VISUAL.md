@@ -1078,7 +1078,7 @@ de uma imagem. Ficam depois do cenário por isso, e
 porque dependem do glow (V12). O catálogo inteiro e as quatro regras de
 partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
 
-- [x] **V23** — Fumaça de pneu e marca de derrapagem (14/10/2026)
+- [x] **V23** — Fumaça de pneu e marca de derrapagem (14/10/2026, #108)
 
   Gatilho já existe: a derrapada de `player_bike.gd::_integrate`. Flipbook de
   fumaça com alfa macio, `fixed_fps` em 12–15; marca como `Decal` (não
