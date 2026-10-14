@@ -31,6 +31,9 @@ const FORA_POR_ZEBRA: float = 0.25
 ## metros atras ela some. 120 m a 40 m/s e 3 s: da tempo de estar no meio
 ## quando a moto passa.
 const ANTES: float = 120.0
+## Fora da faixa nasce mais perto: no meio da avenida, uma faixa leva uns 2 s, e
+## nascida a 120 m ela ja tinha chegado do outro lado quando a moto passava.
+const ANTES_FORA: float = 70.0
 const DEPOIS: float = 30.0
 ## Mais que isto ao mesmo tempo e a cidade toda atravessando.
 const MAX_ATIVAS: int = 4
@@ -39,6 +42,10 @@ const MAX_ATIVAS: int = 4
 const FOLGA: float = 1.0
 ## Carro chegando em menos que isto na faixa em que ela esta: pula.
 const PERIGO: float = 1.1
+## Contra moto ela arrisca: so espera a que chega em menos que isto. Esperar a
+## moto com a folga do carro era nunca atravessar na frente do jogador, que e
+## justamente quem precisa ver - e e para isso que existe o pulo.
+const ARRISCA_MOTO: float = 1.2
 ## Meia largura e meio comprimento de moto, para a conta da faixa livre.
 const MOTO := Vector2(0.4, 1.05)
 
@@ -142,7 +149,8 @@ func _physics_process(_delta: float) -> void:
 			elif e.tipo == Tipo.FORA:
 				_conduz(e)
 		elif not e.feito and ativas < MAX_ATIVAS:
-			if aqui >= e.offset - ANTES and aqui < e.offset - 20.0:
+			var antes := ANTES_FORA if e.tipo == Tipo.FORA else ANTES
+			if aqui >= e.offset - antes and aqui < e.offset - 20.0:
 				_comeca(e)
 				ativas += 1
 
@@ -230,7 +238,7 @@ func _poe_no_caminho(p: Pessoa, pontos: PackedVector3Array, inicio: float) -> vo
 
 ## Fora da faixa, na avenida: as linhas de espera sao a beira da calcada de
 ## onde sai, as divisas de faixa e a calcada do outro lado. Comeca ja numa
-## delas - na calcada ou no meio da avenida, esperando -, e quem conduz daqui
+## das divisas, no meio da avenida, e quem conduz daqui
 ## em diante e o `_conduz`.
 func _comeca_fora(e: Evento) -> void:
 	var meia := RoadTrack.half_width()
@@ -245,7 +253,8 @@ func _comeca_fora(e: Evento) -> void:
 	for _i in 6:
 		if _encostado_em(e.offset):
 			e.offset += 7.0
-	e.na_linha = _rng.randi_range(0, 2)
+	# Ja na avenida, numa das divisas de faixa: e o que se ve chegando.
+	e.na_linha = _rng.randi_range(1, RoadTrack.LANE_COUNT - 1)
 	e.indo = false
 	var p := _nova()
 	var aqui := track.point(e.offset, e.linhas[e.na_linha])
@@ -326,11 +335,12 @@ func _faixa_livre(o: float, de: float, ate: float, tempo: float) -> bool:
 		):
 			return false
 	var jogador: PlayerBike = world.get("player")
+	var tempo_moto := minf(tempo, ARRISCA_MOTO)
 	if not _livre_de(
 		o,
 		de,
 		ate,
-		tempo,
+		tempo_moto,
 		jogador.track_offset,
 		jogador.track_lateral,
 		jogador.speed,
@@ -340,7 +350,7 @@ func _faixa_livre(o: float, de: float, ate: float, tempo: float) -> bool:
 		return false
 	for rival: RivalBike in world.get("rivals"):
 		if not _livre_de(
-			o, de, ate, tempo, rival.offset, rival.lateral, rival.speed, MOTO.x, MOTO.y
+			o, de, ate, tempo_moto, rival.offset, rival.lateral, rival.speed, MOTO.x, MOTO.y
 		):
 			return false
 	return true

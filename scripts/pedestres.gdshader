@@ -33,15 +33,16 @@ instance uniform vec4 pele : source_color = vec4(0.0);
 // Os pivos de `arte/pedestres.py`.
 const float QUADRIL = 0.92;
 const float OMBRO = 1.42;
-// O trecho que cada um anda, em metros, centrado em onde o `Pedestres` o pos;
-// no fim, some e brota no comeco. Curto porque anda reto, na tangente de onde
-// nasceu: no curvao mais fechado da pista (0,6 grau/m, uns 95 m de raio), 5 m
-// para cada lado desviam 13 cm da calcada. A 1,4 m/s, cada um some e brota a
-// cada 7 s, e a moto que passa a 50 m/s nao fica nem um ao lado dele.
-const float TRECHO = 10.0;
-// Quanto do comeco e do fim do trecho a pessoa leva para brotar do chao (e
-// afundar nele), em metros: sumir de uma vez, perto da largada, e piscar.
-const float BROTA = 0.4;
+// O trecho que cada um anda, em metros, centrado em onde o `Pedestres` o pos:
+// vai ate o fim, para, vira e volta. Ja foi "some no fim e brota no comeco",
+// e com centenas na tela sempre tinha alguem saindo do chao. Curto porque
+// anda reto, na tangente de onde nasceu: no curvao mais fechado da pista
+// (0,6 grau/m, uns 95 m de raio), 5 m para cada lado desviam 13 cm da
+// calcada. Sete passadas inteiras, para a perna chegar no fim reta e a
+// virada nao comecar de pe no ar.
+const float TRECHO = 9.8;
+// Quanto leva a virada no fim do trecho, em segundos, parado.
+const float VIRA = 0.8;
 // Dois passos, em metros: a perna fecha o ciclo quando o corpo anda isto, e o
 // pe nao patina na calcada.
 const float PASSADA = 1.4;
@@ -84,8 +85,24 @@ void vertex() {
 		if (andando > 0.5) {
 			// De 1,1 a 1,6 m/s: o passo de quem anda na rua, sem fila indiana.
 			float vel = mix(1.1, 1.6, s1);
-			float onde = mod(tempo * vel + s2 * TRECHO, TRECHO);
-			float a = BALANCO * sin(TAU * (pose * vel + s2 * TRECHO) / PASSADA);
+			float ida = TRECHO / vel;
+			float ciclo = 2.0 * (ida + VIRA);
+			// O lugar sai do tempo liso; a pose - perna e virada - do travado.
+			float t = mod(tempo + s2 * ciclo, ciclo);
+			float tp = mod(pose + s2 * ciclo, ciclo);
+			float onde = t < ida ? t * vel
+				: t < ida + VIRA ? TRECHO
+				: t < 2.0 * ida + VIRA ? TRECHO - (t - ida - VIRA) * vel
+				: 0.0;
+			float andado = tp < ida ? tp * vel
+				: tp < ida + VIRA ? TRECHO
+				: tp < 2.0 * ida + VIRA ? TRECHO + (tp - ida - VIRA) * vel
+				: 2.0 * TRECHO;
+			float rumo = tp < ida ? 0.0
+				: tp < ida + VIRA ? PI * smoothstep(0.0, 1.0, (tp - ida) / VIRA)
+				: tp < 2.0 * ida + VIRA ? PI
+				: PI + PI * smoothstep(0.0, 1.0, (tp - 2.0 * ida - VIRA) / VIRA);
+			float a = BALANCO * sin(TAU * andado / PASSADA);
 			if (parte == 1 || parte == 2) {
 				VERTEX = gira_x(VERTEX, QUADRIL, a * lado);
 				NORMAL = normal_x(NORMAL, a * lado);
@@ -93,7 +110,10 @@ void vertex() {
 				VERTEX = gira_x(VERTEX, OMBRO, -0.8 * a * lado);
 				NORMAL = normal_x(NORMAL, -0.8 * a * lado);
 			}
-			VERTEX *= clamp(min(onde, TRECHO - onde) / BROTA, 0.0, 1.0);
+			float c = cos(rumo);
+			float s = sin(rumo);
+			VERTEX = vec3(VERTEX.x * c + VERTEX.z * s, VERTEX.y, -VERTEX.x * s + VERTEX.z * c);
+			NORMAL = vec3(NORMAL.x * c + NORMAL.z * s, NORMAL.y, -NORMAL.x * s + NORMAL.z * c);
 			// A frente do modelo e -Z.
 			VERTEX.z -= onde - TRECHO * 0.5;
 		} else {
