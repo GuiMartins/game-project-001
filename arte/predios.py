@@ -165,10 +165,12 @@ CELULAS = {nome: i for i, nome in enumerate(PALETA)}
 # A semente sai de um gerador so da luz, e nao do `rng` do predio: tirar
 # numero dele mudaria qual vidro reflete o ceu na avenida inteira.
 JANELA, VITRINE = 0.5, 1.0
-# A lona do andaime (V17a) e semitransparente no shader, e quem diz que uma
-# face e lona e o primeiro UV de luz, que ela nao usa: `LONA_MARCA` acima de 1.
+# A lona do andaime (V17a) vai num material proprio, com alpha: as faces de
+# `LONA` saem na segunda superficie da malha, e o jogo so troca o material da
+# primeira. Xadrez de pixel furado era ruido: a lona tem de ser pano colorido
+# por onde se ve o andaime, e isso e mistura de cor, nao furo.
 LONA = ("lona_laranja", "lona_azul")
-LONA_MARCA = 2.0
+LONA_ALFA = 0.62
 ACENDE = {
     "vidro": JANELA,
     "vidro_ceu": JANELA,
@@ -258,7 +260,7 @@ class Peca:
             self.face((b[0], b[1], r0), (0, -1, 1), cor_oitao)
             self.face((b[2], b[3], r1), (0, 1, 1), cor_oitao)
 
-    def objeto(self, material, colecao, x_no_blend) -> bpy.types.Object:
+    def objeto(self, material, colecao, x_no_blend, material_lona=None) -> bpy.types.Object:
         bm = self.bm
         bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method="FIXED", ngon_method="EAR_CLIP")
         # Ordem canonica das faces, como no entregador: o mesmo modelo sai no
@@ -279,16 +281,14 @@ class Peca:
             # tipo vai gravado de ponta-cabeca para chegar no shader do lado
             # certo. A semente vai no U, que ninguem mexe.
             luz = (face[self.luz], 1.0 - ACENDE.get(nomes[face[self.cor]], 0.0))
-            if nomes[face[self.cor]] in LONA:
-                # Marca de lona: o `predio.gdshader` ve a semente acima de 1,5
-                # e fura metade dos pixels, para ela ser tela e nao chapa.
-                luz = (LONA_MARCA, 1.0)
             for loop in face.loops:
                 loop[uv].uv = ponto
                 loop[uv_luz].uv = luz
             # Predio e chapa: tudo duro. Liso, a quina vira degrade e a caixa
             # vira sabonete.
             face.smooth = False
+            if material_lona is not None and nomes[face[self.cor]] in LONA:
+                face.material_index = 1
         bm.faces.layers.int.remove(self.cor)
         bm.faces.layers.float.remove(self.luz)
 
@@ -296,6 +296,8 @@ class Peca:
         bm.to_mesh(malha)
         bm.free()
         malha.materials.append(material)
+        if material_lona is not None:
+            malha.materials.append(material_lona)
 
         obj = bpy.data.objects.new(self.nome, malha)
         colecao.objects.link(obj)
@@ -1155,6 +1157,25 @@ def material(albedo) -> bpy.types.Material:
     return mat
 
 
+def material_da_lona(nome, cor) -> bpy.types.Material:
+    """Lona: cor lisa com alpha. Fosca e sem brilho, que pano nao reflete sol."""
+    mat = bpy.data.materials.new(nome)
+    if mat.node_tree is None:
+        mat.use_nodes = True
+    bsdf = next(n for n in mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
+    bsdf.inputs["Base Color"].default_value = (*cor, 1.0)
+    bsdf.inputs["Roughness"].default_value = 1.0
+    bsdf.inputs["Alpha"].default_value = LONA_ALFA
+    for nome_enum in ("blend_method",):
+        if hasattr(mat, nome_enum):
+            try:
+                setattr(mat, nome_enum, "BLEND")
+            except (TypeError, AttributeError):
+                pass
+    mat.use_backface_culling = False
+    return mat
+
+
 # --- Execucao ----------------------------------------------------------------
 
 
@@ -1198,7 +1219,8 @@ def main() -> None:
         for lona, cor in (("Laranja", "lona_laranja"), ("Azul", "lona_azul")):
             nome = "Obra" + fase + lona
             peca = torre(random.Random(SEMENTE + n), prontos=prontos, nome=nome, lona=cor)
-            objetos.append(peca.objeto(mat, colecao, x))
+            mat_lona = material_da_lona(nome + "Lona", PALETA[cor][0])
+            objetos.append(peca.objeto(mat, colecao, x, material_lona=mat_lona))
             x += 22.0
     for fabrica in (mastro, lanca, topo_do_guindaste, gancho):
         objetos.append(fabrica().objeto(mat, colecao, x))

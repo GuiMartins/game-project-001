@@ -115,7 +115,13 @@ static func criar(tipo: Tipo, pintura: float, loja: float) -> MeshInstance3D:
 ## vestida, com andaime e lona. A pintura e a loja valem para a parte que ja
 ## tem fachada.
 static func criar_obra(fase: Obra, pintura: float, loja: float) -> MeshInstance3D:
-	var mi := peca(NOS_OBRA[fase])
+	var mi := MeshInstance3D.new()
+	mi.name = NOS_OBRA[fase]
+	mi.mesh = malha_obra(fase)
+	# So a primeira superficie leva o material do predio. A segunda e a lona,
+	# que vem do `.glb` com a cor e o alpha dela, e `material_override` a
+	# trocaria por parede opaca.
+	mi.set_surface_override_material(0, _material_compartilhado())
 	mi.set_instance_shader_parameter("pintura", _escolhe(PINTURAS, pintura))
 	mi.set_instance_shader_parameter("loja", _escolhe(LOJAS, loja))
 	mi.set_instance_shader_parameter("tela", _escolhe(TELAS, fposmod(loja * 7.0, 1.0)))
