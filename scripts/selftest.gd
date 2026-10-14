@@ -401,7 +401,7 @@ func _phase_punch(_delta: float) -> void:
 ## Existia um buraco de cobertura aqui, e ele estava escrito no PROTOTIPO.md:
 ## o piloto automatico da corrida solta nunca sobe na calcada, porque
 ## `free_lateral` so considera centros de faixa e de corredor. Entao "a parede
-## invisivel voltou pro meio do acostamento" e "o teto de velocidade sumiu"
+## invisivel voltou pro meio do acostamento" e "a calcada voltou a frear"
 ## eram regressoes que nenhum numero pegava - so o polegar, jogando.
 func _phase_sidewalk(_delta: float) -> void:
 	if _t < 0.02:
@@ -420,9 +420,8 @@ func _phase_sidewalk(_delta: float) -> void:
 		return
 
 	# Segundo trecho: sobe na calcada e anda no meio dela, com a mesma lei de
-	# direcao do piloto automatico. Velocidade ESTABILIZADA, nao o pico: ao
-	# subir, a moto ainda esta sendo puxada pro teto pelo sidewalk_drag, e
-	# medir o transiente mediria a descida da curva em vez do patamar.
+	# direcao do piloto automatico. Medida no fim do trecho, com a moto ja
+	# assentada no meio da calcada, e nao no transiente da subida.
 	if _t < 14.0:
 		var alvo := RoadTrack.half_width() + RoadTrack.SHOULDER * 0.5
 		var basis := _player.track.sample_basis(_player.track_offset)
@@ -456,22 +455,13 @@ func _phase_sidewalk(_delta: float) -> void:
 			_sidewalk_speed > 1.0,
 			"a moto nao chegou a andar na calcada - ou nao subiu, ou parou de andar la"
 		)
-		# A calcada e grama do Mario Kart: da pra fugir por ela, mas custa tempo.
-		# Se nao custar, ela vira a linha rapida e o corredor morre - e o
-		# corredor e o jogo. O teto e uma regra declarada no tuning, entao e
-		# contra ela que se mede, nao contra um numero escolhido aqui.
-		var cap := _tuning.max_speed * _tuning.sidewalk_speed_factor
+		# A calcada nao freia mais: o freio invisivel saiu quando o pedestre
+		# ganhou atropelo. O que se cobra aqui e que ele nao volte escondido
+		# - a moto na calcada anda ao menos o que andava no asfalto.
 		_check(
-			_sidewalk_speed <= cap + 1.5,
+			_sidewalk_speed >= _asphalt_speed - 0.5,
 			(
-				"calcada a %.1f m/s com teto de %.1f: o sidewalk_speed_factor parou de valer"
-				% [_sidewalk_speed, cap]
-			)
-		)
-		_check(
-			_sidewalk_speed < _asphalt_speed,
-			(
-				"calcada a %.1f m/s contra %.1f no asfalto: fugir por ela nao custa nada"
+				"calcada a %.1f m/s contra %.1f no asfalto: a calcada voltou a frear"
 				% [_sidewalk_speed, _asphalt_speed]
 			)
 		)

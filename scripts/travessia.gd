@@ -7,9 +7,9 @@ extends Node3D
 ## sinal fecha para o carro. Na avenida o sinal nunca fecha - e o jogador que
 ## passa -, entao quem atravessa ali e o quinto, o que atravessa onde da: vai
 ## de faixa em faixa, espera na linha o carro passar e, se um entra na faixa
-## dele, pula de volta. Ninguem e atropelado: a moto que vem passa por um
-## pulo (`Pessoa`), e o carro, que nao ve gente, nunca encontra ninguem na
-## frente.
+## dele, pula de volta. A moto que vem leva um pulo de quem a ve chegando, mas
+## atropela quem nao saiu a tempo (`Pessoa.atropelar`); o carro, que nao ve
+## gente, nunca encontra ninguem na frente.
 ##
 ## Pouca gente, de proposito. Uma transversal em tres tem alguem na zebra quando
 ## o jogador passa, e uma travessia fora da faixa para cada quatro na zebra:
@@ -277,7 +277,9 @@ func _conduz(e: Evento) -> void:
 	if e.gente.is_empty():
 		return
 	var p := e.gente[0]
-	if p.estado == Pessoa.Estado.SUSTO or e.na_linha >= e.linhas.size() - 1:
+	# No pulo, ou atropelada: quem conduz agora e ela.
+	var de_pe := p.estado in [Pessoa.Estado.PARADA, Pessoa.Estado.ANDANDO]
+	if not de_pe or e.na_linha >= e.linhas.size() - 1:
 		return
 	var de := e.linhas[e.na_linha]
 	var para := e.linhas[e.na_linha + 1]

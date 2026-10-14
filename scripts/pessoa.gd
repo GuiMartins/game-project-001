@@ -1,8 +1,8 @@
 class_name Pessoa
 extends Node3D
 ## Uma pessoa da rua em pecas, posada no codigo: quem atravessa a rua
-## (`Travessia`), quem desce do carro (`Carro.desembarcar`) e quem pula da
-## frente da moto.
+## (`Travessia`), quem desce do carro (`Carro.desembarcar`), quem pula da
+## frente da moto e quem nao pulou a tempo e voa (`atropelar`).
 ##
 ## A gente da calcada e o `Pedestres`, em `MultiMesh`, porque e mais de mil, e
 ## so sabe andar reto. Esta e para as poucas que precisam de mais: sentar,
@@ -14,7 +14,7 @@ extends Node3D
 
 signal chegou
 
-enum Estado { PARADA, ANDANDO, SENTADA, DESEMBARCANDO, SUSTO }
+enum Estado { PARADA, ANDANDO, SENTADA, DESEMBARCANDO, SUSTO, VOANDO, CAIDA }
 
 const CENA: PackedScene = preload("res://assets/pedestres/pedestres.glb")
 const GRUPO_MOTOS: StringName = &"motos"
@@ -39,6 +39,26 @@ const SUSTO_OLHA: float = 0.5
 ## Moto mais rapida que isso de um passo para o outro foi teletransportada
 ## (largada, renascer depois do tombo), e nao vem vindo.
 const MOTO_TETO: float = 120.0
+## O atropelo, no chao: a moto a menos disto do centro da pessoa a pega. A meia
+## largura da moto (0,375) mais a de um ombro; o mesmo do `Multidao`.
+const RAIO: float = 0.55
+const MOTO_MINIMA: float = 2.0
+## Onde o corpo gira no ar, acima dos pes: o meio do quadril.
+const PIVO := Vector3(0.0, 0.95, 0.0)
+## Gravidade do voo. Mais que a de verdade de proposito: com 9,8 o corpo boia, e
+## a tela de pixel le como camera lenta.
+const GRAVIDADE: float = 16.0
+## Quanto da velocidade da moto vai para o corpo, e o quanto ele sobe. A moto a
+## 50 m/s joga a pessoa 2,3 m para cima e uns 30 m para a frente antes do
+## primeiro quique: e Road Rash, e nao laudo de pericia.
+const EMPURRAO: float = 0.55
+const SUBIDA := Vector2(3.0, 0.11)
+## Como o corpo desliza deitado depois do segundo quique, em m/s2, e de quantos
+## em quantos metros deixa rastro.
+const ATRITO: float = 9.0
+const RASTRO: float = 0.7
+## Quanto acima do chao fica o meio do corpo deitado.
+const DEITADO: float = 0.12
 
 ## Poses por segundo (`WorldTuning.ator_cadencia`, repassada pelo `World`); 0 e
 ## liso.
@@ -60,6 +80,7 @@ var _abre: Array[float] = [0.06, 0.06]
 ## Para onde olha, em radianos em volta de Y; 0 e -Z do pai.
 var _rumo: float = 0.0
 
+var _no_raiz: Node3D
 var _no_quadril: Node3D
 var _no_tronco: Node3D
 var _nos_braco: Array[Node3D] = []
@@ -77,6 +98,19 @@ var _susto_de := Vector3.ZERO
 var _susto_para := Vector3.ZERO
 var _antes_do_susto: Estado = Estado.PARADA
 var _sem_susto: float = 0.0
+# O voo do atropelo, no espaco do pai: o meio do corpo, a velocidade, o eixo
+# e o angulo do giro, e o giro do corpo inteiro em volta do `PIVO`.
+var _centro := Vector3.ZERO
+var _vel := Vector3.ZERO
+var _eixo := Vector3.RIGHT
+var _giro: float = 0.0
+var _giro_vel: float = 0.0
+var _quiques: int = 0
+var _desde_rastro: float = 0.0
+var _corpo := Basis.IDENTITY
+var _chao_de_partida: float = 0.0
+var _dica: float = -1.0
+var _rng := RandomNumberGenerator.new()
 ## O ritmo de quem esta parado, por pessoa, para dez esperando na esquina nao
 ## balancarem juntas.
 var _ritmo: float = 3.0
@@ -98,6 +132,7 @@ func _ready() -> void:
 	cena.free()
 	raiz.transform = Transform3D.IDENTITY
 	add_child(raiz)
+	_no_raiz = raiz
 	_no_quadril = raiz.find_child("Quadril", true, false) as Node3D
 	_no_tronco = raiz.find_child("Tronco", true, false) as Node3D
 	for lado: String in ["E", "D"]:
@@ -133,6 +168,7 @@ func vestir(camisa: Color, pele := Color(0, 0, 0, 0)) -> void:
 ## espera. `rng` e de quem a criou, e nada daqui e medido pelo banco de provas.
 func sortear(rng: RandomNumberGenerator) -> void:
 	velocidade = rng.randf_range(1.1, 1.6)
+	_rng.seed = rng.randi()
 	_ritmo = rng.randf_range(2.5, 4.0)
 	_fase = rng.randf() * TAU
 
@@ -167,6 +203,37 @@ func colocar(lugar: Vector3, rumo: float) -> void:
 func pular_para(destino: Vector3) -> void:
 	_caminho.clear()
 	_comeca_susto(destino, Estado.PARADA)
+
+
+## A moto pegou: voa na direcao dela (`v_mundo`, a velocidade da moto no
+## mundo), girando, quica duas vezes, desliza deitada e fica. Mancha o chao
+## onde e pega, onde cai e por onde arrasta.
+func atropelar(v_mundo: Vector3) -> void:
+	if estado == Estado.VOANDO or estado == Estado.CAIDA:
+		return
+	var pai := get_parent_node_3d()
+	var v := pai.global_basis.inverse() * v_mundo if pai != null else v_mundo
+	v.y = 0.0
+	var rapido := v.length()
+	var frente := v / maxf(rapido, 0.001)
+	var lado := Vector3(-frente.z, 0.0, frente.x)
+	_vel = (
+		v * EMPURRAO
+		+ lado * rapido * 0.12 * _rng.randf_range(-1.0, 1.0)
+		+ Vector3.UP * (SUBIDA.x + rapido * SUBIDA.y)
+	)
+	# Cambalhota para a frente, na direcao em que vai, com um fio de parafuso.
+	_eixo = (Vector3.UP.cross(frente) + frente * _rng.randf_range(-0.3, 0.3)).normalized()
+	_giro = 0.0
+	_giro_vel = clampf(7.0 + rapido * 0.15, 7.0, 14.0)
+	_quiques = 0
+	_centro = position + PIVO
+	_chao_de_partida = position.y
+	_dica = -1.0
+	_caminho.clear()
+	estado = Estado.VOANDO
+	_relogio = 0.0
+	_mancha(_centro - PIVO, Vector2(1.0, 1.0), atan2(frente.x, frente.z))
 
 
 ## Sai do carro pela porta do lado `lado` (-1 esquerda, 1 direita do carro).
@@ -205,6 +272,10 @@ func _physics_process(delta: float) -> void:
 			_desembarca()
 		Estado.SUSTO:
 			_assusta()
+		Estado.VOANDO:
+			_voa(delta)
+		Estado.CAIDA:
+			_desliza(delta)
 	_desde += delta
 	var periodo := 1.0 / cadencia if cadencia > 0.0 else 0.0
 	# A mesma folga de um milesimo da `Cadencia`: cinco passos de 1/60 somados
@@ -346,21 +417,35 @@ func _desembarca() -> void:
 
 func _olha_motos(delta: float) -> void:
 	var podendo := estado in [Estado.PARADA, Estado.ANDANDO] and _sem_susto <= 0.0 and delta > 0.0
+	# Pega quem esta de pe em qualquer coisa - parado, andando, no meio do
+	# pulo, descendo do carro ja com o pe no chao -, e nao quem esta sentado
+	# dentro dele nem quem ja voou.
+	var pegavel := (
+		delta > 0.0
+		and estado not in [Estado.SENTADA, Estado.VOANDO, Estado.CAIDA]
+		and not (estado == Estado.DESEMBARCANDO and _relogio < 1.0)
+	)
 	for no in get_tree().get_nodes_in_group(GRUPO_MOTOS):
 		var moto := no as Node3D
 		var id := moto.get_instance_id()
 		var agora := moto.global_position
 		var antes: Vector3 = _motos.get(id, agora)
 		_motos[id] = agora
-		if not podendo:
+		if not pegavel:
 			continue
 		var v := (agora - antes) / delta
 		v.y = 0.0
 		var rapido := v.length()
-		if rapido < 3.0 or rapido > MOTO_TETO:
+		if rapido < MOTO_MINIMA or rapido > MOTO_TETO:
 			continue
 		var rel := global_position - agora
+		var alto := absf(rel.y)
 		rel.y = 0.0
+		if rel.length() < RAIO and alto < 1.5:
+			atropelar(v)
+			return
+		if not podendo or rapido < 3.0:
+			continue
 		var quando := rel.dot(v) / (rapido * rapido)
 		if quando <= 0.0 or quando > SUSTO_ANTES:
 			continue
@@ -414,12 +499,112 @@ func _assusta() -> void:
 			estado = Estado.PARADA
 
 
+func _voa(delta: float) -> void:
+	_vel.y -= GRAVIDADE * delta
+	_centro += _vel * delta
+	_giro += _giro_vel * delta
+	position = _centro - PIVO
+	var eixo_local := Basis(Vector3.UP, _rumo).inverse() * _eixo
+	_corpo = Basis(eixo_local.normalized(), _giro)
+	# Bracos e pernas soltos, sacudindo.
+	var t := _relogio
+	_altura = QUADRIL
+	_tronco = -0.2
+	for i in 2:
+		var f := PI * float(i)
+		_braco[i] = 1.8 + 0.8 * sin(t * 13.0 + f)
+		_abre[i] = 1.0 + 0.3 * sin(t * 9.0 + f)
+		_coxa[i] = 0.6 * sin(t * 11.0 + f)
+		_joelho[i] = 0.7 + 0.4 * sin(t * 7.0 + f)
+	var chao := _chao(_centro)
+	if _vel.y < 0.0 and _centro.y - 0.3 <= chao:
+		_quiques += 1
+		var plano := Vector2(_vel.x, _vel.z)
+		_mancha(Vector3(_centro.x, chao, _centro.z), Vector2(1.2, 1.4), atan2(plano.x, plano.y))
+		if _quiques < 2:
+			_centro.y = chao + 0.3
+			_vel.y = -_vel.y * 0.3
+			_vel.x *= 0.55
+			_vel.z *= 0.55
+			_giro_vel *= 0.5
+		else:
+			# Deita, de brucos e com a cabeca para onde ia, e desliza.
+			_vel.y = 0.0
+			_vel.x *= 0.6
+			_vel.z *= 0.6
+			if plano.length() > 0.01:
+				_rumo = atan2(-plano.x, -plano.y)
+			_corpo = Basis(Vector3.RIGHT, -PI * 0.5)
+			_centro.y = chao + DEITADO
+			position = _centro - PIVO
+			_desde_rastro = 0.0
+			estado = Estado.CAIDA
+			_pose_deitada()
+
+
+func _desliza(delta: float) -> void:
+	var plano := Vector2(_vel.x, _vel.z)
+	var rapido := plano.length()
+	if rapido <= 0.0:
+		return
+	var passo := minf(rapido * delta, rapido * rapido / (2.0 * ATRITO))
+	var novo := maxf(rapido - ATRITO * delta, 0.0)
+	var rumo := Vector3(plano.x, 0.0, plano.y) / rapido
+	_centro += rumo * passo
+	_centro.y = _chao(_centro) + DEITADO
+	_vel = rumo * novo
+	position = _centro - PIVO
+	_desde_rastro += passo
+	var no_chao := Vector3(_centro.x, _centro.y - DEITADO, _centro.z)
+	if _desde_rastro >= RASTRO:
+		_desde_rastro = 0.0
+		_mancha(no_chao, Vector2(0.5, 0.9), atan2(plano.x, plano.y))
+	if novo <= 0.0:
+		# A poca de onde parou.
+		_mancha(no_chao, Vector2(1.5, 1.5), atan2(plano.x, plano.y))
+
+
+func _pose_deitada() -> void:
+	_altura = QUADRIL
+	_tronco = 0.0
+	_braco = [0.4, -0.3]
+	_abre = [1.1, 0.6]
+	_coxa = [0.25, -0.1]
+	_joelho = [0.4, 0.1]
+
+
+## A altura do chao sob `p` (espaco do pai). Sai da pista, que nao tem
+## colisor: e a mesma amostragem da moto. Sem pista (num teste), e o chao de
+## onde voou.
+func _chao(p: Vector3) -> float:
+	var pista := get_tree().get_first_node_in_group(RoadTrack.GRUPO) as RoadTrack
+	var pai := get_parent_node_3d()
+	if pista == null or pai == null:
+		return _chao_de_partida
+	var no_mundo := pai.to_global(p)
+	var na_pista := pista.to_local(no_mundo)
+	if _dica < 0.0:
+		_dica = pista.curve.get_closest_offset(na_pista)
+	_dica = pista.project(na_pista, _dica).x
+	var chao := pista.to_global(pista.sample_position(_dica))
+	return pai.to_local(Vector3(no_mundo.x, chao.y, no_mundo.z)).y
+
+
+## Mancha em `onde` (espaco do pai); `rumo` e o do comprimento, no pai.
+func _mancha(onde: Vector3, tamanho: Vector2, rumo: float) -> void:
+	var pai := get_parent_node_3d()
+	var no_mundo := pai.to_global(onde) if pai != null else onde
+	var giro := rumo + (pai.global_rotation.y if pai != null else 0.0)
+	Sangue.manchar(get_tree(), no_mundo, tamanho, giro)
+
+
 ## Passa a pose para os nos. So na vez da cadencia: entre uma e outra, o boneco
 ## segura a pose e so o lugar anda.
 func _aplica() -> void:
 	if _no_quadril == null:
 		return
 	rotation = Vector3(0.0, _rumo, 0.0)
+	_no_raiz.transform = Transform3D(_corpo, PIVO - _corpo * PIVO)
 	_no_quadril.position = Vector3(0.0, _altura, 0.0)
 	_no_tronco.rotation = Vector3(-_tronco, 0.0, 0.0)
 	for i in 2:

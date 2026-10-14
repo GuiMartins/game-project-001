@@ -112,6 +112,7 @@ var run := RaceRun.new()
 var traffic: Array[TrafficCar] = []
 var rivals: Array[RivalBike] = []
 var travessia: Travessia
+var _sangue: Node3D
 var _rng := RandomNumberGenerator.new()
 var _spawn_cursor: float = 0.0
 var _position_event_timer: float = 0.0
@@ -153,6 +154,12 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	borrao.setup(tuning, player)
 	player.marcar_foco()
 
+	# Onde ficam as manchas de quem foi atropelado, para a largada limpar.
+	_sangue = Node3D.new()
+	_sangue.name = "Sangue"
+	_sangue.add_to_group(Sangue.GRUPO)
+	add_child(_sangue)
+
 	# Sorteio proprio, como a cidade: quem atravessa a rua nao mexe no `_rng`.
 	travessia = Travessia.new()
 	travessia.name = "Travessia"
@@ -188,6 +195,10 @@ func start_race(grid_offset: float = 0.0, at_speed: float = 0.0) -> void:
 	_position_event_timer = 0.0
 	scatter_traffic_ahead(player.track_offset)
 	travessia.reiniciar()
+	# Largada nova, calcada nova: quem foi atropelado volta, e o chao e lavado.
+	get_tree().call_group(&"multidao", &"reiniciar")
+	for mancha in _sangue.get_children():
+		mancha.queue_free()
 
 
 ## Onde o corredor `index` larga: fila dupla, corredores alternados, o de

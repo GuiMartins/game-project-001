@@ -608,9 +608,15 @@ decide se as faixas da ponta são uma aposta ou uma parede.
 
 ## A calçada
 
-Dá pra subir na calçada e continuar andando, com teto de velocidade — grama do
-Mario Kart. É a válvula de escape quando o trânsito fecha: você foge por ali,
-mas paga em tempo.
+Dá pra subir na calçada e continuar andando, na mesma velocidade do asfalto. É
+a válvula de escape quando o trânsito fecha.
+
+Já foi grama do Mario Kart, com teto de 55% da velocidade máxima
+(`sidewalk_speed_factor`): fugir por ali custava tempo, para a calçada não
+virar a linha ótima e matar o corredor, que é o jogo. O teto saiu junto com o
+atropelo de pedestre, a pedido: o preço da calçada passou a ser o que ela tem
+em cima — gente, poste, árvore —, e não um freio invisível. Se o corredor
+esvaziar porque todo mundo foge pela calçada, é aqui que se volta.
 
 **Não existe mais guard-rail.** Até a 0.0.6 havia uma parede analítica em
 `sidewalk_limit()` (8,80 m do eixo), e a rua era um tubo: a fachada, a rua
@@ -627,12 +633,8 @@ existindo como o fim da calçada livre: dali para fora vem a faixa de serviço,
 a tira mais escura onde ficam os postes, e é até ali que a câmera de garupa
 vai.
 
-Medido: 33,3 m/s no asfalto contra 28,9 m/s na calçada, que é o teto do
-`sidewalk_speed_factor`. Os 13,8 m/s de antes não eram a calçada: eram a moto
-raspando no guard-rail, que freia por `rail_friction`.
-
-O que o banco de provas cobre, na fase própria: a velocidade estabilizada no
-meio da calçada contra o teto, e que a moto passa da beira da calçada e para
+O que o banco de provas cobre, na fase própria: que a calçada não voltou a
+frear (a velocidade no meio dela não fica abaixo da do asfalto), e que a moto passa da beira da calçada e para
 antes do fim do chão. Onde ela para entre os dois depende do que estava na
 frente — no trecho da prova ela raspa na quina de um prédio e entra numa
 transversal até o prédio do fundo, e o baseline aponta se esse caminho mudou.

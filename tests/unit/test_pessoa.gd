@@ -158,3 +158,88 @@ func test_faixa_livre_espera_o_carro_que_vem() -> void:
 	assert_bool(Travessia._livre_de(100.0, 0.0, 3.3, 3.0, 105.0, 1.65, 10.0, 0.9, 2.2)).is_true()
 	# Parado bem em cima de onde se atravessa.
 	assert_bool(Travessia._livre_de(100.0, 0.0, 3.3, 3.0, 100.0, 1.65, 0.0, 0.9, 2.2)).is_false()
+
+
+func _sangue() -> Node3D:
+	var no: Node3D = auto_free(Node3D.new())
+	add_child(no)
+	no.add_to_group(Sangue.GRUPO)
+	return no
+
+
+func test_atropelada_voa_quica_e_fica_deitada_longe() -> void:
+	var sangue := _sangue()
+	var raiz: Node3D = auto_free(Node3D.new())
+	add_child(raiz)
+	var pessoa: Pessoa = Pessoa.new()
+	raiz.add_child(pessoa)
+	pessoa.set_physics_process(false)
+	pessoa.colocar(Vector3.ZERO, 0.0)
+	# Perto demais para pular: a 40 m/s, 1 m e um passo e meio.
+	var moto := _moto(Vector3(0.0, 0.0, 1.0))
+	var voou := false
+	var mais_alto := 0.0
+	for i in 600:
+		moto.position.z -= 40.0 * PASSO
+		pessoa._physics_process(PASSO)
+		voou = voou or pessoa.estado == Pessoa.Estado.VOANDO
+		mais_alto = maxf(mais_alto, pessoa.position.y)
+	assert_bool(voou).is_true()
+	assert_int(pessoa.estado).is_equal(Pessoa.Estado.CAIDA)
+	# Subiu, foi para onde a moto ia (-Z) e parou deitada no chao.
+	assert_float(mais_alto).is_greater(1.0)
+	assert_float(pessoa.position.z).is_less(-6.0)
+	assert_float(pessoa.position.y + Pessoa.PIVO.y).is_equal_approx(Pessoa.DEITADO, 0.01)
+	# Mancha onde foi pega, onde quicou, por onde arrastou e onde parou.
+	assert_int(sangue.get_child_count()).is_greater(3)
+
+
+func test_moto_parada_nao_atropela() -> void:
+	var raiz: Node3D = auto_free(Node3D.new())
+	add_child(raiz)
+	var pessoa: Pessoa = Pessoa.new()
+	raiz.add_child(pessoa)
+	pessoa.set_physics_process(false)
+	pessoa.colocar(Vector3.ZERO, 0.0)
+	_moto(Vector3(0.2, 0.0, 0.0))
+	for i in 60:
+		pessoa._physics_process(PASSO)
+	assert_int(pessoa.estado).is_equal(Pessoa.Estado.PARADA)
+
+
+func test_moto_atropela_quem_anda_na_calcada_e_a_largada_devolve() -> void:
+	_sangue()
+	var multidao: Multidao = auto_free(Multidao.new())
+	add_child(multidao)
+	var gente: Array = []
+	for i in 6:
+		gente.append([Transform3D(Basis.IDENTITY, Vector3(float(i) * 20.0, 0.0, 0.0)), Color.RED])
+	multidao.montar(gente, true)
+	multidao.set_physics_process(false)
+	multidao._physics_process(PASSO)
+	# A moto vem pela lateral, reto em cima de onde a terceira esta agora - que
+	# nao e onde nasceu: ela anda.
+	var alvo := multidao.lugar(2)
+	var moto := _moto(alvo + Vector3(-10.0, 0.0, 0.0))
+	for i in 30:
+		moto.position = alvo + Vector3(-10.0 + 30.0 * PASSO * float(i + 1), 0.0, 0.0)
+		multidao._physics_process(PASSO)
+	assert_bool(multidao.caiu(2)).is_true()
+	for i: int in [0, 1, 3, 4, 5]:
+		assert_bool(multidao.caiu(i)).is_false()
+	assert_object(multidao.find_child("Atropelado", false, false)).is_not_null()
+	multidao.reiniciar()
+	assert_bool(multidao.caiu(2)).is_false()
+
+
+func test_quem_anda_no_multimesh_vai_e_volta_sem_sair_do_trecho() -> void:
+	var meio := Multidao.TRECHO * 0.5
+	var antes := Multidao.deslocamento(0.0, 0.3, 0.6)
+	var maior := 0.0
+	for i in 1200:
+		var agora := Multidao.deslocamento(float(i) * 0.05, 0.3, 0.6)
+		assert_float(absf(agora)).is_less_equal(meio + 0.001)
+		# Sem teletransporte: a 1,6 m/s, no maximo 8 cm por passo de 0,05 s.
+		maior = maxf(maior, absf(agora - antes))
+		antes = agora
+	assert_float(maior).is_less(0.1)

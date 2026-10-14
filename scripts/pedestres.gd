@@ -98,23 +98,10 @@ static func _na_esquina(cruzamentos: Array[Vector2], o: float, side: float) -> b
 	return false
 
 
-static func _multimesh(pose: Pose, gente: Array) -> MultiMeshInstance3D:
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_colors = true
-	mm.mesh = malha()
-	mm.instance_count = gente.size()
-	for i in gente.size():
-		mm.set_instance_transform(i, gente[i][0])
-		mm.set_instance_color(i, gente[i][1])
+static func _multimesh(pose: Pose, gente: Array) -> Multidao:
 	var mmi := Multidao.new()
 	mmi.name = "Pedestres" + NOS[pose]
-	mmi.multimesh = mm
-	mmi.set_instance_shader_parameter(&"andando", 1.0 if pose == Pose.ANDANDO else 0.0)
-	# O shader leva cada um ate meio trecho para frente ou para tras, longe do
-	# transform que o `MultiMesh` usa para saber o que esta na tela.
-	mmi.extra_cull_margin = 6.0
-	mmi.add_to_group(GRUPO_NOS)
+	mmi.montar(gente, pose == Pose.ANDANDO)
 	return mmi
 
 
@@ -145,22 +132,3 @@ static func material(mat: Material) -> ShaderMaterial:
 		novo.set_shader_parameter(&"e_pele", nome == "pele")
 		_materiais[nome] = novo
 	return _materiais[nome]
-
-
-## Os pedestres de uma pose. So o relogio deles mora aqui: com o mundo pausado,
-## ou congelado na prova, ele para junto, e o `TIME` do shader nao pararia.
-class Multidao:
-	extends MultiMeshInstance3D
-
-	## Poses por segundo, repassada pelo `World` de `WorldTuning.ator_cadencia`.
-	var cadencia: float = 0.0:
-		set(valor):
-			cadencia = valor
-			set_instance_shader_parameter(&"cadencia", valor)
-	var _tempo: float = 0.0
-
-	# No passo de fisica, e nao no quadro: a prova roda um numero exato de
-	# passos, e o quadro dela tem de sair igual em toda maquina.
-	func _physics_process(delta: float) -> void:
-		_tempo += delta
-		set_instance_shader_parameter(&"tempo", _tempo)

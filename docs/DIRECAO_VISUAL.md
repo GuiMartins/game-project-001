@@ -402,7 +402,7 @@ gatilho de quase todo efeito já existe como número no código.** O trabalho aq
 | Efeito | Gatilho — e ele já existe | Nó | O parâmetro que decide |
 | --- | --- | --- | --- |
 | **Fumaça de pneu** | `player_bike.gd::_integrate`: `(desired - horizontal).length()` já é a derrapada, e o `PROTOTIPO.md` já a nomeia assim | `GPUParticles3D` no eixo traseiro | limiar de derrapada que liga a emissão |
-| **Poeira / terra** | `_off_road` e o teto de velocidade da calçada | idem, cor amostrada do terreno | taxa em função da velocidade |
+| **Poeira / terra** | `_off_road` e a moto na calçada | idem, cor amostrada do terreno | taxa em função da velocidade |
 | **Faísca** | sinal `scraped(intensity)` — já chega com a intensidade pronta | `GPUParticles3D` com `trail_enabled` | emissão alta + vida curta + glow |
 | **Fumaça de escapamento** | contínua; engrossa em `boosting` | `GPUParticles3D` de taxa baixa | `amount_ratio` amarrado ao acelerador |
 | **Poeira de queda** | sinal `crashed(reason)` | `one_shot` + `explosiveness = 1.0` | raio, e o fato de ser único |

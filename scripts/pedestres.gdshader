@@ -3,8 +3,8 @@
 // A malha e uma so, de pe (`arte/pedestres.py`), e cada peca traz no U da UV
 // de que parte e: perna gira em volta do quadril, braco em volta do ombro. O
 // que muda de uma pessoa para outra - velocidade, de onde comeca, o ritmo do
-// balanco - sai do `INSTANCE_ID`, e nao de dado por instancia: e o mesmo
-// sorteio em toda rodada, e o `MultiMesh` continua so com transform e cor.
+// balanco - sai de dois sorteios por instancia, no `INSTANCE_CUSTOM`, que o
+// `Multidao` tambem usa para saber onde cada um esta na hora do atropelo.
 shader_type spatial;
 
 // A cor da superficie, a do material que o `.glb` trouxe.
@@ -33,6 +33,7 @@ instance uniform vec4 pele : source_color = vec4(0.0);
 // Os pivos de `arte/pedestres.py`.
 const float QUADRIL = 0.92;
 const float OMBRO = 1.42;
+// O trecho, a virada e a velocidade tem de bater com o `Multidao`.
 // O trecho que cada um anda, em metros, centrado em onde o `Pedestres` o pos:
 // vai ate o fim, para, vira e volta. Ja foi "some no fim e brota no comeco",
 // e com centenas na tela sempre tinha alguem saindo do chao. Curto porque
@@ -49,11 +50,6 @@ const float PASSADA = 1.4;
 // Balanco da perna, em radianos; o braco vai a 80%, ao contrario. E o 0,35 da
 // pose "andando" que existia antes do shader.
 const float BALANCO = 0.35;
-
-
-float sorteio(float n) {
-	return fract(sin(n * 12.9898 + 78.233) * 43758.5453);
-}
 
 
 // Gira `v` em volta do eixo X que passa na altura `pivo`.
@@ -76,9 +72,10 @@ void vertex() {
 	// A `Pessoa` e posada no codigo, e o Godot nao aceita `return` no
 	// `vertex()`: ela simplesmente nao entra.
 	if (articulado < 0.5) {
-		float id = float(INSTANCE_ID);
-		float s1 = sorteio(id);
-		float s2 = sorteio(id + 17.0);
+		// Os dois sorteios da pessoa, os mesmos que o `Multidao` usa para
+		// saber onde ela esta na hora do atropelo.
+		float s1 = INSTANCE_CUSTOM.x;
+		float s2 = INSTANCE_CUSTOM.y;
 		float pose = cadencia > 0.0 ? floor(tempo * cadencia) / cadencia : tempo;
 		int parte = int(round(UV.x * 8.0));
 		float lado = (parte == 1 || parte == 3) ? -1.0 : 1.0;
