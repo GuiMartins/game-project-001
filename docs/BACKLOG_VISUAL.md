@@ -1088,8 +1088,8 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   piso de tábua a cada 4 m, diagonais alternadas), **lona laranja ou azul**
   semitransparente (alpha de 0,62, numa segunda superfície da malha com
   material próprio; o xadrez de pixel furado que veio antes lia como ruído)
-  por cima em painéis planos de uma baia por três andares, com falhas sorteadas e
-  os dois andares de cima sem lona, e o andaime desce até a calçada, sem tapume nem marquise (a tampa de madeira
+  por cima em painéis planos de uma baia por três andares, do chão ao topo e
+  sem falha (buraco sorteado lia como lona rasgada), e o andaime desce até a calçada, sem tapume nem marquise (a tampa de madeira
   escondia o andaime do chão). São quatro malhas (esqueleto ou
   meia-obra, laranja ou azul): a lona é geometria, e não pintura por
   instância. Vira obra uma torre em cada três do corredor

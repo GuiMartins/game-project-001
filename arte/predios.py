@@ -908,10 +908,8 @@ def andaime_e_lona(p, rng, W, D, TOPO, lona) -> None:
     So a frente, e dentro da largura do corpo: o `cidade.gd` encosta um
     predio no outro, e andaime ou lona nas laterais entravam na parede do
     vizinho. O andaime sai 2,2 m da parede e a lona 8 cm alem dele, em
-    paineis de uma baia por tres andares com falhas sorteadas: lona inteira
-    vira caixa colorida, e as falhas deixam ver o concreto por tras. Os dois
-    andares de cima ficam sem lona, que e como a obra real termina: a tela
-    sobe atras do pedreiro. Sem tapume nem marquise na calcada: tampa de
+    paineis de uma baia por tres andares, do chao ao topo e sem falha: o alpha
+    ja deixa ver o andaime e o concreto por tras. Sem tapume nem marquise na calcada: tampa de
     madeira de 2,4 m escondia o andaime do chao, que e justamente o que le
     "obra" de perto.
     """
@@ -947,15 +945,14 @@ def andaime_e_lona(p, rng, W, D, TOPO, lona) -> None:
                     rot_y=ang if b % 2 == 0 else -ang,
                 )
 
-    # Lona: paineis de uma baia por tres andares, com falhas.
+    # Lona: paineis de uma baia por tres andares, do chao ao topo, sem falha.
+    # Ja teve buraco sorteado e os dois andares de cima abertos, e lia como
+    # lona rasgada, e nao como obra.
     bloco = 9.0
-    z = 2.0
-    ate = TOPO - 2 * 3.0
-    while z < ate:
-        z1 = min(z + bloco, ate)
+    z = 0.0
+    while z < TOPO:
+        z1 = min(z + bloco, TOPO)
         for b in range(len(frente_x) - 1):
-            if rng.random() < 0.18:
-                continue
             x0, x1 = frente_x[b], frente_x[b + 1]
             y = Y0 + 0.08
             p.face(((x0, y, z), (x1, y, z), (x1, y, z1), (x0, y, z1)), (0, 1, 0), lona)
