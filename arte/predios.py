@@ -24,8 +24,8 @@ referencias:
 | `Torre`      | 15 x 13 x 58,8 m         | o residencial de concreto com varanda corrida |
 |              |                          | e loja embaixo, dos dois lados da portaria    |
 
-Fora os cinco, a obra (V17a): `ObraEsqueleto` e `ObraFachada` sao a `Torre` com
-0 e 8 andares prontos, e `GuindasteMastro`, `GuindasteLanca`, `GuindasteTopo` e
+Fora os cinco, a obra (V17a): `ObraEsqueleto*` e `ObraFachada*` sao a `Torre` com
+0 e 8 andares prontos, cada uma com lona `Laranja` ou `Azul` sobre o andaime, e `GuindasteMastro`, `GuindasteLanca`, `GuindasteTopo` e
 `GuindasteGancho` sao as pecas repetiveis do guindaste (ver `guindaste.gd`).
 
 Todo predio de rua tem loja com toldo no terreo: e o que passa na altura do
@@ -145,6 +145,11 @@ PALETA = {
     # O amarelo do guindaste de torre (V17a): `04_vertical` e `03_viaduto`.
     # Fica no fim da paleta para nenhuma outra celula mudar de lugar.
     "guindaste": ((0.96, 0.74, 0.06), NADA),
+    # A lona que enrola o andaime da obra, laranja ou azul (referencia: obra
+    # com tela de protecao no Rio). Cor propria, e nao a mascara da loja: a
+    # lona e de um dos dois tons, e nao de qualquer um do sorteio dos toldos.
+    "lona_laranja": ((0.96, 0.46, 0.08), NADA),
+    "lona_azul": ((0.12, 0.38, 0.86), NADA),
 }
 CELULAS = {nome: i for i, nome in enumerate(PALETA)}
 
@@ -806,13 +811,18 @@ def escritorio(rng) -> Peca:
 ANDARES_DA_TORRE = 16
 
 
-def torre(rng, prontos=ANDARES_DA_TORRE, nome="Torre") -> Peca:
+def torre(rng, prontos=ANDARES_DA_TORRE, nome="Torre", lona=None) -> Peca:
     """O residencial de concreto. `prontos` e a fase de obra (V17a): quantos
     andares, de baixo para cima, ja tem fachada. Com todos, e a `Torre` de
     sempre, byte a byte; com menos, o resto fica no esqueleto - laje, pilar e
     o miolo do elevador -, e o topo perde cornija e caixa d'agua. E o mesmo
     gerador, e nao um modelo a parte, para a obra ter exatamente a planta, a
     altura e a loja do terreo da torre que ela vai virar.
+
+    Com `lona`, a obra ganha andaime em volta, tapume e marquise na calcada e
+    lona na cor dada (V17a, segunda passada): so o ferro no topo fazia a obra
+    parecer um predio com defeito no ultimo andar, e o que le "obra" no
+    quadro e o corpo inteiro embrulhado.
     """
     p = Peca(nome)
     W, D = 15.0, 13.0
@@ -829,6 +839,8 @@ def torre(rng, prontos=ANDARES_DA_TORRE, nome="Torre") -> Peca:
         p.caixa((4.5, 2.0, TOPO + 2.9), (0.12, 0.12, 4.0), "grade")  # antena
     else:
         esqueleto(p, W, D, PILOTIS, ANDAR, ANDARES, prontos)
+        if lona is not None:
+            andaime_e_lona(p, rng, W, D, TOPO, lona)
 
     frente, esquerda, direita = paredes(W, D)
     # Pilotis: pilares nos cantos e no meio, a portaria de vidro e uma loja de
@@ -873,6 +885,93 @@ def torre(rng, prontos=ANDARES_DA_TORRE, nome="Torre") -> Peca:
 GUINDASTE_TRECHO = 3.0
 GUINDASTE_LANCA = 4.0
 CONTRAPESO = 8.0
+
+
+ANDAIME_FORA = 1.2
+
+
+def andaime_e_lona(p, rng, W, D, TOPO, lona) -> None:
+    """Andaime tubular na frente e nos dois lados, lona por cima e, na calcada,
+    tapume com marquise de protecao.
+
+    O andaime sai 1,2 m da parede e a lona 8 cm alem dele, em paineis de uma
+    baia por tres andares com falhas sorteadas: lona inteira vira caixa
+    colorida, e as falhas deixam ver o concreto por tras. Os dois andares de
+    cima ficam sem lona, que e como a obra real termina: a tela sobe atras do
+    pedreiro. O tapume e a marquise ficam so na frente: a calcada e a de la.
+    """
+    F = ANDAIME_FORA
+    X0, Y0 = W * 0.5 + F, D * 0.5 + F
+    ALTURA = TOPO + 2.0
+    NIVEL = 4.0
+    niveis = [2.0 + NIVEL * i for i in range(int((TOPO - 2.0) // NIVEL) + 1)]
+
+    def espaco(a, b, n):
+        return [a + (b - a) * i / (n - 1) for i in range(n)]
+
+    frente_x = espaco(-X0, X0, 7)
+    lado_y = espaco(-D * 0.5, Y0, 5)
+    # Montantes: um tubo inteiro por prumada, do chao ate acima do topo.
+    for x in frente_x:
+        p.caixa((x, Y0, ALTURA * 0.5), (0.1, 0.1, ALTURA), "aluminio")
+    for lado in (-1.0, 1.0):
+        for y in lado_y[:-1]:
+            p.caixa((lado * X0, y, ALTURA * 0.5), (0.1, 0.1, ALTURA), "aluminio")
+    for z in niveis:
+        # Travessas e o piso de tabua de cada nivel.
+        p.caixa((0, Y0, z), (X0 * 2.0, 0.08, 0.08), "aluminio")
+        p.caixa((0, D * 0.5 + F * 0.5, z - 0.06), (X0 * 2.0, F, 0.05), "madeira")
+        for lado in (-1.0, 1.0):
+            p.caixa((lado * X0, (Y0 - D * 0.5) * 0.5, z), (0.08, D + F, 0.08), "aluminio")
+            p.caixa((lado * (W * 0.5 + F * 0.5), (Y0 - D * 0.5) * 0.5, z - 0.06), (F, D + F, 0.05), "madeira")
+    # Diagonais, uma baia sim e outra nao, alternando o sentido.
+    baia = frente_x[1] - frente_x[0]
+    ang = math.degrees(math.atan2(baia, NIVEL))
+    comprimento = math.hypot(baia, NIVEL) - 0.14
+    for i, z in enumerate(niveis[:-1]):
+        for b in range(len(frente_x) - 1):
+            if (b + i) % 2 == 0:
+                x = (frente_x[b] + frente_x[b + 1]) * 0.5
+                p.caixa((x, Y0, z + NIVEL * 0.5), (0.06, 0.06, comprimento), "aluminio",
+                        rot_y=ang if b % 2 == 0 else -ang)
+    baia_y = lado_y[1] - lado_y[0]
+    ang_y = math.degrees(math.atan2(baia_y, NIVEL))
+    comp_y = math.hypot(baia_y, NIVEL) - 0.14
+    for i, z in enumerate(niveis[:-1]):
+        for b in range(len(lado_y) - 1):
+            if (b + i) % 2 == 1:
+                y = (lado_y[b] + lado_y[b + 1]) * 0.5
+                for lado in (-1.0, 1.0):
+                    p.caixa((lado * X0, y, z + NIVEL * 0.5), (0.06, 0.06, comp_y), "aluminio",
+                            rot_x=ang_y if b % 2 == 0 else -ang_y)
+
+    # Lona: paineis de uma baia por tres andares, com falhas.
+    bloco = 9.0
+    z = 2.0
+    ate = TOPO - 2 * 3.0
+    while z < ate:
+        z1 = min(z + bloco, ate)
+        for b in range(len(frente_x) - 1):
+            if rng.random() < 0.18:
+                continue
+            x0, x1 = frente_x[b], frente_x[b + 1]
+            p.face(((x0, Y0 + 0.08, z), (x1, Y0 + 0.08, z), (x1, Y0 + 0.08, z1), (x0, Y0 + 0.08, z1)), (0, 1, 0), lona)
+        for lado in (-1.0, 1.0):
+            for b in range(len(lado_y) - 1):
+                if rng.random() < 0.18:
+                    continue
+                y0, y1 = lado_y[b], lado_y[b + 1]
+                x = lado * (X0 + 0.08)
+                p.face(((x, y0, z), (x, y1, z), (x, y1, z1), (x, y0, z1)), (lado, 0, 0), lona)
+        z = z1
+
+    # Calcada: tapume de 2,4 m na linha do andaime e marquise de protecao
+    # por cima, a 3,5 m, que sai 0,9 m alem dele.
+    tapume_y = Y0 + 0.9
+    p.caixa((0, tapume_y, 1.2), (X0 * 2.0, 0.08, 2.4), "madeira")
+    for x in espaco(-X0, X0, 6):
+        p.caixa((x, tapume_y, 1.75), (0.1, 0.1, 3.5), "madeira")
+    p.caixa((0, D * 0.5 + (F + 0.9) * 0.5, 3.5), (X0 * 2.0, F + 0.9, 0.1), "madeira")
 
 
 def esqueleto(p, W, D, PILOTIS, ANDAR, ANDARES, prontos) -> None:
@@ -1065,12 +1164,13 @@ def main() -> None:
     # A obra e o guindaste, com semente propria: nada do que veio antes muda.
     # O esqueleto fica na planta da `Torre` (so o corpo, sem a cornija), e a
     # meia-obra tem a metade de baixo vestida.
-    for fabrica, nome, n in (
-        (lambda r: torre(r, prontos=0, nome="ObraEsqueleto"), "ObraEsqueleto", 5),
-        (lambda r: torre(r, prontos=ANDARES_DA_TORRE // 2, nome="ObraFachada"), "ObraFachada", 6),
-    ):
-        objetos.append(fabrica(random.Random(SEMENTE + n)).objeto(mat, colecao, x))
-        x += 22.0
+    # Quatro obras: esqueleto ou meia-obra, com lona laranja ou azul.
+    for prontos, fase, n in ((0, "Esqueleto", 5), (ANDARES_DA_TORRE // 2, "Fachada", 6)):
+        for lona, cor in (("Laranja", "lona_laranja"), ("Azul", "lona_azul")):
+            nome = "Obra" + fase + lona
+            peca = torre(random.Random(SEMENTE + n), prontos=prontos, nome=nome, lona=cor)
+            objetos.append(peca.objeto(mat, colecao, x))
+            x += 22.0
     for fabrica in (mastro, lanca, topo_do_guindaste, gancho):
         objetos.append(fabrica().objeto(mat, colecao, x))
         x += 22.0

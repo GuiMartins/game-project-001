@@ -16,18 +16,21 @@ extends RefCounted
 ## `cidade.gd`, que escolhe o tipo pela altura sorteada.
 enum Tipo { SOBRADO, COMERCIO, DECO, ESCRITORIO, TORRE }
 
-## A fase de uma torre em obra (V17a): so o esqueleto, ou a metade de baixo ja
-## vestida. Fora do `Tipo` de proposito: a obra tem a planta da `TORRE` e
-## entra no lugar dela, e nao e um quinto tamanho que o sorteio de altura
-## possa escolher.
-enum Obra { ESQUELETO, FACHADA }
+## A obra no lugar de uma `TORRE` (V17a): so o esqueleto, ou a metade de baixo
+## ja vestida, e a lona do andaime laranja ou azul. Fora do `Tipo` de
+## proposito: a obra tem a planta da `TORRE` e entra no lugar dela, e nao e um
+## quinto tamanho que o sorteio de altura possa escolher. A lona e geometria,
+## e nao pintura por instancia: sao quatro malhas, e cada uma a sua cor.
+enum Obra { ESQUELETO_LARANJA, ESQUELETO_AZUL, FACHADA_LARANJA, FACHADA_AZUL }
 
 const CENA: PackedScene = preload("res://assets/predios/predios.glb")
 const SHADER: Shader = preload("res://scripts/predio.gdshader")
 const ALBEDO: Texture2D = preload("res://assets/predios/predios_albedo.png")
 const MASCARA: Texture2D = preload("res://assets/predios/predios_mascara.png")
 const NOS: Array[String] = ["Sobrado", "Comercio", "Deco", "Escritorio", "Torre"]
-const NOS_OBRA: Array[String] = ["ObraEsqueleto", "ObraFachada"]
+const NOS_OBRA: Array[String] = [
+	"ObraEsqueletoLaranja", "ObraEsqueletoAzul", "ObraFachadaLaranja", "ObraFachadaAzul"
+]
 
 ## A cor pintada na textura em cada canal da mascara: a celula mais clara sob
 ## ele em `PALETA`, no `arte/predios.py`. O `test_predio.gd` le a textura e
@@ -109,7 +112,8 @@ static func criar(tipo: Tipo, pintura: float, loja: float) -> MeshInstance3D:
 
 
 ## A obra no lugar de uma `TORRE`: mesma planta, so que no esqueleto ou meio
-## vestida. A pintura e a loja valem para a parte que ja tem fachada.
+## vestida, com andaime e lona. A pintura e a loja valem para a parte que ja
+## tem fachada.
 static func criar_obra(fase: Obra, pintura: float, loja: float) -> MeshInstance3D:
 	var mi := peca(NOS_OBRA[fase])
 	mi.set_instance_shader_parameter("pintura", _escolhe(PINTURAS, pintura))

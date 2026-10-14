@@ -85,7 +85,8 @@ func test_a_obra_tem_a_planta_da_torre() -> void:
 	var torre := Predio.malha(Predio.Tipo.TORRE).get_aabb()
 	for fase: int in Predio.Obra.values():
 		var obra := Predio.malha_obra(fase as Predio.Obra).get_aabb()
-		assert_float(obra.size.x).is_between(torre.size.x - 1.0, torre.size.x)
+		# Planta da torre mais o andaime de 1,2 m de cada lado.
+		assert_float(obra.size.x).is_between(torre.size.x, torre.size.x + 3.0)
 		assert_float(obra.position.y).is_equal_approx(0.0, 0.01)
 		assert_float(obra.size.y).is_greater(Predio.OBRA_LAJE_DO_TOPO)
 		assert_float(obra.size.y).is_less(torre.size.y + 1.0)
@@ -97,7 +98,7 @@ func test_a_laje_do_topo_bate_com_o_gerador() -> void:
 	# altura dos andares mudar no `arte/predios.py`, o guindaste fica
 	# flutuando ou enterrado - e o jogo continua rodando.
 	var vertices: PackedVector3Array = (
-		Predio.malha_obra(Predio.Obra.ESQUELETO).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		Predio.malha_obra(Predio.Obra.ESQUELETO_LARANJA).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 	)
 	var achou := false
 	for v in vertices:

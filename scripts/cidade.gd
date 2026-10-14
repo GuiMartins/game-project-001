@@ -104,7 +104,7 @@ const EXPRESSA_PLACA: float = 50.0
 const EXPRESSA_FOLGA: float = 15.0
 
 ## Uma torre em cada `OBRA_UMA_EM` do corredor vira obra (V17a): esqueleto ou
-## meio vestida, com guindaste em cima. Uma em tres deixa uma obra a cada
+## meio vestida, de andaime e lona, com guindaste em cima. Uma em tres deixa uma obra a cada
 ## uns 600 m de avenida: e a silhueta de "cidade crescendo", e nao a cidade
 ## toda em construcao. Uma em seis deixava so duas na corrida inteira.
 const OBRA_UMA_EM: int = 3
@@ -556,7 +556,9 @@ func _predio(
 		caixa = Predio.malha(tipo).get_aabb()
 	else:
 		predio = Predio.criar_obra(obra as Predio.Obra, rua.randf(), rua.randf())
-		caixa = Predio.malha_obra(obra as Predio.Obra).get_aabb()
+		# O colisor e o corpo da torre: o andaime sai 1,2 m dela e na calcada
+		# ninguem bate num tubo a 3 m do chao.
+		caixa = Predio.malha(Predio.Tipo.TORRE).get_aabb()
 	props.add_child(predio)
 	# Base 1 m abaixo da pista: na rampa o predio nao pode ficar com o pe no ar.
 	predio.global_transform = Transform3D(Basis.looking_at(olha, Vector3.UP), pe + Vector3.DOWN)
@@ -581,7 +583,7 @@ static func fase_de_obra(semente: int, tipo: Predio.Tipo, o: float, side: float)
 	var h := hash([semente, int(o), int(side)])
 	if posmod(h, OBRA_UMA_EM) != 0:
 		return SEM_OBRA
-	return Predio.Obra.ESQUELETO if posmod(h >> 8, 2) == 0 else Predio.Obra.FACHADA
+	return posmod(h >> 8, Predio.Obra.size())
 
 
 ## O guindaste no alto da obra, com a lanca virada para onde o hash mandar.
