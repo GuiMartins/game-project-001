@@ -1045,7 +1045,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   - **Aceite:** de trás, na câmera da V04, lê camiseta e bermuda; os rivais
     continuam um por cor (`dev.py prova`).
 
-- [x] **V22** — Cadência do ator: 12 fps ou liso (14/10/2026)
+- [x] **V22** — Cadência do ator: 12 fps ou liso (14/10/2026, #106)
 
   A P5 que ficou aberta. O `DIRECAO_VISUAL.md` diz que a cadência travada é o
   que faz o ator ler como digitalizado; o vídeo é liso a 24 fps e tira um
