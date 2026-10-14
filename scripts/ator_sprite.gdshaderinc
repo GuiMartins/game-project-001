@@ -23,7 +23,7 @@ uniform float desvio = 0.0;
 uniform float estica = 1.0;
 // A cor do corredor. A camiseta e a bag das folhas sao vermelhas, e e nelas
 // que a cor entra, como no modelo 3D.
-uniform vec3 cor : source_color = vec3(0.82, 0.12, 0.10);
+uniform vec3 cor : source_color = vec3(0.95, 0.42, 0.15);
 // O vermelho da bag na folha, em linear: e o tom que vira a `cor` cheia. Mais
 // escuro que ele vira a `cor` sombreada na mesma proporcao.
 const float VERMELHO_REF = 0.75;

@@ -306,7 +306,7 @@ func test_cores_de_fabrica_batem_com_a_textura() -> void:
 		ProjectSettings.globalize_path("res://assets/entregador/entregador_mascara.png")
 	)
 	var fabrica: Array[Color] = [
-		Entregador.BAG_FABRICA, Entregador.CAMISA_FABRICA, Entregador.MOTO_FABRICA
+		Entregador.BAG_FABRICA, Entregador.JAQUETA_FABRICA, Entregador.MOTO_FABRICA
 	]
 	for canal in 3:
 		# A cor de fabrica de cada canal e a celula mais clara sob ele: a bag e

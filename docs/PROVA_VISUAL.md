@@ -133,7 +133,7 @@ pelo pós-processamento.
 | --- | --- | --- | --- |
 | `entregador.glb` | 800–1500 tris | glTF binário | Piloto + moto + bag, **uma pose parada**. Sem rig na prova |
 | `entregador_albedo.png` | 256×256 | RGB | Pintado, não fotografado. A "cara de foto" vem da luz e do LUT |
-| `entregador_mascara.png` | 256×256 | RGB | R = bag, G = camiseta, B = moto. É a troca de paleta dos rivais |
+| `entregador_mascara.png` | 256×256 | RGB | R = bag, G = jaqueta, B = moto. É a troca de paleta dos rivais |
 
 Se a rota A for escolhida em vez desta, o manifesto muda para dois atlas de
 4096×4096 (albedo e normal) mais a máscara, saídos do lote do Blender — e a
@@ -409,7 +409,7 @@ favor da prova:
 
 - **Não é pose parada.** A pose é lida do estado da física a cada passo: roda,
   guidão, joelho, pé no chão e tombo.
-- **A máscara troca mais que a bag.** Pinta também a moto e a camiseta, uma cor
+- **A máscara troca mais que a bag.** Pinta também a moto e a jaqueta, uma cor
   por corredor.
 
 O que é desta tarefa continua aberto: a cadência travada em 12 fps não existe,

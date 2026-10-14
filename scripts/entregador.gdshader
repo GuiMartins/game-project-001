@@ -1,7 +1,7 @@
 // Material do entregador: a textura de paleta do modelo, com troca de cor.
 //
 // Um material so, para o jogador e para os rivais. A mascara diz onde cada cor
-// nova entra (R = bag, G = camiseta, B = pintura da moto); o resto do modelo
+// nova entra (R = bag, G = jaqueta, B = pintura da moto); o resto do modelo
 // fica com a cor pintada na textura. E o plano de arte que o world.gd declara
 // desde o greybox: mesmo modelo, paleta trocada.
 shader_type spatial;
@@ -15,12 +15,12 @@ uniform sampler2D mascara : hint_default_black, filter_nearest_mipmap;
 // A cor que a textura tem pintada em cada canal. A troca preserva o tom
 // relativo: a tampa da bag e mais escura que a bag, e continua mais escura
 // quando a bag do rival e verde.
-uniform vec3 bag_fabrica : source_color = vec3(0.82, 0.12, 0.10);
-uniform vec3 camisa_fabrica : source_color = vec3(0.74, 0.11, 0.09);
+uniform vec3 bag_fabrica : source_color = vec3(0.95, 0.42, 0.15);
+uniform vec3 jaqueta_fabrica : source_color = vec3(0.20, 0.25, 0.34);
 uniform vec3 moto_fabrica : source_color = vec3(0.70, 0.11, 0.09);
 
-uniform vec3 bag : source_color = vec3(0.82, 0.12, 0.10);
-uniform vec3 camisa : source_color = vec3(0.74, 0.11, 0.09);
+uniform vec3 bag : source_color = vec3(0.95, 0.42, 0.15);
+uniform vec3 jaqueta : source_color = vec3(0.20, 0.25, 0.34);
 uniform vec3 moto : source_color = vec3(0.70, 0.11, 0.09);
 
 
@@ -39,7 +39,7 @@ void fragment() {
 	vec3 cor = texture(albedo, UV).rgb;
 	vec3 m = texture(mascara, UV).rgb;
 	cor = troca(cor, bag_fabrica, bag, m.r);
-	cor = troca(cor, camisa_fabrica, camisa, m.g);
+	cor = troca(cor, jaqueta_fabrica, jaqueta, m.g);
 	cor = troca(cor, moto_fabrica, moto, m.b);
 	ALBEDO = cor;
 	ROUGHNESS = 1.0;

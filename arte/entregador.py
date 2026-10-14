@@ -94,21 +94,16 @@ SAIDA = os.path.join(RAIZ, "assets", "entregador")
 # 32 px sobrevive ate o mip 5 (8x8, um pixel por celula) sem uma cor vazar na
 # vizinha, e e o mip que um rival a 70 m usa.
 #
-# A mascara usa o mesmo UV: R = bag, G = camiseta, B = pintura da moto. E o que
+# A mascara usa o mesmo UV: R = bag, G = jaqueta, B = pintura da moto. E o que
 # deixa os cinco rivais do `world.gd` serem o mesmo modelo com paleta trocada.
 
 TEXTURA = 256
 CELULA = 32
 
-BAG, CAMISA, MOTO = (1, 0, 0), (0, 1, 0), (0, 0, 1)
+BAG, JAQUETA, MOTO = (1, 0, 0), (0, 1, 0), (0, 0, 1)
 NADA = (0, 0, 0)
 
 # nome: (albedo em sRGB, mascara)
-#
-# A roupa e a das T-poses (`docs/referencias/tpose/`): camiseta vermelha de
-# manga curta, bermuda jeans dobrada, tenis, capacete preto e bag vermelha
-# quadrada. Celula que mudou de papel mudou de nome no mesmo lugar, para as
-# outras nao andarem.
 PALETA = {
     "pintura": ((0.70, 0.11, 0.09), MOTO),
     "pintura_escura": ((0.42, 0.06, 0.05), MOTO),
@@ -120,25 +115,18 @@ PALETA = {
     "farol": ((0.98, 0.96, 0.82), NADA),
     "lanterna": ((0.85, 0.08, 0.06), NADA),
     "placa": ((0.86, 0.86, 0.84), NADA),
-    # Um tom abaixo da bag: na folha os dois sao o mesmo vermelho, e a bag so
-    # se separa da camiseta pela sombra. Aqui ela tem de ganhar sem luz.
-    "camisa": ((0.74, 0.11, 0.09), CAMISA),
-    # As alcas da bag, que cruzam o peito. Escuras como na folha: e o que diz
-    # "mochila" de frente, quando um rival passa e olha para tras.
-    "alca": ((0.10, 0.10, 0.11), NADA),
-    # Jeans lavado, mais claro que o calcado e a moto: de tras, entre a bag e
-    # o pneu, e a unica mancha azul do entregador.
-    "calca": ((0.27, 0.38, 0.56), NADA),
+    "jaqueta": ((0.20, 0.25, 0.34), JAQUETA),
+    "jaqueta_faixa": ((0.80, 0.82, 0.80), NADA),
+    "calca": ((0.13, 0.17, 0.28), NADA),
     "bota": ((0.10, 0.09, 0.08), NADA),
-    "pele": ((0.70, 0.47, 0.33), NADA),
-    "capacete": ((0.11, 0.11, 0.13), NADA),
+    "luva": ((0.06, 0.06, 0.06), NADA),
+    "capacete": ((0.92, 0.92, 0.90), NADA),
     "viseira": ((0.05, 0.06, 0.08), NADA),
-    "bag": ((0.82, 0.12, 0.10), BAG),
-    "bag_tampa": ((0.60, 0.08, 0.07), BAG),
-    # O vivo, o friso costurado em volta da bag. Fora da mascara: escuro em
-    # toda cor de corredor, e e ele que desenha o quadrado da bag contra a
-    # camiseta da mesma cor.
-    "vivo": ((0.14, 0.06, 0.05), NADA),
+    # A bag do jogador e laranja no greybox (`player_bike.gd`). Mantida, porque
+    # e ela que separa o jogador dos rivais desde o primeiro cubo.
+    "bag": ((0.95, 0.42, 0.15), BAG),
+    "bag_tampa": ((0.70, 0.28, 0.09), BAG),
+    "bag_faixa": ((0.85, 0.85, 0.80), NADA),
     # Da CG em diante. Novas no fim, para as celulas antigas nao mudarem de
     # lugar e o UV de quem ja existia continuar apontando para a mesma cor.
     "cromado": ((0.80, 0.81, 0.83), NADA),
@@ -147,14 +135,6 @@ PALETA = {
     "painel": ((0.10, 0.16, 0.20), NADA),
     "grafismo": ((0.88, 0.88, 0.86), NADA),
     "borracha": ((0.12, 0.12, 0.12), NADA),
-    # Da roupa das T-poses: a sola clara do tenis, que e o que pisca na
-    # pedaleira de tras, e a dobra da bermuda, desbotada.
-    "sola": ((0.82, 0.80, 0.75), NADA),
-    "dobra": ((0.42, 0.52, 0.68), NADA),
-    # A viseira fume do capacete preto. A `viseira` de cima e quase preta, e
-    # e tambem o para-brisa da XRE e da PCX: no capacete preto ela sumia, e o
-    # piloto visto de frente ficava sem rosto.
-    "fume": ((0.24, 0.29, 0.36), NADA),
 }
 CELULAS = {nome: i for i, nome in enumerate(PALETA)}
 
@@ -997,32 +977,22 @@ def piloto(
             (0.43, 0.005, 0.42, 0.21),
             (0.49, -0.01, 0.30, 0.15),
         ],
-        "camisa",
+        "jaqueta",
         eixo="z",
         expoente=2.4,
         gomos=12,
         matriz=no_torso,
     )
-    # As alcas da bag: sobem de tras dela, passam por cima do ombro e descem
-    # pelo peito, com a tira de peito unindo as duas. Pontos no espaco do
-    # torso (x, frente, altura), cada um 1 cm fora da casca da camiseta; a
-    # rotacao do torso nao mexe no X, entao cada alca segue sendo uma `barra`.
-    for x in (-0.10, 0.10):
-        trilha = [(-0.105, 0.40), (-0.07, 0.50), (0.05, 0.50), (0.108, 0.43), (0.127, 0.32), (0.098, 0.20)]
-        pontos = [no_torso @ Vector((x, y, z)) for y, z in trilha]
-        for a, b in zip(pontos, pontos[1:]):
-            tronco.barra(a, b, 0.045, 0.012, "alca")
-    tronco.caixa(no_torso @ Vector((0.0, 0.129, 0.33)), (0.20, 0.012, 0.022), "alca", rot_x=rot)
+    # Faixa refletiva na jaqueta, na altura do peito: e equipamento obrigatorio
+    # de motofrete, e uma linha clara que ajuda a ler a inclinacao do torso.
+    tronco.caixa(QUADRIL + eixo * (TORSO * 0.62), (0.40, 0.235, 0.035), "jaqueta_faixa", rot_x=rot)
     obj_tronco = tronco.objeto(material, colecao, base)
 
     cabeca = Peca("Cabeca", pescoco)
-    # A gola da camiseta e o pescoco de fora: entre o ombro e o capacete, a
-    # faixa de pele e o que separa a cabeca do corpo visto de tras.
-    cabeca.tubo(pescoco - eixo * 0.03, pescoco + eixo * 0.015, 0.075, 0.07, "camisa", lados=8)
-    cabeca.tubo(pescoco + eixo * 0.015, pescoco + eixo * 0.08, 0.055, 0.052, "pele", lados=8)
+    cabeca.tubo(pescoco - eixo * 0.03, pescoco + eixo * 0.08, 0.065, 0.055, "jaqueta", lados=8)
     centro_capacete = pescoco + Vector((0.0, 0.03, 0.15))
     cabeca.esfera(
-        centro_capacete, (0.135, 0.155, 0.145), "capacete", gomos=12, aneis=8, viseira="fume"
+        centro_capacete, (0.135, 0.155, 0.145), "capacete", gomos=12, aneis=8, viseira="viseira"
     )
     cabeca.objeto(material, colecao, obj_tronco)
 
@@ -1059,13 +1029,7 @@ def piloto(
         gomos=16,
         matriz=na_bag,
     )
-    # O vivo em volta da face de tras, como na folha das T-poses; em cima
-    # quem fecha o quadrado e a tampa. Em 0,215 e nao na borda (0,25): o canto
-    # da superelipse arredonda, e la fora o friso ficaria 4 cm solto no ar.
-    fundo = centro_bag + costas * 0.148
-    for x in (-0.215, 0.215):
-        bag.caixa(fundo + Vector((x, 0.0, 0.0)) - eixo * 0.015, (0.018, 0.018, 0.33), "vivo", rot_x=rot)
-    bag.caixa(fundo - eixo * 0.165, (0.448, 0.018, 0.018), "vivo", rot_x=rot)
+    bag.caixa(centro_bag + costas * 0.15, (0.42, 0.012, 0.05), "bag_faixa", rot_x=rot)
     bag.objeto(material, colecao, obj_tronco)
 
     for lado, sufixo in ((-1.0, "E"), (1.0, "D")):
@@ -1074,32 +1038,27 @@ def piloto(
         cotovelo = ik_dois_ossos(ombro, mao, BRACO, ANTEBRACO, (lado * 1.0, -0.3, -1.0))
 
         braco = Peca("Braco_" + sufixo, ombro)
-        # Manga curta ate pouco antes da metade do braco, mais larga que ele:
-        # e a boca da manga que diz camiseta, e nao o vermelho chegar ate o
-        # cotovelo.
-        manga = ombro.lerp(cotovelo, 0.42)
-        braco.esfera(ombro, (0.075, 0.075, 0.075), "camisa", gomos=8, aneis=5)
-        braco.tubo(ombro, manga, 0.070, 0.066, "camisa", lados=8)
-        braco.tubo(ombro.lerp(cotovelo, 0.3), cotovelo, 0.047, 0.042, "pele", lados=8)
+        braco.esfera(ombro, (0.075, 0.075, 0.075), "jaqueta", gomos=8, aneis=5)
+        braco.tubo(ombro, cotovelo, 0.058, 0.048, "jaqueta", lados=8)
         obj_braco = braco.objeto(material, colecao, obj_tronco)
 
         antebraco = Peca("Antebraco_" + sufixo, cotovelo)
         # Rotula: sem ela, o cotovelo dobrado abre um vao entre os dois tubos.
-        antebraco.esfera(cotovelo, (0.043, 0.043, 0.043), "pele", gomos=8, aneis=5)
-        antebraco.tubo(cotovelo, mao, 0.042, 0.032, "pele", lados=8)
+        antebraco.esfera(cotovelo, (0.05, 0.05, 0.05), "jaqueta", gomos=8, aneis=5)
+        antebraco.tubo(cotovelo, mao, 0.047, 0.036, "jaqueta", lados=8)
         obj_antebraco = antebraco.objeto(material, colecao, obj_braco)
 
         # A mao e peca a parte, com o pivo na manopla: e o alvo do IK quando o
         # guidao vira, e a ponta que fecha a cadeia Braco -> Antebraco -> Mao.
-        palma = Peca("Mao_" + sufixo, mao)
-        palma.caixa(mao + Vector((0.0, 0.01, 0.005)), (0.072, 0.085, 0.066), "pele")
-        palma.caixa(mao + Vector((-lado * 0.032, 0.03, 0.018)), (0.026, 0.046, 0.026), "pele")
-        obj_mao = palma.objeto(material, colecao, obj_antebraco)
+        luva = Peca("Mao_" + sufixo, mao)
+        luva.caixa(mao + Vector((0.0, 0.01, 0.005)), (0.08, 0.09, 0.075), "luva")
+        luva.caixa(mao + Vector((-lado * 0.035, 0.03, 0.02)), (0.03, 0.05, 0.03), "luva")
+        obj_mao = luva.objeto(material, colecao, obj_antebraco)
         # Indicador e medio, por cima da manete: no transito se pilota com dois
         # dedos nela, pronto para frear. O ator gruda os dedos na manete, e e
         # ele que tira os da direita quando o pulso torce o acelerador.
         dedos = Peca("Dedos_" + sufixo, mao + Vector((0.0, MANETE - 0.02, 0.0)))
-        dedos.caixa(mao + Vector((lado * 0.012, MANETE, 0.012)), (0.046, 0.03, 0.024), "pele")
+        dedos.caixa(mao + Vector((lado * 0.012, MANETE, 0.012)), (0.05, 0.03, 0.026), "luva")
         dedos.objeto(material, colecao, obj_mao)
 
         quadril = QUADRIL + Vector((lado * 0.11, 0.0, -0.03))
@@ -1108,29 +1067,21 @@ def piloto(
         # com os joelhos. Aberto, de tras le como sapo em cima de scooter.
         joelho = ik_dois_ossos(quadril, tornozelo, COXA, CANELA, (lado * 0.35, 1.0, 0.3))
 
-        # Bermuda jeans larga ate abaixo do joelho, com a barra dobrada: a
-        # canela de fora e o tenis sao o calor carioca do video, e e a pele
-        # entre a dobra e o tenis que mostra a perna mexendo no pe no chao.
         coxa = Peca("Coxa_" + sufixo, quadril)
-        coxa.tubo(quadril, joelho, 0.088, 0.072, "calca", lados=8)
+        coxa.tubo(quadril, joelho, 0.085, 0.065, "calca", lados=8)
         obj_coxa = coxa.objeto(material, colecao, base)
 
         canela = Peca("Canela_" + sufixo, joelho)
-        canela.esfera(joelho, (0.07, 0.07, 0.07), "calca", gomos=8, aneis=5)
-        canela.tubo(joelho, joelho.lerp(tornozelo, 0.24), 0.068, 0.066, "calca", lados=8)
-        canela.tubo(joelho.lerp(tornozelo, 0.22), joelho.lerp(tornozelo, 0.34), 0.073, 0.073, "dobra", lados=8)
-        canela.tubo(joelho.lerp(tornozelo, 0.3), tornozelo, 0.046, 0.036, "pele", lados=8)
+        canela.esfera(joelho, (0.066, 0.066, 0.066), "calca", gomos=8, aneis=5)
+        canela.tubo(joelho, tornozelo, 0.058, 0.045, "calca", lados=8)
         obj_canela = canela.objeto(material, colecao, obj_coxa)
 
         # O pe e peca a parte, com o pivo no tornozelo: no chao ele fica
-        # paralelo ao asfalto enquanto a canela inclina. Tenis de cano baixo,
-        # com a sola clara passando da pedaleira para a frente. A sola embaixo
-        # fica no mesmo 7,5 cm do tornozelo da bota de antes, que e a altura
-        # que o `PE_NO_CHAO` do ator espera.
+        # paralelo ao asfalto enquanto a canela inclina. Bota de cano: o cano
+        # cobre o tornozelo, o solado passa da pedaleira para a frente.
         pe = Peca("Pe_" + sufixo, tornozelo)
-        pe.tubo(tornozelo + Vector((0.0, 0.0, 0.025)), tornozelo - Vector((0.0, 0.0, 0.03)), 0.045, 0.05, "bota", lados=8)
-        pe.caixa(tornozelo + Vector((0.0, 0.05, -0.025)), (0.10, 0.23, 0.05), "bota", topo=(0.085, 0.16))
-        pe.caixa(tornozelo + Vector((0.0, 0.055, -0.0625)), (0.106, 0.25, 0.025), "sola")
+        pe.tubo(tornozelo + Vector((0.0, 0.0, 0.09)), tornozelo - Vector((0.0, 0.0, 0.03)), 0.05, 0.052, "bota", lados=8)
+        pe.caixa(tornozelo + Vector((0.0, 0.055, -0.035)), (0.10, 0.24, 0.08), "bota", topo=(0.09, 0.18))
         pe.objeto(material, colecao, obj_canela)
 
 

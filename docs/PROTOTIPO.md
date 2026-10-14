@@ -429,11 +429,10 @@ massa suspensa por conta; caído, o voo é dele.
 
 **O `Visual` mora no chão, e uma cor por corredor.** A moto inclina em volta
 do pneu, não do centro da cápsula (nos 38° de fábrica o pneu escorregaria 54 cm
-para fora da curva). Bag e moto vão na cor do corredor e a camiseta um tom
-abaixo dela, trocadas por shader com a máscara do modelo (R = bag, G =
-camiseta, B = pintura): de longe, o que separa um entregador do outro é a
-mancha de cor. O jogador é vermelho, como nas T-poses; foi laranja, como a
-bag do primeiro cubo, até a roupa da V21.
+para fora da curva). Bag e moto vão na cor do corredor e a jaqueta num tom
+escuro dela, trocadas por shader com a máscara do modelo (R = bag, G =
+jaqueta, B = pintura): de longe, o que separa um entregador do outro é a
+mancha de cor. O jogador é laranja, como a bag do primeiro cubo.
 
 ### O que está medido, e o que não está
 
@@ -769,11 +768,5 @@ para trás muda o trânsito que o pelotão encontra.
 
 ## Nota de marca
 
-O nome do protótipo é **RushFood**, paródia óbvia. Nada de nome ou logo de
-app real.
-
-A cor era a terceira proibição, e caiu na V21 (14/10/2026), por decisão: a
-roupa vermelha das T-poses (`docs/referencias/tpose/`) e das folhas do
-sprite ficou, camiseta e bag lisas, sem nome nem logo. Vermelho com vermelho
-lembra um app real, e isso foi pesado e aceito; o que continua fora é a
-marca escrita em qualquer lugar.
+O nome do protótipo é **RushFood**, paródia óbvia. Nada de nome, logo ou cor
+exata de app real.

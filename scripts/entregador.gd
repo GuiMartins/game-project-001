@@ -41,14 +41,14 @@ const MASCARA: Texture2D = preload("res://assets/entregador/entregador_mascara.p
 ## A cor pintada na textura em cada canal da mascara: a celula mais clara sob
 ## ele em `PALETA`, no `arte/entregador.py`. Mudou la, muda aqui - o
 ## `test_entregador.gd` le a textura e reprova se as duas divergirem.
-const BAG_FABRICA := Color(0.82, 0.12, 0.10)
-const CAMISA_FABRICA := Color(0.74, 0.11, 0.09)
+const BAG_FABRICA := Color(0.95, 0.42, 0.15)
+const JAQUETA_FABRICA := Color(0.20, 0.25, 0.34)
 const MOTO_FABRICA := Color(0.70, 0.11, 0.09)
 
-## Quanto a camiseta escurece em relacao a cor do corredor. Pouco: nas T-poses
-## e no sprite camiseta e bag sao a mesma cor, e um tom abaixo basta para a bag
-## se separar dela, com o vivo escuro desenhando a borda.
-const CAMISA_ESCURECE: float = 0.1
+## Quanto a jaqueta escurece em relacao a cor do corredor. Na cor cheia ela
+## vira macacao de mascote; escura, le como roupa e deixa a bag e a moto
+## carregarem a cor, que sao os dois blocos que a camera de tras enxerga.
+const JAQUETA_ESCURECE: float = 0.6
 
 ## Abaixo disto, em m/s, a moto conta como parada e o pe esquerdo desce. 1 m/s
 ## e passo de gente: acima disso quem pilota ja recolheu o pe.
@@ -260,7 +260,7 @@ var sprite: bool = false:
 var _modelo: Node3D
 var _material: ShaderMaterial
 var _sprite := AtorSprite.new()
-var _cores: Array[Color] = [BAG_FABRICA, CAMISA_FABRICA, MOTO_FABRICA]
+var _cores: Array[Color] = [BAG_FABRICA, JAQUETA_FABRICA, MOTO_FABRICA]
 ## Transformacao de repouso de cada no do modelo. A posicao de cada filho e o
 ## osso do pai, e e daqui que o IK tira o comprimento de braco e perna.
 var _repouso: Dictionary[Node3D, Transform3D] = {}
@@ -359,7 +359,7 @@ func _ready() -> void:
 	_material.set_shader_parameter("albedo", ALBEDO)
 	_material.set_shader_parameter("mascara", MASCARA)
 	_material.set_shader_parameter("bag_fabrica", BAG_FABRICA)
-	_material.set_shader_parameter("camisa_fabrica", CAMISA_FABRICA)
+	_material.set_shader_parameter("jaqueta_fabrica", JAQUETA_FABRICA)
 	_material.set_shader_parameter("moto_fabrica", MOTO_FABRICA)
 	_aplica_cores()
 	add_child(_sprite)
@@ -460,13 +460,13 @@ func _monta() -> void:
 	_mostra_sprite()
 
 
-## Veste o corredor de uma cor: bag e moto nela, camiseta um tom abaixo dela.
+## Veste o corredor de uma cor: bag e moto nela, jaqueta num tom escuro dela.
 ##
 ## Uma cor por corredor, e nao uma combinacao livre de tres: de longe, o que
 ## separa um entregador do outro e a mancha de cor, e "passei o amarelo" so
 ## funciona se o amarelo for amarelo da bag ao paralama.
 func pintar(cor: Color) -> void:
-	_cores = [cor, cor.darkened(CAMISA_ESCURECE), cor]
+	_cores = [cor, cor.darkened(JAQUETA_ESCURECE), cor]
 	_aplica_cores()
 
 
@@ -951,7 +951,7 @@ func _aplica_cores() -> void:
 	if _material == null:
 		return
 	_material.set_shader_parameter("bag", _cores[0])
-	_material.set_shader_parameter("camisa", _cores[1])
+	_material.set_shader_parameter("jaqueta", _cores[1])
 	_material.set_shader_parameter("moto", _cores[2])
 
 
