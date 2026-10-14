@@ -228,6 +228,21 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## Velocidade com que o ceu gira, em graus por segundo.
 @export_range(0.0, 3.0, 0.05) var ceu_vento: float = 0.15
 
+@export_group("Hora")
+
+## A corrida anoitece: larga ao meio-dia e cruza a linha de noite (`Relogio`).
+## O relogio e o progresso do jogador na rota, de 0 a 1. Nao mexe em fisica, e
+## o banco de provas ignora: medindo, a hora e fixa.
+
+## Ate onde da rota e meio-dia. Dali o sol comeca a descer.
+@export_range(0.0, 1.0, 0.01) var hora_comeca: float = 0.25
+## De onde a noite esta fechada. A ultima reta e de noite, de proposito: e
+## a reta da chegada, e chegar de farol aceso e a recompensa de ter andado.
+@export_range(0.0, 1.0, 0.01) var hora_fecha: float = 0.85
+## Trava a hora para olhar um momento so: 0 e meio-dia, 0,35 o entardecer,
+## 0,65 a hora azul, 1 a noite. Negativo segue a corrida.
+@export_range(-1.0, 1.0, 0.01) var hora_forcada: float = -1.0
+
 @export_group("Ator")
 
 ## 1 desenha cada corredor em sprite, recortado das folhas do Google Flow

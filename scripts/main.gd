@@ -92,6 +92,14 @@ func _ready() -> void:
 	world.name = "World"
 	sub_viewport.add_child(world)
 	world.setup(tuning, world_tuning)
+	# A corrida anoitece, mas medida nao: banco de provas, shots e prova
+	# fotografam o meio-dia, salvo `--hora=X` / `RUSHFOOD_HORA` pedindo outra
+	# hora (0 e meio-dia, 1 e noite). Sem isto o quadro dependeria de quanto a
+	# moto andou ate a captura, e "regrediu" e "estava mais escuro" seriam a
+	# mesma coisa.
+	var hora := _hora_pedida(args)
+	if medindo or hora >= 0.0:
+		world.relogio.fixar(maxf(hora, 0.0))
 	_moto_salva = use_saved
 	if _moto_salva:
 		world.player.usar_modelo(_le_moto())
@@ -150,6 +158,15 @@ func _ready() -> void:
 		var prova: Node = load("res://scripts/prova.gd").new()
 		add_child(prova)
 		prova.call("setup", self)
+
+
+## A hora pedida por `--hora=X` ou `RUSHFOOD_HORA`, ou -1 se ninguem pediu.
+static func _hora_pedida(args: PackedStringArray) -> float:
+	var texto := OS.get_environment("RUSHFOOD_HORA")
+	for arg in args:
+		if arg.begins_with("--hora="):
+			texto = arg.trim_prefix("--hora=")
+	return texto.to_float() if texto.is_valid_float() else -1.0
 
 
 ## O passe de quantizacao com dither (`paleta.gdshader`): o ultimo do mundo.
