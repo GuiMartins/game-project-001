@@ -333,7 +333,8 @@ Esta lista importa tanto quanto a de cima, porque são as opções que parecem
   já pôs fora de escopo.
 - **Neblina volumétrica.** Bonita, e cara, e a neblina exponencial que já
   existe resolve o problema real (esconder o fim do mundo). Fica como opção
-  para a fase de noite, se ela existir.
+  para a noite, que existe (*A corrida que anoitece*), se a de agora não
+  bastar.
 - **TAA.** `Viewport.use_taa` existe e **não pode ser ligado**: TAA é média
   temporal, e média temporal em 640×360 com upscale nearest é exatamente o
   borrão que o projeto inteiro existe para evitar.
@@ -785,12 +786,67 @@ borrão mudam completamente a aparência do sprite, e arte produzida antes deles
 é arte que vai ser refeita. É a mesma lógica que pôs o greybox antes da arte no
 `PROTOTIPO.md`.
 
+## A corrida que anoitece
+
+Entrou fora da fila do backlog, por curiosidade, e ficou: a corrida larga ao
+meio-dia e cruza a linha de noite. Não há interruptor de dia e noite. A
+passagem é o ponto, porque a cidade acendendo em volta enquanto se corre é a
+coisa que um modo noturno parado não tem.
+
+**O relógio é o progresso do jogador na rota**, e não o cronômetro
+(`Relogio`, sliders do grupo Hora no F3). Até 25% da rota é meio-dia; de 85%
+em diante é noite fechada. Quem anda chega na noite, e a noite chega junto com
+a reta final, seja a corrida de dois minutos ou de quatro. Só anda para a
+frente: bater e ficar para trás não devolve a tarde.
+
+**Quatro horas-chave** (`Hora`): meio-dia, entardecer (sol a 12°, laranja,
+sombra comprida), hora azul (sol abaixo do horizonte, horizonte ainda aceso) e
+noite (lua, azul-marinho em cima, laranja sujo de cidade embaixo). O que fica
+entre elas é mistura, aplicada a cada 1/256 de hora, abaixo de um degrau da
+paleta. As duas chaves do meio existem porque misturar o meio-dia direto com a
+noite passa por um cinza lavado.
+
+- **Um astro só.** A mesma `DirectionalLight3D` desce como sol, apaga abaixo do
+  horizonte e volta como lua do outro lado. Duas direcionais com sombra custam
+  o dobro. A lua só acende no fim do giro, senão atravessaria o céu em vinte
+  segundos.
+- **Um LUT por chave**, pela mesma receita (`arte/paleta.py`). O `Environment`
+  só aceita um, então o `Relogio` mistura os dois vizinhos na CPU (16³ cores,
+  0,4 ms).
+- **O que acende lê um parâmetro global de shader**, `noite` (o escuro de 0 a
+  1). Cada lâmpada tem o seu limiar, e a cidade acende aos poucos: poste como
+  fotocélula, farol quando o motorista lembra, janela quando alguém chega em
+  casa. O limiar sai de hash de posição ou de número já sorteado, **nunca de
+  sorteio novo**: tirar número do gerador do mundo mudaria a corrida do banco
+  de provas.
+- **Luz de verdade só onde o chão precisa dela.** A poça embaixo do poste e o
+  cone do farol (carro e moto) são `SpotLight3D` sem sombra, que somem a 140 m
+  (`LuzDaNoite`). O que só brilha é emissão: a lente do poste, o farol, a
+  lanterna (que sobe à noite e cresce no freio), a janela e a vitrine.
+- **De dia, nada disso custa ou aparece.** Luz da noite nasce invisível, e todo
+  termo de shader novo é multiplicado pelo escuro. A prova visual do meio-dia
+  sai igual à de antes, dentro do ruído dela mesma.
+
+Onde cada coisa acha a sua lâmpada:
+
+| O quê | Como |
+| --- | --- |
+| Poste | Lente na superfície 1 da malha, com `lampada.gdshader`; duas poças por poste |
+| Carro | Meio no canal B da máscara é o farol, "só de noite"; 1 continua sendo "sempre aceso" |
+| Moto | Pela cor pintada: farol e lanterna são células únicas da paleta, fora da máscara (`FarolDaMoto`) |
+| Prédio | Segundo UV do modelo: semente por face de vidro e o tipo (janela, vitrine); somada à posição do prédio, cada cópia acende diferente |
+| Sprite | É `unshaded`, então escurece inteiro com a noite |
+
+Medindo, a hora é fixa: banco de provas, shots e prova fotografam o meio-dia,
+salvo `--hora` (`dev.py prova --hora 1`, `dev.py shots --noite`, `dev.py fps
+--hora 1`).
+
 ## O que fica de fora
 
 Herdado do `PROTOTIPO.md` e confirmado aqui:
 
-- **Chuva, noite, asfalto molhado e neon.** Cada um é um sistema de
-  iluminação próprio. Depois que o de dia estiver fechado.
+- **Chuva, asfalto molhado e neon.** Cada um é um sistema de iluminação
+  próprio. A noite saiu desta lista: ver *A corrida que anoitece*.
 - **Shader de mundo curvo (SEGA curved world).** Bonito, e ortogonal a tudo
   aqui; entra quando entrar.
 - **Áudio.** Metade da percepção de impacto, e assunto de outro documento.

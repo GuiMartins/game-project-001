@@ -26,6 +26,12 @@ uniform vec3 chao : source_color = vec3(0.16, 0.16, 0.17);
 uniform float opacidade_frente = 0.45;
 uniform float opacidade_raspao = 0.92;
 uniform float reflexo = 0.55;
+// O ceu falso de noite: o mesmo degrade, quase apagado. Sem isto o vidro
+// brilharia o azul do meio-dia no escuro, porque o reflexo e emissao. Um
+// pouco de laranja em cima, que e o ceu da cidade.
+uniform vec3 noturno = vec3(0.1, 0.08, 0.09);
+
+global uniform float noite;
 
 
 void fragment() {
@@ -36,6 +42,7 @@ void fragment() {
 	ambiente = mix(ambiente, ceu, smoothstep(0.05, 0.5, refletido.y));
 	ALBEDO = tinta;
 	ROUGHNESS = 1.0;
+	ambiente = mix(ambiente, ambiente * noturno, noite);
 	EMISSION = ambiente * reflexo * (0.25 + 0.75 * fresnel);
 	ALPHA = mix(opacidade_frente, opacidade_raspao, fresnel);
 }

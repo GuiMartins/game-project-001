@@ -45,6 +45,11 @@ const CEU_DA_HORA: Dictionary = {
 	"lua": "lua",
 }
 
+## O escuro aplicado agora, para quem nasce no meio da noite (carro reciclado,
+## rival que entra no R) acender sozinho. Estatico porque e um mundo so, e ler
+## o parametro global de volta do servidor de render trava o quadro.
+static var escuro: float = 0.0
+
 ## A hora travada, de 0 a 1, ou negativa para seguir a corrida. E o que o
 ## `main.gd` poe quando esta medindo.
 var hora_fixa: float = -1.0
@@ -136,30 +141,26 @@ func aplicar(t: float) -> void:
 	_env.ambient_light_sky_contribution = h.ambiente_ceu
 	_env.fog_light_color = h.neblina_cor
 	_env.fog_density = h.neblina_densidade
+	_env.tonemap_exposure = h.exposicao
 	_env.adjustment_color_correction = _lut(t)
+	escuro = h.escuro
 	RenderingServer.global_shader_parameter_set(GLOBAL, h.escuro)
 	acender(get_tree(), h.escuro)
 
 
-## Acende e apaga as luzes do `GRUPO` para o `escuro` de agora. Estatico porque
-## quem nasce depois (rival que entra no R) chama sozinho, com o escuro do
-## parametro global.
-static func acender(arvore: SceneTree, escuro: float) -> void:
+## Acende e apaga as luzes do `GRUPO` para o `escuro` de agora.
+static func acender(arvore: SceneTree, quanto: float) -> void:
 	if arvore == null:
 		return
 	for no in arvore.get_nodes_in_group(GRUPO):
-		acender_uma(no as Light3D, escuro)
+		acender_uma(no as Light3D, quanto)
 
 
-static func acender_uma(luz: Light3D, escuro: float) -> void:
-	var k := clampf((escuro - float(luz.get_meta(&"limiar", 0.5))) / RAMPA, 0.0, 1.0)
+## Uma luz so: a de quem nasce depois, com o `escuro` estatico.
+static func acender_uma(luz: Light3D, quanto: float) -> void:
+	var k := clampf((quanto - float(luz.get_meta(&"limiar", 0.5))) / RAMPA, 0.0, 1.0)
 	luz.visible = k > 0.0
 	luz.light_energy = float(luz.get_meta(&"energia", 1.0)) * k
-
-
-## O escuro de agora, para quem nasce no meio da noite.
-static func escuro_atual() -> float:
-	return float(RenderingServer.global_shader_parameter_get(GLOBAL))
 
 
 ## O LUT da hora `t`: a chave, se `t` cai numa, ou a mistura das duas vizinhas.

@@ -175,7 +175,8 @@ Deliberadamente fora do escopo até o feel fechar:
   acha o commit que os tirou, e com ele o estado completo de cada um.
 - Áudio, progressão, upgrade de moto.
 - Shader de mundo curvo ("SEGA curved world").
-- Chuva, noite com neon no asfalto molhado.
+- Chuva e neon no asfalto molhado. A noite em si entrou: a corrida anoitece
+  (ver *A corrida que anoitece* no `DIRECAO_VISUAL.md`).
 
 ## A corrida
 

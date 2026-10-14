@@ -570,6 +570,22 @@ def cmd_test(args: argparse.Namespace) -> int:
 
 
 BASELINE_VISUAL = PROJECT / "tests" / "baseline_visual.json"
+# A noite tem baseline proprio: luminancia e fracao de ceu de noite nao tem
+# nada a ver com as do meio-dia, e um baseline so para as duas teria de
+# tolerar tanto que nao pegaria nem a pista sumindo.
+BASELINE_VISUAL_NOITE = PROJECT / "tests" / "baseline_visual_noite.json"
+
+
+def _pede_hora(hora) -> None:
+    """A corrida anoitece, mas medida nao: o jogo trava a hora no meio-dia
+    quando mede. `--hora` pede outra, de 0 (meio-dia) a 1 (noite fechada), e
+    chega ao jogo pelo RUSHFOOD_HORA (`main.gd`)."""
+    if hora is None:
+        os.environ.pop("RUSHFOOD_HORA", None)
+        return
+    if not 0.0 <= hora <= 1.0:
+        raise SystemExit(f"--hora vai de 0 (meio-dia) a 1 (noite), e veio {hora}")
+    os.environ["RUSHFOOD_HORA"] = f"{hora:g}"
 
 
 def cmd_shots(args: argparse.Namespace) -> int:
@@ -590,7 +606,10 @@ def cmd_shots(args: argparse.Namespace) -> int:
     if code != 0:
         return code
 
-    out = pathlib.Path(args.out).resolve() if args.out else DEV_DIR / "shots"
+    _pede_hora(1.0 if args.noite else None)
+    baseline = BASELINE_VISUAL_NOITE if args.noite else BASELINE_VISUAL
+    padrao = DEV_DIR / ("shots_noite" if args.noite else "shots")
+    out = pathlib.Path(args.out).resolve() if args.out else padrao
     out.mkdir(parents=True, exist_ok=True)
     for antigo in out.glob("*.png"):
         antigo.unlink()
@@ -616,11 +635,11 @@ def cmd_shots(args: argparse.Namespace) -> int:
 
     medido = json.loads(METRICS_OUT.read_text(encoding="utf-8"))
     visual = {k: v for k, v in medido.items() if k.startswith("visual_")}
-    if args.update or not BASELINE_VISUAL.is_file():
-        _write_visual_baseline(visual)
+    if args.update or not baseline.is_file():
+        _write_visual_baseline(visual, baseline)
         return 0
 
-    dados = json.loads(BASELINE_VISUAL.read_text(encoding="utf-8"))
+    dados = json.loads(baseline.read_text(encoding="utf-8"))
     estouros, linhas = _compare(visual, dados)
     print("\n--- baseline visual ---")
     for linha in linhas:
@@ -634,14 +653,15 @@ def cmd_shots(args: argparse.Namespace) -> int:
     return 0
 
 
-def _write_visual_baseline(visual: dict) -> None:
+def _write_visual_baseline(visual: dict, baseline: pathlib.Path) -> None:
     dados = {
         "_leia": ("O que a tela tem dentro, em proporcoes grosseiras. Nao e "
                   "comparacao pixel a pixel: driver e GPU mudam o ultimo bit de "
                   "quase todo pixel, e o teste falharia por motivo nenhum. Isto "
                   "pega a tela ficar ERRADA POR INTEIRO - a pista sumir, o mundo "
                   "apagar - que e o que nenhuma medida de fisica pega."),
-        "_como_atualizar": "python tools/dev.py shots --update, depois de olhar os PNGs.",
+        "_como_atualizar": ("python tools/dev.py shots%s --update, depois de olhar os PNGs."
+                            % (" --noite" if baseline == BASELINE_VISUAL_NOITE else "")),
         # Tolerancia larga: a corrida e deterministica, mas o instante exato do
         # frame capturado depende de quando o render fecha, e a camera esta em
         # movimento. Estreitar isso troca regressao por alarme falso.
@@ -662,9 +682,9 @@ def _write_visual_baseline(visual: dict) -> None:
         "tolerancias_pct": {"visual_frames": 0.0},
         "valores": {k: round(float(v), 6) for k, v in sorted(visual.items())},
     }
-    write_text_lf(BASELINE_VISUAL,
+    write_text_lf(baseline,
                   json.dumps(dados, indent="\t", ensure_ascii=False) + "\n")
-    print(f"+ baseline visual gravado em {BASELINE_VISUAL.relative_to(PROJECT)}:")
+    print(f"+ baseline visual gravado em {baseline.relative_to(PROJECT)}:")
     for chave, valor in dados["valores"].items():
         print(f"    {chave}: {valor:g}")
 
@@ -684,10 +704,14 @@ def cmd_prova(args: argparse.Namespace) -> int:
     code = _import_antes(binary)
     if code != 0:
         return code
-    PROVA_DIR.mkdir(parents=True, exist_ok=True)
-    for antigo in PROVA_DIR.glob("*.png"):
+    # Outra hora vai para outra pasta, para a do meio-dia continuar sendo a
+    # de comparar antes e depois.
+    _pede_hora(args.hora)
+    pasta = PROVA_DIR if args.hora is None else PROVA_DIR / f"hora_{args.hora:g}"
+    pasta.mkdir(parents=True, exist_ok=True)
+    for antigo in pasta.glob("*.png"):
         antigo.unlink()
-    os.environ["RUSHFOOD_PROVA_DIR"] = str(PROVA_DIR)
+    os.environ["RUSHFOOD_PROVA_DIR"] = str(pasta)
     # O padrao e a perseguicao, e e contra ela que se compara visual. A garupa
     # e para mexer na propria garupa: sem quadro congelado, cada ajuste dela
     # vira "parece melhor" contra a lembranca de ontem.
@@ -707,16 +731,16 @@ def cmd_prova(args: argparse.Namespace) -> int:
         # Os quadros andando saem a 90 km/h; o borrao (V08) se julga a 180.
         os.environ["RUSHFOOD_PROVA_VELOCIDADE"] = str(args.kmh / 3.6)
     code = _godot(binary, "--", "--prova")
-    pngs = sorted(PROVA_DIR.glob("*.png"))
+    pngs = sorted(pasta.glob("*.png"))
     if code != 0:
         return code
     if not pngs:
         return _fail("nenhum quadro foi salvo - ha display nesta sessao?")
-    print(f"\n{len(pngs)} imagem(ns) em {PROVA_DIR}")
+    print(f"\n{len(pngs)} imagem(ns) em {pasta}")
     return 0
 
 
-def cmd_fps(_: argparse.Namespace) -> int:
+def cmd_fps(args: argparse.Namespace) -> int:
     """Tempo de quadro da corrida solta, com tela e sem vsync.
 
     Imprime mediana, p95 e o pior quadro. Nao compara com baseline: o numero
@@ -731,6 +755,8 @@ def cmd_fps(_: argparse.Namespace) -> int:
     if METRICS_OUT.exists():
         METRICS_OUT.unlink()
     os.environ["RUSHFOOD_SELFTEST_METRICS"] = str(METRICS_OUT)
+    # A noite tem uma luz por poste e por farol: e a hora de medir com `--hora 1`.
+    _pede_hora(args.hora)
     # Sem --headless: sem tela nao ha quadro para medir.
     return _godot(binary, "--", "--selftest", "--fps")
 
@@ -937,6 +963,8 @@ def main() -> int:
                              "curva, soco, bifurcacao, corrida")
     p_shots = sub.add_parser("shots", help="regressao visual: roda COM tela e mede o frame")
     p_shots.add_argument("--out", metavar="PASTA", help="onde gravar os PNGs")
+    p_shots.add_argument("--noite", action="store_true",
+                         help="a corrida de noite, contra o baseline_visual_noite.json")
     p_shots.add_argument("--update", action="store_true",
                          help="regrava o baseline visual (olhe os PNGs antes)")
     p_prova = sub.add_parser("prova",
@@ -948,9 +976,13 @@ def main() -> int:
     p_prova.add_argument("--variantes", action="store_true",
                          help="gera variantes.png: cada quadro com as variantes de trama "
                               "do passe de paleta e a referencia (V03a)")
+    p_prova.add_argument("--hora", type=float, default=None,
+                         help="hora travada, de 0 (meio-dia) a 1 (noite); vai para .dev/prova/hora_X")
     p_prova.add_argument("--kmh", type=float, default=None,
                          help="velocidade dos quadros andando (padrao 90 km/h)")
-    sub.add_parser("fps", help="tempo de quadro da corrida solta, com tela e sem vsync")
+    p_fps = sub.add_parser("fps", help="tempo de quadro da corrida solta, com tela e sem vsync")
+    p_fps.add_argument("--hora", type=float, default=None,
+                       help="hora travada, de 0 (meio-dia) a 1 (noite)")
     sub.add_parser("run", help="abre o jogo")
     sub.add_parser("export", help="exporta as tres plataformas")
     sub.add_parser("sprites", help="recorta as folhas do Google Flow no atlas do ator")

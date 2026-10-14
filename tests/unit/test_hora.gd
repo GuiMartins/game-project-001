@@ -25,6 +25,8 @@ func test_o_dia_e_o_meio_dia_de_antes() -> void:
 	assert_float(h.ambiente_ceu).is_equal(0.5)
 	assert_that(h.neblina_cor).is_equal(Color(0.62, 0.74, 0.88))
 	assert_float(h.neblina_densidade).is_equal(0.0045)
+	# A exposicao padrao do Environment: o dia nunca teve ajuste.
+	assert_float(h.exposicao).is_equal(1.0)
 	# E nada da noite: nem nuvem tingida, nem estrela, nem lua, nem escuro.
 	assert_that(h.nuvem_luz).is_equal(Color(1.0, 1.0, 1.0))
 	assert_that(h.nuvem_baixo).is_equal(Color(0.0, 0.0, 0.0))

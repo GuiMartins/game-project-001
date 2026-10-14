@@ -58,6 +58,12 @@ var ambiente_ceu: float
 var neblina_cor: Color
 var neblina_densidade: float
 
+## A exposicao do tonemap. De noite sobe: o olho se acostuma ao escuro, e a
+## camera de noite tambem. Sem isto a cena fica escura do jeito que uma foto
+## sem ajuste fica, e nao do jeito que uma rua de noite e vista - a primeira
+## versao da noite tinha ceu preto e calcada sumida.
+var exposicao: float
+
 ## Quanto ja escureceu, de 0 a 1. E o que acende a cidade: cada lampada,
 ## farol e janela tem o seu limiar (ver `Relogio.limiar`), e acende quando
 ## isto passa dele. Nao e a hora corrida: o entardecer ainda e claro, e a
@@ -92,6 +98,7 @@ static func dia() -> Hora:
 	# Na cor do horizonte, para o predio do fundo sumir no ceu e nao num cinza.
 	h.neblina_cor = Color(0.62, 0.74, 0.88)
 	h.neblina_densidade = 0.0045
+	h.exposicao = 1.0
 	h.escuro = 0.0
 	return h
 
@@ -122,6 +129,7 @@ static func entardecer() -> Hora:
 	h.ambiente_ceu = 0.5
 	h.neblina_cor = Color(0.86, 0.62, 0.46)
 	h.neblina_densidade = 0.005
+	h.exposicao = 1.0
 	h.escuro = 0.1
 	return h
 
@@ -150,6 +158,7 @@ static func crepusculo() -> Hora:
 	h.ambiente_ceu = 0.5
 	h.neblina_cor = Color(0.36, 0.26, 0.3)
 	h.neblina_densidade = 0.0055
+	h.exposicao = 1.12
 	h.escuro = 0.6
 	return h
 
@@ -158,26 +167,37 @@ static func crepusculo() -> Hora:
 ## luz da cidade batendo na poeira do ar -, poucas estrelas e a lua.
 static func noite() -> Hora:
 	var h := Hora.new()
-	h.ceu_topo = Color(0.012, 0.018, 0.05)
-	h.ceu_horizonte = Color(0.2, 0.12, 0.09)
-	h.ceu_chao_horizonte = Color(0.1, 0.08, 0.08)
-	h.ceu_chao_fundo = Color(0.03, 0.03, 0.04)
-	h.nuvem_luz = Color(0.1, 0.1, 0.14)
-	h.nuvem_baixo = Color(0.16, 0.08, 0.04)
+	# Ceu de cidade grande nao e preto: e azul-marinho, e a luz da rua batendo
+	# na poeira do ar acende o horizonte de laranja sujo. E o que separa o
+	# predio do ceu - com o ceu preto, do predio so sobravam as janelas.
+	h.ceu_topo = Color(0.06, 0.08, 0.18)
+	h.ceu_horizonte = Color(0.34, 0.24, 0.22)
+	h.ceu_chao_horizonte = Color(0.2, 0.16, 0.16)
+	h.ceu_chao_fundo = Color(0.06, 0.06, 0.08)
+	# A nuvem de noite e clara por baixo: e a cidade que ilumina.
+	h.nuvem_luz = Color(0.24, 0.23, 0.3)
+	h.nuvem_baixo = Color(0.22, 0.13, 0.07)
 	h.estrelas = 1.0
 	# A lua do outro lado do ceu. O caminho do crepusculo ate aqui gira a luz
-	# enquanto ela ainda esta apagada, e a lua so acende no fim (`lua`).
+	# enquanto ela ainda esta apagada, e a lua so acende no fim (`lua`). Forte
+	# o bastante para desenhar a quina dos predios e a sombra no asfalto, que
+	# e o que da volume a cena fora das pocas dos postes.
 	h.astro_rotacao = Vector3(-38.0, -50.0, 0.0)
-	h.astro_cor = Color(0.62, 0.72, 1.0)
-	h.astro_energia = 0.18
+	h.astro_cor = Color(0.55, 0.65, 1.0)
+	h.astro_energia = 0.25
 	h.astro_disco = 0.9
 	h.astro_halo = 0.15
 	h.lua = 1.0
-	h.ambiente_energia = 0.6
-	h.ambiente_cor = Color(0.1, 0.12, 0.2)
+	# O ambiente e a luz que a cidade inteira rebate: alta, azul-acinzentada.
+	# E ela que deixa ver fachada e calcada longe de qualquer poste.
+	h.ambiente_energia = 1.1
+	h.ambiente_cor = Color(0.24, 0.26, 0.36)
 	h.ambiente_ceu = 0.5
-	h.neblina_cor = Color(0.12, 0.09, 0.09)
-	h.neblina_densidade = 0.006
+	# Neblina na cor do horizonte aceso: o fundo da avenida some num brilho, e
+	# nao num buraco.
+	h.neblina_cor = Color(0.22, 0.17, 0.18)
+	h.neblina_densidade = 0.0055
+	h.exposicao = 1.3
 	h.escuro = 1.0
 	return h
 
@@ -235,5 +255,6 @@ func mistura(outra: Hora, f: float) -> Hora:
 	h.ambiente_ceu = lerpf(ambiente_ceu, outra.ambiente_ceu, f)
 	h.neblina_cor = neblina_cor.lerp(outra.neblina_cor, f)
 	h.neblina_densidade = lerpf(neblina_densidade, outra.neblina_densidade, f)
+	h.exposicao = lerpf(exposicao, outra.exposicao, f)
 	h.escuro = lerpf(escuro, outra.escuro, f)
 	return h
