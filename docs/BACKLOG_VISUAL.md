@@ -1422,7 +1422,7 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
   51,5 → 45,8, só por tirar a HUD velha da conta. `fps` igual ao do `master`
   (p50 8,33 ms nos dois, mesma máquina).
 
-- [x] **V25a** 👤 — Minimapa de GPS e nome da rua (14/10/2026)
+- [x] **V25a** 👤 — Minimapa de GPS e nome da rua (14/10/2026, #119)
 
   A V25 fechou antes de as paradas existirem e leu "quatro cantos, centro
   vazio" em todas. A `04_vertical` não é assim: no canto de baixo à esquerda
