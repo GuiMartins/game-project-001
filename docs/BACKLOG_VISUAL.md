@@ -1354,7 +1354,7 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
     nada (o tombo é faísca, V24). O rival é paramétrico e manda zero.
     `selftest` sem variação; teste próprio em `test_derrapagem.gd`.
 
-- [x] **V24** — Faísca, poeira de queda, impacto do soco e fogo (14/10/2026)
+- [x] **V24** — Faísca, poeira de queda, impacto do soco e fogo (14/10/2026, #118)
 
   Faísca no sinal `scraped(intensity)`, poeira no `crashed`, impacto no
   `punch_landed`, fogo com `OmniLight3D` pulsante na moto caída. Aqui se
