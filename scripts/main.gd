@@ -268,6 +268,13 @@ func _toggle_pixel() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# O mouse antes do filtro de tecla apertada: passar por cima seleciona, e
+	# movimento nao e "apertado". A conta leva o ponto da janela para o
+	# SubViewport, onde o menu mora.
+	if event is InputEventMouse:
+		var na_janela := (event as InputEventMouse).position - container.global_position
+		fluxo.apontar(event, na_janela / container.stretch_shrink)
+		return
 	if not event.is_pressed() or event.is_echo():
 		return
 	# O fluxo tem a primeira palavra: no menu, ENTER e seta nao sao do jogo.

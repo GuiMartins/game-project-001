@@ -209,3 +209,38 @@ func test_selecao_da_a_volta_nas_duas_direcoes() -> void:
 
 	assert_int(pedidos[0]).is_equal(1)
 	assert_int(fluxo.tela).is_equal(RaceFlow.Tela.CORRIDA)
+
+
+func _clique(fluxo: RaceFlow, linha: int, botao: MouseButton = MOUSE_BUTTON_LEFT) -> bool:
+	var evento := InputEventMouseButton.new()
+	evento.button_index = botao
+	evento.pressed = true
+	return fluxo.apontar(evento, fluxo.centro_da_linha(linha))
+
+
+func test_mouse_por_cima_seleciona_e_clique_muda_a_opcao() -> void:
+	var passos: Array = []
+	var fluxo := _com_opcoes(passos)
+	var passa := InputEventMouseMotion.new()
+	assert_bool(fluxo.apontar(passa, fluxo.centro_da_linha(2))).is_true()
+	# Selecionou o PIXEL: a seta de lado agora muda ele.
+	fluxo.navegar(_tecla("ui_right"))
+	_clique(fluxo, 1)
+	_clique(fluxo, 1, MOUSE_BUTTON_RIGHT)
+	_clique(fluxo, 2, MOUSE_BUTTON_WHEEL_DOWN)
+	assert_array(passos).is_equal([["PIXEL", 1], ["MOTO", 1], ["MOTO", -1], ["PIXEL", -1]])
+	assert_int(fluxo.tela).is_equal(RaceFlow.Tela.MENU)
+
+
+func test_clique_em_jogar_larga_e_fora_das_linhas_nao_faz_nada() -> void:
+	var fluxo := _com_opcoes([])
+	var pedidos: Array[int] = [0]
+	fluxo.corrida_pedida.connect(func() -> void: pedidos[0] += 1)
+	var fora := InputEventMouseButton.new()
+	fora.button_index = MOUSE_BUTTON_LEFT
+	fora.pressed = true
+	assert_bool(fluxo.apontar(fora, Vector2(1, 1))).is_false()
+	assert_bool(_clique(fluxo, 0)).is_true()
+	assert_int(pedidos[0]).is_equal(1)
+	# Na corrida o mouse e do jogo.
+	assert_bool(_clique(fluxo, 0)).is_false()

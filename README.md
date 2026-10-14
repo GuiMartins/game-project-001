@@ -44,7 +44,8 @@ O jogo abre num menu de página única: **JOGAR**, as opções em duas colunas e
 câmera, rivais, trânsito e tela cheia; em **VISUAL**, cada passe do look (pixel,
 paleta, antisserrilho, cor do dia, sombra, neblina, brilho, borrão) liga e
 desliga para comparar. Setas `←` `→` mudam a linha selecionada, e a escolha
-fica gravada. A corrida termina numa tela de resultado que oferece correr de
+fica gravada. Com o mouse: passar por cima seleciona, clique esquerdo escolhe
+ou avança o valor, clique direito volta, e a rodinha anda nos dois sentidos. A corrida termina numa tela de resultado que oferece correr de
 novo ou voltar. `ESC` no meio da corrida congela e abre o menu.
 
 ## Controles

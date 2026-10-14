@@ -97,6 +97,10 @@ var _rodape: Label
 var _nomes: Array[Label] = []
 var _valores: Array[Label] = []
 var _cabecalhos: Array[Label] = []
+## Onde cada linha da tela recebe o mouse, em pixels de layout (os de `_raiz`),
+## na ordem de `rotulos_da_tela`. A caixa do rotulo nao serve: ela e mais alta
+## que o passo, e a de uma linha cobriria a de baixo.
+var _alvos: Array[Rect2] = []
 var _selecionado: int = 0
 
 
@@ -193,6 +197,56 @@ func navegar(evento: InputEvent) -> bool:
 	return true
 
 
+## Trata um evento de mouse, com `ponto` em pixels do SubViewport. Devolve
+## `true` se consumiu.
+##
+## Passar por cima seleciona, como a seta. O clique esquerdo e o ENTER; numa
+## opcao, o direito e a rodinha andam o valor para tras e para a frente. Vem
+## pelo `Main` pelo mesmo motivo do teclado: o SubViewport nao trata input.
+func apontar(evento: InputEvent, ponto: Vector2) -> bool:
+	if tela == Tela.CORRIDA:
+		return false
+	var i := _linha_em(ponto / scale.x)
+	if i < 0:
+		return false
+	if evento is InputEventMouseMotion:
+		if i != _selecionado:
+			_selecionado = i
+			_pintar_itens()
+		return true
+	var botao := evento as InputEventMouseButton
+	if botao == null or not botao.pressed:
+		return false
+	_selecionado = i
+	var o := _opcao_selecionada()
+	match botao.button_index:
+		MOUSE_BUTTON_LEFT:
+			_escolher(i)
+		MOUSE_BUTTON_RIGHT when o != null:
+			o.muda.call(-1)
+		MOUSE_BUTTON_WHEEL_UP when o != null:
+			o.muda.call(1)
+		MOUSE_BUTTON_WHEEL_DOWN when o != null:
+			o.muda.call(-1)
+		_:
+			return false
+	_pintar_itens()
+	return true
+
+
+## O centro da linha `i` em pixels do SubViewport: onde clicar para acertar
+## ela. Publica para o unitario clicar sem refazer a conta do layout.
+func centro_da_linha(i: int) -> Vector2:
+	return _alvos[i].get_center() * scale.x
+
+
+func _linha_em(ponto: Vector2) -> int:
+	for i in mini(_alvos.size(), rotulos_da_tela().size()):
+		if _alvos[i].has_point(ponto):
+			return i
+	return -1
+
+
 func _process(_delta: float) -> void:
 	# Com o pixel desligado o SubViewport dobra de tamanho, e o menu, escrito
 	# para 640x360, encolhia para um quarto da tela. Mesma conta da `Hud`:
@@ -236,8 +290,10 @@ func _ir_para(nova: int) -> void:
 			_texto.size = Vector2(Hud.W, 124) * Hud.ESCALA
 			_texto.visible = true
 			_garante_linhas(2)
+			_alvos.clear()
 			for i in 2:
 				_linha_centralizada(i, 0.0, 134.0 + 14.0 * i, Hud.W, FONTE_MAX)
+				_alvo(i, 0.0, 134.0 + 14.0 * i, Hud.W, 14.0)
 			_rodape.text = "ENTER escolhe"
 
 	_pintar_itens()
@@ -322,6 +378,8 @@ func _correr() -> void:
 func _monta_menu() -> void:
 	var total := _opcoes.size() + 3
 	_garante_linhas(total)
+	_alvos.clear()
+	_alvos.resize(total)
 
 	# As colunas: cada uma e uma lista de indices de linha (1 = primeira
 	# opcao), com o titulo da secao so na primeira parte dela.
@@ -345,6 +403,7 @@ func _monta_menu() -> void:
 	var largura := (Hud.W - MARGEM) / maxf(colunas.size(), 1.0)
 
 	_linha_centralizada(0, 0.0, TOPO_COLUNAS - 13.0, Hud.W, FONTE_MAX)
+	_alvo(0, 0.0, TOPO_COLUNAS - 13.0, Hud.W, 12.0)
 	while _cabecalhos.size() < colunas.size():
 		_cabecalhos.append(_rotulo(FONTE_MAX, COR_SECAO))
 	for c in colunas.size():
@@ -363,9 +422,18 @@ func _monta_menu() -> void:
 			_coloca(_nomes[i], x + MARGEM * 0.5, y, largura - MARGEM)
 			_coloca(_valores[i], x + MARGEM * 0.5, y, largura - MARGEM)
 			_nomes[i].horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+			_alvo(i, x + MARGEM * 0.5, y, largura - MARGEM, passo)
 			_valores[i].horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_linha_centralizada(total - 2, 0.0, PE_COLUNAS + 2.0, Hud.W * 0.5, FONTE_MAX)
 	_linha_centralizada(total - 1, Hud.W * 0.5, PE_COLUNAS + 2.0, Hud.W * 0.5, FONTE_MAX)
+	_alvo(total - 2, 0.0, PE_COLUNAS + 2.0, Hud.W * 0.5, 12.0)
+	_alvo(total - 1, Hud.W * 0.5, PE_COLUNAS + 2.0, Hud.W * 0.5, 12.0)
+
+
+func _alvo(i: int, x: float, y: float, largura: float, altura: float) -> void:
+	if _alvos.size() <= i:
+		_alvos.resize(i + 1)
+	_alvos[i] = Rect2(Vector2(x, y) * Hud.ESCALA, Vector2(largura, altura) * Hud.ESCALA)
 
 
 func _pintar_itens() -> void:
