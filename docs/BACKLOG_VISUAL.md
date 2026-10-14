@@ -1129,7 +1129,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   guindaste ao lado de um prédio no chão, que o `Guindaste.criar` já permite
   mas nenhum quarteirão pede.
 
-- [ ] **V17b** — BRT: estação e ônibus articulado
+- [~] **V17b** — BRT: estação e ônibus articulado (14/10/2026)
 
   A `03_viaduto` tem a estação de BRT comprida, de cobertura metálica e
   vidro, no canteiro da esquerda, com o articulado amarelo e branco parado
@@ -1146,8 +1146,11 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   - **Aceite:** a estação aparece onde há canteiro; o articulado anda no
     trânsito sem atravessar a curva (dois corpos seguindo a pista); `fps`
     igual.
+  - **Cancelada pelo Guilherme** antes de começar. Era a maior peça da fila
+    de cenário (estação modular, ônibus de dois corpos no trânsito, colisor
+    que dobra na curva) para um elemento que só uma das referências mostra.
 
-- [ ] **V17c** — Placa de regulamentação
+- [~] **V17c** — Placa de regulamentação (14/10/2026)
 
   A `02_praca_maua` tem a placa redonda de borda vermelha ("proibido virar
   à direita") no poste do semáforo. A V17 fez só a de advertência (losango
@@ -1159,6 +1162,8 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
     num atlas; a `Cidade` escolhe a placa pelo que a pista tem ali
     (cruzamento, curva), e não por posição.
   - **Aceite:** placa lê a 640×360 a ~30 m; `fps` igual.
+  - **Cancelada pelo Guilherme** antes de começar: a placa redonda no poste
+    do semáforo não muda a pergunta do protótipo.
 
 - [x] **V18** — Por cima da pista: semáforo suspenso e placa verde (13/10/2026, #99)
 
@@ -1349,7 +1354,7 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
     nada (o tombo é faísca, V24). O rival é paramétrico e manda zero.
     `selftest` sem variação; teste próprio em `test_derrapagem.gd`.
 
-- [ ] **V24** — Faísca, poeira de queda, impacto do soco e fogo
+- [x] **V24** — Faísca, poeira de queda, impacto do soco e fogo (14/10/2026, #118)
 
   Faísca no sinal `scraped(intensity)`, poeira no `crashed`, impacto no
   `punch_landed`, fogo com `OmniLight3D` pulsante na moto caída. Aqui se
@@ -1360,6 +1365,31 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
     nem fogo. O alvo sai do `DIRECAO_VISUAL.md`, *Partículas*.
   - **Aceite:** cada efeito no evento certo; `fps` no **pior caso** (queda no
     meio do trânsito); nenhuma medida do `selftest` depende de partícula.
+
+  **Resultado:** `scripts/estrago.gd`, no corpo de **toda** moto (jogador e
+  rival), no chão embaixo do centro, como a `Derrapagem`. **Faísca** no
+  `scraped` (um tranco de 0,12 a 0,35 s pela intensidade) e enquanto a moto
+  deitada arrasta acima de 3 m/s: rampa de amarelo a vermelho acima do
+  limiar do glow, para trás e para cima com metade do embalo, em **risco**
+  de 2,5 × 25 cm alinhado à velocidade (o primeiro quadradinho de 12 cm lia
+  como pipoca). **Poeira** no tombo, one-shot, com a nuvem da fumaça de pneu
+  (`Derrapagem.nuvem`) tingida de terra, dez nuvens de 1,1 m para não
+  esconder o carro em que a moto bateu. **Fogo** só na queda acima de metade
+  do teto (26 m/s, ~94 km/h): chama em flipbook de 4 quadros gerado no
+  código, presa na moto (solta no mundo, a moto deslizando deixava uma
+  fileira de labaredas), e `OmniLight3D` laranja de 6 m que pulsa em degrau,
+  na cadência da chama; apaga quando a moto levanta. **Estalo** do soco: 5
+  lascas em quem levou, no `punch_landed` do jogador e no `hit_player` do
+  rival. Tudo a 12 quadros por segundo, sem interpolar. O chão: o
+  `GPUParticlesCollisionHeightField3D` rasteriza a geometria desenhada, mas
+  com `follow_camera_enabled` refaz o campo todo quadro; ficou a alternativa
+  do `DIRECAO_VISUAL.md`, uma `GPUParticlesCollisionBox3D` rasa com o topo
+  no chão embaixo da moto, que a física não vê. Pior caso medido com o
+  `dev.py fps --queda` (novo: jogador e pelotão no chão a cada 4 s, seis
+  fogos com luz no trânsito), contra a `master` com o mesmo `--queda`: p50
+  igual de noite (6,94 ms nos dois, refresh de 144 Hz) e pior quadro de 24
+  ms contra 85; de dia 6,94 contra 9,09 ms, ruído. `selftest` sem variação;
+  teste próprio em `test_estrago.gd`.
 
 ### HUD
 

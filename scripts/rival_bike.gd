@@ -91,6 +91,7 @@ var _rng := RandomNumberGenerator.new()
 var _visual: Node3D
 var _ator: Entregador
 var _derrapagem: Derrapagem
+var _estrago: Estrago
 ## Gas e freio neste passo, de 0 a 1. So a pose le.
 var _acelerador: float = 0.0
 var _freio: float = 0.0
@@ -124,6 +125,9 @@ func _ready() -> void:
 	_derrapagem = Derrapagem.new()
 	_derrapagem.position = Vector3(0.0, -SIZE.y * 0.5, Derrapagem.EIXO_TRASEIRO)
 	add_child(_derrapagem)
+	_estrago = Estrago.new()
+	_estrago.position = Vector3(0.0, -SIZE.y * 0.5, 0.0)
+	add_child(_estrago)
 
 	_hitbox = Area3D.new()
 	_hitbox.collision_layer = Layers.RIVAL_HIT
@@ -263,6 +267,8 @@ func _physics_process(delta: float) -> void:
 	# Parametrico na curva, o rival nao escorrega: a roda vai sempre para onde
 	# a moto aponta.
 	_derrapagem.atualizar(delta, 0.0)
+	var caido := state == State.DOWN
+	_estrago.atualizar(delta, caido, speed if caido else 0.0)
 
 
 func _drive(delta: float) -> void:
@@ -485,6 +491,7 @@ func _update_hitbox(delta: float) -> void:
 				_punch_side, world_tuning.rival_punch_shove, tuning.punch_stagger
 			)
 			hit_player.emit()
+			_estrago.impacto(body.global_position)
 			_punch_landed = true
 			_hitbox.monitoring = false
 			return
@@ -512,6 +519,7 @@ func _go_down() -> void:
 	_punch_timer = -1.0
 	_punch_delay = -1.0
 	_hitbox.monitoring = false
+	_estrago.cair(speed / tuning.max_speed)
 	went_down.emit(derrubado_pelo_jogador())
 	# Gasta o credito na queda que ele pagou: o rival levanta em 2,6 s, e um
 	# soco nao pode responder por duas quedas.

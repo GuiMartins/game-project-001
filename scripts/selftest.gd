@@ -27,6 +27,10 @@ const FREERUN_HITS_MAX: int = 2
 ## Segundos que a disputa espera o pelotao depois que o jogador cruza. A ~30
 ## m/s sao 150 m: quem estava colado chega, quem ficou a meia corrida nao.
 const DISPUTA_ESPERA_S: float = 5.0
+## De quantos em quantos segundos todo mundo cai no `fps --queda`: o tombo do
+## jogador dura 1,9 s e o do rival 2,6, e com 4 s ha sempre uma queda nova
+## pegando fogo antes da anterior apagar de vez.
+const QUEDA_PASSO: float = 4.0
 
 ## Nome de cada fase, na ordem em que rodam. Serve pro `--fase <nome>`:
 ## quem esta iterando em curva nao precisa esperar os 45 s da corrida
@@ -97,6 +101,12 @@ var _sobreposicoes := VigiaDeSobreposicao.new()
 ## Mede a corrida solta porque e o pior caso que o banco ja sabe montar:
 ## pelotao inteiro, transito em volta e o piloto automatico no corredor.
 var _fps: bool = OS.get_cmdline_user_args().has("--fps")
+## `--fps --queda`: a mesma corrida, com o jogador e o pelotao inteiro indo ao
+## chao a cada `QUEDA_PASSO` segundos. E o pior caso das particulas (V24):
+## poeira, faisca do arrasto e fogo com luz em seis motos ao mesmo tempo, no
+## meio do transito. A corrida solta quase nao cai, e mediria o caso feliz.
+var _fps_queda: bool = _fps and OS.get_cmdline_user_args().has("--queda")
+var _proxima_queda: float = 2.0
 var _prova_de_batida: ProvaDeBatida
 ## Quando o jogador cruzou a linha na disputa, no relogio da fase. -1 antes.
 var _disputa_cruzou_em: float = -1.0
@@ -122,7 +132,7 @@ func setup(main: Node) -> void:
 		# diz a taxa do monitor, nao o custo do jogo.
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 		Engine.max_fps = 0
-		print("fps: so a corrida solta, sem vsync")
+		print("fps: so a corrida solta, sem vsync" + (", todo mundo caindo" if _fps_queda else ""))
 	print("\n=== RUSHFOOD SELFTEST ===")
 	print("tuning: %s" % _main.get("tuning_source"))
 	print(
@@ -536,6 +546,9 @@ func _phase_freerun(_delta: float) -> void:
 	if _t < 0.02:
 		_bench_end()
 	_autopilot()
+	if _fps_queda and _t >= _proxima_queda:
+		_proxima_queda += QUEDA_PASSO
+		_derruba_todo_mundo()
 
 	if not _shots_dir.is_empty() and _t >= _shots_next:
 		_shots_next += 2.5
@@ -608,8 +621,10 @@ func _phase_freerun(_delta: float) -> void:
 				% [_world.run.rivals_downed, _world.run.rivals_fell]
 			)
 		)
+		# Caindo a cada 4 s ninguem anda 700 m: no `--queda` a distancia nao
+		# diz nada do piloto automatico.
 		_check(
-			_world.run.distance_done > 700.0,
+			_fps_queda or _world.run.distance_done > 700.0,
 			(
 				"so andou %.0fm em 45s - o piloto automatico nao consegue atravessar o transito"
 				% _world.run.distance_done
@@ -927,6 +942,16 @@ func _finish() -> void:
 			print("  ! " + line)
 		print("")
 		get_tree().quit(1)
+
+
+## Derruba o jogador e todo rival em pe, como se cada um tivesse batido onde
+## esta: e a queda de verdade, com o deslize e o sinal, e so o motivo e falso.
+func _derruba_todo_mundo() -> void:
+	if _player.state != PlayerBike.State.CRASHED:
+		_player._crash("prova de fps")
+	for rival: RivalBike in _world.rivals:
+		if rival.state != RivalBike.State.DOWN:
+			rival._go_down()
 
 
 ## Tempo de quadro da corrida solta: mediana, p95 e o pior.

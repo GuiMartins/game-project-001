@@ -95,6 +95,7 @@ var _hitboxes: Dictionary = {}
 var _visual: Node3D
 var _ator: Entregador
 var _derrapagem: Derrapagem
+var _estrago: Estrago
 ## O que o polegar pediu neste passo. So a pose le: a fisica recebe o input
 ## direto em `_ride`.
 var _acelerador: float = 0.0
@@ -139,6 +140,13 @@ func _ready() -> void:
 	_derrapagem = Derrapagem.new()
 	_derrapagem.position = Vector3(0.0, -SIZE.y * 0.5, Derrapagem.EIXO_TRASEIRO)
 	add_child(_derrapagem)
+	_estrago = Estrago.new()
+	_estrago.position = Vector3(0.0, -SIZE.y * 0.5, 0.0)
+	add_child(_estrago)
+	# Os sinais ja chegam com o que o efeito precisa: a raspada com a
+	# intensidade, o soco com quem levou.
+	scraped.connect(_estrago.faisca)
+	punch_landed.connect(func(alvo: Node3D) -> void: _estrago.impacto(alvo.global_position))
 
 	_hitboxes[-1] = _make_hitbox(-1)
 	_hitboxes[1] = _make_hitbox(1)
@@ -271,6 +279,8 @@ func _physics_process(delta: float) -> void:
 	# carenagem, e isso e faisca (V24), nao fumaca.
 	var no_asfalto := state != State.CRASHED and not airborne
 	_derrapagem.atualizar(delta, derrapada if no_asfalto else 0.0)
+	var caida := state == State.CRASHED
+	_estrago.atualizar(delta, caida, Vector2(velocity.x, velocity.z).length() if caida else 0.0)
 
 
 ## --- Nucleo do feel -------------------------------------------------------
@@ -641,6 +651,7 @@ func _crash(reason: String, normal: Vector3 = Vector3.ZERO, chegada: float = 0.0
 	# devolvido pela batida.
 	var tangente := _antes_da_batida - normal * _antes_da_batida.dot(normal)
 	velocity = tangente * DESLIZE + normal * chegada * QUIQUE * 0.5
+	_estrago.cair(Vector2(_antes_da_batida.x, _antes_da_batida.z).length() / tuning.max_speed)
 	crashed.emit(reason)
 
 
