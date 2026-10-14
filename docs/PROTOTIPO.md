@@ -285,28 +285,35 @@ release não lê o README. O protótipo é exportado para as três plataformas
 justamente para alguém sentar e responder *"está gostoso?"* — e essa pessoa
 estava esbarrando na porta antes de chegar na pergunta.
 
-Quatro telas, em [`scripts/race_flow.gd`](../scripts/race_flow.gd):
+Três telas, em [`scripts/race_flow.gd`](../scripts/race_flow.gd):
 
 | Tela | O que faz |
 | --- | --- |
-| `MENU` | JOGAR / CONFIGURACOES / SAIR |
+| `MENU` | JOGAR, as opções em colunas por seção, PAINEL DE TUNING e SAIR |
 | `CORRIDA` | o jogo; o fluxo não desenha nada |
-| `CONFIGURACOES` | pixel, câmera e painel de tuning — os três atalhos de `F1`–`F3` |
 | `RESULTADO` | o placar de `RaceRun.summary()`, com CORRER DE NOVO e MENU |
 
 Quatro decisões que não são óbvias:
 
-**As configurações mostram o que existe, e nada além.** As três linhas são os
-três atalhos de debug que já existiam e que ninguém achava sem o README. Um
-slider de volume numa tela sem áudio seria menu de mentira, e menu de mentira é
-pior que menu nenhum.
+**O menu é uma página só, e as opções são as diferenças do projeto.** Era
+JOGAR / CONFIGURACOES / SAIR, com pixel, câmera e tela cheia numa segunda tela.
+Só que o uso real do menu virou comparar: pixel ou não, piloto 3D ou sprite,
+ator liso ou a 12 fps, sombra, borrão. Escondido numa segunda tela, cada
+comparação custava três teclas a mais. Agora cada opção é uma linha (`←` `→`
+mudam), registrada pelo `Main` com `RaceFlow.opcao(secao, nome, valor, muda)`:
+quem sabe o estado é quem descreve e quem muda. O menu não tem limite de
+linhas — com mais do que cabe, fonte e passo encolhem juntos e a seção quebra
+em mais uma coluna. As opções de VISUAL são interruptores, e não sliders: o
+número de cada passe continua no F3, e desligar e religar devolve o que
+estava. Tudo ligado é o jogo como ele é, e o banco de provas, que não lê o
+`user://`, mede sempre ele.
 
 **`ESC` no meio da corrida congela, e `CONTINUAR` devolve a mesma corrida.**
 Menu de pausa que larga tudo de novo apagaria a colocação de quem pausou
 faltando 200 m — e menu que faz isso é menu que ninguém abre. Por isso a
 primeira linha troca de **nome** (JOGAR ↔ CONTINUAR) e nunca de lugar: mexer no
 número de itens moveria o índice que `_escolher` usa, e SAIR passaria a morar
-onde CONFIGURACOES morava. É um bug que continua desenhando lindamente, e que
+onde o PAINEL morava. É um bug que continua desenhando lindamente, e que
 só aparece quando alguém fecha o jogo sem querer.
 
 **O mundo congela por `process_mode` no `World`, não nó a nó.** Uma linha
