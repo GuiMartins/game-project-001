@@ -44,6 +44,7 @@ O que da para animar, e por onde:
       Moto                 tomba na queda
         Suspenso           a massa suspensa: arfa e mergulha em cima das rodas
           Moto_Corpo       quadro, motor, tanque, banco, escapamento
+          Placa            vazio no centro da chapa: o jogo escreve o texto
           Amortecedor_E/D  corpo do amortecedor; aponta para a Mola
           Direcao          esterca em volta da reta Direcao -> Garfo
             Garfo          as bainhas: deslizam ao longo do garfo
@@ -751,7 +752,10 @@ def corpo(material, colecao, pai) -> None:
     # Paralama traseiro, suporte e placa, e os piscas de tras.
     c.paralama(EIXO_TRASEIRO, RAIO_RODA + 0.075, 0.12, 95.0, 145.0, "preto")
     c.caminho([(0.0, -0.90, 0.75), (0.0, -0.98, 0.62)], 0.015, "preto")
-    c.caixa((0.0, -0.995, 0.54), (0.20, 0.012, 0.13), "placa", rot_x=-12.0)
+    c.caixa((0.0, -0.995, 0.54), (0.20, 0.012, 0.17), "placa", rot_x=-12.0)
+    # Onde o jogo escreve a placa (`scripts/placa.gd`): o centro da face de tras,
+    # a 8 mm do plastico para o texto nao brigar com ele. Toda moto tem o no.
+    vazio("Placa", (0.0, -1.003, 0.54), colecao, pai)
     for lado in (-1.0, 1.0):
         c.tubo((lado * 0.06, -0.92, 0.73), (lado * 0.17, -0.93, 0.73), 0.008, 0.008, "preto", lados=4)
         c.caixa((lado * 0.195, -0.935, 0.73), (0.05, 0.06, 0.035), "pisca")

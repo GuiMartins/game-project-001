@@ -402,6 +402,7 @@ func _monta() -> void:
 	add_child(cena)
 	_modelo = cena.get_node("Entregador") as Node3D
 	_prepara(_modelo)
+	Placa.escrever(_modelo, Placa.do_no(self))
 
 	_moto = _no("Moto")
 	_suspenso = _no("Suspenso")
