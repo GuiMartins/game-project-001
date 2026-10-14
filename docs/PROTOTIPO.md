@@ -34,11 +34,13 @@ cada um sabe seu próprio offset e nunca precisa se projetar. Só a moto do
 jogador faz a projeção, e mesmo assim com busca local em janela (`RoadTrack.project`),
 não com `get_closest_offset()`, que varre todos os pontos bakeados.
 
-**640×360 com upscale inteiro de 2×.** Via `SubViewportContainer.stretch_shrink = 2`,
-e a janela escalando o resto em modo fracionário: 1920×1080 dá 3× por pixel,
-exato. O modo `integer` foi tentado e saiu — ele arredonda sobre o viewport
-base de 1280×720, e em 1920×1080 desenhava o jogo em metade da janela. Setar `SubViewport.size` na mão **não funciona** com `stretch`
-ligado — o container sobrescreve e você renderiza em 1280×720 achando que está
+**640×360 com upscale inteiro de 3×.** Via `SubViewportContainer.stretch_shrink = 3`
+sobre o viewport base de 1920×1080, e a janela escalando o resto em modo
+fracionário: 1920×1080 dá 3× por pixel, exato. Janela de 1440p ou mais
+renderiza em 960×540 (`stretch_shrink = 2`, V30), só jogando: a medida fica
+sempre em 640×360. O modo `integer` foi tentado e saiu — ele arredonda sobre
+o viewport base, e uma janela menor que ele desenhava o jogo em metade dela. Setar `SubViewport.size` na mão **não funciona** com `stretch`
+ligado — o container sobrescreve e você renderiza no viewport base achando que está
 em 640×360. Foi 320×180 (`stretch_shrink = 4`) até a P1 da prova visual: a
 320×180 o piloto tem uns 37 px no talo, e não cabe nele o que faz um ator ler
 como foto. A conta está no `DIRECAO_VISUAL.md`. A HUD continua escrita em
