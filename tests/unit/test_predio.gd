@@ -85,8 +85,8 @@ func test_a_obra_tem_a_planta_da_torre() -> void:
 	var torre := Predio.malha(Predio.Tipo.TORRE).get_aabb()
 	for fase: int in Predio.Obra.values():
 		var obra := Predio.malha_obra(fase as Predio.Obra).get_aabb()
-		# Planta da torre mais o andaime de 1,2 m de cada lado.
-		assert_float(obra.size.x).is_between(torre.size.x, torre.size.x + 3.0)
+		# Planta da torre mais o andaime de 1,2 m de cada lado e a barriga da lona.
+		assert_float(obra.size.x).is_between(torre.size.x, torre.size.x + 4.0)
 		assert_float(obra.position.y).is_equal_approx(0.0, 0.01)
 		assert_float(obra.size.y).is_greater(Predio.OBRA_LAJE_DO_TOPO)
 		assert_float(obra.size.y).is_less(torre.size.y + 1.0)

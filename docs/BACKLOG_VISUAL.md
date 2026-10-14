@@ -1085,7 +1085,9 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   frente e nos dois lados (1,2 m para fora, montantes até acima do topo,
   piso de tábua a cada 4 m, diagonais alternadas), **lona laranja ou azul**
   semitransparente (xadrez de um pixel no `predio.gdshader`, marcada pelo UV
-  de luz) por cima em painéis de uma baia por três andares, com falhas sorteadas e
+  de luz) por cima em painéis de uma baia por três andares, cada um uma malha 6×8
+  presa nas quatro bordas que incha para fora (barriga de 15 a 40 cm) com
+  dobras verticais por cima, para não ler como adesivo plano; com falhas sorteadas e
   os dois andares de cima sem lona, e o andaime desce até a calçada, sem tapume nem marquise (a tampa de madeira
   escondia o andaime do chão). São quatro malhas (esqueleto ou
   meia-obra, laranja ou azul): a lona é geometria, e não pintura por

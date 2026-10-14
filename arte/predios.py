@@ -962,16 +962,45 @@ def andaime_e_lona(p, rng, W, D, TOPO, lona) -> None:
         for b in range(len(frente_x) - 1):
             if rng.random() < 0.18:
                 continue
-            x0, x1 = frente_x[b], frente_x[b + 1]
-            p.face(((x0, Y0 + 0.08, z), (x1, Y0 + 0.08, z), (x1, Y0 + 0.08, z1), (x0, Y0 + 0.08, z1)), (0, 1, 0), lona)
+            origem = Vector((frente_x[b], Y0 + 0.08, z))
+            painel_de_lona(p, rng, origem, Vector((frente_x[b + 1] - frente_x[b], 0, 0)), z1 - z, Vector((0, 1, 0)), lona)
         for lado in (-1.0, 1.0):
             for b in range(len(lado_y) - 1):
                 if rng.random() < 0.18:
                     continue
-                y0, y1 = lado_y[b], lado_y[b + 1]
-                x = lado * (X0 + 0.08)
-                p.face(((x, y0, z), (x, y1, z), (x, y1, z1), (x, y0, z1)), (lado, 0, 0), lona)
+                origem = Vector((lado * (X0 + 0.08), lado_y[b], z))
+                painel_de_lona(p, rng, origem, Vector((0, lado_y[b + 1] - lado_y[b], 0)), z1 - z, Vector((lado, 0, 0)), lona)
         z = z1
+
+
+LONA_GRADE = (6, 8)
+
+
+def painel_de_lona(p, rng, origem, eixo_u, altura, normal, cor) -> None:
+    """Um painel de lona amarrado nos quatro cantos, com barriga e dobra.
+
+    Uma lona lisa e plana le como adesivo colado no andaime. Esta e uma malha
+    de 6 x 8 quadros presa nas quatro bordas (deslocamento zero) que incha
+    para fora no meio, como vento enchendo o pano, com dobras verticais por
+    cima - o pano cai em pregas entre as amarras. O deslocamento e sempre para
+    fora, para nunca entrar no andaime. As faces sao duras (o predio e chapa),
+    e e a quina entre elas que da luz e sombra ao volume.
+    """
+    nu, nv = LONA_GRADE
+    barriga = rng.uniform(0.15, 0.40)
+    dobras = rng.choice((2, 3))
+    fase = rng.uniform(0.0, math.tau)
+    prega = rng.uniform(0.05, 0.10)
+
+    def ponto(i, j):
+        u, v = i / nu, j / nv
+        borda = math.sin(math.pi * u) * math.sin(math.pi * v)
+        fora = barriga * borda ** 0.8 + prega * math.sin(math.tau * dobras * u + fase) * borda
+        return origem + eixo_u * u + Vector((0, 0, altura * v)) + normal * max(fora, 0.0)
+
+    for i in range(nu):
+        for j in range(nv):
+            p.face((ponto(i, j), ponto(i + 1, j), ponto(i + 1, j + 1), ponto(i, j + 1)), normal, cor)
 
 
 def esqueleto(p, W, D, PILOTIS, ANDAR, ANDARES, prontos) -> None:
