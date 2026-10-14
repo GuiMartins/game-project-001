@@ -19,6 +19,12 @@
 // O gradiente do meio-dia e o mesmo do ProceduralSkyMaterial de antes -
 // mesmas cores, mesma curva de 0,15 -, para a luz ambiente, que vem do ceu,
 // nao mudar.
+// Atras de tudo, em volta do mundo, a serra (V14a): duas fileiras de cume
+// azulado no horizonte, a de tras mais alta e mais clara. Sao um perfil por
+// azimute - ruido de valor sobre o circulo, que fecha sem emenda -, e nao
+// malha: a 800 m de alcance da camera uma malha cortaria na neblina, e o
+// perfil no ceu vale em qualquer curva da pista. A cor sai do horizonte e do
+// topo da hora, entao a serra anoitece junto sem numero proprio.
 // Os numeros da nuvem sao sliders do F3 (`WorldTuning`, grupo Ceu), e o
 // `world.gd` repassa. As cores, as estrelas e o disco do astro sao da hora
 // (`Hora`), e o `Relogio` repassa: a corrida anoitece. Os defaults daqui sao
@@ -43,6 +49,12 @@ uniform float banco = 0.35;
 uniform float brilho = 1.1;
 uniform float faixas_de_tom = 5.0;
 uniform float vento = 0.15;
+
+// A serra: altura do cume mais alto em graus, quanto do relevo e picote fino
+// (0 e ondulado, 1 e serrilhado) e a semente do perfil, que o `World` sorteia.
+uniform float serra_altura = 9.0;
+uniform float serra_rugosidade = 0.5;
+uniform float serra_semente = 0.0;
 
 // Da hora. A nuvem multiplica pela luz e soma o laranja da cidade na barriga;
 // de dia, branco e preto, ou seja, nada.
@@ -133,6 +145,19 @@ vec3 tom_da_nuvem(float t) {
 		return mix(medio, claro, (t - 0.33) / 0.33);
 	}
 	return mix(claro, alto, (t - 0.66) / 0.34);
+}
+
+// Altura do perfil de uma fileira da serra, de 0 a 1, no azimute `az`. Ruido
+// sobre o circulo (cos, sin), e nao sobre o angulo: o angulo tem emenda em pi.
+float perfil_da_serra(float az, float semente) {
+	vec2 c = vec2(cos(az), sin(az));
+	float grande = ruido(c * 2.2 + semente);
+	float medio = ruido(c * 5.5 + semente * 1.7 + 11.0);
+	// Em crista (1 - |2n - 1|): o picote vira pico, e nao ondulacao - a serra
+	// das referencias e de pontas.
+	float fino = 1.0 - abs(ruido(c * 15.0 + semente * 2.3 + 23.0) * 2.0 - 1.0);
+	float h = grande * 0.62 + medio * (0.3 - 0.1 * serra_rugosidade) + fino * 0.2 * serra_rugosidade;
+	return clamp(h * 1.2 - 0.15, 0.0, 1.0);
 }
 
 void sky() {
@@ -231,13 +256,41 @@ void sky() {
 			cor = mix(cor, nuvem, alfa);
 		}
 	}
+	// A serra, por cima da nuvem e por baixo do sol. Cada fileira e uma rampa de
+	// um pixel (fwidth), como a borda da nuvem: aresta seca mais fina que o
+	// pixel de 640x360 acende e apaga andando.
+	float serra_alfa = 0.0;
+	if (serra_altura > 0.0) {
+		float az = atan(dir.x, dir.z);
+		float elev_graus = degrees(asin(clamp(dir.y, -1.0, 1.0)));
+		// A de tras: alta e clara, quase a cor do ar.
+		float h_tras = serra_altura * (0.45 + 0.55 * perfil_da_serra(az, serra_semente));
+		// A da frente: mais baixa, mais escura, com outro perfil.
+		float h_frente = serra_altura * 0.55 * perfil_da_serra(az + 1.7, serra_semente + 41.0);
+		float px_tras = max(fwidth(elev_graus - h_tras), 1e-4);
+		float px_frente = max(fwidth(elev_graus - h_frente), 1e-4);
+		float a_tras = (1.0 - smoothstep(0.0, px_tras, elev_graus - h_tras)) * step(0.0, elev_graus);
+		float a_frente = (1.0 - smoothstep(0.0, px_frente, elev_graus - h_frente)) * step(0.0, elev_graus);
+		// O pe da serra some na neblina do horizonte: quanto mais perto do
+		// chao, mais ela e da cor do ar.
+		// Bem mais escura que o ceu que ela tapa: a 6 graus o gradiente ja esta
+		// a 38% do caminho para o topo, e uma serra do mesmo azul que isso
+		// some. Escurece em vez de azular, entao vale em qualquer hora.
+		vec3 cor_tras = mix(horizonte, topo, 0.45) * vec3(0.5, 0.58, 0.58);
+		cor_tras = mix(horizonte, cor_tras, 0.6 + 0.4 * smoothstep(0.0, h_tras * 0.5 + 0.01, elev_graus));
+		vec3 cor_frente = mix(horizonte, topo, 0.6) * vec3(0.34, 0.42, 0.42);
+		cor_frente = mix(cor_tras, cor_frente, 0.5 + 0.5 * smoothstep(0.0, h_frente * 0.5 + 0.01, elev_graus));
+		cor = mix(cor, cor_tras, a_tras);
+		cor = mix(cor, cor_frente, a_frente);
+		serra_alfa = max(a_tras, a_frente);
+	}
 	// O sol: disco e um halo curto, o que o procedural tinha. De noite a
 	// mesma luz e a lua, e o disco dela brilha por conta propria.
 	if (LIGHT0_ENABLED) {
 		float ang = degrees(acos(clamp(dot(dir, LIGHT0_DIRECTION), -1.0, 1.0)));
 		float disco = 1.0 - smoothstep(0.0, astro_disco, ang);
 		float halo = pow(1.0 - smoothstep(0.0, 25.0, ang), 4.0) * astro_halo;
-		cor += LIGHT0_COLOR * (LIGHT0_ENERGY * (disco + halo) + lua * disco * 1.5);
+		cor += LIGHT0_COLOR * (LIGHT0_ENERGY * (disco + halo) + lua * disco * 1.5) * (1.0 - serra_alfa);
 	}
 	COLOR = cor;
 }

@@ -34,6 +34,8 @@ const CEU_SLIDERS: Dictionary = {
 	"ceu_brilho": "brilho",
 	"ceu_faixas_de_tom": "faixas_de_tom",
 	"ceu_vento": "vento",
+	"ceu_serra_altura": "serra_altura",
+	"ceu_serra_rugosidade": "serra_rugosidade",
 }
 
 ## A cor de cada rival: bag e moto nela, camiseta um tom abaixo dela (ver
@@ -129,6 +131,9 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	tuning = a_tuning
 	world_tuning = a_world_tuning
 	_rng.seed = world_seed
+	# O perfil da serra do horizonte (V14a) sai da semente do mundo: outra
+	# semente, outra serra, e a mesma sempre que o mundo e o mesmo.
+	_ceu.set_shader_parameter("serra_semente", float(hash(world_seed + 8) % 997))
 
 	_build_environment()
 

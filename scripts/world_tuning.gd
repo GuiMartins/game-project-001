@@ -227,6 +227,10 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 @export_range(0.0, 6.0, 1.0) var ceu_faixas_de_tom: float = 5.0
 ## Velocidade com que o ceu gira, em graus por segundo.
 @export_range(0.0, 3.0, 0.05) var ceu_vento: float = 0.15
+## O cume mais alto da serra do horizonte, em graus. Zero tira a serra.
+@export_range(0.0, 16.0, 0.1) var ceu_serra_altura: float = 9.0
+## Quanto do relevo e picote: 0 e ondulado, 1 e serrilhado.
+@export_range(0.0, 1.0, 0.01) var ceu_serra_rugosidade: float = 0.5
 
 @export_group("Hora")
 
