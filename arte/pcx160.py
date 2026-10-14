@@ -193,7 +193,10 @@ def corpo(material, colecao, pai) -> None:
     # piscas na ponta.
     c.paralama(EIXO_TRASEIRO, RAIO_TRAS + 0.09, 0.14, 100.0, 150.0, "preto")
     c.caminho([(0.0, -0.92, 0.70), (0.0, -0.99, 0.58)], 0.015, "preto")
-    c.caixa((0.0, -1.0, 0.52), (0.20, 0.012, 0.13), "placa", rot_x=-12.0)
+    c.caixa((0.0, -1.0, 0.52), (0.20, 0.012, 0.17), "placa", rot_x=-12.0)
+    # Onde o jogo escreve a placa (`scripts/placa.gd`): o centro da face de tras,
+    # a 8 mm do plastico para o texto nao brigar com ele. Toda moto tem o no.
+    vazio("Placa", (0.0, -1.008, 0.52), colecao, pai)
     for lado in (-1.0, 1.0):
         c.caixa((lado * 0.10, -0.955, 0.735), (0.05, 0.05, 0.03), "pisca")
 
