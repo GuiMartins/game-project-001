@@ -417,8 +417,8 @@ e o aceite — julgar rodando — espera o resto da prova (luz, paleta) para val
 O como está em `docs/PROTOTIPO.md`, seção *O entregador*.
 
 **Estado (14/10/2026):** a cadência travada existe desde a V22 do
-`BACKLOG_VISUAL.md` (slider `ator_cadencia` no F3), com o default liso; o
-porquê está lá.
+`BACKLOG_VISUAL.md` (slider `ator_cadencia` no F3), travada em 12 por
+default, decidido jogando.
 
 ### P6 — Partículas
 

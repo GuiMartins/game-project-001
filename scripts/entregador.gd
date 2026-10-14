@@ -365,6 +365,7 @@ func _ready() -> void:
 	_material.set_shader_parameter("moto_fabrica", MOTO_FABRICA)
 	_aplica_cores()
 	add_child(_sprite)
+	add_child(cadencia)
 	_monta()
 
 

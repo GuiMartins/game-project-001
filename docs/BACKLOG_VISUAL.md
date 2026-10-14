@@ -1058,18 +1058,20 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
     calculada a 60 Hz, aplicada a 12), com slider. Julgar **rodando**, com
     rivais e trânsito em volta.
   - **Aceite:** a decisão escrita aqui, com o default que ficou.
-  - **Feito:** `Cadencia` (`Entregador.cadencia.hz`), slider `ator_cadencia` no grupo
-    Ator do F3 (0 a 30; 0 é liso). Mola, roda, voo e soco seguem integrando
-    a 60 Hz; só a pose aplicada espera a vez, e quando sai é a do estado de
-    agora (o teste confere roda contra roda com o ator liso). Vale para
-    jogador e rivais, no 3D e no sprite.
-  - **Decisão: default liso (0).** Os dois vídeos de referência são lisos a
-    24 fps, e a cadência travada só alcança o miolo do ator: a moto anda,
-    inclina e chega a 60 Hz, porque quem inclina é o `Visual` do corpo.
-    Travado, o ator fica com roda, guidão e joelho pulando dentro de uma
-    moto que desliza, o que tende a ler como quadro perdido. Para revisitar
-    jogando, é o slider em 12; se convencer, troca-se o default e esta
-    linha. Baseline nenhum andou: com 0 o código é o de antes.
+  - **Feito:** `Cadencia`, filha do `Entregador`, e o slider
+    `ator_cadencia` no grupo Ator do F3 (0 a 30; 0 é liso). Mola, roda, voo
+    e soco seguem integrando a 60 Hz; só a pose aplicada espera a vez, e
+    quando sai é a do estado de agora (o teste confere roda contra roda com
+    o ator liso). A trava segura também a rotação do ator no mundo, então a
+    inclinação do `Visual` e a virada do corpo pulam junto; só a posição na
+    pista fica lisa, porque a câmera segue o corpo a 60 Hz e a moto parada
+    enquanto a câmera anda tremeria a tela inteira. Vale para jogador e
+    rivais, no 3D e no sprite.
+  - **Decisão 👤, jogando: 12 é o default.** O primeiro corte travava só o
+    miolo (roda, guidão, joelho), com a inclinação lisa por fora, e o
+    Guilherme pediu a inclinação junto. Os vídeos de referência são lisos a
+    24 fps; na tela de pixel, o travado leu melhor. O `selftest` não anda
+    (física intocada).
 
 ### Partículas
 
