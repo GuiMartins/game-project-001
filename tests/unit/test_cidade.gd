@@ -29,6 +29,9 @@ func _e_predio(no: Node) -> bool:
 	for tipo: int in Predio.Tipo.values():
 		if (no as MeshInstance3D).mesh == Predio.malha(tipo):
 			return true
+	for fase: int in Predio.Obra.values():
+		if (no as MeshInstance3D).mesh == Predio.malha_obra(fase as Predio.Obra):
+			return true
 	return false
 
 
@@ -187,3 +190,56 @@ func test_pedestres_na_calcada_e_ninguem_na_pista() -> void:
 				perto = minf(perto, _track.sample_position(float(k)).distance_to(p))
 			assert_float(perto).is_greater(meio)
 	assert_int(gente).is_greater(100)
+
+
+func _obras() -> Array[MeshInstance3D]:
+	var obras: Array[MeshInstance3D] = []
+	for no in _props.get_children():
+		if not (no is MeshInstance3D):
+			continue
+		for fase: int in Predio.Obra.values():
+			if (no as MeshInstance3D).mesh == Predio.malha_obra(fase as Predio.Obra):
+				obras.append(no as MeshInstance3D)
+	return obras
+
+
+func test_a_corrida_tem_obra_com_guindaste_em_cima() -> void:
+	# O aceite da V17a: obra e guindaste aparecem na corrida. Uma torre em tres
+	# vira obra, e a pista de teste tem dezenas de torres.
+	var obras := _obras()
+	assert_int(obras.size()).is_greater(0)
+	for obra in obras:
+		assert_bool(_colisor_do_mundo(obra)).is_true()
+		var guindaste := obra.get_node_or_null("Guindaste") as Node3D
+		assert_object(guindaste).is_not_null()
+		# O pe do guindaste pisa na laje do topo, e nao no chao nem no ferro.
+		assert_float(guindaste.position.y).is_equal(Predio.OBRA_LAJE_DO_TOPO)
+
+
+func test_obra_so_no_lugar_de_torre() -> void:
+	for tipo: int in Predio.Tipo.values():
+		var fase := Cidade.fase_de_obra(20260831, tipo as Predio.Tipo, 120.0, 1.0)
+		if tipo != Predio.Tipo.TORRE:
+			assert_int(fase).is_equal(Cidade.SEM_OBRA)
+
+
+func test_a_obra_e_estavel_por_predio() -> void:
+	# Hash da semente e da posicao, e nao sorteio: perguntar duas vezes, ou
+	# montar a cidade de novo, tem de dar a mesma obra no mesmo predio.
+	var conta := 0
+	for o in range(0, 3000, 17):
+		var a := Cidade.fase_de_obra(20260831, Predio.Tipo.TORRE, float(o), -1.0)
+		assert_int(Cidade.fase_de_obra(20260831, Predio.Tipo.TORRE, float(o), -1.0)).is_equal(a)
+		if a != Cidade.SEM_OBRA:
+			conta += 1
+	# Uma em seis, com folga para a conta de hash nao cair certinha.
+	var esperado := 3000.0 / 17.0 / Cidade.OBRA_UMA_EM
+	assert_float(float(conta)).is_between(esperado * 0.5, esperado * 1.6)
+
+
+func test_cada_expressa_tem_guindaste_atras_do_muro() -> void:
+	var contagem := 0
+	for no in _props.get_children():
+		if no.name.begins_with("Guindaste"):
+			contagem += 1
+	assert_int(contagem).is_greater_equal(_cidade.expressas.size())

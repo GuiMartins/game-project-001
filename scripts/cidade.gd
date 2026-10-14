@@ -30,6 +30,9 @@ const RUA_COMPRIMENTO: float = 36.0
 const LADO_ESQUERDA: float = -1.0
 const LADO_DIREITA: float = 1.0
 const LADO_AMBOS: float = 0.0
+## O "nao e obra" de `fase_de_obra`: `Predio.Obra` e um enum, e a falta dele
+## precisa caber num int.
+const SEM_OBRA: int = -1
 ## Da beira da calcada andavel ate a fachada, em metros: a faixa de servico e o
 ## resto da calcada. E o espaco onde vai morar poste, arvore e gente.
 const RECUO_FACHADA: float = 6.0
@@ -99,6 +102,23 @@ const EXPRESSA_PLACA: float = 50.0
 ## Cruzamento a menos disso da expressa sai: a zebra e a retencao da avenida
 ## ficam ate 12 m antes da rua.
 const EXPRESSA_FOLGA: float = 15.0
+
+## Uma torre em cada `OBRA_UMA_EM` do corredor vira obra (V17a): esqueleto ou
+## meio vestida, de andaime e lona, com guindaste em cima. Uma em tres deixa uma obra a cada
+## uns 600 m de avenida: e a silhueta de "cidade crescendo", e nao a cidade
+## toda em construcao. Uma em seis deixava so duas na corrida inteira.
+const OBRA_UMA_EM: int = 3
+## Mastro e lanca do guindaste de cima da obra, e o pe dele na laje: fora do
+## miolo do elevador, entre dois pilares, para nao atravessar nenhum.
+const OBRA_MASTRO: float = 15.0
+const OBRA_LANCA: float = 28.0
+const OBRA_GUINDASTE := Vector3(4.5, 0.0, 3.0)
+## O guindaste atras do muro de cada via expressa: a que distancia do muro, a
+## que altura e que alcance, e em que ponto do trecho (fracao do comprimento).
+const EXPRESSA_GUINDASTE_ATRAS: float = 14.0
+const EXPRESSA_GUINDASTE_MASTRO: float = 36.0
+const EXPRESSA_GUINDASTE_LANCA: float = 24.0
+const EXPRESSA_GUINDASTE_EM: float = 0.4
 
 var track: RoadTrack
 ## O fundo da cidade (V14a): os marcos que a `Marcos` planta no fim das retas.
@@ -233,6 +253,22 @@ func _monta_expressas(semente: int, props: Node3D) -> void:
 		var destinos: Array = Portal.DESTINOS[i % Portal.DESTINOS.size()]
 		var onde := track.transform_at(e.x + EXPRESSA_PLACA, Portal.LATERAL)
 		props.add_child(Portal.placa(onde, mat, destinos))
+		_guindaste_atras_do_muro(e, i, props)
+
+
+## O guindaste ao fundo, atras do muro alto da expressa (`03_viaduto`). Sem
+## colisor: esta alem do muro e do alambrado.
+func _guindaste_atras_do_muro(e: Vector3, i: int, props: Node3D) -> void:
+	var fechado := -e.z
+	var lateral := (
+		(RoadTrack.sidewalk_limit() + ViaExpressa.MURO_ALTO.x + EXPRESSA_GUINDASTE_ATRAS) * fechado
+	)
+	var base := track.transform_at(lerpf(e.x, e.y, EXPRESSA_GUINDASTE_EM), lateral)
+	var g := Guindaste.criar(
+		EXPRESSA_GUINDASTE_MASTRO, EXPRESSA_GUINDASTE_LANCA, _giro(hash([track.length, i]))
+	)
+	props.add_child(g)
+	g.global_transform = Transform3D(base.basis, base.origin + Vector3.DOWN)
 
 
 ## O recuo extra do trecho em que cai `o`; zero e corredor.
@@ -324,7 +360,8 @@ func _monta_quarteirao(
 			continue
 		# A fachada (-Z) olha para a pista, e a ponta dela fica no recuo.
 		var base := track.transform_at(o + passo * 0.5, lateral)
-		_predio(props, rua, tipo, base.origin, base.basis.x * -side)
+		var obra := fase_de_obra(rua.seed, tipo, o, side)
+		_predio(props, rua, tipo, base.origin, base.basis.x * -side, obra)
 		o += passo + rua.randf_range(0.0, 0.5)
 
 
@@ -507,13 +544,30 @@ func _canteiro(props: Node3D, onde: Transform3D, caixa: BoxMesh, terra: BoxMesh)
 ## invisivel. Os fundos sao parede lisa no `+Z` da planta, e a origem e o
 ## centro dela - entao a frente do corpo esta no espelho dos fundos.
 func _predio(
-	props: Node3D, rua: RandomNumberGenerator, tipo: Predio.Tipo, pe: Vector3, olha: Vector3
+	props: Node3D,
+	rua: RandomNumberGenerator,
+	tipo: Predio.Tipo,
+	pe: Vector3,
+	olha: Vector3,
+	obra: int = SEM_OBRA
 ) -> void:
-	var predio := Predio.criar(tipo, rua.randf(), rua.randf())
+	# A obra gasta os mesmos dois sorteios do predio que ela substitui: o que
+	# vem depois na avenida e igual, com ou sem obra.
+	var predio: MeshInstance3D
+	var caixa: AABB
+	if obra == SEM_OBRA:
+		predio = Predio.criar(tipo, rua.randf(), rua.randf())
+		caixa = Predio.malha(tipo).get_aabb()
+	else:
+		predio = Predio.criar_obra(obra as Predio.Obra, rua.randf(), rua.randf())
+		# O colisor e o corpo da torre: o andaime sai 2,2 m dela, sobre a
+		# calcada, e ninguem anda de moto num tubo ali.
+		caixa = Predio.malha(Predio.Tipo.TORRE).get_aabb()
 	props.add_child(predio)
 	# Base 1 m abaixo da pista: na rampa o predio nao pode ficar com o pe no ar.
 	predio.global_transform = Transform3D(Basis.looking_at(olha, Vector3.UP), pe + Vector3.DOWN)
-	var caixa := Predio.malha(tipo).get_aabb()
+	if obra != SEM_OBRA:
+		_guindaste_da_obra(predio, hash([rua.seed, pe.snapped(Vector3.ONE)]))
 	var fundo := caixa.end.z
 	_colisor(
 		predio,
@@ -521,6 +575,32 @@ func _predio(
 			Vector3(caixa.position.x, 0.0, -fundo), Vector3(caixa.size.x, caixa.size.y, fundo * 2.0)
 		)
 	)
+
+
+## Qual obra, se for, entra no lugar da torre que cai em `o` do lado `side`.
+## Nao sorteia: o `rua` e sequencial, e um numero a mais dele mudaria a cidade
+## inteira dali para frente. Sai de um hash da semente e da posicao, que e
+## estavel por predio.
+static func fase_de_obra(semente: int, tipo: Predio.Tipo, o: float, side: float) -> int:
+	if tipo != Predio.Tipo.TORRE:
+		return SEM_OBRA
+	var h := hash([semente, int(o), int(side)])
+	if posmod(h, OBRA_UMA_EM) != 0:
+		return SEM_OBRA
+	return posmod(h >> 8, Predio.Obra.size())
+
+
+## O guindaste no alto da obra, com a lanca virada para onde o hash mandar.
+func _guindaste_da_obra(predio: Node3D, h: int) -> void:
+	var g := Guindaste.criar(OBRA_MASTRO, OBRA_LANCA, _giro(h))
+	g.position = Vector3(OBRA_GUINDASTE.x, Predio.OBRA_LAJE_DO_TOPO, OBRA_GUINDASTE.z)
+	predio.add_child(g)
+
+
+## Oito direcoes para a lanca: guindaste parado na obra nao aponta sempre para
+## o mesmo lado, e oito bastam para dois vizinhos nao se alinharem.
+static func _giro(h: int) -> float:
+	return posmod(h >> 4, 8) * TAU / 8.0
 
 
 ## Caixa estatica na camada do mundo, em `caixa` no espaco de `dono`.

@@ -1080,7 +1080,7 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   `fps` p50 8,33 ms (refresh de 120 Hz), com um pico isolado de 76 ms,
   provavelmente compilação de shader. Baseline sem variação.
 
-- [ ] **V17a** — Obra: prédio no esqueleto e guindaste
+- [x] **V17a** — Obra: prédio no esqueleto e guindaste (14/10/2026, #117)
 
   A `04_vertical` tem um prédio de 20 andares no concreto cru, sem fachada,
   com dois guindastes de torre amarelos; a `03_viaduto` tem guindaste ao
@@ -1096,6 +1096,38 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
     prédio em obra, na avenida ou na via expressa (V11b).
   - **Aceite:** obra e guindaste aparecem na corrida e no fundo das retas;
     `fps` igual.
+
+  **Resultado:** `arte/predios.py` ganhou `torre(rng, prontos, nome, lona)`:
+  com todos os 16 andares prontos é a `Torre` de sempre (os cinco modelos
+  antigos saem byte a byte iguais); com 0 é o esqueleto (laje, pilar, miolo
+  do elevador, ferro de espera no topo) e com 8 é a meia-obra, metade de
+  baixo vestida. Só o ferro no topo fazia a obra parecer prédio com defeito
+  no último andar, então o corpo inteiro vira obra: **andaime tubular** só
+  na frente, dentro da largura do corpo (o quarteirão encosta um prédio no
+  outro, e andaime nas laterais entrava na parede do vizinho; 2,2 m para
+  fora, para passar do toldo da loja, que avança 1,9 m, montantes até acima do topo,
+  piso de tábua a cada 4 m, diagonais alternadas), **lona laranja ou azul**
+  semitransparente (alpha de 0,62, numa segunda superfície da malha com
+  material próprio; o xadrez de pixel furado que veio antes lia como ruído)
+  por cima em painéis planos de uma baia por três andares, do chão ao topo e
+  sem falha (buraco sorteado lia como lona rasgada), e o andaime desce até a calçada, sem tapume nem marquise (a tampa de madeira
+  escondia o andaime do chão). São quatro malhas (esqueleto ou
+  meia-obra, laranja ou azul): a lona é geometria, e não pintura por
+  instância. Vira obra uma torre em cada três do corredor
+  (`Cidade.OBRA_UMA_EM`), por **hash** da semente e da posição
+  (`Cidade.fase_de_obra`), e não por sorteio do `rua`: o `rua` é
+  sequencial, e a obra gasta os mesmos dois sorteios da torre que
+  substitui, então a cidade que vem depois é a mesma. A planta e o colisor
+  são os da torre (o passo e o `lateral` do quarteirão ainda saem da malha
+  dela): o andaime e a lona ficam só na frente, dentro da largura do corpo. O guindaste é o `Guindaste.criar(altura, lanca, giro)`: trechos
+  de mastro (3 m) e de lança (4 m) repetidos, mais o topo (cabine, torre em
+  A, contra-lança com concreto) e o gancho, do mesmo `.glb` e do mesmo
+  material, sem sombra (treliça projetada no chão cintila). Em cima da obra
+  pisa na laje do topo, com 15 m de mastro e 28 m de lança virada para uma
+  de oito direções; na via expressa, um de 36 m e 24 m atrás do muro alto de
+  cada trecho. Fica de fora: a obra no largo (a torre não nasce lá) e o
+  guindaste ao lado de um prédio no chão, que o `Guindaste.criar` já permite
+  mas nenhum quarteirão pede.
 
 - [ ] **V17b** — BRT: estação e ônibus articulado
 
