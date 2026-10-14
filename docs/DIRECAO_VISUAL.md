@@ -41,9 +41,10 @@ seis meses perseguindo o impossível:
   por causa disso.
 
 E uma observação de escopo que o contrato já cobre: a imagem 4 tem **logo de
-app real** na bag. Está fora. `PROTOTIPO.md` fecha com "nada de nome, logo ou
-cor exata de app real", e a referência não muda isso — o que se copia dela é o
-enquadramento e a leitura, não a marca.
+app real** na bag. Está fora. `PROTOTIPO.md` fecha com "nada de nome ou logo
+de app real", e a referência não muda isso — o que se copia dela é o
+enquadramento e a leitura, não a marca. (A cor vermelha da roupa entrou na
+V21, por decisão registrada na *Nota de marca* do `PROTOTIPO.md`.)
 
 ## Os nove pilares do look
 
@@ -211,7 +212,7 @@ compressão são ~67 MB; com compressão VRAM, uma fração disso.
 
 Os cinco rivais **não** multiplicam nada: `world.gd` já declara "mesmo rig,
 paleta trocada" em `RIVAL_COLORS`. Basta renderizar um passe de máscara
-(bag no vermelho, jaqueta no verde, moto no azul) e trocar a cor no shader.
+(bag no vermelho, camiseta no verde, moto no azul) e trocar a cor no shader.
 
 ### Correção a uma premissa do PROTOTIPO.md
 
