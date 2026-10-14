@@ -1078,7 +1078,7 @@ de uma imagem. Ficam depois do cenário por isso, e
 porque dependem do glow (V12). O catálogo inteiro e as quatro regras de
 partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
 
-- [ ] **V23** — Fumaça de pneu e marca de derrapagem
+- [x] **V23** — Fumaça de pneu e marca de derrapagem (14/10/2026)
 
   Gatilho já existe: a derrapada de `player_bike.gd::_integrate`. Flipbook de
   fumaça com alfa macio, `fixed_fps` em 12–15; marca como `Decal` (não
@@ -1087,6 +1087,18 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
   - **Referências:** nenhuma das de `docs/referencias/` mostra fumaça. O alvo
     sai do `DIRECAO_VISUAL.md`, *Partículas*.
   - **Aceite:** derrapou, fumaçou e marcou; andou reto, nada.
+  - **Feito:** `Derrapagem` (`scripts/derrapagem.gd`), no corpo da moto
+    embaixo do eixo traseiro, em jogador e rival. Fumaça em
+    `GPUParticles3D` com flipbook de quatro quadros gerado no código, alfa
+    macio, 24 partículas, `fixed_fps` 12 (a cadência do ator) sem
+    interpolar, herdando 90% do embalo para nascer no pneu e ficar para trás
+    aos poucos. Marca em pool de 40 `Decal` de 0,8 m que desbotam em 6 s.
+    O gatilho é a componente **lateral** da derrapada de `_integrate` (a de
+    frente é a moto ganhando embalo): medida no piloto automático da
+    `corrida`, curva normal escorrega 1–3,5 m/s; a fumaça liga em 4 e enche
+    em 10, então sai na curva forçada e na pancada de lado. No ar e caído,
+    nada (o tombo é faísca, V24). O rival é paramétrico e manda zero.
+    `selftest` sem variação; teste próprio em `test_derrapagem.gd`.
 
 - [ ] **V24** — Faísca, poeira de queda, impacto do soco e fogo
 

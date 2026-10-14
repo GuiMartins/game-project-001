@@ -62,6 +62,9 @@ var track_lateral: float = 0.0
 var adrenaline: float = 0.0  ## 0..100, enche com raspada, gasta com boost.
 var boosting: bool = false
 var airborne: bool = false
+## Quanto a roda escorrega de lado, em m/s: a diferenca entre para onde a moto
+## aponta e para onde ela vai (`_integrate`). E o que acende a fumaca.
+var derrapada: float = 0.0
 ## True quando a moto aponta pro lado contrario da pista. Sem aviso, o jogador
 ## capota, se levanta virado e passa dez segundos sem entender o que houve.
 var wrong_way: bool = false
@@ -91,6 +94,7 @@ var _punch_landed: bool = false
 var _hitboxes: Dictionary = {}
 var _visual: Node3D
 var _ator: Entregador
+var _derrapagem: Derrapagem
 ## O que o polegar pediu neste passo. So a pose le: a fisica recebe o input
 ## direto em `_ride`.
 var _acelerador: float = 0.0
@@ -130,6 +134,9 @@ func _ready() -> void:
 	_ator = Entregador.new()
 	_visual.add_child(_ator)
 	_ator.pintar(COR)
+	_derrapagem = Derrapagem.new()
+	_derrapagem.position = Vector3(0.0, -SIZE.y * 0.5, Derrapagem.EIXO_TRASEIRO)
+	add_child(_derrapagem)
 
 	_hitboxes[-1] = _make_hitbox(-1)
 	_hitboxes[1] = _make_hitbox(1)
@@ -253,6 +260,10 @@ func _physics_process(delta: float) -> void:
 		_giro_queda,
 		_freio
 	)
+	# No ar e caida a roda nao esta no asfalto: o que desliza no tombo e a
+	# carenagem, e isso e faisca (V24), nao fumaca.
+	var no_asfalto := state != State.CRASHED and not airborne
+	_derrapagem.atualizar(delta, derrapada if no_asfalto else 0.0)
 
 
 ## --- Nucleo do feel -------------------------------------------------------
@@ -399,6 +410,9 @@ func _integrate(delta: float) -> void:
 	# A velocidade real persegue a desejada em vez de virar ela. A diferenca e
 	# a derrapada: quanto menor a aderencia, mais a moto escorrega pra fora.
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
+	# So o de lado: o de frente e a moto ganhando embalo, nao escorregando.
+	var escorrega := desired - horizontal
+	derrapada = (escorrega - forward * escorrega.dot(forward)).length()
 	horizontal = horizontal.lerp(desired, 1.0 - exp(-tuning.grip * delta))
 
 	var projected := track.project(global_position, track_offset)
