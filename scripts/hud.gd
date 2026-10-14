@@ -6,7 +6,8 @@ extends CanvasLayer
 ## pixel grosso, o resultado e aquele visual meio-termo de remaster preguicoso.
 ##
 ## O layout e o das referencias (REFERENCIA_VIDEO.md, *A HUD*): quatro cantos
-## e o centro vazio. `POS` no topo esquerdo, distancia restante no topo
+## e o centro vazio, mais o GPS de celular da `04_vertical` (`Gps`, V25a) em
+## cima do `SPEED`. `POS` no topo esquerdo, distancia restante no topo
 ## direito (a corrida e de A a B, nao de volta, entao o `LAP` vira isto),
 ## `SPEED` e `TIME` embaixo, cada um com a sua barra segmentada. O combo e os
 ## avisos aparecem e somem no centro alto. Tudo estatico: a HUD e a unica coisa
@@ -62,8 +63,14 @@ var player: PlayerBike
 var fonte_legenda: FonteHud
 var fonte_valor: FonteHud
 var fonte_miuda: FonteHud
+## O nome da rua embaixo do GPS: branco chapado, sem degrade, como o texto do
+## celular - e assim que ele se separa das legendas da HUD de arcade.
+var fonte_rua: FonteHud
 
 var _painel: Control
+var _gps: Gps
+## Onde o mapa esta, na pista em que ele foi ligado.
+var _track: RoadTrack
 
 var _evento_texto: String = ""
 var _evento_cor: Color = Color.WHITE
@@ -82,11 +89,15 @@ func _ready() -> void:
 	fonte_legenda = FonteHud.new(1, 1, Color(1.0, 0.92, 0.25), Color(1.0, 0.5, 0.08))
 	fonte_valor = FonteHud.new(2, 2, Color(1, 1, 1), Color(0.72, 0.76, 0.84), 2, 2)
 	fonte_miuda = FonteHud.new(1, 1, Color(1, 1, 1), Color(0.8, 0.83, 0.9))
+	fonte_rua = FonteHud.new(1, 1, Color(1, 1, 1), Color(1, 1, 1))
 
 	_painel = Control.new()
 	_painel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_painel.draw.connect(_desenha)
 	add_child(_painel)
+	_gps = Gps.new()
+	_gps.visible = false
+	_painel.add_child(_gps)
 
 
 ## Carimbo de versao, e se isto e o executavel ou o projeto rodando da fonte.
@@ -129,9 +140,16 @@ static func segmentos_acesos(fracao: float, total: int) -> int:
 	return clampi(ceili(clampf(fracao, 0.0, 1.0) * total - 0.001), 0, total)
 
 
-func bind(a_run: RaceRun, a_player: PlayerBike) -> void:
+## `a_track` e a avenida, que o GPS desenha, e `a_rivais` quem aparece nele.
+## Sem a pista, nao ha mapa.
+func bind(
+	a_run: RaceRun, a_player: PlayerBike, a_track: RoadTrack = null, a_rivais: Array = []
+) -> void:
 	run = a_run
 	player = a_player
+	_track = a_track
+	_gps.ligar(a_track, a_player, a_rivais)
+	_gps.visible = a_track != null
 	# A lista de teclas some depois da largada: no meio do transito ela vira
 	# ruido em cima da pista.
 	_hint_time = 7.0
@@ -157,6 +175,7 @@ func _process(delta: float) -> void:
 	var k := maxi(int(floor(tela.y / ALTURA)), 1)
 	scale = Vector2(k, k)
 	_painel.size = (tela / k).floor()
+	_gps.position = Vector2(MARGEM.x, _topo_do_gps(int(_painel.size.y)))
 
 	if run == null or player == null:
 		return
@@ -226,7 +245,13 @@ func _desenha() -> void:
 	# --- Baixo: as duas barras e o que fica em cima delas.
 	var y_barra := tela.y - MARGEM.y - ALTURA_BARRA
 	var y_valor := y_barra - 6 - alto_valor
-	var y_legenda := y_valor - 5 - alto_legenda
+	var y_legenda := _y_legenda_de_baixo(tela.y)
+
+	# O GPS e o nome da rua, em cima do `SPEED`: o mapa e um `Control` proprio
+	# (posto em `_process`), o nome e daqui.
+	if _gps.visible:
+		var nome := _track.nome_em(_gps.progresso)
+		fonte_rua.desenhar(_painel, Vector2i(MARGEM.x, y_legenda - 5 - fonte_rua.altura), nome)
 
 	fonte_legenda.desenhar(_painel, Vector2i(MARGEM.x, y_legenda), "SPEED")
 	_valor_com_unidade(MARGEM.x, y_valor, "%d" % roundi(player.speed_kmh()), "KM/H", false)
@@ -282,13 +307,31 @@ func _desenha() -> void:
 	elif _combo_flash > 0.0:
 		_centralizado(fonte_valor, y_aviso, _combo_texto, Color(1.0, 0.9, 0.4))
 
+	# A lista de teclas fica acima do GPS: na altura de antes ela passava por
+	# cima do nome da rua.
 	if _hint_time > 0.0:
+		var y_dica := y_legenda - alto_legenda - 10
+		if _gps.visible:
+			y_dica = int(_gps.position.y) - alto_legenda - 8
 		_centralizado(
 			fonte_miuda,
-			y_legenda - alto_legenda - 10,
+			y_dica,
 			"WASD  Q/E SOCO  SHIFT BOOST  R REINICIA  ESC MENU",
 			Color(0.75, 0.8, 0.9)
 		)
+
+
+## Onde fica a legenda `SPEED`, para uma tela de `altura`: em cima do valor,
+## que fica em cima da barra.
+func _y_legenda_de_baixo(altura: int) -> int:
+	var y_barra := altura - MARGEM.y - ALTURA_BARRA
+	return y_barra - 6 - fonte_valor.altura - 5 - fonte_legenda.altura
+
+
+## O topo do mapa: em cima do nome da rua, que fica em cima do `SPEED`.
+func _topo_do_gps(altura: int) -> int:
+	var y_nome := _y_legenda_de_baixo(altura) - 5 - fonte_rua.altura
+	return y_nome - 5 - int(_gps.size.y)
 
 
 func _centralizado(fonte: FonteHud, y: int, texto: String, cor: Color) -> void:

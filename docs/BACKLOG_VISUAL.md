@@ -1422,7 +1422,7 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
   51,5 → 45,8, só por tirar a HUD velha da conta. `fps` igual ao do `master`
   (p50 8,33 ms nos dois, mesma máquina).
 
-- [ ] **V25a** 👤 — Minimapa de GPS e nome da rua
+- [x] **V25a** 👤 — Minimapa de GPS e nome da rua (14/10/2026, #119)
 
   A V25 fechou antes de as paradas existirem e leu "quatro cantos, centro
   vazio" em todas. A `04_vertical` não é assim: no canto de baixo à esquerda
@@ -1458,6 +1458,23 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
     por ele quando o cruzamento passa na tela; legível a 640×360 sobre
     asfalto claro, como a V25; não entra na medida do `shots` (que é sem
     HUD); `fps` igual.
+
+  **Resultado:** decisão do Guilherme, a recomendação. `scripts/gps.gd` é um
+  `Control` com recorte dentro da HUD, 72×72 com moldura clara de 2 px e
+  contorno preto, em cima do nome da rua e do `SPEED`. Heading-up: a seta
+  vermelha fica parada a 65% da altura, e o mapa gira com o rumo da moto, a
+  2,4 m por pixel (~170 m de cidade, duas ou três transversais). Lê só a
+  `RoadTrack`: avenida da curva, com calçada, e as transversais dos
+  `cruzamentos` com a `boca`. As ruas paralelas de trás (55 e 125 m do
+  meio-fio, finas) não existem no mundo, mas sem elas o mapa era uma linha e
+  dois traços, e é o xadrez que faz ele ler como GPS. O nome é dado da
+  `Cidade` (`AVENIDAS`, `VIAS_EXPRESSAS`), por hash da semente e não pelo
+  gerador da cidade, que mudaria tudo o que sai dele depois; a via expressa
+  ganha nome próprio (`RoadTrack.nome_em`). Nenhum nome é destino da placa
+  verde (teste). Os rivais aparecem como ponto na cor da bag, por cima das ruas e por baixo
+  da seta (pedido do Guilherme). A lista de teclas da largada subiu para cima do mapa, que
+  ela cobria. `selftest` sem variação, `shots` dentro da tolerância (é sem
+  HUD), `fps` p50 8,33 ms (refresh de 120 Hz).
 
 - [ ] **V25b** 👤 — HUD da vertical: barra do entregador e local da fase
 

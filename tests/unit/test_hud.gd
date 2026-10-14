@@ -38,6 +38,10 @@ func test_tudo_que_a_hud_escreve_tem_glifo() -> void:
 		Hud.formata_tempo(83.47),
 		"*",
 	]
+	# Os nomes do GPS (V25a): sao dado da cidade, e o proximo que entrar na
+	# lista com um caractere novo vira `?` embaixo do mapa.
+	textos.append_array(Cidade.AVENIDAS)
+	textos.append_array(Cidade.VIAS_EXPRESSAS)
 	for texto in textos:
 		var alto := texto.to_upper()
 		for i in alto.length():
