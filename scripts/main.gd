@@ -1,20 +1,30 @@
 extends Node
 ## Pipeline de render e teclas globais.
 ##
-## O look pixel sai de um SubViewport de 640x360 com upscale INTEIRO de 2x pra
-## 1280x720. Inteiro importa: 2.5x deixa pixel de tamanhos diferentes na mesma
-## tela e o serrilhado fica sujo em vez de proposital. A janela escala o resto
-## (ver `scale_mode` no `project.godot`): 1920x1080 da 3x por pixel, exato. Em
-## tamanho que nao fecha inteiro, o `ampliacao.gdshader` segura o tremor.
+## O look pixel sai de um SubViewport pequeno com upscale INTEIRO. Inteiro
+## importa: 2.5x deixa pixel de tamanhos diferentes na mesma tela e o
+## serrilhado fica sujo em vez de proposital. A janela escala o resto (ver
+## `scale_mode` no `project.godot`). Em tamanho que nao fecha inteiro, o
+## `ampliacao.gdshader` segura o tremor.
 
-## 1280x720 / 2 = 640x360 exato. O SubViewportContainer faz a conta sozinho
-## via stretch_shrink - setar sub_viewport.size na mao nao funciona com stretch
-## ligado, o container sobrescreve.
+## O viewport base do projeto e 1920x1080, e o SubViewportContainer divide por
+## `stretch_shrink` - setar sub_viewport.size na mao nao funciona com stretch
+## ligado, o container sobrescreve. Shrink 3 da 640x360, o mundo que todas as
+## medidas e referencias usam; shrink 2 da 960x540, para tela grande.
 ##
 ## Era 4 (320x180). Subiu na P1 da prova visual: a 320x180 o piloto tem uns
 ## 37 px de altura no talo, e nao cabe nele o que faz um ator ler como foto em
 ## vez de boneco. A conta esta no `docs/DIRECAO_VISUAL.md`.
-const PIXEL_SHRINK: int = 2
+const SHRINK_BAIXA: int = 3
+const SHRINK_ALTA: int = 2
+## A partir de que altura de janela, em pixels, a resolucao automatica passa
+## para a alta. 640x360 em 1440p ja e 4x por pixel, mas em 4K sao 6x: o pixel
+## que em 1080p e "look" vira borrao de proposito de perto. 1440p fica no
+## baixo para a janela de 1080p, a mais comum, nao ser a unica a ter o look.
+const ALTURA_DA_ALTA: int = 1440
+## O que o menu percorre: 0 e automatico (pela altura da janela), 1 e a baixa,
+## 2 e a alta.
+const RESOLUCOES: Array[String] = ["AUTO", "360P", "540P"]
 
 ## Onde a moto escolhida no menu fica guardada entre uma sessao e outra. Num
 ## arquivo so dela, e nao no `tuning.tres`: o tuning e o que o F3 salva quando
@@ -31,14 +41,7 @@ const VISUAL: Array[String] = [
 ]
 ## Os nomes delas no menu, na mesma ordem.
 const NOMES_VISUAL: Array[String] = [
-	"PIXEL 640x360",
-	"PALETA",
-	"ANTISSERRILHO",
-	"COR DO DIA",
-	"SOMBRA",
-	"NEBLINA",
-	"BRILHO",
-	"BORRAO"
+	"PIXEL", "PALETA", "ANTISSERRILHO", "COR DO DIA", "SOMBRA", "NEBLINA", "BRILHO", "BORRAO"
 ]
 ## As cadencias que as setas do menu percorrem, em poses por segundo; 0 e liso.
 ## O F3 chega em qualquer uma de 0 a 30; o menu fica nas que valem comparar.
@@ -61,6 +64,8 @@ var tuning_source: String = ""
 ## Cada chave de `VISUAL`, ligada ou nao.
 var _visual: Dictionary[String, bool] = {}
 var _paleta: CanvasItem
+## Indice em `RESOLUCOES`.
+var _resolucao: int = 0
 ## Se a moto escolhida e lida e gravada no user://. Desligado no banco de
 ## provas e na prova visual, pelo mesmo motivo do tuning: medida que depende
 ## de qual moto alguem escolheu ontem nao compara com nada.
@@ -88,7 +93,7 @@ func _ready() -> void:
 	container.name = "PixelPipeline"
 	container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	container.stretch = true
-	container.stretch_shrink = PIXEL_SHRINK
+	container.stretch_shrink = SHRINK_BAIXA
 	## Linear, e nao nearest: quem escolhe onde ler e o `ampliacao.gdshader`,
 	## que faz nearest no miolo do pixel e deixa o filtro misturar so a costura.
 	## Nearest puro em escala quebrada (tela cheia fora de 1080p) faz a tela
@@ -142,6 +147,12 @@ func _ready() -> void:
 		if _le_config(SECAO_TELA, "cheia", false):
 			_aplica_tela_cheia(true)
 
+	_resolucao = _resolucao_pedida(args)
+	if _resolucao < 0:
+		# Medida fica sempre em 640x360 (as referencias e os baselines sao
+		# dela); jogando, vale o que o jogador escolheu.
+		_resolucao = int(_le_config("visual", "resolucao", 0)) if _moto_salva else 1
+	get_window().size_changed.connect(_aplica_visual)
 	_monta_paleta()
 	for chave in VISUAL:
 		_visual[chave] = true if not _moto_salva else bool(_le_config("visual", chave, true))
@@ -195,6 +206,39 @@ static func _hora_pedida(args: PackedStringArray) -> float:
 	return texto.to_float() if texto.is_valid_float() else -1.0
 
 
+## `--resolucao=360|540` (ou `RUSHFOOD_RESOLUCAO`) como indice de `RESOLUCOES`,
+## ou -1 se ninguem pediu. Existe para a prova e o shots fotografarem a alta.
+static func _resolucao_pedida(args: PackedStringArray) -> int:
+	var texto := OS.get_environment("RUSHFOOD_RESOLUCAO")
+	for arg in args:
+		if arg.begins_with("--resolucao="):
+			texto = arg.trim_prefix("--resolucao=")
+	match texto:
+		"360":
+			return 1
+		"540":
+			return 2
+	return -1
+
+
+## Quanto o container divide o viewport base. Com o pixel desligado e 1: o
+## mundo na resolucao do viewport base inteiro, para comparar.
+func _shrink() -> int:
+	if not _visual["pixel"]:
+		return 1
+	var alta := _resolucao == 2
+	if _resolucao == 0:
+		alta = get_window().size.y >= ALTURA_DA_ALTA
+	return SHRINK_ALTA if alta else SHRINK_BAIXA
+
+
+func _trocar_resolucao(passo: int) -> void:
+	_resolucao = posmod(_resolucao + passo, RESOLUCOES.size())
+	_aplica_visual()
+	if _moto_salva:
+		_grava_config("visual", "resolucao", _resolucao)
+
+
 ## O passe de quantizacao com dither (`paleta.gdshader`): o ultimo do mundo.
 ##
 ## Um ColorRect que le a tela ja desenhada, numa camada acima do 3D e abaixo da
@@ -246,6 +290,9 @@ func _monta_opcoes() -> void:
 		func() -> String: return "SIM" if _tela_cheia() else "NAO",
 		func(_passo: int) -> void: _alterna_tela_cheia()
 	)
+	fluxo.opcao(
+		"VISUAL", "RESOLUCAO", func() -> String: return RESOLUCOES[_resolucao], _trocar_resolucao
+	)
 	for i in VISUAL.size():
 		var chave := VISUAL[i]
 		fluxo.opcao(
@@ -260,7 +307,7 @@ func _monta_opcoes() -> void:
 ## mexer no numero que o F3 ajusta: desligar o brilho e religar devolve o
 ## brilho que estava.
 func _aplica_visual() -> void:
-	container.stretch_shrink = PIXEL_SHRINK if _visual["pixel"] else 1
+	container.stretch_shrink = _shrink()
 	_paleta.visible = _visual["paleta"]
 	sub_viewport.msaa_3d = Viewport.MSAA_4X if _visual["msaa"] else Viewport.MSAA_DISABLED
 	world.ambiente.adjustment_enabled = _visual["cor"]

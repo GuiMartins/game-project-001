@@ -168,11 +168,13 @@ func _process(delta: float) -> void:
 	if _fps_time <= 0.0:
 		_fps_time = 0.5
 		_fps_texto = "%d FPS" % roundi(Engine.get_frames_per_second())
-	# Com o pixel desligado o SubViewport cresce para a resolucao da janela.
-	# A HUD acompanha em multiplo inteiro, para o pixel da fonte continuar
-	# quadrado, e o layout continua sendo o de 640x360.
+	# O SubViewport nem sempre e de 640x360 (960x540 em tela grande, ou o
+	# tamanho do viewport base com o pixel desligado). A HUD acompanha pela
+	# altura, e nao em multiplo inteiro, para ocupar a tela e ficar do mesmo
+	# tamanho relativo em qualquer resolucao interna; o layout continua sendo
+	# o de 640x360. Em 540p o pixel da fonte sai a 1,5x.
 	var tela := get_viewport().get_visible_rect().size
-	var k := maxi(int(floor(tela.y / ALTURA)), 1)
+	var k := maxf(tela.y / ALTURA, 1.0)
 	scale = Vector2(k, k)
 	_painel.size = (tela / k).floor()
 	_gps.position = Vector2(MARGEM.x, _topo_do_gps(int(_painel.size.y)))

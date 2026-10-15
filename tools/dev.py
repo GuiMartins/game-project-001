@@ -588,6 +588,16 @@ def _pede_hora(hora) -> None:
     os.environ["RUSHFOOD_HORA"] = f"{hora:g}"
 
 
+def _pede_resolucao(resolucao) -> None:
+    """Medida fica em 640x360, que e o mundo de todas as referencias. `--resolucao
+    540` pede os 960x540 da tela grande (V30); chega ao jogo pelo
+    RUSHFOOD_RESOLUCAO (`main.gd`)."""
+    if resolucao is None:
+        os.environ.pop("RUSHFOOD_RESOLUCAO", None)
+        return
+    os.environ["RUSHFOOD_RESOLUCAO"] = str(resolucao)
+
+
 def cmd_shots(args: argparse.Namespace) -> int:
     """Regressao visual: roda o jogo COM tela e mede o que aparece nela.
 
@@ -707,7 +717,10 @@ def cmd_prova(args: argparse.Namespace) -> int:
     # Outra hora vai para outra pasta, para a do meio-dia continuar sendo a
     # de comparar antes e depois.
     _pede_hora(args.hora)
+    _pede_resolucao(args.resolucao)
     pasta = PROVA_DIR if args.hora is None else PROVA_DIR / f"hora_{args.hora:g}"
+    if args.resolucao is not None:
+        pasta = pasta / f"res_{args.resolucao}"
     pasta.mkdir(parents=True, exist_ok=True)
     for antigo in pasta.glob("*.png"):
         antigo.unlink()
@@ -757,6 +770,7 @@ def cmd_fps(args: argparse.Namespace) -> int:
     os.environ["RUSHFOOD_SELFTEST_METRICS"] = str(METRICS_OUT)
     # A noite tem uma luz por poste e por farol: e a hora de medir com `--hora 1`.
     _pede_hora(args.hora)
+    _pede_resolucao(args.resolucao)
     # Sem --headless: sem tela nao ha quadro para medir.
     extra = ["--queda"] if args.queda else []
     return _godot(binary, "--", "--selftest", "--fps", *extra)
@@ -979,11 +993,15 @@ def main() -> int:
                               "do passe de paleta e a referencia (V03a)")
     p_prova.add_argument("--hora", type=float, default=None,
                          help="hora travada, de 0 (meio-dia) a 1 (noite); vai para .dev/prova/hora_X")
+    p_prova.add_argument("--resolucao", type=int, choices=(360, 540), default=None,
+                         help="resolucao interna; vai para .dev/prova/res_N (padrao 360)")
     p_prova.add_argument("--kmh", type=float, default=None,
                          help="velocidade dos quadros andando (padrao 90 km/h)")
     p_fps = sub.add_parser("fps", help="tempo de quadro da corrida solta, com tela e sem vsync")
     p_fps.add_argument("--hora", type=float, default=None,
                        help="hora travada, de 0 (meio-dia) a 1 (noite)")
+    p_fps.add_argument("--resolucao", type=int, choices=(360, 540), default=None,
+                       help="resolucao interna (padrao 360)")
     p_fps.add_argument("--queda", action="store_true",
                        help="derruba jogador e rivais a cada 4 s: o pior caso das particulas")
     sub.add_parser("run", help="abre o jogo")

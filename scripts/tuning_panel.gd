@@ -20,7 +20,7 @@ const PANEL_WIDTH: int = 560
 ## com o mouse, e errar o alvo no meio de uma volta e o que quebra a iteracao.
 const SLIDER_HEIGHT: int = 26
 
-## A janela do jogo desenha 1280x720 esticado pra 1920x1080, ou seja 1.5x, e o
+## A janela do jogo desenhava um viewport base de 1280x720 esticado 1.5x, e o
 ## painel pegava esse aumento de carona. Janela propria nao tem stretch nenhum,
 ## entao sem repor o 1.5x aqui as fontes sairiam a dois tercos do tamanho que
 ## voce ve hoje - o problema oposto do que estamos consertando.

@@ -86,7 +86,7 @@ jogo continua rodando, só errado. Estão explicados em `docs/PROTOTIPO.md`.
 - **Winding horário.** Godot descarta face anti-horária *sem avisar*: a pista
   inteira some e o mundo vira caixas flutuando.
 - **`stretch_shrink`, nunca `SubViewport.size`.** Com `stretch` ligado o
-  container sobrescreve o tamanho, e você renderiza em 1280×720 achando que
+  container sobrescreve o tamanho, e você renderiza em 1920×1080 achando que
   está em 640×360.
 - **A HUD mora dentro do SubViewport.** HUD nítida sobre mundo pixelado é o
   visual de remaster preguiçoso.

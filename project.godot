@@ -28,21 +28,22 @@ gdscript/warnings/untyped_declaration=2
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=720
-; A janela abre maior que o viewport base. O viewport segue 1280x720 pra
-; PIXEL_SHRINK=2 continuar dando 640x360 exato; o stretch canvas_items
-; escala o resto. 640 -> 1920 e 3x inteiro, entao o pixel segue quadrado.
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+; O viewport base e 1920x1080 pra que as duas resolucoes internas do jogo
+; sejam divisao inteira dele: shrink 3 da 640x360 e shrink 2 da 960x540
+; (scripts/main.gd, V30). Em 1080p e 4K os dois dao pixel inteiro.
 window/size/window_width_override=1920
 window/size/window_height_override=1080
 window/stretch/mode="canvas_items"
 window/stretch/aspect="keep"
 ; Fracionario de proposito. "integer" foi tentado e saiu: ele arredonda a
-; escala sobre o viewport base de 1280x720, e nao sobre os 640x360 do mundo,
-; entao em 1920x1080 (1,5x) caia para 1x e o jogo ocupava metade da janela.
+; escala sobre o viewport base, e nao sobre os 640x360 do mundo, entao a
+; janela de 1280x720 (1,5x sobre o mundo) cairia para 1x e o jogo ocuparia
+; metade dela.
 ; O preco do fracionario era pixel irregular (e tela tremendo com a camera
 ; andando) em janela fora do padrao; o scripts/ampliacao.gdshader paga esse
-; preco. Em 1280, 1920, 2560 e 3840 a escala por pixel e inteira.
+; preco. Em 1920 e 3840 a escala por pixel e inteira nas duas resolucoes.
 window/stretch/scale_mode="fractional"
 ; O painel de tuning e um no Window. Sem isto o Godot desenha subjanelas
 ; DENTRO da janela do jogo (embedded), que e exatamente o que a gente

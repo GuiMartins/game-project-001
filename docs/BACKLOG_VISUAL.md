@@ -97,6 +97,7 @@ e no `git log`.
 | --- | --- |
 | Quadro congelado (`dev.py prova`) e `dev.py fps` | P0 |
 | Resolução interna 640×360 | P1 |
+| Resolução interna 960×540 em tela de 1440p ou mais, automática | V30 |
 | Sol com sombra de 250 m, céu procedural, ambiente vindo do céu | P2, #34 |
 | Tonemap, LUT do dia, quantização com dither | P3 |
 | Asfalto e calçada de pedra portuguesa texturizados | P4a, #30 |
@@ -1476,7 +1477,10 @@ partícula em pixel estão no `DIRECAO_VISUAL.md`, *Partículas*.
   ela cobria. `selftest` sem variação, `shots` dentro da tolerância (é sem
   HUD), `fps` p50 8,33 ms (refresh de 120 Hz).
 
-- [ ] **V25b** 👤 — HUD da vertical: barra do entregador e local da fase
+- [~] **V25b** — HUD da vertical: barra do entregador e local da fase (cancelada em 14/10/2026)
+
+  **Cancelada pelo Guilherme.** O jogo não tem vida nem fase, e a barra só
+  entraria se mudasse decisão de jogo. O texto abaixo fica como registro.
 
   O resto da HUD da `04_vertical`, que a V25 e a V25a não pegam: no topo
   esquerdo, `ENTREGADOR` com uma barra de vida de verde a vermelho; no topo
@@ -1531,7 +1535,10 @@ no passo de ampliar, não no render.
   isso que se via) e dither mais fraco (não era ele). `shots`:
   `familias_de_cor` +3,6%, o resto abaixo de 1%; `fps` igual.
 
-- [ ] **V29** — Proporção de tela: tarja ou mais mundo
+- [~] **V29** — Proporção de tela: tarja ou mais mundo (cancelada em 14/10/2026)
+
+  **Cancelada pelo Guilherme.** Fica `aspect = keep`, com tarja. O texto
+  abaixo fica como registro.
 
   Com `aspect = keep`, tela 16:10 (Mac, Steam Deck) ganha tarja em cima e
   embaixo, e ultrawide (21:9) ganha tarja dos lados. A alternativa é
@@ -1547,21 +1554,31 @@ no passo de ampliar, não no render.
   - **Aceite:** jogando em 16:10 e 21:9, sem tarja, a HUD nos cantos e o
     piloto no mesmo lugar relativo da tela.
 
-- [ ] **V30** 👤 — Pixel grande demais em tela grande
+- [x] **V30** — Pixel grande demais em tela grande (14/10/2026)
 
   640×360 em 4K é 6× por pixel. É a estética que a V03 decidiu, mas em
   monitor grande perto do rosto o pixel pode passar de "look" a "borrado de
-  propósito". Degraus com escala inteira nas telas comuns: 960×540 (perde
-  720p) ou resolução interna escolhida pela tela (mais detalhe em 4K, o mesmo
-  look em 1080p).
+  propósito".
 
-  - **Referências:** as quatro paradas, para o tamanho do pixel que o look
-    pede; o pixel grande demais se julga na tela, não nelas.
-  - **Decisão 👤:** se a resolução interna é fixa (o mesmo quadro para todo
-    mundo) ou acompanha a tela. Fixa é mais fácil de afinar e de comparar na
-    `prova`; variável muda o tamanho do dither e do pixel entre máquinas.
-  - **Custo:** o render 3D cresce com o quadrado da resolução interna
-    (960×540 são 2,25× os fragmentos de 640×360). Medir com `dev.py fps`.
+  **Decisão** (tomada sem consulta, a pedido de "faz o 30"): a resolução
+  interna **acompanha a tela, mas só jogando**. Janela de 1440p ou mais
+  renderiza em **960×540**; abaixo disso, 640×360, então 1080p, a tela mais
+  comum, segue com o look de sempre. O banco de provas, o `shots` e a `prova`
+  ficam fixos em 640×360, para as medidas e as referências não mudarem com a
+  máquina. O menu ganhou `RESOLUCAO` (`AUTO` / `360P` / `540P`) para quem
+  quiser forçar, gravada no `user://`.
+
+  **Resultado:** o viewport base do projeto passou de 1280×720 para
+  **1920×1080**, para que as duas resoluções sejam divisão inteira dele
+  (`stretch_shrink` 3 e 2). Em 1080p e 4K os dois dão pixel inteiro (2× e 4×
+  em 540p; 3× e 6× em 360p); em 1440p o 540p dá 2,67×, que o
+  `ampliacao.gdshader` segura. A HUD e o menu já escalavam por múltiplo
+  inteiro da altura, então em 540p ficam em 1× e menores na proporção da tela,
+  com o pixel de fonte igual ao do mundo. O `dev.py prova` e o `fps` ganharam
+  `--resolucao 540` (a prova vai para `.dev/prova/res_540`).
+
+  **Custo medido** (`dev.py fps`, mesma máquina): 360p p50 8,33 ms (120 fps);
+  540p p50 11,11 ms (90 fps). O `selftest` não andou nada.
 
 ### Fechamento
 
