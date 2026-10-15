@@ -223,8 +223,10 @@ func _sorteia_trechos(rua: RandomNumberGenerator, plano: Array[float] = []) -> A
 		if not largo:
 			var k := EXPRESSA_DEPOIS.find(corredor)
 			if k >= 0 and k < plano.size() and o + plano[k] < track.length - 100.0:
-				# O lado do viaduto alterna: a primeira e a da `03`, pela esquerda.
-				var lado := LADO_ESQUERDA if k % 2 == 0 else LADO_DIREITA
+				# O viaduto fica sempre a esquerda, como na `03`: e o lado da mao
+				# contraria, e aqui se anda pela direita - mao contraria a direita
+				# e mao inglesa. Ja alternou, e a segunda expressa vinha ao contrario.
+				var lado := LADO_ESQUERDA
 				expressas.append(Vector3(o, o + plano[k], lado))
 				o += plano[k]
 				lista.append(Vector2(o, 0.0))
@@ -331,7 +333,7 @@ func _monta_expressas(semente: int, props: Node3D) -> void:
 		props.add_child(Portal.placa(onde, mat, destinos))
 		_guindaste_atras_do_muro(e, i, props)
 		props.add_child(Contramao.criar(track, e, hash([semente, i, 7])))
-		ViaExpressa.placas_de_mao_dupla(track, e, props)
+		ViaExpressa.placas_de_mao_dupla(track, e, mat, props)
 
 
 ## O guindaste ao fundo, atras do muro alto da expressa (`03_viaduto`). Sem

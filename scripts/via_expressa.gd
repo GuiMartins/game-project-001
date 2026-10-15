@@ -78,8 +78,10 @@ const PILAR_PASSO: float = 24.0
 
 ## A placa de mao dupla, dos dois lados da avenida, antes do zebrado que
 ## fecha as faixas do lado da mao contraria: 40 m antes dele, quase 1 s a
-## 180 km/h, e a 1,4 m do meio-fio, como a placa de curva.
+## 180 km/h, e a 1,4 m do meio-fio, como a placa de curva. E o portico, por
+## cima da pista, 80 m antes dele: uns 2,5 s antes da rua a 180 km/h.
 const MAO_DUPLA_ANTES: float = 40.0
+const MAO_DUPLA_PORTICO: float = 80.0
 
 const COR_ACOSTAMENTO := Color(0.56, 0.55, 0.53)
 const COR_CANTEIRO := Color(0.47, 0.46, 0.44)
@@ -182,20 +184,33 @@ static func bordas_do_viaduto(o: float, viaduto: Vector2, lado: float) -> Vector
 	return Vector2(dentro, fora) * lado
 
 
-## Avisa, dos dois lados, que metade da pista vai virar mao contraria, antes
-## da expressa `e`. Recua de 10 em 10 m ate sair da boca de alguma rua.
-static func placas_de_mao_dupla(track: RoadTrack, e: Vector3, props: Node3D) -> void:
-	var o := e.x - Cidade.RUA_LARGURA - RoadTrack.ZEBRADO - MAO_DUPLA_ANTES
+## Avisa que metade da pista vai virar mao contraria, antes da expressa `e`:
+## o portico por cima da pista e o losango dos dois lados. Cada um recua de
+## 10 em 10 m ate sair da boca de alguma rua. `mat` e o do portico da avenida.
+static func placas_de_mao_dupla(
+	track: RoadTrack, e: Vector3, mat: Dictionary, props: Node3D
+) -> void:
+	var zebrado := e.x - Cidade.RUA_LARGURA - RoadTrack.ZEBRADO
+	var portico := _fora_da_boca(track, zebrado - MAO_DUPLA_PORTICO, 1.0)
+	var metros := snappedi(int(e.x - Cidade.RUA_LARGURA - portico), 10)
+	props.add_child(Portal.mao_dupla(track.transform_at(portico, Portal.LATERAL), mat, metros))
+	var o := zebrado - MAO_DUPLA_ANTES
 	var lateral := RoadTrack.half_width() + 1.4
 	for side: float in [-1.0, 1.0]:
-		var aqui := o
-		while aqui > 0.0 and Cidade.na_boca(track.cruzamentos, aqui, side):
-			aqui -= 10.0
+		var aqui := _fora_da_boca(track, o, side)
 		var quem_vem := track.sample_basis(aqui).z
 		var placa := Mobiliario.criar(
 			Mobiliario.Tipo.PLACA_MAO_DUPLA, track.point(aqui, lateral * side), quem_vem
 		)
 		props.add_child(placa)
+
+
+## `o`, ou o primeiro ponto 10 em 10 m antes dele fora da boca de uma rua.
+static func _fora_da_boca(track: RoadTrack, o: float, side: float) -> float:
+	var aqui := o
+	while aqui > 0.0 and Cidade.na_boca(track.cruzamentos, aqui, side):
+		aqui -= 10.0
+	return aqui
 
 
 ## O canto `(u, v)` de um painel do atlas, com `u` e `v` de 0 a 1 dentro dele.

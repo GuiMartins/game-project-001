@@ -97,6 +97,12 @@ func test_a_mao_contraria_vem_de_uma_rua_e_vai_para_outra() -> void:
 		assert_bool(_track.e_esquina(entrada) and _track.e_esquina(saida)).is_true()
 
 
+func test_a_mao_contraria_e_sempre_a_esquerda() -> void:
+	# Aqui se anda pela direita: quem vem de frente vem pela esquerda.
+	for e in _track.expressas:
+		assert_float(e.z).is_equal(Cidade.LADO_ESQUERDA)
+
+
 func test_metade_da_pista_e_mao_contraria() -> void:
 	# A pista tem a mesma largura dentro e fora da expressa: dentro, a metade
 	# do lado do viaduto e mao contraria, e quem escolhe faixa fica na outra -
