@@ -9,13 +9,14 @@ extends RefCounted
 ## - **Fechado** (`04_vertical`, a direita): grama ao pe de um muro alto de
 ##   mural, com alambrado e arame em cima.
 ## - **Aberto** (`03_viaduto`, a esquerda): mureta de concreto, a faixa dos
-##   pilares, a mao contraria e um muro mais baixo no fundo. E o lado do
-##   viaduto: o tabuleiro sai de la e cobre a pista ate passar do eixo.
+##   pilares e um muro mais baixo no fundo. E o lado do viaduto: o tabuleiro
+##   sai de la e cobre a pista ate passar do eixo.
 ##
-## A mao contraria sao duas faixas no sentido oposto ao da corrida, com o
-## transito dela (`Contramao`). Ela nao comeca nem acaba no meio do
-## quarteirao: nasce da rua da esquina da saida e entra na rua da esquina da
-## entrada (`Cidade.esquinas_das_expressas`), virando nas duas numa curva.
+## A metade da pista do lado aberto e a mao contraria, com o transito dela
+## (`Contramao`) e a faixa dupla amarela no meio (`RoadTrack.pintar`). Ela nao
+## comeca nem acaba no meio do quarteirao: nasce da rua da esquina da saida e
+## entra na rua da esquina da entrada (`Cidade.esquinas_das_expressas`),
+## virando nas duas pelo chanfro da quina.
 ##
 ## Tudo segue a curva e a rampa da `RoadTrack`, extrudado em `(offset,
 ## lateral)` como o meio-fio: nada aqui e uma peca posta num ponto da pista,
@@ -52,19 +53,11 @@ const CERCA_POSTE_PASSO: float = 3.0
 const ARAME: float = 0.6
 
 ## Lado aberto. A mureta de 90 cm encosta no acostamento: e ela que separa a
-## pista da faixa dos pilares, como na `03`. A mao contraria tem duas faixas
-## de 3,5 m, e o muro baixo fecha o mundo antes do fim do chao
-## (`RoadTrack.GROUND`), que de outro modo apareceria cortado.
+## pista da faixa dos pilares, como na `03`. O muro baixo fecha o mundo antes
+## do fim do chao (`RoadTrack.GROUND`), que de outro modo apareceria cortado.
 const MURETA := Vector3(0.3, 0.9, 0.6)
 const MURETA_TOPO: float = 0.2
-const PISTA_AO_LADO := Vector2(4.5, 11.5)
 const MURO_BAIXO := Vector3(12.5, 4.0, 0.4)
-## O raio da curva em que a mao contraria vira para a rua da esquina, no eixo
-## de cada faixa. 6 m e o raio de esquina de rua de cidade, e a 6 m/s pede
-## 6 m/s2 de lateral, o que um carro de passeio faz sem cantar pneu. A quina
-## de fora da curva ganha um chanfro de asfalto do mesmo raio, e o muro baixo
-## recua ate ele: sem isso a faixa de fora passava raspando no muro.
-const ESQUINA_RAIO: float = 6.0
 
 ## O tabuleiro: 7 m de vao livre, 1,6 m de viga. Do lado aberto ele vai ate
 ## 10,5 m depois do acostamento e, do outro, passa 1 m do eixo: cobre as duas
@@ -82,6 +75,11 @@ const VIADUTO_LONGE: float = 40.0
 const PILAR := Vector2(1.2, 3.0)
 const PILAR_AFASTAMENTO: float = 1.5
 const PILAR_PASSO: float = 24.0
+
+## A placa de mao dupla, dos dois lados da avenida, antes do zebrado que
+## fecha as faixas do lado da mao contraria: 40 m antes dele, quase 1 s a
+## 180 km/h, e a 1,4 m do meio-fio, como a placa de curva.
+const MAO_DUPLA_ANTES: float = 40.0
 
 const COR_ACOSTAMENTO := Color(0.56, 0.55, 0.53)
 const COR_CANTEIRO := Color(0.47, 0.46, 0.44)
@@ -121,7 +119,6 @@ static func montar(
 		"canteiro": _nova(),
 		"grama": _nova(),
 		"asfalto": _nova(),
-		"tinta": _nova(),
 	}
 	var tela := _nova()
 
@@ -133,33 +130,18 @@ static func montar(
 	var x_alto := edge + MURO_ALTO.x
 	_muro(mural, concreto, corpo, track, de, ate, fechado, x_alto, MURO_ALTO, rng)
 	_cerca(tela, ferro, track, de, ate, fechado, x_alto + MURO_ALTO.z * 0.5, MURO_ALTO.y)
-	# Lado aberto: mureta, canteiro dos pilares, pista de servico, muro baixo.
+	# Lado aberto: mureta, canteiro dos pilares e muro baixo. A mao contraria
+	# e a metade da pista do lado dele, e o acostamento e o dela.
 	_chao(chao["acostamento"], track, de, ate, lado, RoadTrack.half_width(), edge)
-	_chao(chao["canteiro"], track, de, ate, lado, edge, edge + PISTA_AO_LADO.x)
-	_chao(
-		chao["asfalto"],
-		track,
-		de,
-		ate,
-		lado,
-		edge + PISTA_AO_LADO.x,
-		edge + PISTA_AO_LADO.y,
-		RoadTrack.ASFALTO_TILE
-	)
-	# As duas faixas vao no mesmo sentido: o tracejado branco, e nao o amarelo
-	# de mao dupla.
-	_tracejado(
-		chao["tinta"], track, de, ate, lado * (edge + (PISTA_AO_LADO.x + PISTA_AO_LADO.y) * 0.5)
-	)
-	var fora := edge + PISTA_AO_LADO.y
-	_chanfro(chao["asfalto"], track, de, 1.0, lado, fora)
-	_chanfro(chao["asfalto"], track, ate, -1.0, lado, fora)
-	var r := ESQUINA_RAIO
-	_chao(chao["canteiro"], track, de + r, ate - r, lado, fora, edge + MURO_BAIXO.x)
-	_mureta(concreto, corpo, track, de, ate, lado)
-	_muro(
-		mural, concreto, corpo, track, de + r, ate - r, lado, edge + MURO_BAIXO.x, MURO_BAIXO, rng
-	)
+	_chao(chao["canteiro"], track, de, ate, lado, edge, edge + MURO_BAIXO.x)
+	# A quina de cada ponta e chanfrada (`RoadTrack.ESQUINA_RAIO`): e por ela
+	# que a mao contraria vira para a rua da esquina. A mureta recua ate onde
+	# o chanfro deixa.
+	_chanfro(chao["asfalto"], track, de, 1.0, lado)
+	_chanfro(chao["asfalto"], track, ate, -1.0, lado)
+	var recuo := recuo_da_mureta()
+	_mureta(concreto, corpo, track, de + recuo, ate - recuo, lado)
+	_muro(mural, concreto, corpo, track, de, ate, lado, edge + MURO_BAIXO.x, MURO_BAIXO, rng)
 
 	var malha := ArrayMesh.new()
 	_commit(mural, malha, RoadTrack.material_texturizado(MURAIS))
@@ -172,7 +154,6 @@ static func montar(
 	_commit(chao["canteiro"], piso, RoadTrack.material_liso(COR_CANTEIRO))
 	_commit(chao["grama"], piso, RoadTrack.material_liso(Cidade.COR_GRAMA))
 	_commit(chao["asfalto"], piso, RoadTrack.material_texturizado(RoadTrack.ASFALTO))
-	_commit(chao["tinta"], piso, RoadTrack.material_liso(RoadTrack.TINTA))
 	_instancia(raiz, "Piso", piso, GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
 
 	var alambrado := ArrayMesh.new()
@@ -199,6 +180,22 @@ static func bordas_do_viaduto(o: float, viaduto: Vector2, lado: float) -> Vector
 	var dentro := -VIADUTO_DENTRO + desvio
 	var fora := RoadTrack.sidewalk_limit() + VIADUTO_FORA + desvio
 	return Vector2(dentro, fora) * lado
+
+
+## Avisa, dos dois lados, que metade da pista vai virar mao contraria, antes
+## da expressa `e`. Recua de 10 em 10 m ate sair da boca de alguma rua.
+static func placas_de_mao_dupla(track: RoadTrack, e: Vector3, props: Node3D) -> void:
+	var o := e.x - Cidade.RUA_LARGURA - RoadTrack.ZEBRADO - MAO_DUPLA_ANTES
+	var lateral := RoadTrack.half_width() + 1.4
+	for side: float in [-1.0, 1.0]:
+		var aqui := o
+		while aqui > 0.0 and Cidade.na_boca(track.cruzamentos, aqui, side):
+			aqui -= 10.0
+		var quem_vem := track.sample_basis(aqui).z
+		var placa := Mobiliario.criar(
+			Mobiliario.Tipo.PLACA_MAO_DUPLA, track.point(aqui, lateral * side), quem_vem
+		)
+		props.add_child(placa)
 
 
 ## O canto `(u, v)` de um painel do atlas, com `u` e `v` de 0 a 1 dentro dele.
@@ -495,7 +492,7 @@ static func _pilares(
 	var o := viaduto.x + PILAR_PASSO * 0.5
 	while o < viaduto.y:
 		var x := edge + PILAR_AFASTAMENTO + desvio_do_viaduto(o, viaduto)
-		var no_caminho := x > edge + PISTA_AO_LADO.x - 1.0 and x < edge + MURO_BAIXO.x + 1.0
+		var no_caminho := absf(x - edge - MURO_BAIXO.x) < 1.0
 		if not no_caminho and x < RoadTrack.limite_do_mundo() - 1.0:
 			_pilar(mural, concreto, corpo, track, o, x * lado, rng.randi_range(0, 15))
 		o += PILAR_PASSO
@@ -591,35 +588,18 @@ static func _chao(
 		o0 = o1
 
 
-## O tracejado do meio da pista de servico: 4 m de periodo, acima dos 1,7 m
-## que a regra do `arte/chao.py` pede para nao piscar.
-static func _tracejado(st: SurfaceTool, track: RoadTrack, de: float, ate: float, x: float) -> void:
-	var o := de
-	while o < ate - 3.0:
-		_quad(
-			st,
-			[
-				_p(track, o, x - 0.07, 0.06),
-				_p(track, o + 2.5, x - 0.07, 0.06),
-				_p(track, o + 2.5, x + 0.07, 0.06),
-				_p(track, o, x + 0.07, 0.06),
-			],
-			[],
-			Vector3.UP
-		)
-		o += 6.0
-
-
-## O chanfro de asfalto na quina de fora da esquina, em `ponta`: o quarto de
-## canto entre a borda da mao contraria (`fora`, lateral sem sinal) e a rua,
-## aparado pelo arco de `ESQUINA_RAIO`. `para_dentro` e +1 se a expressa fica
-## para a frente da ponta (a entrada) e -1 se fica para tras (a saida).
+## O chanfro de asfalto na quina entre a rua da esquina e a expressa, em
+## `ponta`: o quarto de canto entre o meio-fio da pista e o da rua, aparado
+## pelo arco de `RoadTrack.ESQUINA_RAIO`. `para_dentro` e +1 se a expressa fica
+## para a frente da ponta (a entrada) e -1 se fica para tras (a saida). 6 cm
+## acima do chao, como a rua: cobre o acostamento e o canteiro da quina.
 static func _chanfro(
-	st: SurfaceTool, track: RoadTrack, ponta: float, para_dentro: float, lado: float, fora: float
+	st: SurfaceTool, track: RoadTrack, ponta: float, para_dentro: float, lado: float
 ) -> void:
-	var r := ESQUINA_RAIO
-	var centro := Vector2(ponta + para_dentro * r, fora + r)
-	var quina := Vector2(ponta, fora)
+	var r := RoadTrack.ESQUINA_RAIO
+	var borda := RoadTrack.half_width()
+	var centro := Vector2(ponta + para_dentro * r, borda + r)
+	var quina := Vector2(ponta, borda)
 	var passos := 6
 	for k in passos:
 		var a := _no_arco(centro, para_dentro, float(k) / passos)
@@ -627,17 +607,27 @@ static func _chanfro(
 		var cantos: Array[Vector3] = []
 		var uvs: Array[Vector2] = []
 		for q: Vector2 in [quina, a, b, b]:
-			cantos.append(_p(track, q.x, q.y * lado, 0.04))
+			cantos.append(_p(track, q.x, q.y * lado, 0.06))
 			uvs.append(Vector2(q.y / RoadTrack.LANE_WIDTH, q.x / RoadTrack.ASFALTO_TILE))
 		_quad(st, cantos, uvs, Vector3.UP)
 
 
-## Um ponto do arco do chanfro, de `t` 0 (na rua) a 1 (na borda da mao
-## contraria), em `(offset, lateral sem sinal)`.
+## Um ponto do arco do chanfro, de `t` 0 (na rua) a 1 (no meio-fio da pista),
+## em `(offset, lateral sem sinal)`.
 static func _no_arco(centro: Vector2, para_dentro: float, t: float) -> Vector2:
 	var ang := t * PI * 0.5
-	var r := ESQUINA_RAIO
-	return centro + Vector2(-para_dentro * cos(ang), -sin(ang)) * r
+	return centro + Vector2(-para_dentro * cos(ang), -sin(ang)) * RoadTrack.ESQUINA_RAIO
+
+
+## Quanto a mureta comeca depois da ponta da expressa: onde o arco do chanfro
+## passa do pe de fora dela, mais um palmo.
+static func recuo_da_mureta() -> float:
+	var r := RoadTrack.ESQUINA_RAIO
+	var pe := RoadTrack.sidewalk_limit() + MURETA.x + MURETA.z * 0.5
+	var acima := RoadTrack.half_width() + r - pe
+	if acima >= r:
+		return 0.2
+	return r - sqrt(r * r - acima * acima) + 0.2
 
 
 ## A tampa de concreto do muro, de `x` a `tras` (laterais com sinal).

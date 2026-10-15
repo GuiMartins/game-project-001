@@ -452,10 +452,21 @@ func _place_car(car: TrafficCar, at_offset: float) -> void:
 			porta = TrafficCar.Porta.ABERTA
 		elif sorteio < world_tuning.door_open_chance + world_tuning.door_ambush_chance:
 			porta = TrafficCar.Porta.NA_CARA
-		car.recycle(at_offset, RoadTrack.lane_center(curb), true, porta)
+		car.recycle(at_offset, _na_mao(at_offset, RoadTrack.lane_center(curb)), true, porta)
 	else:
-		car.recycle(at_offset, _pick_lane(), false)
+		car.recycle(at_offset, _na_mao(at_offset, _pick_lane()), false)
 	_desencosta(car)
+
+
+## A faixa espelhada, se a sorteada cai na mao contraria da via expressa (ou
+## no zebrado antes dela). Espelhar, e nao sortear de novo: sorteio a mais
+## aqui empurraria todo o resto da corrida do banco de provas. O encostado
+## olha 10 m para cada lado, porque nunca sai dali.
+func _na_mao(at_offset: float, lateral: float) -> float:
+	var mao := track.mao_entre(at_offset - 10.0, at_offset + 10.0)
+	if lateral < mao.x or lateral > mao.y:
+		return -lateral
+	return lateral
 
 
 ## Empurra para a frente o carro que nasceu em cima de outro na mesma faixa.
@@ -808,6 +819,8 @@ func free_lateral(
 ) -> float:
 	var best := preferred
 	var best_score := -INF
+	# Na via expressa, a metade do lado do viaduto e mao contraria.
+	var mao := track.mao_entre(from_offset, from_offset + span)
 	for lane in range(RoadTrack.LANE_COUNT):
 		for i in range(2):
 			var candidate := (
@@ -816,6 +829,8 @@ func free_lateral(
 				else _meio_do_vao(from_offset, span, RoadTrack.corridor_center(lane))
 			)
 			if absf(candidate) > RoadTrack.half_width() - 0.8:
+				continue
+			if candidate < mao.x or candidate > mao.y:
 				continue
 			# Pista livre manda; mudar de faixa custa pouco, mas custa.
 			var score := (

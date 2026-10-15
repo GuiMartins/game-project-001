@@ -84,19 +84,37 @@ func test_na_expressa_nao_tem_rua_nem_gente() -> void:
 					assert_float(onde.distance_to(p)).is_greater(Cidade.RECUO_FACHADA + 9.0)
 
 
-func test_a_pista_de_servico_vem_de_uma_rua_e_vai_para_outra() -> void:
-	# Mao dupla que nasce e morre no meio do quarteirao nao e rua. Cada ponta
-	# encosta numa transversal, so do lado do viaduto: a boca da rua acaba
-	# onde a pista de servico comeca, e comeca onde ela acaba.
+func test_a_mao_contraria_vem_de_uma_rua_e_vai_para_outra() -> void:
+	# Mao contraria que nasce e morre no meio do quarteirao nao e rua. Cada
+	# ponta encosta numa transversal, so do lado do viaduto: a boca da rua
+	# acaba onde a expressa comeca, e comeca onde ela acaba. Ali nao ha zebra.
 	for e in _track.expressas:
 		var entrada := Vector2(e.x - Cidade.RUA_LARGURA * 0.5, e.z)
 		var saida := Vector2(e.y + Cidade.RUA_LARGURA * 0.5, e.z)
 		assert_array(_track.cruzamentos).contains([entrada, saida])
 		assert_float(entrada.x + _track.boca).is_equal_approx(e.x, 0.01)
 		assert_float(saida.x - _track.boca).is_equal_approx(e.y, 0.01)
-	# A boca da pista de servico cabe no comprimento da rua.
-	var fora := RoadTrack.sidewalk_limit() + ViaExpressa.PISTA_AO_LADO.y - RoadTrack.half_width()
-	assert_float(fora).is_less(Cidade.RUA_COMPRIMENTO)
+		assert_bool(_track.e_esquina(entrada) and _track.e_esquina(saida)).is_true()
+
+
+func test_metade_da_pista_e_mao_contraria() -> void:
+	# A pista tem a mesma largura dentro e fora da expressa: dentro, a metade
+	# do lado do viaduto e mao contraria, e quem escolhe faixa fica na outra -
+	# ja no zebrado antes da rua da esquina.
+	for e in _track.expressas:
+		var meio := (e.x + e.y) * 0.5
+		var lado_dela := RoadTrack.lane_center(0) * -e.z
+		assert_bool(_track.na_contramao(meio, lado_dela)).is_true()
+		assert_bool(_track.na_contramao(meio, -lado_dela)).is_false()
+		for o: float in [meio, e.x - _track.boca * 2.0 - 1.0]:
+			var mao := _track.mao_entre(o, o)
+			assert_bool(mao.x <= -lado_dela and -lado_dela <= mao.y).is_true()
+			assert_bool(mao.x <= lado_dela and lado_dela <= mao.y).is_false()
+		# Longe dela, a pista inteira.
+		var antes := e.x - _track.boca * 2.0 - RoadTrack.ZEBRADO - 50.0
+		assert_vector(_track.mao_entre(antes, antes)).is_equal(
+			Vector2(-RoadTrack.half_width(), RoadTrack.half_width())
+		)
 
 
 func test_muro_e_mureta_seguram_a_moto() -> void:
@@ -126,10 +144,11 @@ func test_viaduto_chega_de_lado_e_passa_por_cima_da_pista() -> void:
 	)
 	assert_float(ViaExpressa.desvio_do_viaduto(250.0, v)).is_equal_approx(0.0, 0.01)
 	# No meio, pela esquerda, a borda de dentro passa do eixo: a sombra cai na
-	# pista, e a borda de fora vai alem dos pilares, sobre a pista de servico.
+	# pista, e a borda de fora vai alem dos pilares.
 	var bordas := ViaExpressa.bordas_do_viaduto(250.0, v, Cidade.LADO_ESQUERDA)
 	assert_float(bordas.x).is_greater(0.0)
-	assert_float(bordas.y).is_less(-(RoadTrack.sidewalk_limit() + ViaExpressa.PISTA_AO_LADO.x))
+	var pilar := RoadTrack.sidewalk_limit() + ViaExpressa.PILAR_AFASTAMENTO + ViaExpressa.PILAR.x
+	assert_float(bordas.y).is_less(-pilar)
 	# A placa verde de 7,4 m nao pode ficar embaixo do tabuleiro de 7.
 	var e := Vector3(0.0, 400.0, Cidade.LADO_ESQUERDA)
 	var desvio := ViaExpressa.desvio_do_viaduto(Cidade.EXPRESSA_PLACA, Cidade.viaduto_de(e))

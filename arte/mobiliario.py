@@ -19,6 +19,9 @@ referencias:
 - **PlacaEsquerda** e **PlacaDireita** (`video_01/t2.0s`, `t3.0s`): o losango
   amarelo de curva, com a seta. Dois modelos, e nao um espelhado: escala
   negativa vira o winding, e o Godot descarta a face sem avisar.
+- **PlacaMaoDupla**: o mesmo losango, com as duas setas do sentido duplo de
+  circulacao do CTB - a da esquerda para baixo, a da direita para cima. Fica
+  antes da via expressa, onde metade da pista vira mao contraria.
 
 Convencoes, as mesmas do `poste.py`:
 
@@ -175,6 +178,34 @@ def placa(sentido: float) -> Peca:
     return p
 
 
+def placa_mao_dupla() -> Peca:
+    """O losango da placa de curva com as duas setas do sentido duplo.
+
+    Aqui se anda pela direita: a seta da direita sobe (quem vai), a da
+    esquerda desce (quem vem). As mesmas medidas da seta da curva, que se le a
+    20 m.
+    """
+    p = Peca("PlacaMaoDupla")
+    p.caixa((0, -0.04, 1.3), (0.07, 0.07, 2.6), "ferro")
+    c = Vector((0.0, 0.03, 2.6))
+    r = 0.53
+    losango = [c + Vector((0, 0, r)), c + Vector((r, 0, 0)), c + Vector((0, 0, -r)), c + Vector((-r, 0, 0))]
+    p.face(losango, (0, 1, 0), "amarelo")
+    p.face(losango, (0, -1, 0), "ferro")
+    f = Vector((0.0, 0.006, 0.0))
+    e = 0.05
+    for x, para in ((-0.13, -1.0), (0.13, 1.0)):
+        m = c + Vector((x, 0, 0))
+        base = m + Vector((0, 0, -para * 0.26))
+        topo = m + Vector((0, 0, para * 0.12))
+        haste = [base + Vector((-e, 0, 0)), base + Vector((e, 0, 0)), topo + Vector((e, 0, 0)), topo + Vector((-e, 0, 0))]
+        p.face([v + f for v in haste], (0, 1, 0), "preto")
+        ponta = m + Vector((0, 0, para * 0.27))
+        asas = [ponta, topo + Vector((-0.12, 0, 0)), topo + Vector((0.12, 0, 0))]
+        p.face([v + f for v in asas], (0, 1, 0), "preto")
+    return p
+
+
 def material(nome, cor, brilho) -> bpy.types.Material:
     mat = bpy.data.materials.new(nome)
     if mat.node_tree is None:
@@ -206,7 +237,7 @@ def main() -> None:
     bpy.context.scene.collection.children.link(colecao)
     materiais = [material(*m) for m in MATERIAIS]
     objetos = []
-    for k, peca in enumerate((cacamba(), mupi(), placa(-1.0), placa(1.0))):
+    for k, peca in enumerate((cacamba(), mupi(), placa(-1.0), placa(1.0), placa_mao_dupla())):
         objetos.append(peca.objeto(materiais, colecao, k * 4.0))
     for o in bpy.data.objects:
         o.select_set(o in objetos)

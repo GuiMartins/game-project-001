@@ -1,28 +1,32 @@
 class_name Contramao
 extends Node3D
-## O transito da mao contraria de uma via expressa: carros vindo de frente,
-## do outro lado da mureta. E o que faz a pista ao lado ler como rua - vazia,
-## ela era asfalto pintado - e, de noite, o farol vindo de frente e o
-## referencial de velocidade mais forte que existe: a diferenca e a soma.
+## O transito da mao contraria de uma via expressa: carros vindo de frente, do
+## outro lado da faixa dupla amarela, nas duas faixas do lado do viaduto. E o
+## que faz a metade da pista ler como mao contraria, e o risco de quem invade
+## ela; de noite, o farol vindo de frente e o referencial de velocidade mais
+## forte que existe: a diferenca e a soma.
 ##
 ## O caminho nao comeca nem acaba no meio do quarteirao. O carro sai do
 ## predio do fundo da rua da esquina da saida (como de uma garagem), desce a
-## rua, vira numa curva na mao contraria, passa a expressa inteira e vira na
-## rua da esquina da entrada, ate entrar no predio do fundo dela. Atras da
-## fachada ele nao se desenha: e la que ele nasce e some.
+## rua, vira pelo chanfro da quina na mao contraria, passa a expressa inteira
+## e vira na rua da esquina da entrada, ate entrar no predio do fundo dela.
+## Atras da fachada ele nao se desenha: e la que ele nasce e some.
 ##
 ## Parametrico, como o transito da avenida: cada carro sabe onde esta no
 ## caminho e nunca se projeta em nada (so o jogador roda fisica). Tem colisor
-## da lataria, porque na boca das ruas da esquina a moto alcanca ele. Sai de um
-## gerador proprio, e nao do `World`: o transito e os rivais do banco de provas
-## saem iguais com ou sem ele.
+## da lataria: a moto que invade a contramao bate nele. Sai de um gerador
+## proprio, e nao do `World`: o transito e os rivais do banco de provas nao
+## gastam sorteio com ele.
 
 ## Cruzeiro de cada carro, m/s: 40 a 58 km/h, a velocidade de quem vai embora
 ## da expressa. Contra a moto a 180, a diferenca passa de 230 km/h.
 const CRUZEIRO := Vector2(11.0, 16.0)
-## O limite na curva da esquina: a 6 m/s, num raio de 6 m
-## (`ViaExpressa.ESQUINA_RAIO`), sao 6 m/s2 de lateral.
+## O limite na curva da esquina: a 6 m/s, nos raios de 7 a 10 m que a quina
+## deixa (`raio_da_curva`), sao 4 a 5 m/s2 de lateral.
 const NA_CURVA: float = 6.0
+## Da lataria ate o meio-fio do chanfro, na curva: meia largura de carro e
+## mais 60 cm.
+const FOLGA_DA_QUINA: float = 1.5
 ## Os mesmos do carro da avenida (`TrafficCar.ACCEL`, `BRAKE`).
 const ACELERA: float = 2.2
 const FREIO: float = 4.5
@@ -65,6 +69,9 @@ var _divide: float = 0.0
 ## Daqui para o fim (em metros que faltam) e a fila unica da rua da entrada.
 var _junta: float = 0.0
 var _perto: bool = true
+## Sem ninguem: o banco de provas mede uma batida de cada vez, e ate a
+## proxima largada nao nasce carro.
+var _vazia: bool = false
 
 
 ## Um caminho, de uma garagem a outra, pela faixa `faixa` da mao contraria.
@@ -122,12 +129,27 @@ static func criar(a_track: RoadTrack, a_expressa: Vector3, a_semente: int) -> Co
 	return c
 
 
-## O eixo de cada faixa da mao contraria, em lateral sem sinal: a de dentro,
-## colada nos pilares, e a de fora, colada no muro baixo.
+## O eixo de cada faixa da mao contraria, em lateral sem sinal: as duas faixas
+## da avenida do lado do viaduto, a de dentro colada na faixa dupla.
 static func eixos() -> Array[float]:
-	var x := RoadTrack.sidewalk_limit() + ViaExpressa.PISTA_AO_LADO.x
-	var faixa := (ViaExpressa.PISTA_AO_LADO.y - ViaExpressa.PISTA_AO_LADO.x) * 0.5
-	return [x + faixa * 0.5, x + faixa * 1.5]
+	return [RoadTrack.LANE_WIDTH * 0.5, RoadTrack.LANE_WIDTH * 1.5]
+
+
+## O menor raio que faz a curva da faixa `eixo` para a rua da esquina sem a
+## lataria passar por cima do chanfro da quina. Em `(u, lateral sem sinal)`,
+## com `u` medido da ponta da expressa para dentro dela e a faixa da rua em
+## `u_rua`. A folga nao cresce sempre com o raio - o centro da curva anda em
+## diagonal -, entao vale o primeiro que passa, e nao o maior.
+static func raio_da_curva(eixo: float, u_rua: float) -> float:
+	var rc := RoadTrack.ESQUINA_RAIO
+	var quina := Vector2(rc, RoadTrack.half_width() + rc)
+	var raio := 4.0
+	while raio < 30.0:
+		var centro := Vector2(u_rua + raio, eixo + raio)
+		if centro.distance_to(quina) + rc + FOLGA_DA_QUINA <= raio:
+			return raio
+		raio += 0.25
+	return raio
 
 
 func _ready() -> void:
@@ -139,6 +161,7 @@ func _ready() -> void:
 ## Largada nova, transito novo: a mesma semente poe os mesmos carros nos
 ## mesmos lugares, como o resto do mundo na largada.
 func reiniciar() -> void:
+	_vazia = false
 	_rng.seed = semente
 	for v in _carros:
 		_guarda(v)
@@ -151,6 +174,14 @@ func reiniciar() -> void:
 			s += _rng.randf_range(ESPACO.x, ESPACO.y)
 	_proximo = _rng.randf_range(ESPACO.x, ESPACO.y)
 	_posa(0.0)
+
+
+## Tira todo mundo da pista ate a proxima largada.
+func esvaziar() -> void:
+	_vazia = true
+	for v in _carros:
+		_guarda(v)
+	_carros.clear()
 
 
 func _physics_process(delta: float) -> void:
@@ -172,7 +203,7 @@ func _physics_process(delta: float) -> void:
 	var ultimo := INF
 	for v in _carros:
 		ultimo = minf(ultimo, v.s)
-	if ultimo > _proximo:
+	if ultimo > _proximo and not _vazia:
 		_solta(_rng.randi_range(0, _caminhos.size() - 1), 0.0)
 		_proximo = _rng.randf_range(ESPACO.x, ESPACO.y)
 	_posa(delta)
@@ -234,7 +265,7 @@ func _solta(faixa: int, s: float) -> void:
 	v.s = s
 	v.cruzeiro = _rng.randf_range(CRUZEIRO.x, CRUZEIRO.y)
 	v.v = v.cruzeiro if s > 0.0 else NA_CURVA
-	(v.corpo.get_child(1) as CollisionShape3D).set_deferred("disabled", false)
+	v.corpo.collision_layer = Layers.WORLD
 	v.corpo.global_transform = _caminhos[faixa].em(s)
 	v.carro.reiniciar()
 	_carros.append(v)
@@ -242,7 +273,9 @@ func _solta(faixa: int, s: float) -> void:
 
 func _guarda(v: Veiculo) -> void:
 	v.corpo.visible = false
-	(v.corpo.get_child(1) as CollisionShape3D).set_deferred("disabled", true)
+	# A camada, e nao o `disabled` da forma: este so vale no fim do quadro, e
+	# o banco de provas poe a moto ali no mesmo passo.
+	v.corpo.collision_layer = 0
 	_garagem.append(v)
 
 
@@ -295,41 +328,48 @@ func _moto_perto() -> bool:
 	return false
 
 
-## As duas faixas, cada uma de uma garagem a outra. Tudo em `(offset, lateral
-## sem sinal)`, como a `ViaExpressa`: o caminho segue a curva e a rampa da
-## pista sem saber delas, e o lado so entra no fim, no sinal da lateral.
+## As duas faixas, cada uma de uma garagem a outra. Tudo em `(u, lateral sem
+## sinal)` de cada ponta, com `u` da ponta para dentro da expressa: as duas
+## esquinas sao a mesma, espelhada, e o lado so entra no fim, no sinal da
+## lateral. O caminho segue a curva e a rampa da pista sem saber delas.
 func _monta_caminhos() -> void:
 	var de := expressa.x
 	var ate := expressa.y
 	var lado := expressa.z
 	var meia_rua := Cidade.RUA_LARGURA * 0.5
-	var r := ViaExpressa.ESQUINA_RAIO
-	# Aqui se anda pela direita. Na rua da saida quem desce para a avenida
-	# esta na metade dela do lado de tras da pista se a expressa e a esquerda,
-	# e do lado da frente se e a direita; na da entrada, o contrario.
-	var desce := ate + meia_rua + meia_rua * 0.5 * lado
-	var sobe := de - meia_rua - meia_rua * 0.5 * lado
+	# Aqui se anda pela direita: a metade da rua de quem sai da expressa na
+	# entrada, e a de quem desce para ela na saida, e a de perto da expressa
+	# quando ela esta a esquerda, e a de longe quando esta a direita.
+	var u_rua := -meia_rua - meia_rua * 0.5 * lado
 	var fundo := RoadTrack.half_width() + Cidade.RUA_COMPRIMENTO + NA_GARAGEM
-	var faixas := eixos()
-	for eixo in faixas:
+	var na_saida := func(q: Vector2) -> Vector2: return Vector2(ate - q.x, q.y)
+	var na_entrada := func(q: Vector2) -> Vector2: return Vector2(de + q.x, q.y)
+	var fim_da_saida := 0.0
+	var antes_da_entrada := 0.0
+	for eixo in eixos():
+		var r := raio_da_curva(eixo, u_rua)
+		var centro := Vector2(u_rua + r, eixo + r)
 		var c := Caminho.new()
-		var trechos: Array[Array] = []
-		trechos.append([_reta(Vector2(desce, fundo), Vector2(desce, eixo + r)), INF])
-		var centro := Vector2(desce - r, eixo + r)
-		trechos.append([_arco(centro, Vector2(1, 0), Vector2(0, -1)), NA_CURVA])
-		trechos.append([_reta(Vector2(desce - r, eixo), Vector2(sobe + r, eixo)), INF])
-		centro = Vector2(sobe + r, eixo + r)
-		trechos.append([_arco(centro, Vector2(0, -1), Vector2(-1, 0)), NA_CURVA])
-		trechos.append([_reta(Vector2(sobe, eixo + r), Vector2(sobe, fundo)), INF])
+		var trechos: Array[Array] = [
+			[_reta(Vector2(u_rua, fundo), Vector2(u_rua, eixo + r)), INF, na_saida],
+			[_arco(centro, Vector2(-1, 0), Vector2(0, -1), r), NA_CURVA, na_saida],
+			[_reta(Vector2(ate - u_rua - r, eixo), Vector2(de + u_rua + r, eixo)), INF, null],
+			[_arco(centro, Vector2(0, -1), Vector2(-1, 0), r), NA_CURVA, na_entrada],
+			[_reta(Vector2(u_rua, eixo + r), Vector2(u_rua, fundo)), INF, na_entrada],
+		]
 		var anterior := Vector3.INF
 		for k in trechos.size():
 			if k == 1:
 				c.curva_saida = c.comprimento
+			elif k == 2:
+				fim_da_saida = maxf(fim_da_saida, c.comprimento)
 			elif k == 3:
 				c.curva_entrada = c.comprimento
 			var pontos: PackedVector2Array = trechos[k][0]
 			var limite: float = trechos[k][1]
-			for q in pontos:
+			var mapa: Variant = trechos[k][2]
+			for u in pontos:
+				var q: Vector2 = u if mapa == null else (mapa as Callable).call(u)
 				var p := track.point(q.x, q.y * lado) + Vector3.UP * 0.06
 				if anterior != Vector3.INF:
 					if p.distance_to(anterior) < 0.01:
@@ -340,13 +380,13 @@ func _monta_caminhos() -> void:
 				c.normais.append(track.sample_basis(q.x).y)
 				c.limite.append(limite)
 				c.s.append(c.comprimento)
+		antes_da_entrada = maxf(antes_da_entrada, c.comprimento - c.curva_entrada)
 		_caminhos.append(c)
-	# A fila unica vai da garagem ate a faixa de dentro sair da curva da
-	# saida, e da faixa de dentro chegar 15 m antes da curva da entrada ate a
-	# garagem: e ali que uma faixa cruza a frente da outra.
-	var dentro := _caminhos[0]
-	_divide = dentro.curva_saida + PI * 0.5 * r + 3.0
-	_junta = dentro.comprimento - dentro.curva_entrada + 15.0
+	# A fila unica vai da garagem ate as duas faixas sairem da curva da saida,
+	# e de 15 m antes da primeira curva da entrada ate a garagem: e ali que uma
+	# faixa cruza a frente da outra.
+	_divide = fim_da_saida + 3.0
+	_junta = antes_da_entrada + 15.0
 
 
 static func _reta(a: Vector2, b: Vector2) -> PackedVector2Array:
@@ -357,10 +397,9 @@ static func _reta(a: Vector2, b: Vector2) -> PackedVector2Array:
 	return pontos
 
 
-## Um quarto de volta de raio `ESQUINA_RAIO` em torno de `centro`, de
-## `centro + de * r` a `centro + ate * r`.
-static func _arco(centro: Vector2, de: Vector2, ate: Vector2) -> PackedVector2Array:
-	var r := ViaExpressa.ESQUINA_RAIO
+## Um quarto de volta de raio `r` em torno de `centro`, de `centro + de * r` a
+## `centro + ate * r`.
+static func _arco(centro: Vector2, de: Vector2, ate: Vector2, r: float) -> PackedVector2Array:
 	var pontos := PackedVector2Array()
 	var n := 12
 	for i in n + 1:

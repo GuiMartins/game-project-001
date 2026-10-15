@@ -331,6 +331,7 @@ func _monta_expressas(semente: int, props: Node3D) -> void:
 		props.add_child(Portal.placa(onde, mat, destinos))
 		_guindaste_atras_do_muro(e, i, props)
 		props.add_child(Contramao.criar(track, e, hash([semente, i, 7])))
+		ViaExpressa.placas_de_mao_dupla(track, e, props)
 
 
 ## O guindaste ao fundo, atras do muro alto da expressa (`03_viaduto`). Sem
@@ -575,6 +576,10 @@ func _monta_portais(cruzamentos: Array[Vector2], props: Node3D) -> void:
 	var boca := RUA_LARGURA * 0.5
 	for i in cruzamentos.size():
 		var c := cruzamentos[i]
+		# Na rua da esquina da expressa a avenida nao para: nem semaforo, nem
+		# a placa que vem antes dele.
+		if track.e_esquina(c):
+			continue
 		var retencao := (
 			c.x
 			- boca
@@ -749,40 +754,42 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 			var chao := centro + acima + Vector3.UP * 0.03
 			# Meio-fio dos dois lados da rua. Sem ele o asfalto da rua no sol fica
 			# da cor do cimentado em volta, e a zebra parece pintada na calcada.
-			# Na rua da esquina da expressa ele abre na boca da mao contraria, do
-			# lado de onde ela vira, e no chanfro da quina de fora: e por ali que
-			# os carros dela entram e saem da rua.
+			# Na rua da esquina da expressa ele comeca depois do chanfro da
+			# quina, do lado dela: e por ali que a mao contraria vira.
 			var contraria := _mao_contraria_em(c, side)
 			var lado_da_contraria := signf(r.dot(-track.sample_basis(c.x).z * contraria))
-			var edge := RoadTrack.sidewalk_limit() - road_w
-			var boca := ViaExpressa.PISTA_AO_LADO + Vector2(edge, edge + ViaExpressa.ESQUINA_RAIO)
 			for lado: float in [-1.0, 1.0]:
 				var borda := chao + r * lado * (meio + RoadTrack.MEIO_FIO * 0.5)
 				if contraria != 0.0 and lado == lado_da_contraria:
-					_faixa(meio_fio, borda, d, r, RoadTrack.MEIO_FIO, boca.x)
-					var depois := RUA_COMPRIMENTO - boca.y
-					_faixa(meio_fio, borda + d * boca.y, d, r, RoadTrack.MEIO_FIO, depois)
+					var raio := RoadTrack.ESQUINA_RAIO
+					_faixa(
+						meio_fio, borda + d * raio, d, r, RoadTrack.MEIO_FIO, RUA_COMPRIMENTO - raio
+					)
 				else:
 					_faixa(meio_fio, borda, d, r, RoadTrack.MEIO_FIO, RUA_COMPRIMENTO)
 			# Faixa de pedestre na linha da calcada, com a mesma zebra e a mesma
 			# retencao da avenida, so na mao de quem chega. Fica a
 			# `ZEBRA_ESQUINA` do asfalto da avenida, como a da avenida fica da
-			# boca da rua: e por ali que passa quem anda pela calcada.
+			# boca da rua: e por ali que passa quem anda pela calcada. Na rua da
+			# esquina da expressa nao ha calcada de um lado, ninguem atravessa e
+			# ninguem para: nem uma nem outra.
 			var zebra := RoadTrack.ZEBRA_ESQUINA
-			for x in RoadTrack.listras_da_zebra(RUA_LARGURA):
-				var p := chao + r * x + d * zebra
-				_faixa(tinta, p, d, r, RoadTrack.ZEBRA_LISTRA, RoadTrack.ZEBRA_COMPRIMENTO)
 			var retencao := zebra + RoadTrack.ZEBRA_COMPRIMENTO + RoadTrack.RETENCAO_RECUO
-			var linha := chao + d * (retencao + RoadTrack.RETENCAO_LARGURA * 0.5)
-			_faixa(tinta, linha, r, d, RoadTrack.RETENCAO_LARGURA, meio)
+			if contraria == 0.0:
+				for x in RoadTrack.listras_da_zebra(RUA_LARGURA):
+					var p := chao + r * x + d * zebra
+					_faixa(tinta, p, d, r, RoadTrack.ZEBRA_LISTRA, RoadTrack.ZEBRA_COMPRIMENTO)
+				var linha := chao + d * (retencao + RoadTrack.RETENCAO_LARGURA * 0.5)
+				_faixa(tinta, linha, r, d, RoadTrack.RETENCAO_LARGURA, meio)
 			# O fundo da rua e a fachada de um predio da quadra de tras, olhando
 			# para a avenida: rua que acaba no vazio mostra a borda do mundo, e
 			# predio no fundo e o "T" que toda rua de bairro tem.
 			var tipo := _tipo_de_predio(rua.randf_range(6.0, 23.0))
 			var pe := centro + d * (RUA_COMPRIMENTO - 2.0 + Predio.frente(tipo))
 			_predio(props, rua, tipo, pe, -d)
-			# Tracejado do meio da rua, um carro depois da retencao.
-			var t := retencao + 5.0
+			# Tracejado do meio da rua, um carro depois da retencao; na rua da
+			# esquina, desde o fim do chanfro.
+			var t := retencao + 5.0 if contraria == 0.0 else RoadTrack.ESQUINA_RAIO + 1.0
 			while t < RUA_COMPRIMENTO - 3.0:
 				_faixa(tinta, chao + d * t, d, r, 0.14, 2.0)
 				t += 4.5
@@ -791,9 +798,8 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 			# para no vermelho - a avenida esta no verde, e e o jogador que
 			# passa. Rua de saida nao tem semaforo nem fila: ninguem espera
 			# para sair da avenida.
-			# Na rua da esquina da expressa, nem um nem outro: a fila parava
-			# atravessada no caminho da mao contraria, e o semaforo caia na
-			# cabeca da mureta.
+			# Na rua da esquina da expressa, nem um nem outro: ali nao ha
+			# retencao, e a fila parava no caminho da mao contraria.
 			if rua.randf() < 0.5 or contraria != 0.0:
 				continue
 			# Na faixa de servico, e nao no andavel como os postes da avenida:

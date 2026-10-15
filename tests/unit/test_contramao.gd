@@ -88,11 +88,8 @@ func test_vem_de_frente() -> void:
 				var frente := -t.basis.z
 				var da_pista := -_track.sample_basis(onde.x).z
 				assert_float(frente.dot(da_pista)).is_less(-0.95)
-				# Do lado do viaduto, e entre os pilares e o muro baixo.
-				var x := RoadTrack.sidewalk_limit()
-				assert_float(onde.y * lado).is_between(
-					x + ViaExpressa.PISTA_AO_LADO.x, x + ViaExpressa.PISTA_AO_LADO.y
-				)
+				# Na metade da pista do lado do viaduto.
+				assert_float(onde.y * lado).is_between(0.5, RoadTrack.half_width() - 0.5)
 
 
 func test_nasce_e_some_atras_da_fachada() -> void:
