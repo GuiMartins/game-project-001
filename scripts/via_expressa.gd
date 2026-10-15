@@ -66,12 +66,19 @@ const VIADUTO_ALTURA: float = 7.0
 const VIADUTO_ESPESSURA: float = 1.6
 const VIADUTO_FORA: float = 10.5
 const VIADUTO_DENTRO: float = 1.0
+## Na expressa de pilares no meio (`Cidade.PILARES_NO_MEIO`) o tabuleiro e
+## centrado na pista: 14 m de largura, por cima das duas faixas de dentro de
+## cada mao, e a sombra cai nas duas.
+const VIADUTO_MEIO: float = 7.0
 ## O viaduto nao comeca nem acaba no ar: nos primeiros e nos ultimos 60 m ele
 ## chega e vai embora de lado, por cima do muro baixo, ate 40 m para fora.
 ## Tabuleiro cortado a 7 m de altura, de frente para a moto, le como cenario.
 const VIADUTO_CURVA: float = 60.0
 const VIADUTO_LONGE: float = 40.0
 ## O pilar: largo ao longo da pista, como os da `03`, para o mural caber nele.
+## No meio da pista, 1,2 m de largura sobre a mureta de 60 cm come 60 cm de
+## cada faixa de dentro: a 1,65 m do eixo, o carro de 1,8 m ainda passa a 15 cm
+## dele, e e por isso que o transito fica longe (`RoadTrack.FOLGA_DOS_PILARES`).
 const PILAR := Vector2(1.2, 3.0)
 const PILAR_AFASTAMENTO: float = 1.5
 const PILAR_PASSO: float = 24.0
@@ -95,7 +102,9 @@ const COR_MURETA := Color(0.95, 0.94, 0.91)
 
 ## Monta o trecho de `de` a `ate` em `props`. `lado` e o sinal do lado aberto
 ## (`Cidade.LADO_*`); `viaduto` e onde corre o tabuleiro, ou `Vector2.ZERO`
-## para trecho sem ele. Os paineis saem de `rng`.
+## para trecho sem ele. Os paineis saem de `rng`. Com `no_meio`, as maos se
+## separam por uma mureta no eixo da pista, com os pilares do viaduto em cima,
+## e nao pela faixa dupla amarela.
 static func montar(
 	track: RoadTrack,
 	de: float,
@@ -103,7 +112,8 @@ static func montar(
 	lado: float,
 	viaduto: Vector2,
 	rng: RandomNumberGenerator,
-	props: Node3D
+	props: Node3D,
+	no_meio: bool = false
 ) -> void:
 	var raiz := Node3D.new()
 	raiz.name = "ViaExpressa"
@@ -142,7 +152,12 @@ static func montar(
 	_chanfro(chao["asfalto"], track, de, 1.0, lado)
 	_chanfro(chao["asfalto"], track, ate, -1.0, lado)
 	var recuo := recuo_da_mureta()
-	_mureta(concreto, corpo, track, de + recuo, ate - recuo, lado)
+	_mureta(
+		concreto, corpo, track, de + recuo, ate - recuo, lado, RoadTrack.sidewalk_limit() + MURETA.x
+	)
+	if no_meio:
+		# Sem chanfro: nas pontas so passa a nossa mao, reto.
+		_mureta(concreto, corpo, track, de, ate, 1.0, 0.0)
 	_muro(mural, concreto, corpo, track, de, ate, lado, edge + MURO_BAIXO.x, MURO_BAIXO, rng)
 
 	var malha := ArrayMesh.new()
@@ -163,7 +178,7 @@ static func montar(
 	_instancia(raiz, "Cerca", alambrado, GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
 
 	if viaduto != Vector2.ZERO:
-		_viaduto(raiz, corpo, track, viaduto, lado, rng)
+		_viaduto(raiz, corpo, track, viaduto, lado, rng, no_meio)
 
 
 ## Quanto o tabuleiro esta deslocado para fora em `o`: zero no meio, ate
@@ -176,9 +191,13 @@ static func desvio_do_viaduto(o: float, viaduto: Vector2) -> float:
 
 
 ## As bordas do tabuleiro em `o`, em lateral da pista: `x` a de dentro (que
-## passa do eixo) e `y` a de fora.
-static func bordas_do_viaduto(o: float, viaduto: Vector2, lado: float) -> Vector2:
+## passa do eixo) e `y` a de fora. `no_meio`, centrado na pista.
+static func bordas_do_viaduto(
+	o: float, viaduto: Vector2, lado: float, no_meio: bool = false
+) -> Vector2:
 	var desvio := desvio_do_viaduto(o, viaduto)
+	if no_meio:
+		return Vector2(-VIADUTO_MEIO + desvio, VIADUTO_MEIO + desvio) * lado
 	var dentro := -VIADUTO_DENTRO + desvio
 	var fora := RoadTrack.sidewalk_limit() + VIADUTO_FORA + desvio
 	return Vector2(dentro, fora) * lado
@@ -290,11 +309,17 @@ static func _muro(
 		)
 
 
-## A mureta New Jersey simplificada: trapezio de 60 cm na base e 20 no topo.
+## A mureta New Jersey simplificada: trapezio de 60 cm na base e 20 no topo,
+## com o meio em `meio` (lateral sem sinal) do lado `lado`.
 static func _mureta(
-	concreto: SurfaceTool, corpo: StaticBody3D, track: RoadTrack, de: float, ate: float, lado: float
+	concreto: SurfaceTool,
+	corpo: StaticBody3D,
+	track: RoadTrack,
+	de: float,
+	ate: float,
+	lado: float,
+	meio: float
 ) -> void:
-	var meio := RoadTrack.sidewalk_limit() + MURETA.x
 	var h := MURETA.y
 	# O perfil, de dentro para fora: pe, ombro, ombro, pe.
 	var perfil: Array[Vector2] = [
@@ -419,7 +444,8 @@ static func _viaduto(
 	track: RoadTrack,
 	viaduto: Vector2,
 	lado: float,
-	rng: RandomNumberGenerator
+	rng: RandomNumberGenerator,
+	no_meio: bool
 ) -> void:
 	var barriga := _nova()
 	var viga := _nova()
@@ -429,8 +455,8 @@ static func _viaduto(
 	var o0 := viaduto.x
 	while o0 < viaduto.y - 0.01:
 		var o1 := minf(o0 + PASSO, viaduto.y)
-		var a := bordas_do_viaduto(o0, viaduto, lado)
-		var b := bordas_do_viaduto(o1, viaduto, lado)
+		var a := bordas_do_viaduto(o0, viaduto, lado, no_meio)
+		var b := bordas_do_viaduto(o1, viaduto, lado, no_meio)
 		var lateral := track.sample_basis((o0 + o1) * 0.5).x
 		_quad(
 			barriga,
@@ -467,7 +493,7 @@ static func _viaduto(
 		o0 = o1
 	# As cabecas nas pontas, la longe, fora do mundo.
 	for ponta: float in [viaduto.x, viaduto.y]:
-		var bordas := bordas_do_viaduto(ponta, viaduto, lado)
+		var bordas := bordas_do_viaduto(ponta, viaduto, lado, no_meio)
 		var frente := track.sample_basis(ponta).z * (1.0 if ponta == viaduto.x else -1.0)
 		_quad(
 			viga,
@@ -482,7 +508,7 @@ static func _viaduto(
 			),
 			frente
 		)
-	_pilares(mural, viga, corpo, track, viaduto, lado, rng)
+	_pilares(mural, viga, corpo, track, viaduto, lado, rng, no_meio)
 
 	var malha := ArrayMesh.new()
 	_commit(barriga, malha, _concreto(COR_BARRIGA))
@@ -491,9 +517,10 @@ static func _viaduto(
 	_instancia(raiz, "Viaduto", malha, GeometryInstance3D.SHADOW_CASTING_SETTING_DOUBLE_SIDED)
 
 
-## Um pilar a cada `PILAR_PASSO` embaixo do tabuleiro, entre a mureta e a pista
-## de servico. Onde o tabuleiro vai embora de lado, o pilar acompanha, menos
-## em cima da pista de servico e do muro, e alem do fim do chao.
+## Um pilar a cada `PILAR_PASSO` embaixo do tabuleiro, no canteiro depois da
+## mureta - ou, `no_meio`, na mureta do eixo da pista. Onde o tabuleiro vai
+## embora de lado, o pilar acompanha, menos em cima da pista e do muro, e
+## alem do fim do chao.
 static func _pilares(
 	mural: SurfaceTool,
 	concreto: SurfaceTool,
@@ -501,13 +528,18 @@ static func _pilares(
 	track: RoadTrack,
 	viaduto: Vector2,
 	lado: float,
-	rng: RandomNumberGenerator
+	rng: RandomNumberGenerator,
+	no_meio: bool
 ) -> void:
 	var edge := RoadTrack.sidewalk_limit()
 	var o := viaduto.x + PILAR_PASSO * 0.5
 	while o < viaduto.y:
-		var x := edge + PILAR_AFASTAMENTO + desvio_do_viaduto(o, viaduto)
-		var no_caminho := absf(x - edge - MURO_BAIXO.x) < 1.0
+		var desvio := desvio_do_viaduto(o, viaduto)
+		var x := desvio if no_meio else edge + PILAR_AFASTAMENTO + desvio
+		# No meio, so na mureta; quando o tabuleiro vai de lado, so depois
+		# da mureta de fora - nunca em cima de faixa nem de acostamento.
+		var na_pista := no_meio and x > 0.5 and x < edge + MURETA.x + MURETA.z + PILAR.x * 0.5
+		var no_caminho := na_pista or absf(x - edge - MURO_BAIXO.x) < 1.0
 		if not no_caminho and x < RoadTrack.limite_do_mundo() - 1.0:
 			_pilar(mural, concreto, corpo, track, o, x * lado, rng.randi_range(0, 15))
 		o += PILAR_PASSO

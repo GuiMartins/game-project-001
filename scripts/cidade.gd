@@ -110,6 +110,11 @@ const EXPRESSA_FOLGA: float = 15.0
 ## Cruzamento sorteado a menos disto da esquina sai: as duas bocas ficariam a
 ## um predio fino uma da outra, e o sorteio normal ja nao poe rua a menos de 70.
 const ESQUINA_FOLGA: float = 40.0
+## Quais expressas (contando do zero) separam as maos com mureta e os pilares
+## do viaduto no eixo da pista, e nao com a faixa dupla amarela. A segunda:
+## a primeira mostra a mao contraria aberta, e a segunda tem de ser outra
+## coisa, senao a corrida repete o mesmo trecho.
+const PILARES_NO_MEIO: Array[int] = [1]
 
 ## Uma torre em cada `OBRA_UMA_EM` do corredor vira obra (V17a): esqueleto ou
 ## meio vestida, de andaime e lona, com guindaste em cima. Uma em tres deixa uma obra a cada
@@ -166,6 +171,9 @@ func montar(rua: RandomNumberGenerator, props: Node3D) -> void:
 	var cruzamentos := _sorteia_cruzamentos(rua)
 	var trechos := _sorteia_trechos(rua, plano_de_expressas(rua.seed))
 	track.expressas = expressas
+	track.pilares_no_meio = []
+	for i in expressas.size():
+		track.pilares_no_meio.append(PILARES_NO_MEIO.has(i))
 	_da_nomes(rua.seed)
 	cruzamentos = cruzamentos.filter(func(c: Vector2) -> bool: return not _perto_de_esquina(c.x))
 	cruzamentos.append_array(esquinas_das_expressas(expressas))
@@ -327,7 +335,8 @@ func _monta_expressas(semente: int, props: Node3D) -> void:
 	var mat := _materiais_de_semaforo()
 	for i in expressas.size():
 		var e := expressas[i]
-		ViaExpressa.montar(track, e.x, e.y, e.z, viaduto_de(e), paineis, props)
+		var no_meio := track.pilares_no_meio[i]
+		ViaExpressa.montar(track, e.x, e.y, e.z, viaduto_de(e), paineis, props, no_meio)
 		var destinos: Array = Portal.DESTINOS[i % Portal.DESTINOS.size()]
 		var onde := track.transform_at(e.x + EXPRESSA_PLACA, Portal.LATERAL)
 		props.add_child(Portal.placa(onde, mat, destinos))
