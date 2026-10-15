@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cx3q6p4kslwbl"
-path="res://.godot/imported/vovo.png-44bbc661ed36d85bc094e2d35dbdf395.ctex"
+uid="uid://crb6ivalc1u5c"
+path="res://.godot/imported/praia_desembarcando.png-7aec8586c667cd2d35fddf145422a84d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/pedestres/vovo.png"
-dest_files=["res://.godot/imported/vovo.png-44bbc661ed36d85bc094e2d35dbdf395.ctex"]
+source_file="res://assets/sprites/pedestres/praia_desembarcando.png"
+dest_files=["res://.godot/imported/praia_desembarcando.png-7aec8586c667cd2d35fddf145422a84d.ctex"]
 
 [params]
 

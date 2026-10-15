@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://djv7j2s8x86oe"
-path="res://.godot/imported/praia.png-b7073c3a158ba1dceea08c24f8a2fc0f.ctex"
+uid="uid://bvfecdcr5esd5"
+path="res://.godot/imported/praia_voando.png-822b46fa9a191caabbbc325226f84f4a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/pedestres/praia.png"
-dest_files=["res://.godot/imported/praia.png-b7073c3a158ba1dceea08c24f8a2fc0f.ctex"]
+source_file="res://assets/sprites/pedestres/praia_voando.png"
+dest_files=["res://.godot/imported/praia_voando.png-822b46fa9a191caabbbc325226f84f4a.ctex"]
 
 [params]
 

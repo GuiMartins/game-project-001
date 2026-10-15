@@ -1,5 +1,6 @@
 {
 	"altura_m": 1.75,
+	"animacao": "andando",
 	"celula": [
 		160,
 		200

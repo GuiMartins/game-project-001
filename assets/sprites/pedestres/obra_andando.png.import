@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bgb7r6fq2pink"
-path="res://.godot/imported/adolescente.png-2dd2abcaa93fbc57b2cbcb992796e02a.ctex"
+uid="uid://gkw78dfuxjvv"
+path="res://.godot/imported/obra_andando.png-0809026592c677e8f40a4174271fc5f8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/pedestres/adolescente.png"
-dest_files=["res://.godot/imported/adolescente.png-2dd2abcaa93fbc57b2cbcb992796e02a.ctex"]
+source_file="res://assets/sprites/pedestres/obra_andando.png"
+dest_files=["res://.godot/imported/obra_andando.png-0809026592c677e8f40a4174271fc5f8.ctex"]
 
 [params]
 

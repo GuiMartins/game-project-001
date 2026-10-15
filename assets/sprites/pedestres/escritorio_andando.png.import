@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://0xq03a0jiqxo"
-path="res://.godot/imported/escritorio.png-565d8153c9e527bcb0817d0494834e0d.ctex"
+uid="uid://domxtfmvxopdl"
+path="res://.godot/imported/escritorio_andando.png-986e543fcf3c8329d51c2423568693c1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/pedestres/escritorio.png"
-dest_files=["res://.godot/imported/escritorio.png-565d8153c9e527bcb0817d0494834e0d.ctex"]
+source_file="res://assets/sprites/pedestres/escritorio_andando.png"
+dest_files=["res://.godot/imported/escritorio_andando.png-986e543fcf3c8329d51c2423568693c1.ctex"]
 
 [params]
 
