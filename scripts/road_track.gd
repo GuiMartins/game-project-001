@@ -102,6 +102,9 @@ const ZEBRADO_LISTRA: float = 0.5
 ## Quem escolhe faixa na expressa fica a isto da faixa dupla: o meio da faixa
 ## de dentro e o corredor das duas, e nao em cima da tinta.
 const FOLGA_DA_DUPLA: float = 0.8
+## Com os pilares no meio (1,2 m), quem escolhe faixa fica mais longe: o
+## corredor entre as duas faixas de dentro e onde o pilar esta.
+const FOLGA_DOS_PILARES: float = 1.4
 ## O chanfro da quina entre a rua da esquina e a expressa, no meio-fio: e por
 ## ele que a mao contraria vira, e sem ele a faixa de fora passava por cima
 ## da calcada. 5 m e raio de esquina de rua de cidade.
@@ -117,6 +120,9 @@ var comprimento_da_avenida: float = 0.0
 ## lado]`, com o `lado` do viaduto e do perfil aberto. Quem anda na calcada e
 ## quem atravessa a rua precisa saber: ali nao ha calcada nem travessia.
 var expressas: Array[Vector3] = []
+## Para cada expressa, se as maos se separam por mureta e pilares no eixo da
+## pista (`Cidade.PILARES_NO_MEIO`), e nao pela faixa dupla.
+var pilares_no_meio: Array[bool] = []
 ## Onde a avenida e cruzada, como a `Cidade` sorteou: `[offset, lados]`, com os
 ## lados no sinal do `Cidade.LADO_*`. E dele que sai onde a pintura abre.
 var cruzamentos: Array[Vector2] = []
@@ -342,12 +348,18 @@ func na_contramao(o: float, l: float) -> bool:
 ## antes de escolher faixa, olhando para a frente.
 func mao_entre(de: float, ate: float) -> Vector2:
 	var hw := half_width()
-	for e in expressas:
+	for i in expressas.size():
+		var e := expressas[i]
 		if ate >= e.x - 2.0 * boca - ZEBRADO and de <= e.y + 2.0 * boca:
+			var folga := FOLGA_DOS_PILARES if _com_pilares(i) else FOLGA_DA_DUPLA
 			if e.z < 0.0:
-				return Vector2(FOLGA_DA_DUPLA, hw)
-			return Vector2(-hw, -FOLGA_DA_DUPLA)
+				return Vector2(folga, hw)
+			return Vector2(-hw, -folga)
 	return Vector2(-hw, hw)
+
+
+func _com_pilares(i: int) -> bool:
+	return i < pilares_no_meio.size() and pilares_no_meio[i]
 
 
 ## Se o cruzamento `c` e a rua da esquina de uma expressa, por onde a mao
@@ -560,7 +572,11 @@ func pintar(a_cruzamentos: Array[Vector2], a_boca: float) -> void:
 					continue
 				var x := lane_center(lane) - LANE_WIDTH * 0.5
 				_quad(tinta, o0, o1 - 1.2, x - 0.16, x + 0.16, 0.03)
-		for e in expressas:
+		for k in expressas.size():
+			# Com os pilares no meio, a mureta e que separa: sem tinta embaixo.
+			if _com_pilares(k):
+				continue
+			var e := expressas[k]
 			var a := maxf(o0, e.x)
 			var b := minf(o1, e.y)
 			if a < b:

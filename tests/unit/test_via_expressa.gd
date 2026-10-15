@@ -137,6 +137,31 @@ func test_muro_e_mureta_seguram_a_moto() -> void:
 			assert_bool(espaco.intersect_ray(raio).is_empty()).is_false()
 
 
+func test_a_segunda_separa_as_maos_com_pilares() -> void:
+	# A primeira expressa separa as maos so com tinta: a moto atravessa o eixo.
+	# A segunda, com mureta e os pilares do viaduto no meio: nao atravessa.
+	var espaco := _track.get_world_3d().direct_space_state
+	assert_int(_track.expressas.size()).is_greater_equal(2)
+	for i in 2:
+		var e := _track.expressas[i]
+		var o := (e.x + e.y) * 0.5
+		var de := _track.point(o, 2.0) + Vector3.UP * 0.5
+		var ate := _track.point(o, -2.0) + Vector3.UP * 0.5
+		var raio := PhysicsRayQueryParameters3D.create(de, ate, Layers.WORLD)
+		await get_tree().physics_frame
+		assert_bool(espaco.intersect_ray(raio).is_empty()).is_equal(i == 0)
+		assert_bool(_track.pilares_no_meio[i]).is_equal(i == 1)
+	# E quem escolhe faixa fica mais longe do eixo onde ha pilar.
+	var meio_1 := (_track.expressas[1].x + _track.expressas[1].y) * 0.5
+	var meio_0 := (_track.expressas[0].x + _track.expressas[0].y) * 0.5
+	var com_pilar := _track.mao_entre(meio_1, meio_1)
+	var com_tinta := _track.mao_entre(meio_0, meio_0)
+	assert_float(absf(com_pilar.x) + absf(com_pilar.y)).is_greater(0.0)
+	assert_float(minf(absf(com_pilar.x), absf(com_pilar.y))).is_greater(
+		minf(absf(com_tinta.x), absf(com_tinta.y))
+	)
+
+
 func test_o_acostamento_fica_livre() -> void:
 	# O acostamento e a fuga do transito fechado: muro e mureta comecam depois.
 	assert_float(ViaExpressa.MURETA.x - ViaExpressa.MURETA.z * 0.5).is_greater_equal(0.0)
