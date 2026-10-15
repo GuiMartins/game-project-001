@@ -30,6 +30,8 @@ const PLACA := Vector2(5.4, 2.6)
 const FAIXA_AZUL: float = 0.85
 const VERDE := Color(0.05, 0.42, 0.22)
 const AZUL := Color(0.08, 0.24, 0.62)
+## A chapa de advertencia: o mesmo amarelo da placa de curva do `mobiliario.py`.
+const AMARELO := Color(0.95, 0.75, 0.10)
 ## Nomes de via e de bairro do Rio: lugar e livre, marca nao (V18). Uma placa
 ## por cruzamento alternado, na ordem, e a lista da a volta.
 const DESTINOS: Array[Array] = [
@@ -90,6 +92,22 @@ static func placa(onde: Transform3D, mat: Dictionary, destinos: Array) -> Node3D
 	return raiz
 
 
+## O aviso de que metade da pista vai virar mao contraria, no mesmo portico
+## da placa verde: chapa amarela de advertencia, letra preta, por cima da
+## pista. O losango da calcada sozinho passava batido a 180 km/h; a chapa de
+## 5 m em cima da faixa e o que se le chegando. `metros` e ate a rua da
+## esquina, onde a contramao comeca.
+static func mao_dupla(onde: Transform3D, mat: Dictionary, metros: int) -> Node3D:
+	var raiz := _poste(onde, BRACO_PLACA, mat)
+	var centro := Vector3(-4.6, BRACO_PLACA - 0.2 - PLACA.y * 0.5, 0.0)
+	_chapa(raiz, centro, PLACA, Color.BLACK)
+	_chapa(raiz, centro + Vector3(0, 0, 0.02), PLACA - Vector2(0.16, 0.16), AMARELO)
+	var preto := Color(0.05, 0.05, 0.05)
+	_texto(raiz, "MÃO DUPLA", centro + Vector3(0.0, 0.4, 0.09), 96, preto)
+	_texto(raiz, "A %d m" % metros, centro + Vector3(0.0, -0.6, 0.09), 72, preto)
+	return raiz
+
+
 static func _poste(onde: Transform3D, altura: float, mat: Dictionary) -> Node3D:
 	var raiz := Node3D.new()
 	raiz.name = "Portal"
@@ -122,13 +140,15 @@ static func _chapa(raiz: Node3D, centro: Vector3, tamanho: Vector2, cor: Color) 
 ## Texto branco colado na placa, lido de +Z. Sem sombra e sem luz: e tinta
 ## refletiva, e a placa no contraluz ficaria ilegivel. Recorte por alfa, e nao
 ## mistura, para nao brigar na ordem de desenho com o vidro dos carros.
-static func _texto(raiz: Node3D, texto: String, onde: Vector3, tamanho: int) -> void:
+static func _texto(
+	raiz: Node3D, texto: String, onde: Vector3, tamanho: int, cor: Color = Color.WHITE
+) -> void:
 	var rotulo := Label3D.new()
 	rotulo.text = texto
 	rotulo.font_size = tamanho
 	rotulo.pixel_size = 0.01
 	rotulo.outline_size = 0
-	rotulo.modulate = Color.WHITE
+	rotulo.modulate = cor
 	rotulo.shaded = false
 	rotulo.double_sided = false
 	rotulo.alpha_cut = Label3D.ALPHA_CUT_DISCARD

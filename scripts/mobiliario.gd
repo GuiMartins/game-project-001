@@ -1,20 +1,22 @@
 class_name Mobiliario
 extends RefCounted
-## A cacamba, o mupi e a placa de curva de `arte/mobiliario.py` (V17).
+## A cacamba, o mupi, a placa de curva (V17) e a de mao dupla de
+## `arte/mobiliario.py`.
 ##
 ## Mesma ideia do `Poste` e da `Arvore`: o `.glb` e aberto uma vez e cada peca
 ## divide a malha. O modelo olha para -Z: a cacamba de comprido ao longo da
 ## pista, e o mupi e a placa encarando quem vem.
 
-enum Tipo { CACAMBA, MUPI, PLACA_ESQUERDA, PLACA_DIREITA }
+enum Tipo { CACAMBA, MUPI, PLACA_ESQUERDA, PLACA_DIREITA, PLACA_MAO_DUPLA }
 
 const CENA: PackedScene = preload("res://assets/mobiliario/mobiliario.glb")
-const NOS: Array[String] = ["Cacamba", "Mupi", "PlacaEsquerda", "PlacaDireita"]
+const NOS: Array[String] = ["Cacamba", "Mupi", "PlacaEsquerda", "PlacaDireita", "PlacaMaoDupla"]
 ## O colisor de cada uma, no espaco do modelo. A cacamba e o mupi sao caixa
 ## inteira, que a moto que sobe na calcada encontra; da placa, so o poste.
 const COLISORES: Array[Vector3] = [
 	Vector3(2.4, 1.0, 1.4),
 	Vector3(1.4, 2.3, 0.3),
+	Vector3(0.15, 2.6, 0.15),
 	Vector3(0.15, 2.6, 0.15),
 	Vector3(0.15, 2.6, 0.15),
 ]

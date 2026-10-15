@@ -85,6 +85,8 @@ func _monta_batida() -> void:
 		car.posicionar(car.offset + 9000.0)
 	for rival in _mundo.rivals:
 		rival.offset += 9000.0
+	# A batida pode cair na via expressa, e a mao contraria vem de frente.
+	_mundo.get_tree().call_group(&"contramao", &"esvaziar")
 
 	var em := 400.0 + 150.0 * float(_batida)
 	var faixa := RoadTrack.lane_center(1)

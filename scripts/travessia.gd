@@ -85,6 +85,9 @@ static func planejar(a_track: RoadTrack, rng: RandomNumberGenerator) -> Array[Ev
 	var lista: Array[Evento] = []
 	var zebras := 0
 	for c in a_track.cruzamentos:
+		# Na rua da esquina da expressa nao ha zebra.
+		if a_track.e_esquina(c):
+			continue
 		for lado: float in [-1.0, 1.0]:
 			if not (c.y == Cidade.LADO_AMBOS or c.y == lado):
 				continue

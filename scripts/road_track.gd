@@ -84,6 +84,28 @@ const ZEBRA_ESQUINA: float = 1.0
 ## nao tem com o que piscar.
 const RETENCAO_LARGURA: float = 0.5
 const RETENCAO_RECUO: float = 1.6
+## Na via expressa a metade da pista do lado do viaduto e a mao contraria, e a
+## divisao e a faixa dupla amarela do CTB (sentidos opostos): duas linhas de
+## 12 cm com 12 cm entre elas. Amarelo puxado para o ocre, porque o puro
+## estoura no LUT do meio-dia.
+const AMARELO := Color(0.88, 0.70, 0.20)
+const DUPLA_LARGURA: float = 0.12
+const DUPLA_VAO: float = 0.12
+## Onde as faixas da corrida do lado do viaduto acabam, antes da rua da
+## esquina: um zebrado em cunha, que nasce no meio-fio e chega no meio da
+## pista na boca da rua. 40 m sao quase 3 s a 50 km/h, o que o transito leva
+## para passar duas faixas para o lado (1,6 m/s de lateral). As listras a cada
+## 3 m, acima dos 1,7 m que nao piscam a 180 km/h.
+const ZEBRADO: float = 40.0
+const ZEBRADO_PASSO: float = 3.0
+const ZEBRADO_LISTRA: float = 0.5
+## Quem escolhe faixa na expressa fica a isto da faixa dupla: o meio da faixa
+## de dentro e o corredor das duas, e nao em cima da tinta.
+const FOLGA_DA_DUPLA: float = 0.8
+## O chanfro da quina entre a rua da esquina e a expressa, no meio-fio: e por
+## ele que a mao contraria vira, e sem ele a faixa de fora passava por cima
+## da calcada. 5 m e raio de esquina de rua de cidade.
+const ESQUINA_RAIO: float = 5.0
 
 var curve: Curve3D
 var length: float = 0.0
@@ -299,6 +321,45 @@ func project(world_pos: Vector3, hint_offset: float) -> Vector2:
 	return Vector2(best_offset, lateral)
 
 
+## A expressa cuja mao contraria ocupa `o`, ou `Vector3.ZERO`. Vai da boca da
+## rua da esquina da entrada ate a da saida: e ali que os carros dela viram.
+func contramao_em(o: float) -> Vector3:
+	for e in expressas:
+		if o >= e.x - 2.0 * boca and o <= e.y + 2.0 * boca:
+			return e
+	return Vector3.ZERO
+
+
+## Se a lateral `l` em `o` e mao contraria.
+func na_contramao(o: float, l: float) -> bool:
+	var e := contramao_em(o)
+	return e != Vector3.ZERO and l * e.z > 0.0
+
+
+## Ate onde a corrida vai de lado entre `de` e `ate`: a pista inteira, ou so a
+## metade dela se a janela pega uma mao contraria - com o zebrado antes, que
+## ja fecha as faixas do lado dela. E o que o transito e os rivais perguntam
+## antes de escolher faixa, olhando para a frente.
+func mao_entre(de: float, ate: float) -> Vector2:
+	var hw := half_width()
+	for e in expressas:
+		if ate >= e.x - 2.0 * boca - ZEBRADO and de <= e.y + 2.0 * boca:
+			if e.z < 0.0:
+				return Vector2(FOLGA_DA_DUPLA, hw)
+			return Vector2(-hw, -FOLGA_DA_DUPLA)
+	return Vector2(-hw, hw)
+
+
+## Se o cruzamento `c` e a rua da esquina de uma expressa, por onde a mao
+## contraria entra e sai (`Cidade.esquinas_das_expressas`). Ali nao ha zebra
+## nem retencao: ninguem atravessa, e a avenida nao para.
+func e_esquina(c: Vector2) -> bool:
+	for e in expressas:
+		if absf(c.x - (e.x - boca)) < 0.01 or absf(c.x - (e.y + boca)) < 0.01:
+			return true
+	return false
+
+
 ## O nome da via em `offset`: o do trecho de expressa, se cair num, e o da
 ## avenida no resto.
 func nome_em(offset: float) -> String:
@@ -440,7 +501,14 @@ func pintar(a_cruzamentos: Array[Vector2], a_boca: float) -> void:
 	# da rua, do lado que ela chega, e na zebra, dos dois.
 	var sem_tracejado: Array[Vector2] = []
 	var sem_bordo: Array[Array] = [[], []]
+	# Cada divisoria de faixa (1 a 3, da esquerda) abre onde a contramao pede.
+	var sem_divisoria: Array[Array] = []
+	for i in LANE_COUNT:
+		var vazio: Array[Vector2] = []
+		sem_divisoria.append(vazio)
 	for c in cruzamentos:
+		if e_esquina(c):
+			continue
 		var zebra_fim := c.x - boca - ZEBRA_ESQUINA
 		var zebra_inicio := zebra_fim - ZEBRA_COMPRIMENTO
 		var retencao := zebra_inicio - RETENCAO_RECUO - RETENCAO_LARGURA
@@ -458,6 +526,28 @@ func pintar(a_cruzamentos: Array[Vector2], a_boca: float) -> void:
 			)
 		_quad(tinta, retencao, retencao + RETENCAO_LARGURA, -road_w, road_w, 0.03)
 
+	var amarela := SurfaceTool.new()
+	amarela.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for e in expressas:
+		var k := 0 if e.z < 0.0 else 1
+		var boca_entrada := e.x - 2.0 * boca
+		var boca_saida := e.y + 2.0 * boca
+		var zebrado := boca_entrada - ZEBRADO
+		# O meio-fio e a linha de bordo abrem na boca da rua e no chanfro.
+		for t: Vector2 in [
+			Vector2(boca_entrada, e.x + ESQUINA_RAIO), Vector2(e.y - ESQUINA_RAIO, boca_saida)
+		]:
+			sem_meio_fio[k].append(t)
+			sem_bordo[k].append(t)
+		# O tracejado do meio vira faixa dupla na expressa, e some no zebrado e
+		# nas bocas; o do lado da contramao some no zebrado e nas bocas, onde os
+		# carros dela viram atravessando.
+		sem_divisoria[2].append(Vector2(zebrado, boca_saida))
+		var lado_dela := 1 if e.z < 0.0 else 3
+		sem_divisoria[lado_dela].append(Vector2(zebrado, e.x))
+		sem_divisoria[lado_dela].append(Vector2(e.y, boca_saida))
+		_zebrado(tinta, zebrado, boca_entrada, e.z)
+
 	var steps := int(length / MESH_STEP)
 	for i in range(steps):
 		var o0 := float(i) * MESH_STEP
@@ -466,8 +556,17 @@ func pintar(a_cruzamentos: Array[Vector2], a_boca: float) -> void:
 		# referencia visual do corredor entre as filas de carro.
 		if i % 3 != 2 and _livre(o0, o1 - 1.2, sem_tracejado):
 			for lane in range(1, LANE_COUNT):
+				if not _livre(o0, o1 - 1.2, sem_divisoria[lane]):
+					continue
 				var x := lane_center(lane) - LANE_WIDTH * 0.5
 				_quad(tinta, o0, o1 - 1.2, x - 0.16, x + 0.16, 0.03)
+		for e in expressas:
+			var a := maxf(o0, e.x)
+			var b := minf(o1, e.y)
+			if a < b:
+				var x := DUPLA_VAO * 0.5
+				_quad(amarela, a, b, x, x + DUPLA_LARGURA, 0.03)
+				_quad(amarela, a, b, -x - DUPLA_LARGURA, -x, 0.03)
 		var dentro := road_w - BORDO_RECUO
 		for t in _recorta(o0, o1, sem_bordo[0]):
 			_quad(tinta, t.x, t.y, -dentro, -dentro + BORDO_LARGURA, 0.03)
@@ -483,6 +582,9 @@ func pintar(a_cruzamentos: Array[Vector2], a_boca: float) -> void:
 
 	var mesh := ArrayMesh.new()
 	_commit(tinta, mesh, material_liso(TINTA))
+	# Sem expressa a superficie amarela fica vazia, e vazia quebra o `ArrayMesh`.
+	if not expressas.is_empty():
+		_commit(amarela, mesh, material_liso(AMARELO))
 	_commit(curb, mesh, material_liso(COR_MEIO_FIO))
 	_commit(face, mesh, material_liso(COR_FACE_MEIO_FIO))
 	_pintura = MeshInstance3D.new()
@@ -490,6 +592,23 @@ func pintar(a_cruzamentos: Array[Vector2], a_boca: float) -> void:
 	_pintura.mesh = mesh
 	_pintura.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_pintura)
+
+
+## O zebrado em cunha de `de` a `ate`, do lado `lado`: a linha que sai do
+## meio-fio e chega no meio da pista, e as listras entre ela e o meio-fio.
+func _zebrado(st: SurfaceTool, de: float, ate: float, lado: float) -> void:
+	var hw := half_width() - BORDO_RECUO
+	var o := de
+	while o < ate - 0.01:
+		var o1 := minf(o + 0.5, ate)
+		var x := hw * (1.0 - ((o + o1) * 0.5 - de) / (ate - de))
+		_quad(st, o, o1, minf(lado * x, lado * (x - 0.2)), maxf(lado * x, lado * (x - 0.2)), 0.03)
+		o = o1
+	o = de + ZEBRADO_PASSO
+	while o < ate - ZEBRADO_LISTRA:
+		var x := hw * (1.0 - (o - de) / (ate - de))
+		_quad(st, o, o + ZEBRADO_LISTRA, minf(lado * x, lado * hw), maxf(lado * x, lado * hw), 0.03)
+		o += ZEBRADO_PASSO
 
 
 ## Centro de cada listra de uma zebra que atravessa `largura` metros de rua,

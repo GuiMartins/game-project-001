@@ -177,6 +177,7 @@ func _physics_process(delta: float) -> void:
 
 	# Encostado nao muda de faixa: esta estacionado, nao no fluxo.
 	if not parked:
+		_sai_da_contramao()
 		_lane_change_timer -= delta
 		if _lane_change_timer <= 0.0:
 			_lane_change_timer = _rng.randf_range(4.0, 16.0)
@@ -187,7 +188,9 @@ func _physics_process(delta: float) -> void:
 			# Sem olhar para a moto, que e o susto do corredor; olhando para os
 			# outros carros, que e o que impede um de entrar no outro. Faixa
 			# ocupada e troca cancelada, e o sorteio da proxima ja saiu acima.
-			if absf(candidate) <= limit and _faixa_livre(candidate):
+			var mao := track.mao_entre(offset, offset + _antevisao())
+			var na_mao := candidate >= mao.x and candidate <= mao.y
+			if absf(candidate) <= limit and na_mao and _faixa_livre(candidate):
 				_target_lateral = candidate
 
 	# `NA_CARA` so existe em carro encostado, entao carro em movimento nunca
@@ -204,6 +207,30 @@ func _physics_process(delta: float) -> void:
 
 	_apply_transform()
 	_pose(delta)
+
+
+## Quantos metros a frente o carro olha a pista antes de escolher faixa: 6 s de
+## estrada, e pelo menos 50 m. E o que ele leva para passar duas faixas a
+## 1,6 m/s de lado, com folga para esperar vaga.
+func _antevisao() -> float:
+	return maxf(50.0, speed * 6.0)
+
+
+## Na via expressa, a metade do lado do viaduto e mao contraria, e o zebrado
+## antes dela fecha as faixas daquele lado. O carro que vai dar nela passa
+## para o outro lado assim que tiver vaga - e, chegando no zebrado sem vaga,
+## passa assim mesmo, como no transito de verdade. Sem sorteio: fora da
+## expressa o carro gasta o gerador como sempre gastou.
+func _sai_da_contramao() -> void:
+	var mao := track.mao_entre(offset, offset + _antevisao())
+	if _target_lateral >= mao.x and _target_lateral <= mao.y:
+		return
+	var para := signf((mao.x + mao.y) * 0.5 - _target_lateral)
+	var candidate := _target_lateral + RoadTrack.LANE_WIDTH * para
+	var ja := track.mao_entre(offset, offset)
+	var chegou := _target_lateral < ja.x or _target_lateral > ja.y
+	if chegou or _faixa_livre(candidate):
+		_target_lateral = candidate
 
 
 ## O jogador esta a menos de `door_ambush_time` segundos de alcancar este

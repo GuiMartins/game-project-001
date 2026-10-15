@@ -336,7 +336,10 @@ func _drive(delta: float) -> void:
 				want = _alongside_lateral()
 	if world.has_method("free_lateral"):
 		want = world.free_lateral(offset, want, span, self)
-	_target_lateral = clampf(want, -RoadTrack.half_width() + 1.0, RoadTrack.half_width() - 1.0)
+	# Na via expressa, so a metade da corrida: a outra e mao contraria.
+	var mao := track.mao_entre(offset, offset + span)
+	var borda := RoadTrack.half_width() - 1.0
+	_target_lateral = clampf(want, maxf(-borda, mao.x), minf(borda, mao.y))
 
 	var move := _target_lateral - lateral
 	var lateral_speed := clampf(move * 3.0, -9.0, 9.0)
