@@ -123,7 +123,12 @@ const PISCA: float = 1.4
 ## Aceleracao, em m/s2, abaixo da qual a lanterna acende: freio de verdade, e
 ## nao o carro so tirando o pe.
 const FREIO: float = -0.6
-## Quanto a lanterna acende com o carro andando, sem frear (V20). No video toda
+## Quanto o freio fica aceso depois de pisado: luz de freio nao pisca a cada
+## tremida da aceleracao, e 0,4 s e o que um pe leva para sair e voltar.
+const FREIO_MINIMO: float = 0.4
+## Quanto a lanterna acende com o carro andando, sem frear (V20), depois que
+## o motorista liga as luzes: o shader multiplica pelo escuro, e de dia a
+## traseira so acende no freio (no Rio ninguem anda de lanterna de dia). No video toda
 ## lanterna esta acesa, e o freio e a mesma luz mais forte por cima: apagada,
 ## a traseira nao tinha nada para o freio "acender mais", e o aviso de que o
 ## corredor vai fechar dependia de o jogador ver a luz nascer do nada.
@@ -193,6 +198,8 @@ var _v_anterior: float = 0.0
 var _a_long: float = 0.0
 var _a_lat: float = 0.0
 var _freio: float = 0.0
+## Ate quando o freio fica aceso, no `_relogio` do carro.
+var _freio_ate: float = -1.0
 ## Mola da carroceria: arfagem (m), mergulho e rolagem (rad), e as velocidades.
 var _mola := Vector3.ZERO
 var _mola_v := Vector3.ZERO
@@ -407,8 +414,12 @@ func atualizar(delta: float, velocidade: float, lateral: float, encostado: bool,
 	var filtro := 1.0 - exp(-delta / 0.15)
 	_a_long = lerpf(_a_long, clampf(a_long, -9.0, 6.0), filtro)
 	_a_lat = lerpf(_a_lat, clampf(a_lat, -6.0, 6.0), filtro)
-	# A lanterna nao filtra: acende no passo em que o carro freia.
-	_freio = 1.0 if a_long < FREIO or (absf(velocidade) < 0.3 and not encostado) else LANTERNA
+	# A lanterna acende no passo em que o carro freia, mas segura o freio por
+	# `FREIO_MINIMO`: a aceleracao crua oscila em torno do limiar e, agora que
+	# a traseira de dia e apagada, cada oscilacao virava um pisca.
+	if a_long < FREIO or (absf(velocidade) < 0.3 and not encostado):
+		_freio_ate = _relogio + FREIO_MINIMO
+	_freio = 1.0 if _relogio < _freio_ate else LANTERNA
 	var esterco_alvo := clampf(
 		atan(_entre_eixos * giro_total / maxf(absf(velocidade), 1.0)), -0.6, 0.6
 	)
