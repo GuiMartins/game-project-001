@@ -60,12 +60,13 @@ func test_toda_expressa_do_plano_entra_na_corrida() -> void:
 
 
 func test_na_expressa_nao_tem_rua_nem_gente() -> void:
+	# Perto dela, so a rua da esquina de cada ponta.
+	var esquinas := Cidade.esquinas_das_expressas(_track.expressas)
 	for e in _track.expressas:
+		var perto := Vector2(e.x - Cidade.ESQUINA_FOLGA, e.y + Cidade.ESQUINA_FOLGA)
 		for c in _track.cruzamentos:
-			(
-				assert_bool(c.x > e.x - Cidade.EXPRESSA_FOLGA and c.x < e.y + Cidade.EXPRESSA_FOLGA)
-				. is_false()
-			)
+			if c.x > perto.x and c.x < perto.y:
+				assert_array(esquinas).contains([c])
 	var rua := RandomNumberGenerator.new()
 	rua.seed = SEMENTE
 	var gente := Pedestres.posicoes(_track, _track.cruzamentos, rua)
@@ -81,6 +82,21 @@ func test_na_expressa_nao_tem_rua_nem_gente() -> void:
 				var onde := (quem[0] as Transform3D).origin
 				for p in eixo:
 					assert_float(onde.distance_to(p)).is_greater(Cidade.RECUO_FACHADA + 9.0)
+
+
+func test_a_pista_de_servico_vem_de_uma_rua_e_vai_para_outra() -> void:
+	# Mao dupla que nasce e morre no meio do quarteirao nao e rua. Cada ponta
+	# encosta numa transversal, so do lado do viaduto: a boca da rua acaba
+	# onde a pista de servico comeca, e comeca onde ela acaba.
+	for e in _track.expressas:
+		var entrada := Vector2(e.x - Cidade.RUA_LARGURA * 0.5, e.z)
+		var saida := Vector2(e.y + Cidade.RUA_LARGURA * 0.5, e.z)
+		assert_array(_track.cruzamentos).contains([entrada, saida])
+		assert_float(entrada.x + _track.boca).is_equal_approx(e.x, 0.01)
+		assert_float(saida.x - _track.boca).is_equal_approx(e.y, 0.01)
+	# A boca da pista de servico cabe no comprimento da rua.
+	var fora := RoadTrack.sidewalk_limit() + ViaExpressa.PISTA_AO_LADO.y - RoadTrack.half_width()
+	assert_float(fora).is_less(Cidade.RUA_COMPRIMENTO)
 
 
 func test_muro_e_mureta_seguram_a_moto() -> void:

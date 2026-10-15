@@ -11,6 +11,8 @@ extends RefCounted
 ## - **Aberto** (`03_viaduto`, a esquerda): mureta de concreto, a faixa dos
 ##   pilares, uma pista de servico ao lado e um muro mais baixo no fundo. E o
 ##   lado do viaduto: o tabuleiro sai de la e cobre a pista ate passar do eixo.
+##   A pista de servico e mao dupla e nasce e morre numa transversal, a rua
+##   da esquina que a `Cidade` abre em cada ponta.
 ##
 ## Tudo segue a curva e a rampa da `RoadTrack`, extrudado em `(offset,
 ## lateral)` como o meio-fio: nada aqui e uma peca posta num ponto da pista,
@@ -135,9 +137,13 @@ static func montar(
 		edge + PISTA_AO_LADO.y,
 		RoadTrack.ASFALTO_TILE
 	)
-	_tracejado(
-		chao["tinta"], track, de, ate, lado * (edge + (PISTA_AO_LADO.x + PISTA_AO_LADO.y) * 0.5)
-	)
+	var eixo_do_servico := lado * (edge + (PISTA_AO_LADO.x + PISTA_AO_LADO.y) * 0.5)
+	_tracejado(chao["tinta"], track, de, ate, eixo_do_servico)
+	# Cada ponta encosta na rua da esquina (`Cidade.esquinas_das_expressas`), e
+	# quem chega nela para na retencao: na entrada e quem vem de frente, na
+	# saida quem vai junto com a moto.
+	_retencao(chao["tinta"], track, de, -1.0, eixo_do_servico)
+	_retencao(chao["tinta"], track, ate, 1.0, eixo_do_servico)
 	_chao(chao["canteiro"], track, de, ate, lado, edge + PISTA_AO_LADO.y, edge + MURO_BAIXO.x)
 	_mureta(concreto, corpo, track, de, ate, lado)
 	_muro(mural, concreto, corpo, track, de, ate, lado, edge + MURO_BAIXO.x, MURO_BAIXO, rng)
@@ -301,6 +307,16 @@ static func _mureta(
 				normal
 			)
 		o0 = o1
+	# A cabeca nas duas pontas, de frente para a rua da esquina: aberta, a
+	# mureta era uma casca oca vista de quem vem pela transversal.
+	for ponta: float in [de, ate]:
+		var frente := track.sample_basis(ponta).z * (1.0 if ponta == de else -1.0)
+		var cantos: Array[Vector3] = []
+		var uvs: Array[Vector2] = []
+		for p in perfil:
+			cantos.append(_p(track, ponta, p.x * lado, p.y))
+			uvs.append(Vector2(p.x, p.y) / CONCRETO_TILE)
+		_quad(concreto, cantos, uvs, frente)
 	var m0 := de
 	while m0 < ate - 0.1:
 		var m1 := minf(m0 + MODULO, ate)
@@ -579,6 +595,31 @@ static func _tracejado(st: SurfaceTool, track: RoadTrack, de: float, ate: float,
 			Vector3.UP
 		)
 		o += 6.0
+
+
+## A linha de retencao da pista de servico em `ponta`, so na mao de quem anda
+## no `sentido` (+1 junto com a moto) e chega ali. Aqui se anda pela direita,
+## e a direita de quem vai para a frente e a lateral positiva: a mao dele e a
+## metade de `eixo` para `eixo + sentido * meia pista`. Fica a 1 m da rua,
+## que nao tem zebra desse lado.
+static func _retencao(
+	st: SurfaceTool, track: RoadTrack, ponta: float, sentido: float, eixo: float
+) -> void:
+	var meia := (PISTA_AO_LADO.y - PISTA_AO_LADO.x) * 0.5
+	var perto := ponta - sentido * 1.0
+	var longe := perto - sentido * RoadTrack.RETENCAO_LARGURA
+	var fora := eixo + sentido * meia
+	_quad(
+		st,
+		[
+			_p(track, perto, eixo, 0.06),
+			_p(track, longe, eixo, 0.06),
+			_p(track, longe, fora, 0.06),
+			_p(track, perto, fora, 0.06),
+		],
+		[],
+		Vector3.UP
+	)
 
 
 ## A tampa de concreto do muro, de `x` a `tras` (laterais com sinal).

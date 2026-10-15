@@ -99,9 +99,17 @@ const EXPRESSA_DEPOIS: Array[int] = [1, 3]
 ## (9 m, a 7,4 m de altura) nao entra embaixo dele.
 const VIADUTO_PONTA: float = 20.0
 const EXPRESSA_PLACA: float = 50.0
-## Cruzamento a menos disso da expressa sai: a zebra e a retencao da avenida
-## ficam ate 12 m antes da rua.
+## A faixa de servico da avenida (arvore, cacamba) para a menos disso da
+## expressa: e onde ficam a zebra e a retencao da rua da esquina, ate 12 m
+## antes dela.
 const EXPRESSA_FOLGA: float = 15.0
+## A pista de servico da expressa e mao dupla, e precisa vir de algum lugar e
+## ir para algum lugar: em cada ponta ela encosta numa transversal, a rua da
+## esquina, que abre so do lado do viaduto. Tinha as mesmas duas maos da rua,
+## e nascia colada no ultimo predio e morria de cara na calcada do quarteirao.
+## Cruzamento sorteado a menos disto da esquina sai: as duas bocas ficariam a
+## um predio fino uma da outra, e o sorteio normal ja nao poe rua a menos de 70.
+const ESQUINA_FOLGA: float = 40.0
 
 ## Uma torre em cada `OBRA_UMA_EM` do corredor vira obra (V17a): esqueleto ou
 ## meio vestida, de andaime e lona, com guindaste em cima. Uma em tres deixa uma obra a cada
@@ -159,7 +167,9 @@ func montar(rua: RandomNumberGenerator, props: Node3D) -> void:
 	var trechos := _sorteia_trechos(rua, plano_de_expressas(rua.seed))
 	track.expressas = expressas
 	_da_nomes(rua.seed)
-	cruzamentos = cruzamentos.filter(func(c: Vector2) -> bool: return not _perto_de_expressa(c.x))
+	cruzamentos = cruzamentos.filter(func(c: Vector2) -> bool: return not _perto_de_esquina(c.x))
+	cruzamentos.append_array(esquinas_das_expressas(expressas))
+	cruzamentos.sort_custom(func(a: Vector2, b: Vector2) -> bool: return a.x < b.x)
 	track.pintar(cruzamentos, RUA_LARGURA * 0.5)
 	_monta_expressas(rua.seed, props)
 	_monta_ruas(cruzamentos, rua, props)
@@ -263,6 +273,41 @@ static func sob_viaduto(pista: RoadTrack, o: float, side: float) -> bool:
 		return false
 	var v := viaduto_de(e)
 	return o >= v.x and o <= v.y
+
+
+## A rua de cada ponta das `expressas`, como cruzamento `[offset, lados]`: a
+## boca dela acaba onde a expressa comeca (ou comeca onde ela acaba), e abre
+## so do lado do viaduto, que e onde corre a pista de servico.
+static func esquinas_das_expressas(lista: Array[Vector3]) -> Array[Vector2]:
+	var esquinas: Array[Vector2] = []
+	for e in lista:
+		esquinas.append(Vector2(e.x - RUA_LARGURA * 0.5, e.z))
+		esquinas.append(Vector2(e.y + RUA_LARGURA * 0.5, e.z))
+	return esquinas
+
+
+## Para que lado da pista a pista de servico sai da rua `c`, do lado `side`
+## da avenida: +1 se ela segue para a frente (a entrada da expressa), -1 para
+## tras (a saida), zero se nao e rua de esquina.
+func _pista_de_servico_em(c: Vector2, side: float) -> float:
+	for e in expressas:
+		if e.z != side:
+			continue
+		if absf(c.x - (e.x - RUA_LARGURA * 0.5)) < 0.01:
+			return 1.0
+		if absf(c.x - (e.y + RUA_LARGURA * 0.5)) < 0.01:
+			return -1.0
+	return 0.0
+
+
+func _perto_de_esquina(o: float) -> bool:
+	for e in expressas:
+		if (
+			o > e.x - RUA_LARGURA * 0.5 - ESQUINA_FOLGA
+			and o < e.y + RUA_LARGURA * 0.5 + ESQUINA_FOLGA
+		):
+			return true
+	return false
 
 
 func _perto_de_expressa(o: float) -> bool:
@@ -703,9 +748,20 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 			var chao := centro + acima + Vector3.UP * 0.03
 			# Meio-fio dos dois lados da rua. Sem ele o asfalto da rua no sol fica
 			# da cor do cimentado em volta, e a zebra parece pintada na calcada.
+			# Na rua da esquina da expressa ele abre na boca da pista de servico,
+			# do lado de onde ela sai: e por ali que a pista vira rua.
+			var servico := _pista_de_servico_em(c, side)
+			var lado_do_servico := signf(r.dot(-track.sample_basis(c.x).z * servico))
+			var edge := RoadTrack.sidewalk_limit() - road_w
+			var boca := ViaExpressa.PISTA_AO_LADO + Vector2.ONE * edge
 			for lado: float in [-1.0, 1.0]:
 				var borda := chao + r * lado * (meio + RoadTrack.MEIO_FIO * 0.5)
-				_faixa(meio_fio, borda, d, r, RoadTrack.MEIO_FIO, RUA_COMPRIMENTO)
+				if servico != 0.0 and lado == lado_do_servico:
+					_faixa(meio_fio, borda, d, r, RoadTrack.MEIO_FIO, boca.x)
+					var depois := RUA_COMPRIMENTO - boca.y
+					_faixa(meio_fio, borda + d * boca.y, d, r, RoadTrack.MEIO_FIO, depois)
+				else:
+					_faixa(meio_fio, borda, d, r, RoadTrack.MEIO_FIO, RUA_COMPRIMENTO)
 			# Faixa de pedestre na linha da calcada, com a mesma zebra e a mesma
 			# retencao da avenida, so na mao de quem chega. Fica a
 			# `ZEBRA_ESQUINA` do asfalto da avenida, como a da avenida fica da
@@ -733,7 +789,10 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 			# para no vermelho - a avenida esta no verde, e e o jogador que
 			# passa. Rua de saida nao tem semaforo nem fila: ninguem espera
 			# para sair da avenida.
-			if rua.randf() < 0.5:
+			# Na rua da esquina da expressa, nem um nem outro: a fila parava
+			# atravessada na boca da pista de servico, e o semaforo caia na
+			# cabeca da mureta.
+			if rua.randf() < 0.5 or servico != 0.0:
 				continue
 			# Na faixa de servico, e nao no andavel como os postes da avenida:
 			# na esquina e a fila da rua que precisa do foco, e no andavel
