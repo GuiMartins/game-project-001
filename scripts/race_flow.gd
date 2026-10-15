@@ -248,11 +248,13 @@ func _linha_em(ponto: Vector2) -> int:
 
 
 func _process(_delta: float) -> void:
-	# Com o pixel desligado o SubViewport dobra de tamanho, e o menu, escrito
-	# para 640x360, encolhia para um quarto da tela. Mesma conta da `Hud`:
-	# escala inteira, para o pixel da fonte continuar quadrado.
+	# O SubViewport nem sempre e de 640x360 (960x540 em tela grande, ou o
+	# tamanho do viewport base com o pixel desligado), e o menu, escrito para
+	# 640x360, ficaria num canto. Mesma conta da `Hud`: a escala e a altura
+	# sobre 360, e nao inteira, para o menu ocupar a tela em qualquer
+	# resolucao interna; em 540p o pixel da fonte sai a 1,5x.
 	var tela_px := get_viewport().get_visible_rect().size
-	var k := maxi(int(floor(tela_px.y / (Hud.H * Hud.ESCALA))), 1)
+	var k := maxf(tela_px.y / (Hud.H * Hud.ESCALA), 1.0)
 	scale = Vector2(k, k)
 	_raiz.size = (tela_px / k).floor()
 	# O menu mostra estado que muda enquanto ele esta aberto (a tecla F do
