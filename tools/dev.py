@@ -940,6 +940,18 @@ def cmd_sprites(_: argparse.Namespace) -> int:
     return _import_antes(binary)
 
 
+def cmd_boneco(_: argparse.Namespace) -> int:
+    """Gera as folhas de pose do boneco (`arte/flow/referencia/`) para o Flow.
+
+    Precisa de tela: o renderizador do `--headless` e um dummy e sai tudo preto.
+    """
+    binary = require_godot(godot_version())
+    code = _import_antes(binary)
+    if code != 0:
+        return code
+    return _godot(binary, "--script", "res://arte/boneco_flow.gd", vigia_erros=True)
+
+
 def cmd_export(_: argparse.Namespace) -> int:
     version = godot_version()
     binary = require_godot(version)
@@ -1006,6 +1018,7 @@ def main() -> int:
                        help="derruba jogador e rivais a cada 4 s: o pior caso das particulas")
     sub.add_parser("run", help="abre o jogo")
     sub.add_parser("export", help="exporta as tres plataformas")
+    sub.add_parser("boneco", help="gera as folhas de pose do boneco, de referencia para o Flow")
     sub.add_parser("sprites", help="recorta as folhas do Google Flow no atlas do ator")
     p_versao = sub.add_parser("versao", help="mostra ou sobe a versao; o merge da versao nova publica")
     p_versao.add_argument("nova", nargs="?", metavar="X.Y.Z|patch",
@@ -1029,6 +1042,7 @@ def main() -> int:
         "lint": cmd_lint, "format": cmd_format, "test": cmd_test,
         "shots": cmd_shots,
         "prova": cmd_prova,
+        "boneco": cmd_boneco,
         "sprites": cmd_sprites,
         "versao": cmd_versao,
         "changelog": cmd_changelog,
