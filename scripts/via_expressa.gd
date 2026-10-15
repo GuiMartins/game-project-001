@@ -9,10 +9,13 @@ extends RefCounted
 ## - **Fechado** (`04_vertical`, a direita): grama ao pe de um muro alto de
 ##   mural, com alambrado e arame em cima.
 ## - **Aberto** (`03_viaduto`, a esquerda): mureta de concreto, a faixa dos
-##   pilares, uma pista de servico ao lado e um muro mais baixo no fundo. E o
-##   lado do viaduto: o tabuleiro sai de la e cobre a pista ate passar do eixo.
-##   A pista de servico e mao dupla e nasce e morre numa transversal, a rua
-##   da esquina que a `Cidade` abre em cada ponta.
+##   pilares, a mao contraria e um muro mais baixo no fundo. E o lado do
+##   viaduto: o tabuleiro sai de la e cobre a pista ate passar do eixo.
+##
+## A mao contraria sao duas faixas no sentido oposto ao da corrida, com o
+## transito dela (`Contramao`). Ela nao comeca nem acaba no meio do
+## quarteirao: nasce da rua da esquina da saida e entra na rua da esquina da
+## entrada (`Cidade.esquinas_das_expressas`), virando nas duas numa curva.
 ##
 ## Tudo segue a curva e a rampa da `RoadTrack`, extrudado em `(offset,
 ## lateral)` como o meio-fio: nada aqui e uma peca posta num ponto da pista,
@@ -49,13 +52,19 @@ const CERCA_POSTE_PASSO: float = 3.0
 const ARAME: float = 0.6
 
 ## Lado aberto. A mureta de 90 cm encosta no acostamento: e ela que separa a
-## pista da faixa dos pilares, como na `03`. A pista de servico tem duas maos
+## pista da faixa dos pilares, como na `03`. A mao contraria tem duas faixas
 ## de 3,5 m, e o muro baixo fecha o mundo antes do fim do chao
 ## (`RoadTrack.GROUND`), que de outro modo apareceria cortado.
 const MURETA := Vector3(0.3, 0.9, 0.6)
 const MURETA_TOPO: float = 0.2
 const PISTA_AO_LADO := Vector2(4.5, 11.5)
 const MURO_BAIXO := Vector3(12.5, 4.0, 0.4)
+## O raio da curva em que a mao contraria vira para a rua da esquina, no eixo
+## de cada faixa. 6 m e o raio de esquina de rua de cidade, e a 6 m/s pede
+## 6 m/s2 de lateral, o que um carro de passeio faz sem cantar pneu. A quina
+## de fora da curva ganha um chanfro de asfalto do mesmo raio, e o muro baixo
+## recua ate ele: sem isso a faixa de fora passava raspando no muro.
+const ESQUINA_RAIO: float = 6.0
 
 ## O tabuleiro: 7 m de vao livre, 1,6 m de viga. Do lado aberto ele vai ate
 ## 10,5 m depois do acostamento e, do outro, passa 1 m do eixo: cobre as duas
@@ -137,16 +146,20 @@ static func montar(
 		edge + PISTA_AO_LADO.y,
 		RoadTrack.ASFALTO_TILE
 	)
-	var eixo_do_servico := lado * (edge + (PISTA_AO_LADO.x + PISTA_AO_LADO.y) * 0.5)
-	_tracejado(chao["tinta"], track, de, ate, eixo_do_servico)
-	# Cada ponta encosta na rua da esquina (`Cidade.esquinas_das_expressas`), e
-	# quem chega nela para na retencao: na entrada e quem vem de frente, na
-	# saida quem vai junto com a moto.
-	_retencao(chao["tinta"], track, de, -1.0, eixo_do_servico)
-	_retencao(chao["tinta"], track, ate, 1.0, eixo_do_servico)
-	_chao(chao["canteiro"], track, de, ate, lado, edge + PISTA_AO_LADO.y, edge + MURO_BAIXO.x)
+	# As duas faixas vao no mesmo sentido: o tracejado branco, e nao o amarelo
+	# de mao dupla.
+	_tracejado(
+		chao["tinta"], track, de, ate, lado * (edge + (PISTA_AO_LADO.x + PISTA_AO_LADO.y) * 0.5)
+	)
+	var fora := edge + PISTA_AO_LADO.y
+	_chanfro(chao["asfalto"], track, de, 1.0, lado, fora)
+	_chanfro(chao["asfalto"], track, ate, -1.0, lado, fora)
+	var r := ESQUINA_RAIO
+	_chao(chao["canteiro"], track, de + r, ate - r, lado, fora, edge + MURO_BAIXO.x)
 	_mureta(concreto, corpo, track, de, ate, lado)
-	_muro(mural, concreto, corpo, track, de, ate, lado, edge + MURO_BAIXO.x, MURO_BAIXO, rng)
+	_muro(
+		mural, concreto, corpo, track, de + r, ate - r, lado, edge + MURO_BAIXO.x, MURO_BAIXO, rng
+	)
 
 	var malha := ArrayMesh.new()
 	_commit(mural, malha, RoadTrack.material_texturizado(MURAIS))
@@ -597,29 +610,34 @@ static func _tracejado(st: SurfaceTool, track: RoadTrack, de: float, ate: float,
 		o += 6.0
 
 
-## A linha de retencao da pista de servico em `ponta`, so na mao de quem anda
-## no `sentido` (+1 junto com a moto) e chega ali. Aqui se anda pela direita,
-## e a direita de quem vai para a frente e a lateral positiva: a mao dele e a
-## metade de `eixo` para `eixo + sentido * meia pista`. Fica a 1 m da rua,
-## que nao tem zebra desse lado.
-static func _retencao(
-	st: SurfaceTool, track: RoadTrack, ponta: float, sentido: float, eixo: float
+## O chanfro de asfalto na quina de fora da esquina, em `ponta`: o quarto de
+## canto entre a borda da mao contraria (`fora`, lateral sem sinal) e a rua,
+## aparado pelo arco de `ESQUINA_RAIO`. `para_dentro` e +1 se a expressa fica
+## para a frente da ponta (a entrada) e -1 se fica para tras (a saida).
+static func _chanfro(
+	st: SurfaceTool, track: RoadTrack, ponta: float, para_dentro: float, lado: float, fora: float
 ) -> void:
-	var meia := (PISTA_AO_LADO.y - PISTA_AO_LADO.x) * 0.5
-	var perto := ponta - sentido * 1.0
-	var longe := perto - sentido * RoadTrack.RETENCAO_LARGURA
-	var fora := eixo + sentido * meia
-	_quad(
-		st,
-		[
-			_p(track, perto, eixo, 0.06),
-			_p(track, longe, eixo, 0.06),
-			_p(track, longe, fora, 0.06),
-			_p(track, perto, fora, 0.06),
-		],
-		[],
-		Vector3.UP
-	)
+	var r := ESQUINA_RAIO
+	var centro := Vector2(ponta + para_dentro * r, fora + r)
+	var quina := Vector2(ponta, fora)
+	var passos := 6
+	for k in passos:
+		var a := _no_arco(centro, para_dentro, float(k) / passos)
+		var b := _no_arco(centro, para_dentro, float(k + 1) / passos)
+		var cantos: Array[Vector3] = []
+		var uvs: Array[Vector2] = []
+		for q: Vector2 in [quina, a, b, b]:
+			cantos.append(_p(track, q.x, q.y * lado, 0.04))
+			uvs.append(Vector2(q.y / RoadTrack.LANE_WIDTH, q.x / RoadTrack.ASFALTO_TILE))
+		_quad(st, cantos, uvs, Vector3.UP)
+
+
+## Um ponto do arco do chanfro, de `t` 0 (na rua) a 1 (na borda da mao
+## contraria), em `(offset, lateral sem sinal)`.
+static func _no_arco(centro: Vector2, para_dentro: float, t: float) -> Vector2:
+	var ang := t * PI * 0.5
+	var r := ESQUINA_RAIO
+	return centro + Vector2(-para_dentro * cos(ang), -sin(ang)) * r
 
 
 ## A tampa de concreto do muro, de `x` a `tras` (laterais com sinal).

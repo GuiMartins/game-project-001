@@ -103,10 +103,10 @@ const EXPRESSA_PLACA: float = 50.0
 ## expressa: e onde ficam a zebra e a retencao da rua da esquina, ate 12 m
 ## antes dela.
 const EXPRESSA_FOLGA: float = 15.0
-## A pista de servico da expressa e mao dupla, e precisa vir de algum lugar e
-## ir para algum lugar: em cada ponta ela encosta numa transversal, a rua da
-## esquina, que abre so do lado do viaduto. Tinha as mesmas duas maos da rua,
-## e nascia colada no ultimo predio e morria de cara na calcada do quarteirao.
+## A mao contraria da expressa precisa vir de algum lugar e ir para algum
+## lugar: em cada ponta ela vira numa transversal, a rua da esquina, que abre
+## so do lado do viaduto. Antes ela nascia colada no ultimo predio e morria
+## de cara na calcada do quarteirao.
 ## Cruzamento sorteado a menos disto da esquina sai: as duas bocas ficariam a
 ## um predio fino uma da outra, e o sorteio normal ja nao poe rua a menos de 70.
 const ESQUINA_FOLGA: float = 40.0
@@ -277,7 +277,7 @@ static func sob_viaduto(pista: RoadTrack, o: float, side: float) -> bool:
 
 ## A rua de cada ponta das `expressas`, como cruzamento `[offset, lados]`: a
 ## boca dela acaba onde a expressa comeca (ou comeca onde ela acaba), e abre
-## so do lado do viaduto, que e onde corre a pista de servico.
+## so do lado do viaduto, que e onde corre a mao contraria.
 static func esquinas_das_expressas(lista: Array[Vector3]) -> Array[Vector2]:
 	var esquinas: Array[Vector2] = []
 	for e in lista:
@@ -286,10 +286,10 @@ static func esquinas_das_expressas(lista: Array[Vector3]) -> Array[Vector2]:
 	return esquinas
 
 
-## Para que lado da pista a pista de servico sai da rua `c`, do lado `side`
-## da avenida: +1 se ela segue para a frente (a entrada da expressa), -1 para
+## Para que lado da pista a mao contraria sai da rua `c`, do lado `side` da
+## avenida: +1 se ela segue para a frente (a entrada da expressa), -1 para
 ## tras (a saida), zero se nao e rua de esquina.
-func _pista_de_servico_em(c: Vector2, side: float) -> float:
+func _mao_contraria_em(c: Vector2, side: float) -> float:
 	for e in expressas:
 		if e.z != side:
 			continue
@@ -330,6 +330,7 @@ func _monta_expressas(semente: int, props: Node3D) -> void:
 		var onde := track.transform_at(e.x + EXPRESSA_PLACA, Portal.LATERAL)
 		props.add_child(Portal.placa(onde, mat, destinos))
 		_guindaste_atras_do_muro(e, i, props)
+		props.add_child(Contramao.criar(track, e, hash([semente, i, 7])))
 
 
 ## O guindaste ao fundo, atras do muro alto da expressa (`03_viaduto`). Sem
@@ -748,15 +749,16 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 			var chao := centro + acima + Vector3.UP * 0.03
 			# Meio-fio dos dois lados da rua. Sem ele o asfalto da rua no sol fica
 			# da cor do cimentado em volta, e a zebra parece pintada na calcada.
-			# Na rua da esquina da expressa ele abre na boca da pista de servico,
-			# do lado de onde ela sai: e por ali que a pista vira rua.
-			var servico := _pista_de_servico_em(c, side)
-			var lado_do_servico := signf(r.dot(-track.sample_basis(c.x).z * servico))
+			# Na rua da esquina da expressa ele abre na boca da mao contraria, do
+			# lado de onde ela vira, e no chanfro da quina de fora: e por ali que
+			# os carros dela entram e saem da rua.
+			var contraria := _mao_contraria_em(c, side)
+			var lado_da_contraria := signf(r.dot(-track.sample_basis(c.x).z * contraria))
 			var edge := RoadTrack.sidewalk_limit() - road_w
-			var boca := ViaExpressa.PISTA_AO_LADO + Vector2.ONE * edge
+			var boca := ViaExpressa.PISTA_AO_LADO + Vector2(edge, edge + ViaExpressa.ESQUINA_RAIO)
 			for lado: float in [-1.0, 1.0]:
 				var borda := chao + r * lado * (meio + RoadTrack.MEIO_FIO * 0.5)
-				if servico != 0.0 and lado == lado_do_servico:
+				if contraria != 0.0 and lado == lado_da_contraria:
 					_faixa(meio_fio, borda, d, r, RoadTrack.MEIO_FIO, boca.x)
 					var depois := RUA_COMPRIMENTO - boca.y
 					_faixa(meio_fio, borda + d * boca.y, d, r, RoadTrack.MEIO_FIO, depois)
@@ -790,9 +792,9 @@ func _monta_ruas(cruzamentos: Array[Vector2], rua: RandomNumberGenerator, props:
 			# passa. Rua de saida nao tem semaforo nem fila: ninguem espera
 			# para sair da avenida.
 			# Na rua da esquina da expressa, nem um nem outro: a fila parava
-			# atravessada na boca da pista de servico, e o semaforo caia na
+			# atravessada no caminho da mao contraria, e o semaforo caia na
 			# cabeca da mureta.
-			if rua.randf() < 0.5 or servico != 0.0:
+			if rua.randf() < 0.5 or contraria != 0.0:
 				continue
 			# Na faixa de servico, e nao no andavel como os postes da avenida:
 			# na esquina e a fila da rua que precisa do foco, e no andavel
