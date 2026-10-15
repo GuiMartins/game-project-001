@@ -123,7 +123,9 @@ const PISCA: float = 1.4
 ## Aceleracao, em m/s2, abaixo da qual a lanterna acende: freio de verdade, e
 ## nao o carro so tirando o pe.
 const FREIO: float = -0.6
-## Quanto a lanterna acende com o carro andando, sem frear (V20). No video toda
+## Quanto a lanterna acende com o carro andando, sem frear (V20), depois que
+## o motorista liga as luzes: o shader multiplica pelo escuro, e de dia a
+## traseira so acende no freio (no Rio ninguem anda de lanterna de dia). No video toda
 ## lanterna esta acesa, e o freio e a mesma luz mais forte por cima: apagada,
 ## a traseira nao tinha nada para o freio "acender mais", e o aviso de que o
 ## corredor vai fechar dependia de o jogador ver a luz nascer do nada.

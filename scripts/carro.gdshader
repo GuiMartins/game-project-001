@@ -11,9 +11,9 @@
 //   onibus); meio e o farol, que so acende de noite.
 //
 // A corrida anoitece (`Relogio`): o escuro vem no global `noite`, e cada carro
-// acende o farol no seu limiar - motorista nao liga o farol todo no mesmo
-// segundo. De noite a lanterna tambem acende de verdade, porque a 0,5 de dia
-// ela e so cor, e no escuro cor sem luz e nada.
+// acende o farol e a lanterna no seu limiar - motorista nao liga as luzes todo
+// no mesmo segundo, entao a frota acende aos poucos conforme anoitece. De dia
+// so o freio acende a traseira.
 shader_type spatial;
 // Mesma luz do resto do mundo: fosco e sem especular. Lataria com reflexo de
 // sol piscaria a cada quadro em 640x360, e o brilho que conta - lanterna e
@@ -30,9 +30,10 @@ uniform vec3 pele_fabrica : source_color = vec3(0.60, 0.42, 0.31);
 uniform vec3 camisa_fabrica : source_color = vec3(0.82, 0.82, 0.80);
 uniform vec3 camisa2_fabrica : source_color = vec3(0.32, 0.46, 0.68);
 
-// Lanterna acesa de dia, como no video de referencia, e luminoso: abaixo do
-// limiar do glow (`world.gd`), so cor.
-uniform float lanterna_acesa = 0.5;
+// No Rio ninguem anda de farol e lanterna ligados de dia: a lanterna so e cor
+// (lente apagada) ate o carro acender, e o freio e a unica luz traseira. O
+// luminoso do taxi e o letreiro do onibus ficam acesos, que nao sao farol.
+uniform float lanterna_acesa = 0.0;
 uniform float sempre_aceso = 0.9;
 // Freio e seta sao o aviso de que o corredor vai fechar, e sao o que brilha.
 // O numero e grande porque o glow do Godot aplica o limiar DEPOIS do primeiro
@@ -99,7 +100,10 @@ void fragment() {
 		luz = luz_seta * luzes.z * seta_acesa;
 	} else if (degrau == 6) {
 		brilho = mix(lanterna_acesa, lanterna_noite, acende);
-		luz = luz_freio * luzes.x * lanterna_freio;
+		// `luzes.x` abaixo de 1 e a lanterna de marcha (`Carro.LANTERNA`): so
+		// existe depois que o motorista liga as luzes. Freio (1) vale sempre.
+		float freio = luzes.x >= 1.0 ? 1.0 : luzes.x * acende;
+		luz = luz_freio * freio * lanterna_freio;
 	}
 	ALBEDO = cor;
 	ROUGHNESS = 1.0;
