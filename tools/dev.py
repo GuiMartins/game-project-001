@@ -940,6 +940,39 @@ def cmd_sprites(_: argparse.Namespace) -> int:
     return _import_antes(binary)
 
 
+def cmd_sprites_pedestres(_: argparse.Namespace) -> int:
+    """Recorta as folhas de pedestre do Google Flow (`arte/flow/pedestres/`).
+
+    Gera `assets/sprites/pedestres/<pessoa>.png` e `.json`, e as folhas de
+    conferencia em `.dev/sprites_pedestres/`. Mesmo motivo do `sprites`: roda no
+    Godot, porque o Python do sistema nao le JPEG sem Pillow.
+    """
+    binary = require_godot(godot_version())
+    folha = PROJECT / "arte" / "flow" / "pedestres" / "vovo_andando.jpg"
+    if not folha.exists() or folha.read_bytes()[:2] != b"\xff\xd8":
+        return _fail(f"{folha.relative_to(PROJECT)} nao e JPEG - rode `git lfs pull`")
+    code = _import_antes(binary)
+    if code != 0:
+        return code
+    code = _godot(binary, "--headless", "--script", "res://arte/sprites_pedestres.gd",
+                  vigia_erros=True)
+    if code != 0:
+        return code
+    return _import_antes(binary)
+
+
+def cmd_boneco(_: argparse.Namespace) -> int:
+    """Gera as folhas de pose do boneco (`arte/flow/referencia/`) para o Flow.
+
+    Precisa de tela: o renderizador do `--headless` e um dummy e sai tudo preto.
+    """
+    binary = require_godot(godot_version())
+    code = _import_antes(binary)
+    if code != 0:
+        return code
+    return _godot(binary, "--script", "res://arte/boneco_flow.gd", vigia_erros=True)
+
+
 def cmd_export(_: argparse.Namespace) -> int:
     version = godot_version()
     binary = require_godot(version)
@@ -1006,6 +1039,8 @@ def main() -> int:
                        help="derruba jogador e rivais a cada 4 s: o pior caso das particulas")
     sub.add_parser("run", help="abre o jogo")
     sub.add_parser("export", help="exporta as tres plataformas")
+    sub.add_parser("boneco", help="gera as folhas de pose do boneco, de referencia para o Flow")
+    sub.add_parser("sprites-pedestres", help="recorta as folhas de pedestre do Flow em atlas por pessoa")
     sub.add_parser("sprites", help="recorta as folhas do Google Flow no atlas do ator")
     p_versao = sub.add_parser("versao", help="mostra ou sobe a versao; o merge da versao nova publica")
     p_versao.add_argument("nova", nargs="?", metavar="X.Y.Z|patch",
@@ -1029,6 +1064,8 @@ def main() -> int:
         "lint": cmd_lint, "format": cmd_format, "test": cmd_test,
         "shots": cmd_shots,
         "prova": cmd_prova,
+        "boneco": cmd_boneco,
+        "sprites-pedestres": cmd_sprites_pedestres,
         "sprites": cmd_sprites,
         "versao": cmd_versao,
         "changelog": cmd_changelog,
