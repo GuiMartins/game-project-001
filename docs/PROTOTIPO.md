@@ -630,8 +630,9 @@ Já foi grama do Mario Kart, com teto de 55% da velocidade máxima
 (`sidewalk_speed_factor`): fugir por ali custava tempo, para a calçada não
 virar a linha ótima e matar o corredor, que é o jogo. O teto saiu junto com o
 atropelo de pedestre, a pedido: o preço da calçada passou a ser o que ela tem
-em cima — gente, poste, árvore —, e não um freio invisível. Se o corredor
-esvaziar porque todo mundo foge pela calçada, é aqui que se volta.
+em cima — gente, árvore, carro parado —, e não um freio invisível. Postes e
+placas fincadas cedem ao jogador sem tirar velocidade nem provocar queda. Se o
+corredor esvaziar porque todo mundo foge pela calçada, é aqui que se volta.
 
 **Não existe mais guard-rail.** Até a 0.0.6 havia uma parede analítica em
 `sidewalk_limit()` (8,80 m do eixo), e a rua era um tubo: a fachada, a rua
@@ -640,7 +641,12 @@ Hoje a moto anda até onde o chão vai (`limite_do_mundo()`, o fim do
 `GROUND`), e o que a segura são colisores na camada `WORLD`: poste, semáforo,
 carro parado e prédio (`scripts/cidade.gd`). Bater em prédio segue a mesma
 regra de bater em carro — raspa, quina, quica ou cai, pelo ângulo e pela
-velocidade de chegada.
+velocidade de chegada. O colisor de poste e placa só existe até o jogador
+atingi-los; a peça se solta, voa à frente da moto com giro, quica e desliza
+até parar sobre o chão. Continua visível até a próxima largada, quando volta
+ao lugar. Faísca e um tranco curto na suspensão e na câmera mostram o contato,
+sem registrar raspada ou queda. Gravidade, inércia e contato com a altura
+analítica da pista animam o destroço; o chão continua sem colisor.
 
 A calçada vai do meio-fio à fachada (6 m de recuo depois dos 2,2 m de
 `SHOULDER`), cimentado liso, sem grama. O `sidewalk_limit()` continua

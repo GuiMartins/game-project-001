@@ -7,12 +7,6 @@ extends Node3D
 ## no cuida do que acontece DENTRO da moto: roda girando, guidao, suspensao, o
 ## piloto jogado pela freada, o soco, a pancada, o tombo e, de noite, o farol.
 ##
-## Nada aqui e clipe de animacao. O modelo e de pecas rigidas com a origem na
-## articulacao (`arte/entregador.py`), e cada pose sai do estado da moto:
-## velocidade, acelerador, esterco, inclinacao e se caiu. Pose lida do estado
-## nao desencontra da fisica - a roda gira na velocidade em que a moto anda, o
-## garfo afunda no passo em que ela freia e o pe desce no passo em que ela para.
-##
 ## O que nao e estado continuo chega por evento: `socar` e `levar_golpe`,
 ## chamados no mesmo passo em que o corpo abre a hitbox ou leva o empurrao.
 ##
@@ -497,6 +491,10 @@ func levar_golpe(lado: int) -> void:
 	_bamboleio = 1.0
 	# Quem apanha nao termina o soco que estava dando.
 	_soco_t = -1.0
+
+
+func impacto(forca: float) -> void:
+	_tremor.impacto(forca)
 
 
 ## Se o braco esta fora da manopla, socando.

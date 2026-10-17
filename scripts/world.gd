@@ -164,6 +164,7 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	camera.name = "Camera"
 	add_child(camera)
 	camera.setup(tuning, player)
+	player.obstaculo_quebrado.connect(func(forca: float) -> void: camera.add_shake(0.35 * forca))
 	camera.current = true
 	borrao = Borrao.new()
 	camera.add_child(borrao)
@@ -215,6 +216,7 @@ func start_race(grid_offset: float = 0.0, at_speed: float = 0.0) -> void:
 	# Largada nova, calcada nova: quem foi atropelado volta, e o chao e lavado.
 	get_tree().call_group(&"multidao", &"reiniciar")
 	get_tree().call_group(&"contramao", &"reiniciar")
+	get_tree().call_group(&"quebraveis", &"reiniciar")
 	for mancha in _sangue.get_children():
 		mancha.queue_free()
 
