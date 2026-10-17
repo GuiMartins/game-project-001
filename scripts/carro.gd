@@ -112,6 +112,8 @@ const ASFALTO: float = 0.006
 
 ## Porta de carro: abre ate isto, em graus, e e a dobradica que segura.
 const PORTA_ABERTA: float = 68.0
+## A pancada dobra a porta alem do batente: a borda traseira passa da dobradica.
+const PORTA_AMASSADA: float = 112.0
 ## Folha de porta de onibus: dobra quase inteira para dentro.
 const FOLHA_ABERTA: float = 85.0
 ## A partir de que fracao da abertura a porta conta como obstaculo: a fresta
@@ -185,6 +187,7 @@ var _giro_porta: Dictionary[Node3D, float] = {}
 var _sinal_porta: Dictionary[Node3D, float] = {}
 ## A porta escolhida para abrir, ou nenhuma.
 var _porta_ativa: Node3D
+var _porta_amassada: bool = false
 var _abrindo: bool = false
 
 var _rng := RandomNumberGenerator.new()
@@ -287,6 +290,7 @@ func caixa() -> AABB:
 ## onibus e sempre na calcada. Na direita, que e a calcada do Rio.
 func abrir_porta(lado: int) -> void:
 	_abrindo = true
+	_porta_amassada = false
 	if modelo == Modelo.ONIBUS:
 		_porta_ativa = null
 		return
@@ -356,6 +360,7 @@ func fechar_portas(ja: bool = false) -> void:
 	_abrindo = false
 	if not ja:
 		return
+	_porta_amassada = false
 	for porta: Node3D in _angulo:
 		_angulo[porta] = 0.0
 		_giro_porta[porta] = 0.0
@@ -373,6 +378,15 @@ func abertura() -> float:
 	if _porta_ativa == null:
 		return 0.0
 	return _angulo[_porta_ativa] / deg_to_rad(PORTA_ABERTA)
+
+
+## A moto empurra a folha para a frente do carro; ela fica dobrada ate o
+## proximo carro reciclado, mesmo se o tempo normal de fechamento acabar.
+func amassar_porta(chegada: float) -> void:
+	if _porta_ativa == null or _porta_amassada:
+		return
+	_porta_amassada = true
+	_giro_porta[_porta_ativa] = maxf(_giro_porta[_porta_ativa], minf(chegada * 0.18, 8.0))
 
 
 ## Um passo de pose. `velocidade` em m/s para a frente; `lateral` em m/s para a
@@ -480,8 +494,11 @@ func _suspensao(delta: float, i: int, velocidade: float) -> void:
 func _anima_portas(delta: float) -> void:
 	for porta: Node3D in _angulo:
 		var folha := _folhas.has(porta)
-		var abre := _abrindo and (folha or porta == _porta_ativa)
-		var maximo := deg_to_rad(FOLHA_ABERTA if folha else PORTA_ABERTA)
+		var amassada := porta == _porta_ativa and _porta_amassada
+		var abre := (_abrindo and (folha or porta == _porta_ativa)) or amassada
+		var maximo := deg_to_rad(
+			PORTA_AMASSADA if amassada else (FOLHA_ABERTA if folha else PORTA_ABERTA)
+		)
 		var alvo := maximo if abre else 0.0
 		var angulo := _angulo[porta]
 		var giro := _giro_porta[porta]
@@ -588,6 +605,7 @@ func _instancia() -> void:
 	_giro_porta.clear()
 	_sinal_porta.clear()
 	_porta_ativa = null
+	_porta_amassada = false
 	_luzes = Vector3(-1.0, -1.0, -1.0)
 
 	_raiz = molde(modelo).instantiate() as Node3D

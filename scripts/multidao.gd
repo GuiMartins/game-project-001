@@ -56,6 +56,7 @@ var _tempo: float = 0.0
 var _base: Array[Transform3D] = []
 var _camisas: Array[Color] = []
 var _sorteios: Array[Vector2] = []
+var _relevos: Array[Vector2] = []
 var _caidos: Dictionary[int, bool] = {}
 var _grade: Dictionary[Vector2i, PackedInt32Array] = {}
 var _motos: Dictionary[int, Vector3] = {}
@@ -79,12 +80,14 @@ func montar(gente: Array, andando: bool) -> void:
 		var t: Transform3D = gente[i][0]
 		var camisa: Color = gente[i][1]
 		var sorteio := Vector2(_sorteio(i, 1), _sorteio(i, 2))
+		var relevo: Vector2 = gente[i][2] if gente[i].size() > 2 else Vector2.ZERO
 		mm.set_instance_transform(i, t)
 		mm.set_instance_color(i, camisa)
-		mm.set_instance_custom_data(i, Color(sorteio.x, sorteio.y, 0.0, 0.0))
+		mm.set_instance_custom_data(i, Color(sorteio.x, sorteio.y, relevo.x, relevo.y))
 		_base.append(t)
 		_camisas.append(camisa)
 		_sorteios.append(sorteio)
+		_relevos.append(relevo)
 		# Sorteio independente da rua: a semente e a posicao da multidão
 		# continuam identicas no 3D e no sprite.
 		var avatar := (
@@ -110,7 +113,8 @@ func montar(gente: Array, andando: bool) -> void:
 			var original: int = grupos[avatar][slot]
 			folha.set_instance_transform(slot, _base[original])
 			var s := _sorteios[original]
-			folha.set_instance_custom_data(slot, Color(s.x, s.y, 0.0, 0.0))
+			var r := _relevos[original]
+			folha.set_instance_custom_data(slot, Color(s.x, s.y, r.x, r.y))
 		mmi.multimesh = folha
 		mmi.extra_cull_margin = 6.0
 		mmi.visible = sprite
@@ -143,7 +147,16 @@ func lugar(i: int) -> Vector3:
 	var t := _base[i]
 	if not _andando:
 		return t.origin
-	return t * Vector3(0.0, 0.0, -deslocamento(_tempo, _sorteios[i].x, _sorteios[i].y))
+	var deslocado := deslocamento(_tempo, _sorteios[i].x, _sorteios[i].y)
+	var p := t * Vector3(0.0, 0.0, -deslocado)
+	p.y += altura_do_relevo(deslocado, _relevos[i])
+	return p
+
+
+## Parabola que cruza o chao no centro e nas duas pontas do passeio.
+static func altura_do_relevo(deslocado: float, relevo: Vector2) -> float:
+	var u := deslocado / (TRECHO * 0.5)
+	return 0.5 * (relevo.x + relevo.y) * u * u + 0.5 * (relevo.x - relevo.y) * u
 
 
 ## Quanto quem anda esta a frente do meio do trecho, ao longo da frente com que

@@ -112,7 +112,11 @@ void vertex() {
 			VERTEX = vec3(VERTEX.x * c + VERTEX.z * s, VERTEX.y, -VERTEX.x * s + VERTEX.z * c);
 			NORMAL = vec3(NORMAL.x * c + NORMAL.z * s, NORMAL.y, -NORMAL.x * s + NORMAL.z * c);
 			// A frente do modelo e -Z.
-			VERTEX.z -= onde - TRECHO * 0.5;
+			float deslocado = onde - TRECHO * 0.5;
+			float u = deslocado / (TRECHO * 0.5);
+			VERTEX.z -= deslocado;
+			VERTEX.y += 0.5 * (INSTANCE_CUSTOM.z + INSTANCE_CUSTOM.w) * u * u
+				+ 0.5 * (INSTANCE_CUSTOM.z - INSTANCE_CUSTOM.w) * u;
 		} else {
 			// O peso de um pe para o outro: o corpo inteiro tomba um fio para o
 			// lado, em volta dos pes, num ritmo de 2,5 a 4 s por ida e volta.

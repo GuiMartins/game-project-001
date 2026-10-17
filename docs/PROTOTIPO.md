@@ -606,6 +606,11 @@ A porta do encostado é de um de dois tipos, sorteado quando ele encosta:
   50 m/s, 20 m é meio segundo, e a 15 m/s é uma eternidade. Abaixo de 0,5 s
   ela fica inevitável, e porta inevitável é tiro, não susto.
 
+Quando a moto pega a folha aberta, a porta cede para a frente além do batente
+(112°) e fica dobrada até o carro ser reciclado. A moto perde um pouco de
+velocidade e recebe o desvio curto da quina para fora do carro. A pancada na
+lataria continua seguindo as regras normais de raspada, quique e queda.
+
 O resto dos encostados não abre nada. Se encostar fosse sinônimo de porta, a
 faixa da ponta viraria regra decorada e o jogador aprenderia a nunca chegar
 perto, em vez de calcular o risco. Com 0.3 de encostados, dá um carro em cada
