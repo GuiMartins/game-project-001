@@ -39,7 +39,11 @@ void vertex() {
 		rumo = tp < ida ? 0.0 : tp < ida + VIRA ? PI * smoothstep(0.0, 1.0, (tp - ida) / VIRA)
 			: tp < 2.0 * ida + VIRA ? PI : PI + PI * smoothstep(0.0, 1.0, (tp - 2.0 * ida - VIRA) / VIRA);
 		coluna = floor(mod(andado / PASSADA, 1.0) * 8.0);
-		origem -= eixo_z * (onde - TRECHO * 0.5);
+		float deslocado = onde - TRECHO * 0.5;
+		float u = deslocado / (TRECHO * 0.5);
+		origem -= eixo_z * deslocado;
+		origem.y += 0.5 * (INSTANCE_CUSTOM.z + INSTANCE_CUSTOM.w) * u * u
+			+ 0.5 * (INSTANCE_CUSTOM.z - INSTANCE_CUSTOM.w) * u;
 	}
 	vec3 frente = -eixo_x * sin(rumo) - eixo_z * cos(rumo);
 	vec3 direita_pessoa = eixo_x * cos(rumo) - eixo_z * sin(rumo);
