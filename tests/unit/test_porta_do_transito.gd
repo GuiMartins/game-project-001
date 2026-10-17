@@ -120,3 +120,32 @@ func test_onibus_nao_abre_porta_na_cara() -> void:
 	_jogador_a(onibus, 0.7, MEIO_FIO_DIREITO - 3.3)
 	onibus._physics_process(PASSO)
 	assert_bool(_aberta(onibus)).is_false()
+
+
+func test_pancada_dobra_porta_e_aponta_desvio_para_fora_dos_dois_lados() -> void:
+	for lado: int in [-1, 1]:
+		var carro := _carro(TrafficCar.Porta.ABERTA, MEIO_FIO_DIREITO)
+		carro.set("_door_side", lado)
+		var visual := carro.get("_carro") as Carro
+		visual.fechar_portas(true)
+		carro._set_door(true)
+		for i in 90:
+			carro._pose(PASSO)
+		var forma := carro.get("_door_shape") as CollisionShape3D
+		var lataria := carro.get("_shape") as CollisionShape3D
+		assert_vector(carro.acertar_porta(lataria, 30.0)).is_equal(Vector3.ZERO)
+		var desvio := carro.acertar_porta(forma, 30.0)
+		assert_float(desvio.dot(carro.global_basis.x) * float(lado)).is_greater(0.99)
+		_jogador.speed = 30.0
+		_jogador.heading = PI
+		_jogador._ricocheteia(desvio, 30.0)
+		assert_float(_jogador.velocity.dot(desvio)).is_greater(1.0)
+		for i in 120:
+			carro._pose(PASSO)
+		assert_float(visual.abertura()).is_greater(90.0 / Carro.PORTA_ABERTA)
+		carro._set_door(false)
+		for i in 60:
+			carro._pose(PASSO)
+		assert_float(visual.abertura()).is_greater(90.0 / Carro.PORTA_ABERTA)
+		carro.recycle(600.0, MEIO_FIO_DIREITO, true, TrafficCar.Porta.NENHUMA)
+		assert_float(visual.abertura()).is_equal(0.0)

@@ -287,6 +287,17 @@ func _pose(delta: float) -> void:
 		_door_shape.set_deferred("disabled", not bate)
 
 
+## So o colisor da folha pode dobrar a porta. Devolve a direcao que tira a
+## moto de cima dela, no lado oposto ao carro, independente da curva da pista.
+func acertar_porta(forma: CollisionShape3D, chegada: float) -> Vector3:
+	if forma != _door_shape or _carro.porta_ativa() == null:
+		return Vector3.ZERO
+	_carro.amassar_porta(chegada)
+	var fora := global_basis.x * float(_door_side)
+	fora.y = 0.0
+	return fora.normalized()
+
+
 ## Ajusta a velocidade ao que a pista permite: o carro da frente na mesma
 ## faixa e o que decide, e e isso que impede dois carros de ocuparem o mesmo
 ## metro de asfalto.
