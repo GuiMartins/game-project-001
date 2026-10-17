@@ -31,9 +31,9 @@ func test_corredor_fica_no_meio_de_duas_faixas() -> void:
 
 func test_corredor_deixa_folga_para_a_moto() -> void:
 	# Carros de 1,8 m ladeando a moto de 0,75 m precisam deixar margem para
-	# corrigir a trajetoria; menos de meio metro por lado era apertado demais.
+	# corrigir a trajetoria; a rodada jogada pediu ao menos 0,75 m por lado.
 	var folga_por_lado := (RoadTrack.LANE_WIDTH - 1.8 - PlayerBike.SIZE.x) * 0.5
-	assert_float(folga_por_lado).is_greater_equal(0.5)
+	assert_float(folga_por_lado).is_greater_equal(0.75)
 
 
 func test_toda_faixa_cabe_dentro_do_asfalto() -> void:

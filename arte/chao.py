@@ -29,7 +29,7 @@ tres regras, que valem para as duas texturas:
    calcada): a repeticao do proprio tile fica bem acima de 1,7 m.
 
 O mapeamento esta em `road_track.gd`: no asfalto o U cobre uma faixa de
-rolamento (3,8 m) e o V 6,6 m; na calcada o U cobre 2,2 m e repete do
+rolamento (4,3 m) e o V 6,6 m; na calcada o U cobre 2,2 m e repete do
 meio-fio ate a fachada, e o V cobre 4,4 m. A cor de base e neutra e um pouco escura de
 proposito: quem da a cor de meio-dia e o LUT (`arte/paleta.py`), como em todo o
 resto do mundo.
@@ -93,13 +93,13 @@ def _limita(c):
 
 # --- Asfalto -------------------------------------------------------------------
 #
-# 256x256: U e uma faixa de 3,8 m (67 px/m), V sao 6,6 m (39 px/m). O texel ja
-# sai duas vezes mais comprido que largo so pelo mapeamento.
+# 256x256: U e uma faixa de 4,3 m (60 px/m), V sao 6,6 m (39 px/m). O texel ja
+# sai mais comprido que largo so pelo mapeamento.
 
 ASFALTO = 256
 ASFALTO_BASE = 104
 # Grao: a brita. Amplitude baixa (regra 2) e cada grao ocupa 1x2 texels, que
-# com o mapeamento da 1,5 cm x 5 cm: mais de tres vezes mais comprido que largo.
+# com o mapeamento da 1,7 cm x 5 cm: cerca de tres vezes mais comprido que largo.
 GRAO = 15
 # Pedrinha clara ou escura solta no asfalto. E o que faz o grao ler como
 # brita, e nao como chiado de TV.
@@ -114,7 +114,7 @@ REMENDO = 22
 # assentou diferente. Corre junto com a pista (regra 1), e e o que o borrao
 # transforma no risco claro e escuro do terco de baixo das referencias.
 VEIO = 14
-# Onde a roda dos carros passa, a ~0,92 m do centro da faixa: o asfalto fica
+# Onde a roda dos carros passa, a ~1 m do centro da faixa: o asfalto fica
 # mais escuro e liso. O tile manteve as trilhas em U ao alargar a pista.
 TRILHA_U = (0.258, 0.742)
 TRILHA_LARGURA = 0.1
