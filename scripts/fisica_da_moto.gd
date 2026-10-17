@@ -76,3 +76,34 @@ static func agilidade(ficha: FichaDaMoto) -> float:
 		* (ficha.entre_eixos_mm / cg.entre_eixos_mm)
 	)
 	return clampf(1.0 / tempo, AGILIDADE_MIN, AGILIDADE_MAX)
+
+
+## Varre o caminho deste passo: em alta velocidade o centro pode passar inteiro
+## por cima do obstaculo entre dois quadros. O tombo ocupa uma faixa baixa e
+## larga, em vez da caixa vertical de quem ainda esta pilotando.
+static func impulso_de_rampa(moto: Node3D, deslocamento: Vector3, velocidade: float) -> float:
+	if velocidade < 3.0:
+		return 0.0
+	for outra: Node3D in moto.get_tree().get_nodes_in_group(Pessoa.GRUPO_MOTOS):
+		if outra == moto or not (outra is PlayerBike or outra is RivalBike):
+			continue
+		var caida: bool = (
+			outra.state == PlayerBike.State.CRASHED
+			if outra is PlayerBike
+			else outra.state == RivalBike.State.DOWN
+		)
+		if not caida:
+			continue
+		var inicio := outra.to_local(moto.global_position)
+		var fim := outra.to_local(moto.global_position + deslocamento)
+		var ponto := Geometry2D.get_closest_point_to_segment(
+			Vector2.ZERO, Vector2(inicio.x, inicio.z), Vector2(fim.x, fim.z)
+		)
+		if absf(ponto.x) > 1.15 or absf(ponto.y) > 1.4 or absf(inicio.y) > 0.65:
+			continue
+		# Garante tempo para ler o atropelo; nao acumula centenas de segundos
+		# quando varios corredores passam juntos pelo mesmo tombo.
+		outra.state_timer = minf(maxf(outra.state_timer, 1.5) + minf(velocidade * 0.02, 1.0), 6.0)
+		# Com g=26, o teto de 5 m/s sobe menos de meio metro.
+		return minf(velocidade * 0.12, 5.0)
+	return 0.0
