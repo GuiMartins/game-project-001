@@ -190,6 +190,9 @@ func usar_sprite(ligado: bool) -> void:
 func sortear(rng: RandomNumberGenerator) -> void:
 	velocidade = rng.randf_range(1.1, 1.6)
 	_rng.seed = rng.randi()
+	# A semente ja sorteada decide a aparencia sem mudar a sequencia de
+	# pedestres, carros e obstaculos que compartilham o mesmo RNG.
+	avatar = int(_rng.seed % PedestreSprite.ANDANDO.size())
 	_ritmo = rng.randf_range(2.5, 4.0)
 	_fase = rng.randf() * TAU
 

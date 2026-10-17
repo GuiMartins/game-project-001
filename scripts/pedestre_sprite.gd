@@ -12,10 +12,34 @@ const ANDANDO: Array[Texture2D] = [
 	preload("res://assets/sprites/pedestres/escritorio_andando.png"),
 ]
 const PRAIA: int = 2
-const SUSTO: Texture2D = preload("res://assets/sprites/pedestres/praia_susto.png")
-const DESEMBARCANDO: Texture2D = preload("res://assets/sprites/pedestres/praia_desembarcando.png")
-const VOANDO: Texture2D = preload("res://assets/sprites/pedestres/praia_voando.png")
-const CAIDA: Texture2D = preload("res://assets/sprites/pedestres/praia_caida.png")
+const SUSTO: Array[Texture2D] = [
+	preload("res://assets/sprites/pedestres/vovo_susto.png"),
+	preload("res://assets/sprites/pedestres/obra_susto.png"),
+	preload("res://assets/sprites/pedestres/praia_susto.png"),
+	preload("res://assets/sprites/pedestres/adolescente_susto.png"),
+	preload("res://assets/sprites/pedestres/escritorio_susto.png"),
+]
+const DESEMBARCANDO: Array[Texture2D] = [
+	preload("res://assets/sprites/pedestres/vovo_desembarcando.png"),
+	preload("res://assets/sprites/pedestres/obra_desembarcando.png"),
+	preload("res://assets/sprites/pedestres/praia_desembarcando.png"),
+	preload("res://assets/sprites/pedestres/adolescente_desembarcando.png"),
+	preload("res://assets/sprites/pedestres/escritorio_desembarcando.png"),
+]
+const VOANDO: Array[Texture2D] = [
+	preload("res://assets/sprites/pedestres/vovo_voando.png"),
+	preload("res://assets/sprites/pedestres/obra_voando.png"),
+	preload("res://assets/sprites/pedestres/praia_voando.png"),
+	preload("res://assets/sprites/pedestres/adolescente_voando.png"),
+	preload("res://assets/sprites/pedestres/escritorio_voando.png"),
+]
+const CAIDA: Array[Texture2D] = [
+	preload("res://assets/sprites/pedestres/vovo_caida.png"),
+	preload("res://assets/sprites/pedestres/obra_caida.png"),
+	preload("res://assets/sprites/pedestres/praia_caida.png"),
+	preload("res://assets/sprites/pedestres/adolescente_caida.png"),
+	preload("res://assets/sprites/pedestres/escritorio_caida.png"),
+]
 const PPM: float = 100.0
 
 var _material := ShaderMaterial.new()
@@ -64,48 +88,27 @@ func posar(
 	var angulos := 0
 	var quadro := 0
 	position.y = 0.0
-	# So a praia tem folhas de acao. Nas outras aparencias, a pose de andar
-	# continua no ar e no chao para a roupa nao mudar no atropelo.
-	if avatar != PRAIA:
-		match estado:
-			Pessoa.Estado.ANDANDO:
-				quadro = posmod(floori(fase / TAU * 8.0), 8)
-			Pessoa.Estado.VOANDO:
-				position.y = Pessoa.PIVO.y
-			Pessoa.Estado.CAIDA:
-				position.y = Pessoa.PIVO.y
-		_configurar(atlas, celula, pe, colunas, linhas, angulos)
-		_material.set_shader_parameter(&"quadro", quadro)
-		_material.set_shader_parameter(
-			&"giro",
-			(
-				giro
-				if estado == Pessoa.Estado.VOANDO
-				else PI * 0.5 if estado == Pessoa.Estado.CAIDA else 0.0
-			)
-		)
-		return
 	match estado:
 		Pessoa.Estado.ANDANDO:
 			quadro = posmod(floori(fase / TAU * 8.0), 8)
 		Pessoa.Estado.SUSTO:
-			atlas = SUSTO
-			celula = Vector2i(160, 224)
-			pe = Vector2i(80, 220)
+			atlas = SUSTO[avatar]
+			celula = Vector2i(224, 224)
+			pe = Vector2i(112, 220)
 			colunas = 6
 			linhas = 3
 			angulos = 1
 			quadro = mini(floori(relogio / (Pessoa.SUSTO_DURA + Pessoa.SUSTO_OLHA) * 6.0), 5)
 		Pessoa.Estado.SENTADA, Pessoa.Estado.DESEMBARCANDO:
-			atlas = DESEMBARCANDO
-			celula = Vector2i(192, 208)
-			pe = Vector2i(96, 204)
+			atlas = DESEMBARCANDO[avatar]
+			celula = Vector2i(256, 208)
+			pe = Vector2i(128, 204)
 			linhas = 4
 			angulos = 2
 			if estado == Pessoa.Estado.DESEMBARCANDO:
 				quadro = mini(floori(relogio / 2.5 * 8.0), 7)
 		Pessoa.Estado.VOANDO:
-			atlas = VOANDO
+			atlas = VOANDO[avatar]
 			celula = Vector2i(240, 240)
 			pe = Vector2i(120, 120)
 			linhas = 4
@@ -113,7 +116,7 @@ func posar(
 			quadro = posmod(floori(relogio * 8.0), 8)
 			position.y = Pessoa.PIVO.y
 		Pessoa.Estado.CAIDA:
-			atlas = CAIDA
+			atlas = CAIDA[avatar]
 			celula = Vector2i(224, 112)
 			pe = Vector2i(112, 108)
 			colunas = 3

@@ -276,13 +276,25 @@ func test_pessoa_em_sprite_tem_folha_para_todos_os_estados() -> void:
 	add_child(pessoa)
 	pessoa.usar_sprite(true)
 	var desenho := pessoa.find_child("Sprite", false, false) as PedestreSprite
-	for estado: int in Pessoa.Estado.values():
-		pessoa.estado = estado
-		pessoa._aplica()
-		assert_bool(desenho.visible).is_true()
-		(
-			assert_object(
-				(desenho.material_override as ShaderMaterial).get_shader_parameter(&"atlas")
+	for avatar in PedestreSprite.ANDANDO.size():
+		pessoa.avatar = avatar
+		for estado: int in Pessoa.Estado.values():
+			pessoa.estado = estado
+			pessoa._aplica()
+			var esperado: Texture2D = PedestreSprite.ANDANDO[avatar]
+			match estado:
+				Pessoa.Estado.SUSTO:
+					esperado = PedestreSprite.SUSTO[avatar]
+				Pessoa.Estado.SENTADA, Pessoa.Estado.DESEMBARCANDO:
+					esperado = PedestreSprite.DESEMBARCANDO[avatar]
+				Pessoa.Estado.VOANDO:
+					esperado = PedestreSprite.VOANDO[avatar]
+				Pessoa.Estado.CAIDA:
+					esperado = PedestreSprite.CAIDA[avatar]
+			assert_bool(desenho.visible).is_true()
+			(
+				assert_object(
+					(desenho.material_override as ShaderMaterial).get_shader_parameter(&"atlas")
+				)
+				. is_equal(esperado)
 			)
-			. is_not_null()
-		)

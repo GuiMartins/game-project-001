@@ -1,0 +1,21 @@
+{
+	"altura_m": 1.68,
+	"animacao": "voando",
+	"celula": [
+		240,
+		240
+	],
+	"colunas": 8,
+	"espelha_o_lado_esquerdo": true,
+	"linhas": [
+		"lado",
+		"tres_quartos_costas",
+		"costas",
+		"tres_quartos_frente"
+	],
+	"pe": [
+		120,
+		120
+	],
+	"pixels_por_metro": 100.0
+}

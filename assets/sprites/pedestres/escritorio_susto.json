@@ -1,0 +1,20 @@
+{
+	"altura_m": 1.68,
+	"animacao": "susto",
+	"celula": [
+		224,
+		224
+	],
+	"colunas": 6,
+	"espelha_o_lado_esquerdo": true,
+	"linhas": [
+		"frente",
+		"tres_quartos_frente",
+		"lado"
+	],
+	"pe": [
+		112,
+		220
+	],
+	"pixels_por_metro": 100.0
+}

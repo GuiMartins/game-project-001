@@ -2,7 +2,7 @@
 	"altura_m": 1.75,
 	"animacao": "susto",
 	"celula": [
-		160,
+		224,
 		224
 	],
 	"colunas": 6,
@@ -13,7 +13,7 @@
 		"lado"
 	],
 	"pe": [
-		80,
+		112,
 		220
 	],
 	"pixels_por_metro": 100.0
