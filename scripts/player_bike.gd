@@ -494,6 +494,14 @@ func _resolve_collisions() -> void:
 		var chegada := maxf(-relativa.dot(normal), 0.0)
 		var head_on := clampf(chegada / maxf(relativa.length(), 0.01), 0.0, 1.0)
 		var incidence := rad_to_deg(asin(head_on))
+		if outro is TrafficCar:
+			var desvio_porta := (outro as TrafficCar).acertar_porta(
+				col.get_collider_shape() as CollisionShape3D, chegada
+			)
+			if desvio_porta != Vector3.ZERO:
+				if _respiro_do_impacto <= 0.0:
+					_ricocheteia(desvio_porta, chegada)
+				return
 
 		if incidence <= tuning.crash_angle or _respiro_do_impacto > 0.0:
 			_raspa(normal, head_on)
