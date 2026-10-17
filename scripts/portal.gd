@@ -20,9 +20,9 @@ const LATERAL: float = RoadTrack.LANE_WIDTH * RoadTrack.LANE_COUNT * 0.5 + 0.9
 ## A altura do braco do semaforo. Acima do onibus (3,2 m) com folga, e baixo o
 ## bastante para riscar o topo da tela quando a camera passa por baixo.
 const BRACO_SEMAFORO: float = 6.0
-## Ate onde o braco chega, do poste para o meio da pista: as tres faixas da
-## direita, que e de onde se olha o foco.
-const BRACO_COMPRIMENTO: float = 9.0
+## Meio metro alem do eixo, para continuar cobrindo o corredor quando a
+## largura das faixas mudar junto com a distancia do poste ao centro.
+const BRACO_COMPRIMENTO: float = LATERAL + 0.5
 ## O portico da placa e mais alto: a placa pendurada embaixo dele tem 2,6 m.
 const BRACO_PLACA: float = 7.4
 const PLACA := Vector2(5.4, 2.6)

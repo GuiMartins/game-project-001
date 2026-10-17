@@ -7,8 +7,8 @@ extends GdUnitTestSuite
 ## de reacao - so aparece aqui.
 
 const PASSO: float = 1.0 / 60.0
-const MEIO_FIO_ESQUERDO: float = -4.95
-const MEIO_FIO_DIREITO: float = 4.95
+var _meio_fio_esquerdo: float = RoadTrack.lane_center(0)
+var _meio_fio_direito: float = RoadTrack.lane_center(RoadTrack.LANE_COUNT - 1)
 
 
 ## O `TrafficCar` so pergunta ao mundo quem e o jogador.
@@ -66,31 +66,31 @@ func _jogador_a(carro: TrafficCar, segundos: float, lateral: float) -> void:
 
 
 func test_onibus_encostado_na_esquerda_vai_para_a_direita() -> void:
-	var onibus := _carro(TrafficCar.Porta.NENHUMA, MEIO_FIO_ESQUERDO, true)
-	assert_float(onibus.lateral).is_equal_approx(MEIO_FIO_DIREITO, 0.01)
+	var onibus := _carro(TrafficCar.Porta.NENHUMA, _meio_fio_esquerdo, true)
+	assert_float(onibus.lateral).is_equal_approx(_meio_fio_direito, 0.01)
 	# Carro de passeio encosta onde foi mandado.
-	var carro := _carro(TrafficCar.Porta.NENHUMA, MEIO_FIO_ESQUERDO)
-	assert_float(carro.lateral).is_equal_approx(MEIO_FIO_ESQUERDO, 0.01)
+	var carro := _carro(TrafficCar.Porta.NENHUMA, _meio_fio_esquerdo)
+	assert_float(carro.lateral).is_equal_approx(_meio_fio_esquerdo, 0.01)
 
 
 func test_porta_aberta_de_longe_abre_ao_encostar_e_fica() -> void:
-	var carro := _carro(TrafficCar.Porta.ABERTA, MEIO_FIO_DIREITO)
+	var carro := _carro(TrafficCar.Porta.ABERTA, _meio_fio_direito)
 	assert_bool(_aberta(carro)).is_true()
-	_jogador_a(carro, 0.5, MEIO_FIO_DIREITO - 2.0)
+	_jogador_a(carro, 0.5, _meio_fio_direito - 2.0)
 	for i in int(20.0 / PASSO):
 		carro._physics_process(PASSO)
 	assert_bool(_aberta(carro)).is_true()
 
 
 func test_porta_na_cara_espera_o_jogador_e_abre_do_lado_dele() -> void:
-	var carro := _carro(TrafficCar.Porta.NA_CARA, MEIO_FIO_DIREITO)
+	var carro := _carro(TrafficCar.Porta.NA_CARA, _meio_fio_direito)
 	assert_bool(_aberta(carro)).is_false()
 	# Longe: nada.
-	_jogador_a(carro, 3.0, MEIO_FIO_DIREITO - 3.3)
+	_jogador_a(carro, 3.0, _meio_fio_direito - RoadTrack.LANE_WIDTH)
 	carro._physics_process(PASSO)
 	assert_bool(_aberta(carro)).is_false()
 	# Na janela, na faixa vizinha: abre para o lado da pista, onde ele esta.
-	_jogador_a(carro, 0.7, MEIO_FIO_DIREITO - 3.3)
+	_jogador_a(carro, 0.7, _meio_fio_direito - RoadTrack.LANE_WIDTH)
 	carro._physics_process(PASSO)
 	assert_bool(_aberta(carro)).is_true()
 	assert_int(carro.get("_door_side")).is_equal(-1)
@@ -98,33 +98,33 @@ func test_porta_na_cara_espera_o_jogador_e_abre_do_lado_dele() -> void:
 	for i in int(5.0 / PASSO):
 		carro._physics_process(PASSO)
 	assert_bool(_aberta(carro)).is_false()
-	_jogador_a(carro, 0.7, MEIO_FIO_DIREITO - 3.3)
+	_jogador_a(carro, 0.7, _meio_fio_direito - RoadTrack.LANE_WIDTH)
 	carro._physics_process(PASSO)
 	assert_bool(_aberta(carro)).is_false()
 
 
 func test_porta_na_cara_nao_abre_em_quem_entra_no_ultimo_instante() -> void:
-	var carro := _carro(TrafficCar.Porta.NA_CARA, MEIO_FIO_DIREITO)
+	var carro := _carro(TrafficCar.Porta.NA_CARA, _meio_fio_direito)
 	# Do outro lado da pista enquanto a janela passa: nada.
-	_jogador_a(carro, 0.7, MEIO_FIO_ESQUERDO)
+	_jogador_a(carro, 0.7, _meio_fio_esquerdo)
 	carro._physics_process(PASSO)
 	assert_bool(_aberta(carro)).is_false()
 	# Cruza para perto a 0,2 s do carro: tarde demais, e tiro, nao susto.
-	_jogador_a(carro, 0.2, MEIO_FIO_DIREITO - 2.0)
+	_jogador_a(carro, 0.2, _meio_fio_direito - 2.0)
 	carro._physics_process(PASSO)
 	assert_bool(_aberta(carro)).is_false()
 
 
 func test_onibus_nao_abre_porta_na_cara() -> void:
-	var onibus := _carro(TrafficCar.Porta.NA_CARA, MEIO_FIO_DIREITO, true)
-	_jogador_a(onibus, 0.7, MEIO_FIO_DIREITO - 3.3)
+	var onibus := _carro(TrafficCar.Porta.NA_CARA, _meio_fio_direito, true)
+	_jogador_a(onibus, 0.7, _meio_fio_direito - RoadTrack.LANE_WIDTH)
 	onibus._physics_process(PASSO)
 	assert_bool(_aberta(onibus)).is_false()
 
 
 func test_pancada_dobra_porta_e_aponta_desvio_para_fora_dos_dois_lados() -> void:
 	for lado: int in [-1, 1]:
-		var carro := _carro(TrafficCar.Porta.ABERTA, MEIO_FIO_DIREITO)
+		var carro := _carro(TrafficCar.Porta.ABERTA, _meio_fio_direito)
 		carro.set("_door_side", lado)
 		var visual := carro.get("_carro") as Carro
 		visual.fechar_portas(true)
@@ -147,5 +147,5 @@ func test_pancada_dobra_porta_e_aponta_desvio_para_fora_dos_dois_lados() -> void
 		for i in 60:
 			carro._pose(PASSO)
 		assert_float(visual.abertura()).is_greater(90.0 / Carro.PORTA_ABERTA)
-		carro.recycle(600.0, MEIO_FIO_DIREITO, true, TrafficCar.Porta.NENHUMA)
+		carro.recycle(600.0, _meio_fio_direito, true, TrafficCar.Porta.NENHUMA)
 		assert_float(visual.abertura()).is_equal(0.0)
