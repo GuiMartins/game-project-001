@@ -1,0 +1,21 @@
+{
+	"altura_m": 1.68,
+	"animacao": "caida",
+	"celula": [
+		224,
+		112
+	],
+	"colunas": 3,
+	"espelha_o_lado_esquerdo": true,
+	"linhas": [
+		"lado",
+		"tres_quartos_costas",
+		"costas",
+		"tres_quartos_frente"
+	],
+	"pe": [
+		112,
+		108
+	],
+	"pixels_por_metro": 100.0
+}
