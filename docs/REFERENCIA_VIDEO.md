@@ -310,7 +310,8 @@ Três leituras:
   para o outro lado antes de se acomodar. É o que faz a troca de direção
   parecer peso em movimento, e não um ponteiro voltando ao centro.
 
-No jogo, `lean_rate = 7` e `lean_return_rate = 9` são taxas exponenciais
+No jogo (antes da V05, que trocou por mola), `lean_rate = 7` e
+`lean_return_rate = 9` eram taxas exponenciais
 (1/s). O retorno ser mais rápido que a entrada **já está certo em espírito**.
 O vídeo pede uma diferença maior: retorno umas **3 vezes** mais rápido que a
 entrada, e um *overshoot* pequeno no fim. Esse *overshoot* não existe hoje,
@@ -351,11 +352,11 @@ O jogo já tem sombra de sol desde a P2. O que o vídeo acrescenta é a **cor**
 
 **Atenção de marca:** bag vermelha com camiseta vermelha é a identidade visual
 de um app real. O `PROTOTIPO.md` fecha com *nada de nome, logo ou cor exata
-de app real*, e o jogo hoje usa bag laranja (`BAG_FABRICA`) com jaqueta
-escura. O que se copia do vídeo é a **roupa de calor carioca** (camiseta,
-bermuda, tênis, antebraço de fora), que lê como entregador de verdade melhor
-que a jaqueta. **A cor não se copia.** Decidir a cor da roupa é uma pergunta
-em aberto, no fim.
+de app real*, e o jogo usava bag laranja com jaqueta escura. O que se copia
+do vídeo é a **roupa de calor carioca** (camiseta, bermuda, tênis, antebraço
+de fora), que lê como entregador de verdade melhor que a jaqueta. A cor ficou
+em aberto até a V21, que decidiu pelo vermelho liso, sem nome nem logo (ver a
+pergunta 2, no fim).
 
 ### Postura e tronco
 
@@ -808,6 +809,8 @@ Decisões de design que o vídeo levanta e que o código não responde:
    de textura.
 2. **A cor da roupa e da bag.** A roupa do vídeo lê melhor como entregador.
    As cores do vídeo são de um app real. Que combinação é do RushFood?
+   *Decidido na V21 (14/10/2026): vermelho, camiseta e bag lisas, sem nome
+   nem logo. Ver a Nota de marca do `PROTOTIPO.md`.*
 3. **A HUD fala de volta (`LAP`) ou de entrega?** A corrida do jogo é rota de
    A a B com prazo.
 4. **Rio ou cidade genérica?** O vídeo começa no Rio e termina numa cidade

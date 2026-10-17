@@ -18,18 +18,36 @@ const FINISH_MARGIN: float = 30.0
 ## que faz o banco de provas medir a mesma corrida toda vez.
 const SEMENTE: int = 20260831
 
-## O LUT de cor do dia (`arte/paleta.py`), importado como `Texture3D`.
-const LUT_DIA: Texture3D = preload("res://assets/visual/lut_dia.png")
+const CEU: Shader = preload("res://scripts/ceu.gdshader")
+## Slider do `WorldTuning` para uniforme do `ceu.gdshader`.
+const CEU_SLIDERS: Dictionary = {
+	"ceu_altura_min": "altura_min",
+	"ceu_cobertura": "cobertura",
+	"ceu_tufo": "tufo",
+	"ceu_grupo": "grupo",
+	"ceu_perspectiva": "perspectiva",
+	"ceu_detalhe": "detalhe",
+	"ceu_trama": "trama",
+	"ceu_sombra": "sombra",
+	"ceu_cinza": "cinza",
+	"ceu_banco": "banco",
+	"ceu_brilho": "brilho",
+	"ceu_faixas_de_tom": "faixas_de_tom",
+	"ceu_vento": "vento",
+	"ceu_serra_altura": "serra_altura",
+	"ceu_serra_rugosidade": "serra_rugosidade",
+}
 
-## A cor de cada rival: bag e moto nela, jaqueta num tom escuro dela (ver
+## A cor de cada rival: bag e moto nela, camiseta um tom abaixo dela (ver
 ## `Entregador.pintar`). Todos sao o mesmo modelo, e e a cor que separa um do
-## outro de longe. Nenhuma encosta no laranja do jogador (`PlayerBike.COR`).
+## outro de longe. Nenhuma encosta no vermelho do jogador (`PlayerBike.COR`):
+## o rosado que havia aqui virou laranja quando o jogador ficou vermelho.
 const RIVAL_COLORS: Array[Color] = [
 	Color(0.25, 0.85, 0.45),
 	Color(0.95, 0.85, 0.2),
 	Color(0.6, 0.35, 0.95),
 	Color(0.2, 0.75, 0.95),
-	Color(0.95, 0.35, 0.45),
+	Color(0.95, 0.55, 0.12),
 ]
 
 ## Quanto tempo a HUD fica sem anunciar outra mudanca de posicao, em segundos.
@@ -37,11 +55,50 @@ const RIVAL_COLORS: Array[Color] = [
 ## isto o aviso vira estroboscopio em cima da pista.
 const POSITION_EVENT_COOLDOWN: float = 1.2
 
-## Distancia lateral (centro a centro) que ainda conta como raspada.
-const NEAR_MISS_LATERAL: float = 2.6
-## Piso da janela: meia largura do carro (0.90) + meia largura da moto (0.38).
-## Abaixo disso nao foi raspada, foi batida - e batida ja tem o proprio efeito.
-const NEAR_MISS_MIN_LATERAL: float = 1.30
+## Folga lateral, da lataria ao centro da moto, que ainda conta como raspada.
+## Com o carro de 1,8 m do greybox isso era 2,6 m centro a centro.
+const NEAR_MISS_LATERAL: float = 1.70
+## Piso da janela: meia largura da moto (0.38) e dois dedos. Abaixo disso nao
+## foi raspada, foi batida - e batida ja tem o proprio efeito.
+const NEAR_MISS_MIN_LATERAL: float = 0.40
+## Quanto alem da ponta do carro a moto ainda conta como passando por ele.
+const NEAR_MISS_ALONG: float = 0.40
+## Folga minima, em metros, entre um carro trocando de faixa e quem ja esta na
+## faixa de destino, mais 1,5 s da diferenca de velocidade: e o tempo da troca
+## ate a lataria chegar na faixa nova.
+const FOLGA_TROCA: float = 2.0
+const FOLGA_TROCA_TEMPO: float = 1.5
+## O carro do greybox: 4,4 x 1,8 m. As distancias de `path_clearance` - o vao
+## de seguir (`traffic_follow_gap`), os 4 m de emparelhado e os 1,6 m de faixa
+## - foram afinadas com ele. O que um modelo tem a mais ou a menos que isso
+## entra como correcao, e a regra continua a mesma para o hatch e o onibus.
+const MEIO_CARRO: float = 2.2
+const MEIA_LARGURA_CARRO: float = 0.9
+## Meia largura da moto, para a conta de quem pilota: rival e piloto
+## automatico. Do `PlayerBike.SIZE`, o mesmo do `RivalBike`.
+const MEIA_MOTO: float = 0.375
+## Sobra minima entre a moto e a lataria para o corredor contar como aberto.
+##
+## Era um numero so, 1,6 m centro a centro, afinado para o carro de 1,8 m: com
+## o corredor a 1,65 m do centro da faixa, sobravam 5 cm. Qualquer carro mais
+## largo - o SUV com a moldura, 1,9 m - fechava o corredor na cabeca da IA, e
+## rival que acha tudo fechado escolhe mal e bate: as quedas no transito
+## dobraram sem onibus nenhum. 15 cm e a sobra que a moto de 0,75 m tem, de
+## cada lado, entre um onibus e um seda.
+const FOLGA_MOTO: float = 0.15
+## Raio de curva para a margem dos carros compridos, em metros: o mais fechado
+## que a pista faz em velocidade de corrida (o banco de provas mede 78 m no
+## talo).
+##
+## O carro e uma caixa reta, e a pista curva: numa curva de raio R, a ponta de
+## uma caixa de comprimento L sai L^2/8R da faixa - 3 cm no seda, 24 cm no
+## onibus. Quem pensa em faixa, o rival, raspava na ponta do onibus achando
+## que passava com folga. A margem entra na conta dele como largura a mais.
+##
+## Por que margem, e nao o colisor seguindo a curva: em gomos, a moto recebia
+## varias colisoes do mesmo onibus por quadro, numa ordem que muda de sistema
+## para sistema, e o banco de provas do Linux media outra corrida.
+const RAIO_DE_CURVA: float = 80.0
 ## Abaixo desta velocidade passar entre carros nao e coragem, e manobra.
 const NEAR_MISS_MIN_SPEED: float = 17.0
 
@@ -51,25 +108,44 @@ var track: RoadTrack
 var player: PlayerBike
 var camera: ChaseCamera
 var run := RaceRun.new()
+## A hora da corrida: o mundo larga ao meio-dia e anoitece (ver `Relogio`).
+var relogio := Relogio.new()
+## O que o menu liga e desliga no visual: o ambiente (cor do dia, neblina,
+## brilho), o sol (sombra) e o borrao de velocidade. Liga e desliga so: os
+## valores de cada um sao da hora, e quem poe e o `relogio`.
+var ambiente: Environment
+var sol: DirectionalLight3D
+var borrao: Borrao
 
 var traffic: Array[TrafficCar] = []
 var rivals: Array[RivalBike] = []
+var travessia: Travessia
+var _sangue: Node3D
 var _rng := RandomNumberGenerator.new()
 var _spawn_cursor: float = 0.0
 var _position_event_timer: float = 0.0
+var _ceu := ShaderMaterial.new()
 
 
 func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = SEMENTE) -> void:
 	tuning = a_tuning
 	world_tuning = a_world_tuning
 	_rng.seed = world_seed
+	# O perfil da serra do horizonte (V14a) sai da semente do mundo: outra
+	# semente, outra serra, e a mesma sempre que o mundo e o mesmo.
+	_ceu.set_shader_parameter("serra_semente", float(hash(world_seed + 8) % 997))
 
 	_build_environment()
 
 	track = RoadTrack.new()
 	track.name = "Track"
 	add_child(track)
-	track.build(ROUTE_LENGTH, _rng)
+	# A via expressa soma pista (V11b). A semente e a da cidade, que sai do
+	# `_rng` sem gastar sorteio dele; a pista a mais sai de um gerador proprio.
+	var semente_da_cidade := hash(_rng.seed + 1)
+	var extra := RandomNumberGenerator.new()
+	extra.seed = hash(_rng.seed + 5)
+	track.build(ROUTE_LENGTH, _rng, Cidade.extra_de_expressas(semente_da_cidade), extra)
 
 	_build_scenery()
 
@@ -88,7 +164,24 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	camera.name = "Camera"
 	add_child(camera)
 	camera.setup(tuning, player)
+	player.obstaculo_quebrado.connect(func(forca: float) -> void: camera.add_shake(0.35 * forca))
 	camera.current = true
+	borrao = Borrao.new()
+	camera.add_child(borrao)
+	borrao.setup(tuning, player)
+	player.marcar_foco()
+
+	# Onde ficam as manchas de quem foi atropelado, para a largada limpar.
+	_sangue = Node3D.new()
+	_sangue.name = "Sangue"
+	_sangue.add_to_group(Sangue.GRUPO)
+	add_child(_sangue)
+
+	# Sorteio proprio, como a cidade: quem atravessa a rua nao mexe no `_rng`.
+	travessia = Travessia.new()
+	travessia.name = "Travessia"
+	add_child(travessia)
+	travessia.setup(self, track, hash(_rng.seed + 2))
 
 	_spawn_traffic()
 	_sync_rival_pool()
@@ -118,6 +211,14 @@ func start_race(grid_offset: float = 0.0, at_speed: float = 0.0) -> void:
 		rivals[i].reset_race(rival_slot.x, rival_slot.y, run.distance_total)
 	_position_event_timer = 0.0
 	scatter_traffic_ahead(player.track_offset)
+	relogio.zerar()
+	travessia.reiniciar()
+	# Largada nova, calcada nova: quem foi atropelado volta, e o chao e lavado.
+	get_tree().call_group(&"multidao", &"reiniciar")
+	get_tree().call_group(&"contramao", &"reiniciar")
+	get_tree().call_group(&"quebraveis", &"reiniciar")
+	for mancha in _sangue.get_children():
+		mancha.queue_free()
 
 
 ## Onde o corredor `index` larga: fila dupla, corredores alternados, o de
@@ -137,58 +238,80 @@ func grid_slot(index: int, base: float) -> Vector2:
 
 
 func _build_environment() -> void:
-	# Meio-dia de sol duro: e o que as referencias mostram, e o caso mais facil
-	# de iluminacao que existe. Um sol, e o resto e consequencia dele.
-	var ceu := ProceduralSkyMaterial.new()
-	ceu.sky_top_color = Color(0.16, 0.38, 0.82)
-	ceu.sky_horizon_color = Color(0.62, 0.74, 0.88)
-	ceu.ground_horizon_color = Color(0.55, 0.6, 0.62)
-	ceu.ground_bottom_color = Color(0.24, 0.26, 0.25)
-	# Desligado de proposito: debanding e dither de sub-pixel para ESCONDER a
-	# banda do degrade, e aqui a banda e o sotaque de epoca.
-	ceu.use_debanding = false
+	# A largada e meio-dia de sol duro: e o que as referencias mostram, e o
+	# caso mais facil de iluminacao que existe. Um sol, e o resto e
+	# consequencia dele. Dali a corrida anoitece, e o que muda com a hora - ceu,
+	# sol, ambiente, neblina, LUT - mora na `Hora` e o `Relogio` aplica. Aqui
+	# fica o que vale o dia inteiro.
+	# O ceu e shader proprio, com a nuvem de ruido (`ceu.gdshader`).
+	_ceu.shader = CEU
+	_aplica_ceu()
 	var sky := Sky.new()
-	sky.sky_material = ceu
+	sky.sky_material = _ceu
+	# Incremental: com o vento o ceu muda todo quadro, e refazer o mapa de luz
+	# ambiente inteiro a cada quadro e o que o modo em tempo real faria. Aqui
+	# ele se refaz aos poucos, e luz ambiente nao precisa de pressa.
+	sky.process_mode = Sky.PROCESS_MODE_INCREMENTAL
 
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	# A luz ambiente vem do CEU, e nao de uma cor escolhida: a sombra fica azul
 	# porque o ceu e azul. E a diferenca entre cena iluminada e cena pintada.
+	# Quanto dele, a cor e a neblina sao da hora (`Hora`), e o `Relogio` aplica.
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.5
-	# Metade do ceu, metade cinza neutro. So com o ceu, a sombra de um predio no
-	# asfalto saia azul royal: na sombra a unica luz e a do ceu, e o LUT ainda
-	# satura por cima. A sombra continua fria, so que fria de cinza.
-	env.ambient_light_sky_contribution = 0.5
-	env.ambient_light_color = Color(0.62, 0.63, 0.65)
 	# Neblina segurando o horizonte: em pixel grosso o fade e o que da
-	# profundidade, e de quebra esconde o fim do mundo sem precisar de LOD. Na
-	# cor do horizonte, para o predio do fundo sumir no ceu e nao num cinza.
+	# profundidade, e de quebra esconde o fim do mundo sem precisar de LOD.
 	env.fog_enabled = true
-	env.fog_light_color = ceu.sky_horizon_color
-	env.fog_density = 0.0045
 	env.fog_aerial_perspective = 0.5
 	env.fog_sky_affect = 0.0
+	# Glow so no que e luz: lanterna de freio, seta e, depois, outdoor e faisca.
+	# O limiar fica logo acima do mais claro que o sol produz - calcada branca e
+	# sacada de frente para ele chegam a 2,0 em HDR; o asfalto nao passa de 1 -,
+	# entao com o sol de hoje o glow nao toca um pixel do que nao e luz. Medido
+	# nos cinco quadros da prova: 0 pixels mudam sem carro freando.
+	env.glow_enabled = true
+	env.glow_hdr_threshold = 2.2
+	# Rampa curta: logo acima do limiar a luz ja brilha inteira. Com a rampa
+	# padrao (2), uma lanterna a 30 m ficava no comeco dela e mal acendia.
+	env.glow_hdr_scale = 1.0
+	# O teto padrao (12) tambem e o divisor com que o primeiro passe achata as
+	# amostras contra vaga-lume, e com ele a lanterna de 45 chegava a metade.
+	env.glow_hdr_luminance_cap = 40.0
+	# Aditivo, e nao o soft light padrao: o glow entra em HDR antes do tonemap,
+	# como luz somada, e o LUT e a paleta passam por cima dele (DIRECAO_VISUAL).
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
+	# So os niveis finos, e o terceiro quase nada: a 640x360 ele ja e 1/8 da
+	# tela, e com 0,6 e 0,3 nos dois de cima o halo de uma lanterna a 30 m
+	# tingia de vermelho a traseira inteira do carro. Halo curto e o que le
+	# como pixel, e nao como lente suja.
+	for i in 7:
+		env.set_glow_level(i, [1.0, 0.4, 0.1, 0.0, 0.0, 0.0, 0.0][i])
+	# Sem SSAO, que a DIRECAO_VISUAL deixava para "se o fps deixar". Nao e o
+	# fps: e que nao aparece. Leve, muda 0,3% dos pixels da prova e o encontro
+	# do pneu com o chao fica igual - quem poe a moto no chao e a sombra de
+	# contato. Forte o bastante para se ver, escurece a sombra inteira e
+	# desfaz o cinza frio que o ambiente acima acertou.
 	# Tonemap antes do LUT, que e o ultimo passo do Environment: o sol de
 	# meio-dia estoura o branco em linear, e o filmic devolve o alto sem
 	# achatar a sombra.
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_white = 6.0
 	# A paleta: o LUT e o ponto unico onde o clima da tela se ajusta. Gerado
-	# por `arte/paleta.py`. Depois dele so vem a quantizacao com dither, que e
-	# do `main.gd` e e o ultimo passe de todos.
+	# por `arte/paleta.py`, um por hora-chave, e o `Relogio` escolhe ou mistura.
+	# Depois dele so vem a quantizacao com dither, que e do `main.gd` e e o
+	# ultimo passe de todos.
 	env.adjustment_enabled = true
-	env.adjustment_color_correction = LUT_DIA
 
+	ambiente = env
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
 
+	# O sol, que de noite e a lua: a mesma luz, porque duas direcionais com
+	# sombra custam o dobro e a lua nao divide o ceu com o sol. Direcao, cor e
+	# forca sao da hora.
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-42.0, 38.0, 0.0)
-	sun.light_energy = 2.0
-	sun.light_color = Color(1.0, 0.96, 0.88)
 	# Sombra de contato e o que poe veiculo no chao: sem ela, tudo flutua. Os
 	# numeros dela, do DIRECAO_VISUAL.md:
 	# - 250 m de alcance. Eram 70, contando que a neblina apagava o mundo dali
@@ -212,7 +335,18 @@ func _build_environment() -> void:
 	sun.directional_shadow_blend_splits = true
 	sun.shadow_bias = 0.03
 	sun.shadow_normal_bias = 0.8
+	# Penumbra de ~1 pixel da tela em todas as divisoes. Com as divisoes
+	# misturadas, o Godot borra o mesmo numero de texels em cada uma, e o texel
+	# cresce com a distancia mais ou menos como o pixel cresce: tres texels
+	# dao perto de um pixel de 640x360 da roda ate os 250 m. Menos que isso e
+	# a borda serrilha andando; mais e sombra de dia nublado.
+	sun.shadow_blur = 3.0
 	add_child(sun)
+	sol = sun
+
+	relogio.name = "Relogio"
+	add_child(relogio)
+	relogio.montar(env, sun, _ceu)
 
 
 func _build_scenery() -> void:
@@ -222,59 +356,46 @@ func _build_scenery() -> void:
 	props.name = "Scenery"
 	add_child(props)
 
-	var edge := RoadTrack.half_width() + RoadTrack.SHOULDER
+	# A cidade vem antes dos postes para eles saberem onde estao as ruas. Ela
+	# sorteia do gerador dela, cuja semente nao depende do estado deste: a
+	# ordem nao mexe em nada do que sai do `_rng`.
+	var rua := RandomNumberGenerator.new()
+	rua.seed = hash(_rng.seed + 1)
+	Cidade.new(track).montar(rua, props)
 
+	# Os postes da avenida saem do `_rng`, e os da pista que a via expressa
+	# somou, de um gerador proprio: assim o `_rng` gasta o mesmo que gastava
+	# sem ela, e o transito e os rivais que vem depois saem iguais.
+	var depois := RandomNumberGenerator.new()
+	depois.seed = hash(_rng.seed + 6)
 	var o := 30.0
 	while o < track.length - 10.0:
-		var side := 1.0 if _rng.randf() < 0.5 else -1.0
-		var at := track.point(o, edge * side + 0.8 * side) + Vector3.UP * 3.0
-		o += _rng.randf_range(18.0, 34.0)
-		var pole := StaticBody3D.new()
-		pole.collision_layer = Layers.WORLD
-		pole.collision_mask = 0
-		var pole_size := Vector3(0.35, 6.0, 0.35)
-		pole.add_child(Greybox.box(pole_size, Color(0.62, 0.6, 0.55)))
-		pole.add_child(Greybox.box_shape(pole_size))
-		props.add_child(pole)
-		pole.global_position = at
+		var gerador := _rng if o < track.comprimento_da_avenida - 10.0 else depois
+		var side := 1.0 if gerador.randf() < 0.5 else -1.0
+		var at := track.point(o, Poste.LATERAL * side)
+		var para_a_pista := track.sample_basis(o).x * -side
+		var na_rua := Cidade.na_boca(track.cruzamentos, o, side)
+		# Embaixo do viaduto o poste de 10 m fura o tabuleiro de 7.
+		var fura := Cidade.sob_viaduto(track, o, side)
+		o += gerador.randf_range(18.0, 34.0)
+		if na_rua or fura:
+			continue
+		props.add_child(Poste.criar(at, para_a_pista))
 
+	# Os sorteios dos predios do greybox continuam saindo do gerador do mundo,
+	# na mesma quantidade e na mesma ordem, e vao fora. Transito e rivais vem
+	# do mesmo gerador, depois daqui: tirar estes sorteios embaralharia a
+	# corrida inteira do banco de provas, que tem baseline por sistema
+	# operacional. A rua de verdade sai do `rua`, que e so dela.
 	o = 12.0
-	while o < track.length:
-		for side: float in [-1.0, 1.0]:
+	while o < track.comprimento_da_avenida:
+		for _side in 2:
 			if _rng.randf() < 0.35:
 				continue
-			# Os tres sorteios sao os mesmos da caixa do greybox, na mesma ordem:
-			# mexer neles mudaria o transito e os rivais, que vem do mesmo
-			# gerador. So o que se faz com eles mudou.
-			var h := _rng.randf_range(6.0, 26.0)
-			var w := _rng.randf_range(6.0, 14.0)
-			var shade := _rng.randf_range(0.2, 0.42)
-			var tipo := _tipo_de_predio(h)
-			var building := Predio.criar(tipo, (w - 6.0) / 8.0, (shade - 0.2) / 0.22)
-			props.add_child(building)
-			# A fachada (-Z) olha para a pista, e a ponta dela fica a 6 m do
-			# acostamento. Base 1 m abaixo da pista: o terreno cai depois do
-			# acostamento, e na rampa o predio nao pode ficar com o pe no ar.
-			var lateral := (edge + 6.0 + Predio.frente(tipo)) * side
-			var base := track.transform_at(o, lateral)
-			building.global_transform = Transform3D(
-				Basis.looking_at(base.basis.x * -side, Vector3.UP), base.origin + Vector3.DOWN
-			)
+			_rng.randf()
+			_rng.randf()
+			_rng.randf()
 		o += _rng.randf_range(16.0, 30.0)
-
-
-## Qual dos quatro predios cabe na altura sorteada. A faixa de cada um e a
-## proporcao dele na avenida: um quarto de sobrado, o grosso de predio baixo
-## de comercio, e torre so de vez em quando - torre demais fecha o ceu, e o
-## ceu e metade da leitura de velocidade.
-static func _tipo_de_predio(altura: float) -> Predio.Tipo:
-	if altura < 11.0:
-		return Predio.Tipo.SOBRADO
-	if altura < 19.0:
-		return Predio.Tipo.COMERCIO
-	if altura < 23.0:
-		return Predio.Tipo.ESCRITORIO
-	return Predio.Tipo.TORRE
 
 
 ## Quanto o jogador ja andou da rota, em metros. E daqui que sai a colocacao -
@@ -321,14 +442,86 @@ func _pick_lane() -> float:
 ## So encostado abre porta - e nem todo encostado abre. Se encostar fosse
 ## sinonimo de porta, a faixa da ponta viraria regra decorada em vez de aposta,
 ## e o jogador aprenderia a nunca chegar perto em vez de calcular o risco.
+##
+## Um sorteio so para os dois tipos de porta, como era quando havia um tipo:
+## sorteio a mais aqui empurraria todo o resto da corrida do banco de provas.
 func _place_car(car: TrafficCar, at_offset: float) -> void:
 	if _rng.randf() < world_tuning.parked_chance:
 		var curb := 0 if _rng.randf() < 0.5 else RoadTrack.LANE_COUNT - 1
-		car.recycle(
-			at_offset, RoadTrack.lane_center(curb), true, _rng.randf() < world_tuning.door_chance
-		)
+		var sorteio := _rng.randf()
+		var porta := TrafficCar.Porta.NENHUMA
+		if sorteio < world_tuning.door_open_chance:
+			porta = TrafficCar.Porta.ABERTA
+		elif sorteio < world_tuning.door_open_chance + world_tuning.door_ambush_chance:
+			porta = TrafficCar.Porta.NA_CARA
+		car.recycle(at_offset, _na_mao(at_offset, RoadTrack.lane_center(curb)), true, porta)
 	else:
-		car.recycle(at_offset, _pick_lane(), false, false)
+		car.recycle(at_offset, _na_mao(at_offset, _pick_lane()), false)
+	_desencosta(car)
+
+
+## A faixa espelhada, se a sorteada cai na mao contraria da via expressa (ou
+## no zebrado antes dela). Espelhar, e nao sortear de novo: sorteio a mais
+## aqui empurraria todo o resto da corrida do banco de provas. O encostado
+## olha 10 m para cada lado, porque nunca sai dali.
+func _na_mao(at_offset: float, lateral: float) -> float:
+	var mao := track.mao_entre(at_offset - 10.0, at_offset + 10.0)
+	if lateral < mao.x or lateral > mao.y:
+		return -lateral
+	return lateral
+
+
+## Empurra para a frente o carro que nasceu em cima de outro na mesma faixa.
+##
+## Com caixa de 4,4 m e espacamento minimo de 5 m isso quase nao acontecia, e
+## quando acontecia eram dois carros andando e o de tras freava ate soltar. Com
+## onibus de 12 m e carro encostado - que nunca anda - vira um carro dentro do
+## outro para sempre. Para a frente, e sem sorteio: o sorteio do mundo continua
+## o mesmo, so a posicao anda.
+func _desencosta(car: TrafficCar) -> void:
+	for tentativa in 8:
+		var empurra := 0.0
+		for outro in traffic:
+			if outro == car:
+				continue
+			# Quem esta indo para esta faixa tambem conta, como no `faixa_livre`:
+			# nascer do lado de um carro no meio da troca e ser fechado por ele.
+			var largura := outro.meia_largura() + car.meia_largura() + 0.3
+			if (
+				absf(outro.lateral - car.lateral) >= largura
+				and absf(outro.destino() - car.lateral) >= largura
+			):
+				continue
+			# Nao basta nao nascer encostado: o de tras precisa de chao para
+			# frear ate a velocidade do da frente, senao entra nele logo depois.
+			var juntos := outro.meio_comprimento() + car.meio_comprimento() + 0.5
+			var na_frente := juntos + _frenagem(outro.speed, car.speed)
+			var atras := juntos + _frenagem(car.speed, outro.speed)
+			var d := car.offset - outro.offset
+			if (d >= 0.0 and d < na_frente) or (d < 0.0 and -d < atras):
+				empurra = maxf(empurra, outro.offset + na_frente - car.offset)
+		if empurra <= 0.0:
+			return
+		car.posicionar(car.offset + empurra)
+
+
+## Metros que o carro de tras, a `rapido` m/s, perde de vao ate o da frente, a
+## `lento`, se os dois frearem no talo; mais o atraso da consulta a pista
+## (`TrafficCar.PROBE_EVERY`, ~0,07 s) com folga.
+##
+## E a diferenca dos quadrados, e nao o quadrado da diferenca: o da frente
+## tambem freia, e freando os dois no mesmo talo a diferenca de velocidade
+## nao fecha nunca - so acaba quando o da frente para. A conta antiga supunha o
+## da frente mantendo a velocidade, e uma van nascida 10 m atras de outra que
+## parava para um carro encostado entrava nela (V20a).
+func _frenagem(rapido: float, lento: float) -> float:
+	var parado := maxf(lento, 0.0)
+	if rapido <= parado:
+		return 0.0
+	return (
+		(rapido * rapido - parado * parado) / (2.0 * world_tuning.traffic_brake)
+		+ (rapido - parado) * 0.2
+	)
 
 
 ## Reconcilia a frota de rivais com o tuning, sem mexer em quem ja existe.
@@ -353,6 +546,49 @@ func _sync_rival_pool() -> void:
 
 
 ## --- Regras que precisam da visao geral -----------------------------------
+
+
+func _process(_delta: float) -> void:
+	_aplica_ceu()
+	aplica_ator()
+	relogio.andar(
+		player_progress() / maxf(run.distance_total, 1.0),
+		world_tuning.hora_comeca,
+		world_tuning.hora_fecha,
+		world_tuning.hora_forcada
+	)
+
+
+## Repassa os sliders do ceu ao shader, so o que mudou.
+func _aplica_ceu() -> void:
+	for slider: String in CEU_SLIDERS:
+		var valor: float = world_tuning.get(slider)
+		var uniforme: String = CEU_SLIDERS[slider]
+		if _ceu.get_shader_parameter(uniforme) != valor:
+			_ceu.set_shader_parameter(uniforme, valor)
+
+
+## Sprite ou modelo, e a cadencia da pose, em todo corredor e nos pedestres. A
+## cada quadro, e nao so quando o slider mexe: rival que entra depois (R) nasce
+## em 3D e tem de ser trocado tambem. O ator ignora o pedido que nao muda nada.
+func aplica_ator() -> void:
+	var ligado := world_tuning.ator_sprite == 1
+	var cadencia := float(world_tuning.ator_cadencia)
+	if player != null:
+		player.usar_sprite(ligado)
+		player.usar_cadencia(cadencia)
+	for rival in rivals:
+		rival.usar_sprite(ligado)
+		rival.usar_cadencia(cadencia)
+	# A gente da calcada pula de pose no mesmo ritmo, senao ela fica lisa num
+	# mundo travado, ou travada num liso.
+	for no in get_tree().get_nodes_in_group(Pedestres.GRUPO_NOS):
+		if no is Multidao:
+			(no as Multidao).sprite = ligado
+		elif no is Pessoa:
+			(no as Pessoa).usar_sprite(ligado)
+		if no.get(&"cadencia") != cadencia:
+			no.set(&"cadencia", cadencia)
 
 
 func _physics_process(delta: float) -> void:
@@ -436,12 +672,13 @@ func _score_corridor() -> void:
 		return
 	for car in traffic:
 		var along := car.offset - player.track_offset
-		if along < -9.0:
+		var meio := car.meio_comprimento()
+		if along < -(meio + 6.8):
 			car.near_missed = false
 			continue
-		if car.near_missed or absf(along) > 2.6:
+		if car.near_missed or absf(along) > meio + NEAR_MISS_ALONG:
 			continue
-		var side := absf(car.lateral - player.track_lateral)
+		var side := absf(car.lateral - player.track_lateral) - car.meia_largura()
 		# Perto o bastante pra assustar, longe o bastante pra nao ser colisao.
 		if side > NEAR_MISS_MIN_LATERAL and side < NEAR_MISS_LATERAL:
 			car.near_missed = true
@@ -453,18 +690,128 @@ func _score_corridor() -> void:
 ## Devolve `span` quando nao ha nada no caminho.
 ## `exclude` tira um carro da conta - e como o proprio carro pergunta quanta
 ## pista tem a frente sem se enxergar parado a zero metro de si mesmo.
-func path_clearance(from_offset: float, span: float, lateral: float, exclude: Node = null) -> float:
+##
+## `emparelhado` conta o carro ao lado, ate 4 m atras, como bloqueio. Sem ele,
+## so conta quem esta a frente.
+func path_clearance(
+	from_offset: float, span: float, lateral: float, exclude: Node = null, emparelhado: bool = true
+) -> float:
 	var nearest := span
+	# Carro perguntando: o que ele tem de nariz a mais que o padrao come pista.
+	var proprio := 0.0
+	if exclude is TrafficCar:
+		proprio = (exclude as TrafficCar).meio_comprimento() - MEIO_CARRO
 	for car in traffic:
 		if car == exclude:
 			continue
-		var gap := car.offset - from_offset
-		# -4 m atras: um carro emparelhado ainda bloqueia a faixa.
-		if gap < -4.0 or gap > span:
+		var a_mais := car.meio_comprimento() - MEIO_CARRO
+		var gap := car.offset - from_offset - a_mais - proprio
+		# -4 m atras: um carro emparelhado ainda bloqueia a faixa. Contado da
+		# frente dele, porque o onibus emparelha com o centro 8 m atras.
+		if car.offset + car.meio_comprimento() - from_offset < MEIO_CARRO - 4.0 or gap > span:
 			continue
-		if absf(car.lateral - lateral) < 1.6:
+		if not emparelhado and car.offset < from_offset:
+			continue
+		var faixa := _faixa_de(car, exclude)
+		var na_faixa := absf(car.lateral - lateral) < faixa
+		# Carro perguntando: o da frente que ja decidiu entrar nesta faixa ja e
+		# o carro da frente, como quem ve a seta. Esperar a lataria chegar e
+		# frear tarde: a troca anda 1,6 m/s de lado mesmo com o carro parado, e
+		# um hatch saindo da fila entrou num que vinha acelerando atras (V20a).
+		# So quem esta a frente: o de tras entrando e quem tem de esperar.
+		if not na_faixa and exclude is TrafficCar and car.offset > from_offset:
+			na_faixa = absf(car.destino() - lateral) < faixa
+		if na_faixa:
 			nearest = minf(nearest, maxf(gap, 0.0))
 	return nearest
+
+
+## Ate que distancia lateral, centro a centro, `car` atrapalha quem pergunta.
+##
+## Rival ve a conta fisica - lataria, moto e a sobra minima -, porque ele
+## anda na lateral exata que escolhe: e parametrico, nao tem guidao para errar.
+## O resto segue a regra de sempre, afinada para o carro de 1,8 m e corrigida
+## pela largura: o carro, que so precisa saber quem segue quem na faixa, e o
+## piloto automatico do banco de provas, que pilota uma moto de verdade e
+## precisa da margem para o erro dela.
+func _faixa_de(car: TrafficCar, quem: Node) -> float:
+	if quem is RivalBike:
+		return _meia_largura_na_curva(car) + MEIA_MOTO + FOLGA_MOTO
+	var outro := 0.0
+	if quem is TrafficCar:
+		outro = (quem as TrafficCar).meia_largura() - MEIA_LARGURA_CARRO
+	return 1.6 + car.meia_largura() - MEIA_LARGURA_CARRO + outro
+
+
+## Meia largura de `car` contando o quanto a ponta dele sai da faixa na curva
+## mais fechada (ver `RAIO_DE_CURVA`).
+static func _meia_largura_na_curva(car: TrafficCar) -> float:
+	var comprimento := car.meio_comprimento() * 2.0
+	return car.meia_largura() + comprimento * comprimento / (8.0 * RAIO_DE_CURVA)
+
+
+## O meio do vao de verdade no corredor `corredor`, olhando `span` a frente.
+##
+## O corredor e o meio entre duas faixas, e com dois carros de 1,8 m dos lados
+## o vao livre fica centrado nele. Com um onibus de 2,5 m de um lado, o vao
+## anda 18 cm para o outro: mirar no meio das faixas e mirar a 2 cm do
+## onibus. Sem carro largo por perto, isto devolve o proprio corredor.
+func _meio_do_vao(from_offset: float, span: float, corredor: float) -> float:
+	var esquerda := corredor - RoadTrack.LANE_WIDTH * 0.5 + MEIA_LARGURA_CARRO
+	var direita := corredor + RoadTrack.LANE_WIDTH * 0.5 - MEIA_LARGURA_CARRO
+	for car in traffic:
+		var lado := car.lateral - corredor
+		# So os vizinhos do corredor. Quem esta em cima dele fecha o corredor
+		# pelo `path_clearance`, e nao tem lado.
+		if absf(lado) >= RoadTrack.LANE_WIDTH or absf(lado) < car.meia_largura():
+			continue
+		var ao_longo := car.offset - from_offset
+		if ao_longo > span + car.meio_comprimento() or ao_longo < -car.meio_comprimento() - 2.0:
+			continue
+		var meia := _meia_largura_na_curva(car)
+		if lado < 0.0:
+			esquerda = maxf(esquerda, car.lateral + meia)
+		else:
+			direita = minf(direita, car.lateral - meia)
+	return (esquerda + direita) * 0.5
+
+
+## Algum carro ocupa o ponto `(offset, lateral)` de pista, para um corpo de
+## meia medida `meio` (x = meia largura, z = meio comprimento)?
+func ocupado(offset: float, lateral: float, meio: Vector3) -> bool:
+	for car in traffic:
+		if (
+			absf(car.offset - offset) < car.meio_comprimento() + meio.z
+			and absf(car.lateral - lateral) < car.meia_largura() + meio.x
+		):
+			return true
+	return false
+
+
+## A faixa em `lateral` esta livre para `car` entrar?
+##
+## Conta quem esta nela e quem esta indo para ela: dois carros escolhendo a
+## mesma faixa do meio no mesmo instante e o caso classico. A folga cresce com
+## a diferenca de velocidade - o de tras mais rapido chega antes de a troca
+## acabar.
+func faixa_livre(car: TrafficCar, lateral: float) -> bool:
+	for outro in traffic:
+		if outro == car:
+			continue
+		var largura := outro.meia_largura() + car.meia_largura() + 0.3
+		if absf(outro.lateral - lateral) >= largura and absf(outro.destino() - lateral) >= largura:
+			continue
+		var frente := outro.offset - car.offset
+		var fecha := car.speed - outro.speed if frente > 0.0 else outro.speed - car.speed
+		var folga := (
+			outro.meio_comprimento()
+			+ car.meio_comprimento()
+			+ FOLGA_TROCA
+			+ maxf(fecha, 0.0) * FOLGA_TROCA_TEMPO
+		)
+		if absf(frente) < folga:
+			return false
+	return true
 
 
 ## Melhor lateral pra seguir: a que tem mais pista livre a frente, com desempate
@@ -478,12 +825,18 @@ func free_lateral(
 ) -> float:
 	var best := preferred
 	var best_score := -INF
+	# Na via expressa, a metade do lado do viaduto e mao contraria.
+	var mao := track.mao_entre(from_offset, from_offset + span)
 	for lane in range(RoadTrack.LANE_COUNT):
 		for i in range(2):
 			var candidate := (
-				RoadTrack.lane_center(lane) if i == 0 else RoadTrack.corridor_center(lane)
+				RoadTrack.lane_center(lane)
+				if i == 0
+				else _meio_do_vao(from_offset, span, RoadTrack.corridor_center(lane))
 			)
 			if absf(candidate) > RoadTrack.half_width() - 0.8:
+				continue
+			if candidate < mao.x or candidate > mao.y:
 				continue
 			# Pista livre manda; mudar de faixa custa pouco, mas custa.
 			var score := (

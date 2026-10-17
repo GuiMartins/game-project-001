@@ -9,15 +9,37 @@ extends Camera3D
 ## GARUPA logo depois de CHASE: no F2 a camera nova fica a um toque do padrao.
 enum Mode { CHASE, GARUPA, HOOD, DEBUG_FREE }
 
+## Quantas vezes por segundo o tranco sorteia um lugar novo. Sorteando a cada
+## quadro, o tremor era ruido branco: a 60 fps a lente pulava de um lado para
+## o outro sem passar pelo meio, e a imagem estroboscava em vez de sacudir.
+const TRANCO_HZ: float = 18.0
+## Quanto do caminho ate o sorteado o tranco anda por segundo (1/s). Rapido o
+## bastante para chegar perto antes do proximo sorteio, lento o bastante para
+## nao virar degrau.
+const TRANCO_SEGUE: float = 40.0
+## Quanto o tranco morre por segundo, em unidades de `_shake`. Capotada (1,0)
+## sacode ~0,6 s; raspada (0,1-0,5) acaba antes de o jogador perceber o fim.
+const TRANCO_DECAI: float = 1.6
+
 var tuning: BikeTuning
 var target: PlayerBike
 var mode: int = Mode.CHASE
 
-var _smoothed_position: Vector3
-var _smoothed_look: Vector3
+## Onde a camera e a mira estao EM RELACAO a moto, suavizados. Persegue o
+## deslocamento, e nao a posicao no mundo: ver `_process`.
+var _offset: Vector3
+var _mira_offset: Vector3
+## Altura da moto, suavizada. Separada do deslocamento para a ladeira e o
+## quique continuarem chegando amortecidos na camera.
+var _altura: float
 ## Giro atual da camera em volta do eixo de visao, em radianos.
 var _roll: float = 0.0
 var _shake: float = 0.0
+## O deslocamento do tranco agora e o sorteado que ele persegue: ver
+## `_tremor_de_batida`.
+var _tranco: Vector3 = Vector3.ZERO
+var _tranco_alvo: Vector3 = Vector3.ZERO
+var _tranco_relogio: float = 0.0
 var _rng := RandomNumberGenerator.new()
 ## O cinegrafista do modo GARUPA. Nasce na primeira vez que o modo roda: a
 ## pista so existe depois do `setup` da moto.
@@ -29,8 +51,9 @@ func setup(a_tuning: BikeTuning, a_target: PlayerBike) -> void:
 	target = a_target
 	near = 0.1
 	far = 800.0
-	_smoothed_position = a_target.global_position + Vector3(0, 3, 8)
-	_smoothed_look = a_target.global_position
+	_offset = Vector3(0, 3, 8)
+	_mira_offset = Vector3.ZERO
+	_altura = a_target.global_position.y
 	_roll = 0.0
 
 
@@ -70,16 +93,23 @@ func _process(delta: float) -> void:
 		return
 
 	var alvo := _alvos()
-	# A camera persegue por posicao, nao por rotacao rigida. O atraso e o que
-	# faz a moto "escapar" da camera na saida de curva.
+	# A camera persegue o DESLOCAMENTO em relacao a moto, nao a posicao no
+	# mundo. Perseguindo a posicao, o atraso cresce com a velocidade (v / k): a
+	# 52 m/s com `cam_follow` 7 eram 7,4 m a mais, a camera ia de 6,4 m para
+	# quase 14 m no talo e a moto encolhia para menos da metade na tela.
+	# Assim a distancia e a do slider em qualquer velocidade, e o atraso fica
+	# so onde ele serve: o deslocamento gira atrasado na curva, e a moto ainda
+	# "escapa" da camera na saida dela.
 	var t := 1.0 - exp(-tuning.cam_follow * delta)
-	_smoothed_position = _smoothed_position.lerp(alvo[0], t)
-	_smoothed_look = _smoothed_look.lerp(alvo[1], t)
+	var moto := target.global_position
+	_offset = _offset.lerp(alvo[0] - moto, t)
+	_mira_offset = _mira_offset.lerp(alvo[1] - moto, t)
+	_altura = lerpf(_altura, moto.y, t)
 
-	var pos := _smoothed_position + _tremor_de_batida(delta)
+	var pos := _base() + _offset + _tremor_de_batida(delta)
 
 	# O giro PERSEGUE a inclinacao em vez de copia-la: ver `cam_lean_rate`.
-	var roll_alvo := -target.lean * tuning.cam_lean_follow
+	var roll_alvo := -target.lean_visual * tuning.cam_lean_follow
 	_roll = lerpf(_roll, roll_alvo, 1.0 - exp(-tuning.cam_lean_rate * delta))
 	_aplica(pos)
 
@@ -91,24 +121,36 @@ func _process(delta: float) -> void:
 ## se compara com o de ontem.
 func encaixar() -> void:
 	_shake = 0.0
+	_tranco = Vector3.ZERO
 	if _na_garupa():
 		_aplica_garupa(_garupa.encaixar(CameraGarupa.ler(target, _transito())))
 		return
 	var alvo := _alvos()
-	_smoothed_position = alvo[0]
-	_smoothed_look = alvo[1]
-	_roll = -target.lean * tuning.cam_lean_follow
-	_aplica(_smoothed_position)
+	_offset = alvo[0] - target.global_position
+	_mira_offset = alvo[1] - target.global_position
+	_altura = target.global_position.y
+	_roll = -target.lean_visual * tuning.cam_lean_follow
+	_aplica(_base() + _offset)
 
 
 ## O tranco de batida (`add_shake`): vale em todos os modos, por cima do resto.
 func _tremor_de_batida(delta: float) -> Vector3:
 	if _shake <= 0.0:
+		_tranco = Vector3.ZERO
 		return Vector3.ZERO
-	var tranco := (
-		Vector3(_rng.randfn(0.0, 1.0), _rng.randfn(0.0, 1.0), _rng.randfn(0.0, 1.0)) * _shake * 0.35
-	)
-	_shake = maxf(_shake - delta * 1.6, 0.0)
+	_tranco_relogio -= delta
+	if _tranco_relogio <= 0.0:
+		_tranco_relogio = 1.0 / TRANCO_HZ
+		# Uniforme e nao gaussiano: a cauda do gaussiano dava pico de 3x o
+		# slider, e era o pico que se via.
+		_tranco_alvo = Vector3(
+			_rng.randf_range(-1.0, 1.0), _rng.randf_range(-1.0, 1.0), _rng.randf_range(-1.0, 1.0)
+		)
+	_tranco = _tranco.lerp(_tranco_alvo, 1.0 - exp(-TRANCO_SEGUE * delta))
+	# Quadratico na forca: raspada de 0,3 sacode 9% do que sacode a capotada,
+	# e nao 30%. Linear, qualquer encostada tremia a tela inteira.
+	var tranco := _tranco * _shake * _shake * tuning.cam_shake
+	_shake = maxf(_shake - delta * TRANCO_DECAI, 0.0)
 	return tranco
 
 
@@ -136,14 +178,21 @@ func _aplica_garupa(pose: Transform3D) -> void:
 	global_transform = pose
 	# A perseguicao continua de onde a garupa parou: saindo dela no F2, a
 	# camera sai daqui, e nao de um ponto esquecido la atras na pista.
-	_smoothed_position = pose.origin
-	_smoothed_look = _garupa.mira
+	_altura = target.global_position.y
+	_offset = pose.origin - _base()
+	_mira_offset = _garupa.mira - _base()
+
+
+## A moto com a altura suavizada: a ancora de onde saem camera e mira.
+func _base() -> Vector3:
+	var moto := target.global_position
+	return Vector3(moto.x, _altura, moto.z)
 
 
 ## Onde a camera quer estar e para onde quer olhar, sem suavizacao.
 func _alvos() -> Array[Vector3]:
 	var back := Vector3(-sin(target.heading), 0.0, -cos(target.heading))
-	var distance := tuning.cam_distance
+	var distance := tuning.cam_distance + tuning.cam_recuo * _fracao_velocidade()
 	var height := tuning.cam_height
 	if mode == Mode.HOOD:
 		distance = 0.2
@@ -151,18 +200,25 @@ func _alvos() -> Array[Vector3]:
 	elif mode == Mode.DEBUG_FREE:
 		distance = tuning.cam_distance * 2.6
 		height = tuning.cam_height * 4.0
-	# Mira longe: olhar 14 m a frente abaixa o horizonte e abre a pista. Mirar
-	# em cima da moto so mostra o para-lama.
+	# A mira e slider (`cam_mira_*`): com a camera baixa, a altura dela decide
+	# onde fica o horizonte.
 	return [
 		target.global_position + back * distance + Vector3.UP * height,
-		target.global_position - back * 14.0 + Vector3.UP * 1.2,
+		(
+			target.global_position
+			- back * tuning.cam_mira_distancia
+			+ Vector3.UP * tuning.cam_mira_altura
+		),
 	]
 
 
 func _aplica(pos: Vector3) -> void:
-	var speed_frac := clampf(target.speed / maxf(tuning.max_speed, 1.0), 0.0, 1.4)
-	fov = tuning.cam_fov + tuning.cam_fov_speed_gain * speed_frac
-	look_at_from_position(pos, _smoothed_look, Vector3.UP)
+	fov = tuning.cam_fov + tuning.cam_fov_speed_gain * _fracao_velocidade()
+	look_at_from_position(pos, _base() + _mira_offset, Vector3.UP)
 	# Um pingo da inclinacao da moto na camera. Muito disso embrulha o estomago;
 	# nada disso deixa a curva sem peso.
 	rotate_object_local(Vector3.FORWARD, _roll)
+
+
+func _fracao_velocidade() -> float:
+	return clampf(target.speed / maxf(tuning.max_speed, 1.0), 0.0, 1.4)

@@ -48,6 +48,9 @@ const CREDITO_DO_SOCO: float = 1.5
 ##
 ## 4,5 m e folga em cima do encosto real: meia diagonal do sensor (0,95 m) mais
 ## meio carro (2,2 m) da 3,4 m, e um frame de aproximacao a 33 m/s soma 0,55 m.
+## Contra carro do transito o meio carro e o do modelo (`_alcance`): com os
+## 4,5 m fixos, a ponta do onibus de 12 m ficava a 6 m do centro dele, e o
+## rival atravessava a traseira do onibus sem cair.
 const WIPEOUT_ALCANCE: float = 4.5
 
 var track: RoadTrack
@@ -74,6 +77,10 @@ var _target_lateral: float = 0.0
 var _punch_cooldown: float = 0.0
 var _punch_timer: float = -1.0
 var _punch_side: int = 0
+## Este soco ja acertou. Desligar a hitbox no acerto nao bastava: o passo
+## seguinte religava ela, ainda dentro da janela ativa, e um soco so acertava o
+## jogador tres vezes, um passo de fisica sim, outro nao.
+var _punch_landed: bool = false
 ## Segundos que faltam medindo o jogador antes do proximo soco; -1 = nao esta
 ## mirando. Ver `_aim_punch`.
 var _punch_delay: float = -1.0
@@ -83,16 +90,25 @@ var _credito_jogador: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _visual: Node3D
 var _ator: Entregador
-## Se ele esta acelerando neste passo. So a pose le.
+var _derrapagem: Derrapagem
+var _estrago: Estrago
+## Gas e freio neste passo, de 0 a 1. So a pose le.
 var _acelerador: float = 0.0
+var _freio: float = 0.0
 ## Para que lado ele tomba na queda: o lado em que estava inclinado.
 var _lado_queda: float = -1.0
 var _hitbox: Area3D
 var _sensor: Area3D
 var _lean: float = 0.0
+var _lean_vel: float = 0.0
+## A mola da inclinacao da moto sorteada: rival de PCX troca de lado mais
+## nervoso que rival de XRE, como o jogador.
+var _fisica := FisicaDaMoto.new()
 
 
 func _ready() -> void:
+	# Quem esta na rua pula da frente dela (`Pessoa`).
+	add_to_group(Pessoa.GRUPO_MOTOS)
 	sync_to_physics = true
 	collision_layer = Layers.RIVAL
 	collision_mask = 0
@@ -106,6 +122,12 @@ func _ready() -> void:
 	_ator = Entregador.new()
 	_visual.add_child(_ator)
 	_ator.pintar(bag_color)
+	_derrapagem = Derrapagem.new()
+	_derrapagem.position = Vector3(0.0, -SIZE.y * 0.5, Derrapagem.EIXO_TRASEIRO)
+	add_child(_derrapagem)
+	_estrago = Estrago.new()
+	_estrago.position = Vector3(0.0, -SIZE.y * 0.5, 0.0)
+	add_child(_estrago)
 
 	_hitbox = Area3D.new()
 	_hitbox.collision_layer = Layers.RIVAL_HIT
@@ -121,6 +143,16 @@ func _ready() -> void:
 	_sensor.collision_mask = Layers.WORLD
 	_sensor.add_child(Greybox.box_shape(SIZE * 0.9))
 	add_child(_sensor)
+
+
+## Desenha este corredor em sprite em vez do modelo 3D (`WorldTuning.ator_sprite`).
+func usar_sprite(ligado: bool) -> void:
+	_ator.sprite = ligado
+
+
+## Poses do ator por segundo (`WorldTuning.ator_cadencia`); 0 e liso.
+func usar_cadencia(hz: float) -> void:
+	_ator.cadencia.hz = hz
 
 
 func setup(
@@ -139,8 +171,18 @@ func setup(
 	player = a_player
 	bag_color = color
 	_rng.seed = seed_value
-	# Mesmo modelo, paleta trocada: cada rival e uma cor, da bag a moto.
+	# Mesmo ator, paleta trocada: cada rival e uma cor, da bag a moto.
 	_ator.pintar(color)
+	# E a moto sorteada, uma vez so: rival e gente, e gente nao troca de moto
+	# entre uma corrida e outra. Sorteio num gerador a parte, e com semente
+	# derivada, e nao a mesma: tirar do `_rng` mudaria o ritmo e a agressividade
+	# de todo o pelotao, e a mesma semente crua faria a moto andar junto com o
+	# ritmo - toda XRE seria a do rival mais lento.
+	var sorteio := RandomNumberGenerator.new()
+	sorteio.seed = hash([seed_value, "moto"])
+	var modelo := sorteio.randi() % Entregador.CENAS.size()
+	_ator.trocar_modelo(modelo)
+	_fisica = FisicaDaMoto.de(modelo)
 
 
 ## Poe o rival na largada e zera a corrida dele.
@@ -164,6 +206,7 @@ func reset_race(at_offset: float, at_lateral: float, a_finish_offset: float) -> 
 	_credito_jogador = 0.0
 	_hitbox.monitoring = false
 	_lean = 0.0
+	_lean_vel = 0.0
 	pace = _rng.randf_range(world_tuning.rival_pace_min, world_tuning.rival_pace_max)
 	speed = tuning.max_speed * pace * 0.6
 	_aggression = _rng.randf_range(
@@ -178,6 +221,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_acelerador = 0.0
+	_freio = 0.0
 	_update_hitbox(delta)
 	_punch_cooldown = maxf(_punch_cooldown - delta, 0.0)
 	# Corre em qualquer estado: o rival socado passa o cambaleio inteiro sem
@@ -215,8 +259,16 @@ func _physics_process(delta: float) -> void:
 		_acelerador,
 		_lean / deg_to_rad(tuning.max_lean),
 		state == State.DOWN,
-		_lado_queda
+		_lado_queda,
+		_lean,
+		0.0,
+		_freio
 	)
+	# Parametrico na curva, o rival nao escorrega: a roda vai sempre para onde
+	# a moto aponta.
+	_derrapagem.atualizar(delta, 0.0)
+	var caido := state == State.DOWN
+	_estrago.atualizar(delta, caido, speed if caido else 0.0)
 
 
 func _drive(delta: float) -> void:
@@ -248,7 +300,12 @@ func _drive(delta: float) -> void:
 		pace_speed *= 1.06  # o arranque de quem esta saindo de tras do carro
 	var band := clampf(gap * world_tuning.rival_rubber_band, -6.0, 12.0)
 	var target_speed := clampf(pace_speed + band, tuning.max_speed * 0.35, tuning.max_speed * 1.08)
-	_acelerador = 1.0 if target_speed > speed else 0.0
+	# A pose le gas e freio daqui. Acima do alvo o rival perde ate 18 m/s2,
+	# e isso e freio, nao embalo; no alvo ele segura meio gas, como quem
+	# mantem a velocidade, e nao o pulso fechado de quem solta.
+	var falta := target_speed - speed
+	_acelerador = 1.0 if falta > 0.5 else (0.4 if falta > -0.5 else 0.0)
+	_freio = clampf(-falta / 3.0, 0.0, 1.0)
 	speed = move_toward(speed, target_speed, 18.0 * delta)
 
 	# Pra onde ir depende da intencao, mas o filtro do transito vale pra todas:
@@ -279,16 +336,25 @@ func _drive(delta: float) -> void:
 				want = _alongside_lateral()
 	if world.has_method("free_lateral"):
 		want = world.free_lateral(offset, want, span, self)
-	_target_lateral = clampf(want, -RoadTrack.half_width() + 1.0, RoadTrack.half_width() - 1.0)
+	# Na via expressa, so a metade da corrida: a outra e mao contraria.
+	var mao := track.mao_entre(offset, offset + span)
+	var borda := RoadTrack.half_width() - 1.0
+	_target_lateral = clampf(want, maxf(-borda, mao.x), minf(borda, mao.y))
 
 	var move := _target_lateral - lateral
 	var lateral_speed := clampf(move * 3.0, -9.0, 9.0)
+	# O alvo e escolhido pela pista livre la na frente, e o caminho ate ele
+	# pode cruzar um carro que esta do lado agora. Segura a lateral em vez de
+	# deslizar para dentro dele: o carro fica para tras, e o caminho abre.
+	if world.has_method("ocupado"):
+		var proxima := lateral + lateral_speed * delta
+		if (
+			world.ocupado(offset, proxima, SIZE * 0.5)
+			and not world.ocupado(offset, lateral, SIZE * 0.5)
+		):
+			lateral_speed = 0.0
 	lateral += lateral_speed * delta
-	_lean = lerpf(
-		_lean,
-		clampf(-lateral_speed / 9.0, -1.0, 1.0) * deg_to_rad(tuning.max_lean),
-		1.0 - exp(-8.0 * delta)
-	)
+	_inclinar(clampf(-lateral_speed / 9.0, -1.0, 1.0) * deg_to_rad(tuning.max_lean), delta)
 
 	if mode == Mode.ATTACK:
 		_aim_punch(delta)
@@ -326,6 +392,8 @@ func _aim_punch(delta: float) -> void:
 	_punch_delay = -1.0
 	_punch_side = int(signf(side_gap))
 	_punch_timer = tuning.punch_cooldown
+	_punch_landed = false
+	_ator.socar(_punch_side, tuning.punch_windup, tuning.punch_active, tuning.punch_cooldown)
 	# Respiro depois do soco, somado ao cooldown da hitbox. O cooldown era
 	# DIVIDIDO pela agressividade, o que punha o rival briguento socando a cada
 	# 0,47 s: numa briga que dura tres segundos isso e seis socos, e o jogador
@@ -371,9 +439,19 @@ func _coast_out(delta: float) -> void:
 	mode = Mode.FOLLOW
 	speed = move_toward(speed, 0.0, 14.0 * delta)
 	var side := 1.0 if lateral >= 0.0 else -1.0
-	_target_lateral = side * (RoadTrack.half_width() + RoadTrack.SHOULDER * 0.5)
+	# Na calcada, depois da linha dos postes. No meio dela, onde parava antes,
+	# fica o poste, e todo rival que terminava ia parar nele.
+	_target_lateral = side * (Poste.LATERAL + 1.0)
 	lateral = move_toward(lateral, _target_lateral, 6.0 * delta)
-	_lean = lerpf(_lean, 0.0, 1.0 - exp(-6.0 * delta))
+	_inclinar(0.0, delta)
+
+
+## A mesma mola do jogador, na moto do rival. Era um `lerp`, que nunca passa do
+## alvo: do lado do jogador, o rival trocava de lado como ponteiro.
+func _inclinar(alvo: float, delta: float) -> void:
+	var passo := PlayerBike.passo_da_inclinacao(_lean, _lean_vel, alvo, delta, tuning, _fisica)
+	_lean = passo.x
+	_lean_vel = passo.y
 
 
 func _advance(delta: float) -> void:
@@ -403,15 +481,21 @@ func _update_hitbox(delta: float) -> void:
 	var elapsed := tuning.punch_cooldown - _punch_timer
 	_hitbox.position = Vector3(tuning.punch_range * float(_punch_side), 0.0, 0.0)
 	var active := (
-		elapsed >= tuning.punch_windup and elapsed < tuning.punch_windup + tuning.punch_active
+		not _punch_landed
+		and elapsed >= tuning.punch_windup
+		and elapsed < tuning.punch_windup + tuning.punch_active
 	)
 	_hitbox.monitoring = active
 	if not active:
 		return
 	for body: Node3D in _hitbox.get_overlapping_bodies():
 		if body is PlayerBike:
-			(body as PlayerBike).receive_hit(_punch_side, tuning.punch_shove, tuning.punch_stagger)
+			(body as PlayerBike).receive_hit(
+				_punch_side, world_tuning.rival_punch_shove, tuning.punch_stagger
+			)
 			hit_player.emit()
+			_estrago.impacto(body.global_position)
+			_punch_landed = true
 			_hitbox.monitoring = false
 			return
 
@@ -420,9 +504,15 @@ func _check_wipeout() -> void:
 	if state == State.DOWN:
 		return
 	for body: Node3D in _sensor.get_overlapping_bodies():
-		if global_position.distance_to(body.global_position) <= WIPEOUT_ALCANCE:
+		if global_position.distance_to(body.global_position) <= _alcance(body):
 			_go_down()
 			return
+
+
+func _alcance(body: Node3D) -> float:
+	if body is TrafficCar:
+		return WIPEOUT_ALCANCE + (body as TrafficCar).meio_comprimento() - World.MEIO_CARRO
+	return WIPEOUT_ALCANCE
 
 
 func _go_down() -> void:
@@ -432,6 +522,7 @@ func _go_down() -> void:
 	_punch_timer = -1.0
 	_punch_delay = -1.0
 	_hitbox.monitoring = false
+	_estrago.cair(speed / tuning.max_speed)
 	went_down.emit(derrubado_pelo_jogador())
 	# Gasta o credito na queda que ele pagou: o rival levanta em 2,6 s, e um
 	# soco nao pode responder por duas quedas.
@@ -462,6 +553,8 @@ func receive_hit(from_side: int, shove: float, stagger: float) -> void:
 	lateral += float(from_side) * shove * 0.14
 	_target_lateral = lateral
 	speed *= 0.85
+	_ator.levar_golpe(from_side)
 	_lean = deg_to_rad(tuning.max_lean) * float(from_side) * 0.9
+	_lean_vel = 0.0
 	_apply_transform()
 	_check_wipeout()

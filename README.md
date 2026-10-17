@@ -18,8 +18,9 @@ prazo e a bag da entrega pesam na nota final, nunca na classificação.
 Ele existe para responder uma pergunta e só uma: **acelerar, inclinar, se
 enfiar no corredor e bater está gostoso?** Nada de arte nem áudio até essa
 resposta ser sim. As exceções são o menu, que é só o caminho de entrar e sair
-de uma corrida, e o entregador: moto e piloto são um modelo 3D animado pelo
-estado da física, num mundo que continua de caixas.
+de uma corrida, o entregador e os carros: modelos 3D animados pelo estado da
+física, porque roda, lanterna, mola e porta são o que diz ao jogador o que cada
+um vai fazer.
 
 O briefing original, escrito antes de existir uma linha de código, está
 congelado em [docs/GDD.md](docs/GDD.md). Onde ele já não bate com o que foi
@@ -38,9 +39,14 @@ python tools/dev.py run
 Ou abra a pasta no editor do Godot e dê play. Detalhes de ambiente em
 [docs/AMBIENTE.md](docs/AMBIENTE.md).
 
-O jogo abre num menu: **JOGAR**, **CONFIGURACOES** (pixel, câmera e o painel de
-tuning) e **SAIR**. A corrida termina numa tela de resultado que oferece correr
-de novo ou voltar. `ESC` no meio da corrida congela e abre o menu.
+O jogo abre num menu de página única: **JOGAR**, as opções em duas colunas e
+**SAIR**. Em **CORRIDA**, moto, piloto 3D ou sprite, cadência da animação,
+câmera, rivais, trânsito e tela cheia; em **VISUAL**, cada passe do look (pixel,
+paleta, antisserrilho, cor do dia, sombra, neblina, brilho, borrão) liga e
+desliga para comparar. Setas `←` `→` mudam a linha selecionada, e a escolha
+fica gravada. Com o mouse: passar por cima seleciona, clique esquerdo escolhe
+ou avança o valor, clique direito volta, e a rodinha anda nos dois sentidos. A corrida termina numa tela de resultado que oferece correr de
+novo ou voltar. `ESC` no meio da corrida congela e abre o menu.
 
 ## Controles
 
@@ -57,6 +63,7 @@ de novo ou voltar. `ESC` no meio da corrida congela e abre o menu.
 | `1` ou `F1` | liga/desliga o pixel de 640×360 |
 | `2` ou `F2` | alterna câmera (perseguição / capacete / diagnóstico) |
 | `3` ou `F3` | painel de tuning (abre em janela separada) |
+| `4` ou `F11` | liga/desliga a tela cheia (também no menu) |
 
 No macOS as teclas de função são do sistema (brilho, Mission Control), então
 `F1`–`F3` só chegam no jogo com `Fn` segurado. Use `1`, `2` e `3`.

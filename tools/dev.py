@@ -12,6 +12,7 @@ da maioria das maquinas e ninguem sabe qual versao usar. Quem chega no projeto
     python tools/dev.py run        # abre o jogo
     python tools/dev.py export     # exporta as tres plataformas
     python tools/dev.py versao patch  # sobe a versao: o merge dela publica
+    python tools/dev.py changelog  # o que mudou desde a release anterior
 
 A versao vem de `.godot-version`, que e a fonte unica: o CI le o mesmo arquivo.
 Bumpar a engine e editar uma linha, nao cacar constantes em tres workflows.
@@ -256,7 +257,15 @@ def ensure_venv(*, quiet: bool = False) -> pathlib.Path:
     if not python.is_file():
         if not quiet:
             print(f"  criando venv em {DEV_DIR / 'venv'}")
-        subprocess.run([sys.executable, "-m", "venv", str(DEV_DIR / "venv")], check=True)
+        # --clear porque "nao tem python" nao quer dizer "nao tem venv". O
+        # cache do CI guarda o .dev inteiro, e um venv criado com um Python que
+        # o runner ja nao tem volta com o bin/python apontando para o nada:
+        # `is_file()` diz que nao existe, e o `venv` por cima dele morre com
+        # Errno 2 tentando usar esse mesmo link. Foi o que reprovou o Ubuntu
+        # quando o setup-python passou para a 3.12.15.
+        subprocess.run(
+            [sys.executable, "-m", "venv", "--clear", str(DEV_DIR / "venv")], check=True
+        )
     if not quiet:
         print("  instalando tools/requirements.txt")
     subprocess.run([str(python), "-m", "pip", "install", "--quiet", "--upgrade", "pip"],
@@ -462,6 +471,15 @@ def _compare(medido: dict, dados: dict) -> tuple[int, list[str]]:
     return estouros, linhas
 
 
+def _sistema() -> str:
+    """O nome do sistema como o `valores_por_sistema` do baseline usa."""
+    if sys.platform == "win32":
+        return "windows"
+    if sys.platform == "darwin":
+        return "macos"
+    return "linux"
+
+
 def compare_baseline(medido: dict) -> tuple[int, list[str]]:
     """O baseline numerico do banco de provas.
 
@@ -469,10 +487,22 @@ def compare_baseline(medido: dict) -> tuple[int, list[str]]:
     ontem: a asercao do selftest so diz que o valor caiu dentro da faixa
     jogavel, que e larga de proposito. Andar de 2.75 s pra 3.40 s no 0-100
     passa nela e mesmo assim e outra moto.
+
+    `valores_por_sistema` sobrepoe `valores` no sistema que roda. Cada sistema
+    e deterministico sozinho, mas seno e cosseno saem da libm de cada um, e a
+    ultima casa decimal diferente num contato longo da fisica separa a corrida
+    solta inteira. Tolerancia mais larga esconderia regressao de verdade nos
+    tres; numero por sistema mantem a comparacao exata em cada um.
     """
     if not BASELINE.is_file():
         return 0, ["  (sem tests/baseline.json - nada pra comparar)"]
-    return _compare(medido, json.loads(BASELINE.read_text(encoding="utf-8")))
+    dados = json.loads(BASELINE.read_text(encoding="utf-8"))
+    proprios: dict = dados.get("valores_por_sistema", {}).get(_sistema(), {})
+    dados["valores"] = {**dados.get("valores", {}), **proprios}
+    estouros, linhas = _compare(medido, dados)
+    if proprios:
+        linhas.insert(0, f"  ({len(proprios)} valor(es) proprio(s) de {_sistema()})")
+    return estouros, linhas
 
 
 def cmd_selftest(args: argparse.Namespace) -> int:
@@ -511,6 +541,11 @@ def cmd_selftest(args: argparse.Namespace) -> int:
               f"  Se a mudanca era esperada, atualize {BASELINE.relative_to(PROJECT)} "
               f"no mesmo commit, dizendo no texto por que o numero andou.\n"
               f"  As medidas desta rodada estao em {METRICS_OUT.relative_to(PROJECT)}.")
+        # No CI o arquivo morre com a maquina, e e de la que sai o numero de
+        # um sistema que voce nao tem: vai inteiro pro log.
+        if os.environ.get("CI"):
+            print(f"\n--- medidas desta rodada ({_sistema()}) ---")
+            print(json.dumps(medido, indent="\t", sort_keys=True))
         return 1
     print()
     return 0
@@ -535,6 +570,32 @@ def cmd_test(args: argparse.Namespace) -> int:
 
 
 BASELINE_VISUAL = PROJECT / "tests" / "baseline_visual.json"
+# A noite tem baseline proprio: luminancia e fracao de ceu de noite nao tem
+# nada a ver com as do meio-dia, e um baseline so para as duas teria de
+# tolerar tanto que nao pegaria nem a pista sumindo.
+BASELINE_VISUAL_NOITE = PROJECT / "tests" / "baseline_visual_noite.json"
+
+
+def _pede_hora(hora) -> None:
+    """A corrida anoitece, mas medida nao: o jogo trava a hora no meio-dia
+    quando mede. `--hora` pede outra, de 0 (meio-dia) a 1 (noite fechada), e
+    chega ao jogo pelo RUSHFOOD_HORA (`main.gd`)."""
+    if hora is None:
+        os.environ.pop("RUSHFOOD_HORA", None)
+        return
+    if not 0.0 <= hora <= 1.0:
+        raise SystemExit(f"--hora vai de 0 (meio-dia) a 1 (noite), e veio {hora}")
+    os.environ["RUSHFOOD_HORA"] = f"{hora:g}"
+
+
+def _pede_resolucao(resolucao) -> None:
+    """Medida fica em 640x360, que e o mundo de todas as referencias. `--resolucao
+    540` pede os 960x540 da tela grande (V30); chega ao jogo pelo
+    RUSHFOOD_RESOLUCAO (`main.gd`)."""
+    if resolucao is None:
+        os.environ.pop("RUSHFOOD_RESOLUCAO", None)
+        return
+    os.environ["RUSHFOOD_RESOLUCAO"] = str(resolucao)
 
 
 def cmd_shots(args: argparse.Namespace) -> int:
@@ -555,7 +616,10 @@ def cmd_shots(args: argparse.Namespace) -> int:
     if code != 0:
         return code
 
-    out = pathlib.Path(args.out).resolve() if args.out else DEV_DIR / "shots"
+    _pede_hora(1.0 if args.noite else None)
+    baseline = BASELINE_VISUAL_NOITE if args.noite else BASELINE_VISUAL
+    padrao = DEV_DIR / ("shots_noite" if args.noite else "shots")
+    out = pathlib.Path(args.out).resolve() if args.out else padrao
     out.mkdir(parents=True, exist_ok=True)
     for antigo in out.glob("*.png"):
         antigo.unlink()
@@ -581,11 +645,11 @@ def cmd_shots(args: argparse.Namespace) -> int:
 
     medido = json.loads(METRICS_OUT.read_text(encoding="utf-8"))
     visual = {k: v for k, v in medido.items() if k.startswith("visual_")}
-    if args.update or not BASELINE_VISUAL.is_file():
-        _write_visual_baseline(visual)
+    if args.update or not baseline.is_file():
+        _write_visual_baseline(visual, baseline)
         return 0
 
-    dados = json.loads(BASELINE_VISUAL.read_text(encoding="utf-8"))
+    dados = json.loads(baseline.read_text(encoding="utf-8"))
     estouros, linhas = _compare(visual, dados)
     print("\n--- baseline visual ---")
     for linha in linhas:
@@ -599,14 +663,15 @@ def cmd_shots(args: argparse.Namespace) -> int:
     return 0
 
 
-def _write_visual_baseline(visual: dict) -> None:
+def _write_visual_baseline(visual: dict, baseline: pathlib.Path) -> None:
     dados = {
         "_leia": ("O que a tela tem dentro, em proporcoes grosseiras. Nao e "
                   "comparacao pixel a pixel: driver e GPU mudam o ultimo bit de "
                   "quase todo pixel, e o teste falharia por motivo nenhum. Isto "
                   "pega a tela ficar ERRADA POR INTEIRO - a pista sumir, o mundo "
                   "apagar - que e o que nenhuma medida de fisica pega."),
-        "_como_atualizar": "python tools/dev.py shots --update, depois de olhar os PNGs.",
+        "_como_atualizar": ("python tools/dev.py shots%s --update, depois de olhar os PNGs."
+                            % (" --noite" if baseline == BASELINE_VISUAL_NOITE else "")),
         # Tolerancia larga: a corrida e deterministica, mas o instante exato do
         # frame capturado depende de quando o render fecha, e a camera esta em
         # movimento. Estreitar isso troca regressao por alarme falso.
@@ -627,9 +692,9 @@ def _write_visual_baseline(visual: dict) -> None:
         "tolerancias_pct": {"visual_frames": 0.0},
         "valores": {k: round(float(v), 6) for k, v in sorted(visual.items())},
     }
-    write_text_lf(BASELINE_VISUAL,
+    write_text_lf(baseline,
                   json.dumps(dados, indent="\t", ensure_ascii=False) + "\n")
-    print(f"+ baseline visual gravado em {BASELINE_VISUAL.relative_to(PROJECT)}:")
+    print(f"+ baseline visual gravado em {baseline.relative_to(PROJECT)}:")
     for chave, valor in dados["valores"].items():
         print(f"    {chave}: {valor:g}")
 
@@ -637,8 +702,8 @@ def _write_visual_baseline(visual: dict) -> None:
 PROVA_DIR = DEV_DIR / "prova"
 
 
-def cmd_prova(_: argparse.Namespace) -> int:
-    """O quadro congelado da prova visual: os mesmos quatro quadros, sempre.
+def cmd_prova(args: argparse.Namespace) -> int:
+    """O quadro congelado da prova visual: os mesmos cinco quadros, sempre.
 
     Mesma semente, mesmo trecho de pista, camera encaixada e mundo congelado
     antes do primeiro passo de fisica. Rodar duas vezes da o mesmo PNG - e o
@@ -649,21 +714,46 @@ def cmd_prova(_: argparse.Namespace) -> int:
     code = _import_antes(binary)
     if code != 0:
         return code
-    PROVA_DIR.mkdir(parents=True, exist_ok=True)
-    for antigo in PROVA_DIR.glob("*.png"):
+    # Outra hora vai para outra pasta, para a do meio-dia continuar sendo a
+    # de comparar antes e depois.
+    _pede_hora(args.hora)
+    _pede_resolucao(args.resolucao)
+    pasta = PROVA_DIR if args.hora is None else PROVA_DIR / f"hora_{args.hora:g}"
+    if args.resolucao is not None:
+        pasta = pasta / f"res_{args.resolucao}"
+    pasta.mkdir(parents=True, exist_ok=True)
+    for antigo in pasta.glob("*.png"):
         antigo.unlink()
-    os.environ["RUSHFOOD_PROVA_DIR"] = str(PROVA_DIR)
+    os.environ["RUSHFOOD_PROVA_DIR"] = str(pasta)
+    # O padrao e a perseguicao, e e contra ela que se compara visual. A garupa
+    # e para mexer na propria garupa: sem quadro congelado, cada ajuste dela
+    # vira "parece melhor" contra a lembranca de ontem.
+    if args.garupa:
+        os.environ["RUSHFOOD_PROVA_CAMERA"] = "garupa"
+    if args.variantes:
+        os.environ["RUSHFOOD_PROVA_VARIANTES"] = "1"
+    if args.referencia or args.variantes:
+        # Clone sem `git lfs pull` tem ponteiro de texto no lugar do PNG, e o
+        # Godot so diria que nao leu a imagem - a folha sairia sem referencia
+        # nenhuma, parecendo que funcionou.
+        amostra = PROJECT / "docs" / "referencias" / "video_01" / "t0.0s.png"
+        if not amostra.exists() or amostra.read_bytes()[:4] != b"\x89PNG":
+            return _fail(f"{amostra.relative_to(PROJECT)} nao e PNG - rode `git lfs pull`")
+        os.environ["RUSHFOOD_PROVA_REFERENCIA"] = "1"
+    if args.kmh is not None:
+        # Os quadros andando saem a 90 km/h; o borrao (V08) se julga a 180.
+        os.environ["RUSHFOOD_PROVA_VELOCIDADE"] = str(args.kmh / 3.6)
     code = _godot(binary, "--", "--prova")
-    pngs = sorted(PROVA_DIR.glob("*.png"))
+    pngs = sorted(pasta.glob("*.png"))
     if code != 0:
         return code
     if not pngs:
         return _fail("nenhum quadro foi salvo - ha display nesta sessao?")
-    print(f"\n{len(pngs)} imagem(ns) em {PROVA_DIR}")
+    print(f"\n{len(pngs)} imagem(ns) em {pasta}")
     return 0
 
 
-def cmd_fps(_: argparse.Namespace) -> int:
+def cmd_fps(args: argparse.Namespace) -> int:
     """Tempo de quadro da corrida solta, com tela e sem vsync.
 
     Imprime mediana, p95 e o pior quadro. Nao compara com baseline: o numero
@@ -678,8 +768,12 @@ def cmd_fps(_: argparse.Namespace) -> int:
     if METRICS_OUT.exists():
         METRICS_OUT.unlink()
     os.environ["RUSHFOOD_SELFTEST_METRICS"] = str(METRICS_OUT)
+    # A noite tem uma luz por poste e por farol: e a hora de medir com `--hora 1`.
+    _pede_hora(args.hora)
+    _pede_resolucao(args.resolucao)
     # Sem --headless: sem tela nao ha quadro para medir.
-    return _godot(binary, "--", "--selftest", "--fps")
+    extra = ["--queda"] if args.queda else []
+    return _godot(binary, "--", "--selftest", "--fps", *extra)
 
 
 def cmd_run(_: argparse.Namespace) -> int:
@@ -750,6 +844,135 @@ def cmd_versao(args: argparse.Namespace) -> int:
     return 0
 
 
+# O que cada tipo de commit vira no corpo da release. Quem baixa o zip quer
+# saber o que mudou na corrida, nao que o CI ganhou um cache: novidade,
+# correcao e desempenho ficam a vista, o resto vai para um bloco recolhido.
+# Classifica pelo tipo do conventional, e nao pelo emoji, porque o mesmo
+# emoji chega com e sem o seletor de variacao (U+FE0F) conforme o teclado.
+SECOES_CHANGELOG = (
+    ("Novidades", ("feat",)),
+    ("Correções", ("fix",)),
+    ("Desempenho", ("perf",)),
+)
+ASSUNTO_CONVENCIONAL = re.compile(r"^(?:\S+\s+)?(\w+)(?:\([^)]*\))?!?:\s*(.+)$")
+
+
+def _git(*args: str) -> str:
+    return subprocess.run(["git", *args], cwd=PROJECT, check=True,
+                          capture_output=True, text=True, encoding="utf-8").stdout
+
+
+def tag_anterior(tag: str) -> str | None:
+    """A ultima tag de versao alcancavel do HEAD, sem contar a propria `tag`.
+
+    Na pipeline o HEAD e o commit do merge: no push para a master a tag nova
+    ainda nao existe, e no push de tag ela aponta para o proprio HEAD. Os dois
+    casos caem aqui sem `if`, porque a tag nova e descartada pelo nome.
+    """
+    def chave(nome: str) -> tuple[int, ...]:
+        return tuple(int(p) for p in nome[1:].split("."))
+
+    tags = [t for t in _git("tag", "--merged", "HEAD", "--list", "v*").split()
+            if re.fullmatch(r"v\d+\.\d+\.\d+", t) and t != tag]
+    return max(tags, key=chave) if tags else None
+
+
+def changelog(tag: str) -> str:
+    """O markdown do que mudou desde a release anterior, agrupado por tipo.
+
+    `--first-parent` porque a master so recebe squash: cada commit dela e um
+    PR, e o assunto ja traz o `(#N)` que o GitHub transforma em link. Sem
+    isso, os merges de antes do squash despejariam os commits internos de
+    cada branch na lista.
+    """
+    anterior = tag_anterior(tag)
+    faixa = f"{anterior}..HEAD" if anterior else "HEAD"
+    secoes: dict[str, list[str]] = {nome: [] for nome, _ in SECOES_CHANGELOG}
+    por_dentro: list[str] = []
+    for assunto in _git("log", "--first-parent", "--format=%s", faixa).splitlines():
+        casou = ASSUNTO_CONVENCIONAL.match(assunto)
+        tipo, texto = (casou.group(1), casou.group(2)) if casou else ("", assunto)
+        # O commit do bump e a propria release: lista-lo seria dizer
+        # "esta versao trouxe esta versao".
+        if tipo == "chore" and re.match(r"(sobe a )?vers[aã]o", texto, re.IGNORECASE):
+            continue
+        linha = f"- {texto[:1].upper()}{texto[1:]}"
+        destino = next((nome for nome, tipos in SECOES_CHANGELOG if tipo in tipos), None)
+        (secoes[destino] if destino else por_dentro).append(linha)
+
+    partes: list[str] = []
+    for nome, linhas in secoes.items():
+        if linhas:
+            partes.append(f"### {nome}\n\n" + "\n".join(linhas))
+    if por_dentro:
+        partes.append("<details>\n<summary>Por dentro do projeto</summary>\n\n"
+                      + "\n".join(por_dentro) + "\n\n</details>")
+    if not partes:
+        partes.append("Nenhuma mudança desde a release anterior.")
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    if anterior and repo:
+        servidor = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
+        partes.append(f"Diff completo: [{anterior}...{tag}]({servidor}/{repo}/compare/"
+                      f"{anterior}...{tag})")
+    return "\n\n".join(partes) + "\n"
+
+
+def cmd_changelog(args: argparse.Namespace) -> int:
+    tag = args.tag or f"v{project_version()}"
+    sys.stdout.write(changelog(tag))
+    return 0
+
+
+def cmd_sprites(_: argparse.Namespace) -> int:
+    """Recorta as folhas do Google Flow (`arte/flow/`) no atlas do ator.
+
+    Roda no Godot fixado, e nao em Python: o Python do sistema nao le JPEG sem
+    Pillow, e o Godot ja esta em toda maquina que roda o jogo.
+    """
+    binary = require_godot(godot_version())
+    folha = PROJECT / "arte" / "flow" / "pilotando_a.jpg"
+    if not folha.exists() or folha.read_bytes()[:2] != b"\xff\xd8":
+        return _fail(f"{folha.relative_to(PROJECT)} nao e JPEG - rode `git lfs pull`")
+    code = _godot(binary, "--headless", "--script", "res://arte/sprites_flow.gd",
+                  vigia_erros=True)
+    if code != 0:
+        return code
+    return _import_antes(binary)
+
+
+def cmd_sprites_pedestres(_: argparse.Namespace) -> int:
+    """Recorta as folhas de pedestre do Google Flow (`arte/flow/pedestres/`).
+
+    Gera `assets/sprites/pedestres/<pessoa>.png` e `.json`, e as folhas de
+    conferencia em `.dev/sprites_pedestres/`. Mesmo motivo do `sprites`: roda no
+    Godot, porque o Python do sistema nao le JPEG sem Pillow.
+    """
+    binary = require_godot(godot_version())
+    folha = PROJECT / "arte" / "flow" / "pedestres" / "vovo_andando.jpg"
+    if not folha.exists() or folha.read_bytes()[:2] != b"\xff\xd8":
+        return _fail(f"{folha.relative_to(PROJECT)} nao e JPEG - rode `git lfs pull`")
+    code = _import_antes(binary)
+    if code != 0:
+        return code
+    code = _godot(binary, "--headless", "--script", "res://arte/sprites_pedestres.gd",
+                  vigia_erros=True)
+    if code != 0:
+        return code
+    return _import_antes(binary)
+
+
+def cmd_boneco(_: argparse.Namespace) -> int:
+    """Gera as folhas de pose do boneco (`arte/flow/referencia/`) para o Flow.
+
+    Precisa de tela: o renderizador do `--headless` e um dummy e sai tudo preto.
+    """
+    binary = require_godot(godot_version())
+    code = _import_antes(binary)
+    if code != 0:
+        return code
+    return _godot(binary, "--script", "res://arte/boneco_flow.gd", vigia_erros=True)
+
+
 def cmd_export(_: argparse.Namespace) -> int:
     version = godot_version()
     binary = require_godot(version)
@@ -788,15 +1011,44 @@ def main() -> int:
                              "curva, soco, bifurcacao, corrida")
     p_shots = sub.add_parser("shots", help="regressao visual: roda COM tela e mede o frame")
     p_shots.add_argument("--out", metavar="PASTA", help="onde gravar os PNGs")
+    p_shots.add_argument("--noite", action="store_true",
+                         help="a corrida de noite, contra o baseline_visual_noite.json")
     p_shots.add_argument("--update", action="store_true",
                          help="regrava o baseline visual (olhe os PNGs antes)")
-    sub.add_parser("prova", help="prova visual: os mesmos quadros congelados, para comparar")
-    sub.add_parser("fps", help="tempo de quadro da corrida solta, com tela e sem vsync")
+    p_prova = sub.add_parser("prova",
+                             help="prova visual: os mesmos quadros congelados, para comparar")
+    p_prova.add_argument("--garupa", action="store_true",
+                         help="os mesmos quadros pela camera GARUPA, e nao pela perseguicao")
+    p_prova.add_argument("--referencia", action="store_true",
+                         help="gera tambem comparacao.png: cada quadro ao lado da referencia")
+    p_prova.add_argument("--variantes", action="store_true",
+                         help="gera variantes.png: cada quadro com as variantes de trama "
+                              "do passe de paleta e a referencia (V03a)")
+    p_prova.add_argument("--hora", type=float, default=None,
+                         help="hora travada, de 0 (meio-dia) a 1 (noite); vai para .dev/prova/hora_X")
+    p_prova.add_argument("--resolucao", type=int, choices=(360, 540), default=None,
+                         help="resolucao interna; vai para .dev/prova/res_N (padrao 360)")
+    p_prova.add_argument("--kmh", type=float, default=None,
+                         help="velocidade dos quadros andando (padrao 90 km/h)")
+    p_fps = sub.add_parser("fps", help="tempo de quadro da corrida solta, com tela e sem vsync")
+    p_fps.add_argument("--hora", type=float, default=None,
+                       help="hora travada, de 0 (meio-dia) a 1 (noite)")
+    p_fps.add_argument("--resolucao", type=int, choices=(360, 540), default=None,
+                       help="resolucao interna (padrao 360)")
+    p_fps.add_argument("--queda", action="store_true",
+                       help="derruba jogador e rivais a cada 4 s: o pior caso das particulas")
     sub.add_parser("run", help="abre o jogo")
     sub.add_parser("export", help="exporta as tres plataformas")
+    sub.add_parser("boneco", help="gera as folhas de pose do boneco, de referencia para o Flow")
+    sub.add_parser("sprites-pedestres", help="recorta as folhas de pedestre do Flow em atlas por pessoa")
+    sub.add_parser("sprites", help="recorta as folhas do Google Flow no atlas do ator")
     p_versao = sub.add_parser("versao", help="mostra ou sobe a versao; o merge da versao nova publica")
     p_versao.add_argument("nova", nargs="?", metavar="X.Y.Z|patch",
                           help="a versao nova, ou `patch` para subir o ultimo numero")
+    p_changelog = sub.add_parser("changelog",
+                                 help="o que mudou desde a release anterior, em markdown")
+    p_changelog.add_argument("tag", nargs="?", metavar="vX.Y.Z",
+                             help="a tag da release (padrao: a do config/version)")
     p_test = sub.add_parser("test", help="testes unitarios (GdUnit4), rapidos")
     p_test.add_argument("caminho", nargs="?", default="tests/unit",
                         help="pasta ou arquivo de teste (padrao: tests/unit)")
@@ -812,7 +1064,11 @@ def main() -> int:
         "lint": cmd_lint, "format": cmd_format, "test": cmd_test,
         "shots": cmd_shots,
         "prova": cmd_prova,
+        "boneco": cmd_boneco,
+        "sprites-pedestres": cmd_sprites_pedestres,
+        "sprites": cmd_sprites,
         "versao": cmd_versao,
+        "changelog": cmd_changelog,
         "fps": cmd_fps,
     }[args.comando]
     return handler(args)

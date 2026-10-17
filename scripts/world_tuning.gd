@@ -23,7 +23,11 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## dobrou a densidade efetiva sem ninguem ter mexido no slider da densidade -
 ## o piloto do banco de provas passou a bater de frente em sequencia e a
 ## corrida caiu de 1345 m pra 960 m em 45 s.
-@export_range(0, 120, 1) var traffic_count: int = 10
+##
+## Subiu de 10 pra 25 na V20, junto com a velocidade: carro que anda quase
+## junto com a moto demora a ficar para tras, e o video mostra 8 a 15 na tela
+## e 2 a 4 nos primeiros 20 m.
+@export_range(0, 120, 1) var traffic_count: int = 25
 
 ## Espacamento minimo entre carros na largada, em metros.
 @export_range(3.0, 60.0, 0.5) var traffic_gap_min: float = 5.0
@@ -42,11 +46,18 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 
 ## Velocidade de cruzeiro mais alta que um carro do fluxo assume, em m/s.
 ##
-## 7 m/s e 25 km/h: transito de marginal em hora de pico. E o numero que decide
-## se o corredor e um tunel que anda ou uma parede que voce ultrapassa - alto
-## demais e os carros somem no retrovisor, zero e a avenida vira
-## estacionamento permanente.
-@export_range(0.0, 25.0, 0.5) var traffic_speed: float = 7.0
+## E o numero que decide se o corredor e um tunel que anda ou uma parede que
+## voce ultrapassa - alto demais e os carros somem no retrovisor, zero e a
+## avenida vira estacionamento permanente. Era 7 m/s (25 km/h), transito de
+## marginal em hora de pico, e o corredor durava um piscar. No video (V20) o
+## transito anda quase na velocidade da moto: o taxi fica emparelhado quase
+## 2 s e o corredor dura um segundo. 26 m/s sao 94 km/h; a 128 km/h a moto
+## ganha de 10 a 18 m/s, e um carro de 4,4 m passa do lado em meio segundo.
+@export_range(0.0, 45.0, 0.5) var traffic_speed: float = 26.0
+## A mais baixa: cada carro sorteia entre esta e a de cima. Era zero, e metade
+## do transito andava quase parada - obstaculo, e nao fluxo. 18 m/s sao
+## 65 km/h.
+@export_range(0.0, 45.0, 0.5) var traffic_speed_min: float = 18.0
 
 ## Aceleracao do carro do transito, em m/s^2.
 @export_range(0.5, 12.0, 0.1) var traffic_accel: float = 2.2
@@ -54,8 +65,10 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ##
 ## Maior que a aceleracao de proposito: carro que reage devagar a fila entra
 ## dentro do carro da frente, e duas caixas se atravessando em pixel grosso le
-## como bug, nao como transito.
-@export_range(1.0, 25.0, 0.1) var traffic_brake: float = 4.5
+## como bug, nao como transito. Era 4,5, freio de quem anda a 25 km/h; com o
+## transito a 90 km/h (V20) o carro mais rapido nao parava atras do mais
+## lento e entrava nele. 7 e freada forte de carro de rua.
+@export_range(1.0, 25.0, 0.1) var traffic_brake: float = 7.0
 ## Distancia centro a centro que o carro guarda do carro da frente, em metros.
 ##
 ## O carro tem 4,4 m, entao abaixo de 5 eles se encavalam. E este numero que
@@ -72,12 +85,29 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## demais e elas viram parede, e o jogo perde duas das quatro faixas.
 @export_range(0.0, 1.0, 0.05) var parked_chance: float = 0.3
 
-## Fracao dos carros encostados que chega a abrir a porta em algum momento.
+## Fracao dos carros encostados que ja esta de porta aberta quando aparece, e
+## fica assim.
 ##
-## Abaixo de 1.0 encostar nao e sinonimo de perigo, e ai a faixa da ponta vira
-## uma aposta em vez de uma regra decorada. O lado que a porta abre tambem e
-## sorteado - pra pista ou pra calcada.
-@export_range(0.0, 1.0, 0.05) var door_chance: float = 0.6
+## E o obstaculo que se le de longe: meia faixa fechada, parada. Rara porque
+## e ela que soma a parede - com 0.3 de encostados, 0.2 aqui da um carro em
+## cada dezessete.
+@export_range(0.0, 1.0, 0.05) var door_open_chance: float = 0.2
+
+## Fracao dos carros encostados que abre a porta em cima do jogador, uma vez.
+##
+## O susto, e por isso a menor das duas: susto frequente vira regra decorada,
+## e o jogador aprende a nunca chegar perto da ponta em vez de calcular o
+## risco. Somada com `door_open_chance`, nao passa de 1. O lado e sempre o do
+## jogador.
+@export_range(0.0, 1.0, 0.01) var door_ambush_chance: float = 0.08
+
+## A quantos segundos de distancia o jogador esta quando a porta na cara abre.
+##
+## A porta leva uns 0,15 s para virar obstaculo (`Carro.PORTA_BATE`), e
+## reacao humana e uns 0,25 s: abaixo de 0.5 ela e inevitavel, e porta
+## inevitavel e tiro, nao susto. Acima de 1.5 e porta aberta de longe com
+## outro nome.
+@export_range(0.3, 2.0, 0.05) var door_ambush_time: float = 0.8
 
 @export_group("Rivais")
 
@@ -142,6 +172,15 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## briga.
 @export_range(0.0, 6.0, 0.1) var rival_punch_rest: float = 2.6
 
+## Empurrao lateral do soco do rival no jogador, em m/s.
+##
+## Separado do `punch_shove` do jogador porque os dois lados nao pesam igual. O
+## do jogador subiu para 15 pra jogar rival na faixa do lado; no jogador, esse
+## mesmo numero vira velocidade lateral numa moto que ele esta tentando
+## controlar, e apanhar com o dobro tira o corredor da mao dele. 7,5 e o que o
+## soco do rival sempre deu.
+@export_range(1.0, 20.0, 0.25) var rival_punch_shove: float = 7.5
+
 ## Quanto da distancia pro jogador vira velocidade do rival, em (m/s) por metro.
 ##
 ## E o slider de "quanto de corrida, quanto de briga". Zero e corrida honesta:
@@ -149,6 +188,80 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## e o pelotao gruda em voce e a colocacao deixa de significar - voce sente que
 ## a corrida esta encenada, porque esta.
 @export_range(0.0, 0.6, 0.01) var rival_rubber_band: float = 0.15
+
+@export_group("Ceu")
+
+## Os sliders da nuvem (`scripts/ceu.gdshader`), ao vivo. Nao mexem em fisica:
+## o banco de provas ignora todos. A camera de perseguicao ve do horizonte ate
+## ~20 graus, e a garupa um pouco mais.
+
+## Onde o banco do horizonte comeca, em graus; abaixo disso a ultima fresta
+## rareia e a neblina engole.
+@export_range(0.0, 20.0, 0.5) var ceu_altura_min: float = 2.0
+## Quanto a nuvem fecha perto do horizonte: 0 e o ceu igual de cima a baixo,
+## alto e um banco cinza de nuvem empilhada.
+@export_range(0.0, 0.6, 0.01) var ceu_banco: float = 0.35
+## Quanto do ceu e nuvem: 0 e limpo, 1 e quase fechado.
+@export_range(0.0, 1.0, 0.01) var ceu_cobertura: float = 0.5
+## Tamanho de um tufo a 15 graus de altura, em graus. Mais baixo ele encolhe.
+@export_range(0.5, 12.0, 0.1) var ceu_tufo: float = 4.0
+## Tamanho de um grupo de tufos, em tufos: pequeno espalha pipoca, grande
+## junta em massas com muito azul entre elas.
+@export_range(1.0, 20.0, 0.5) var ceu_grupo: float = 6.0
+## Quanto o tufo encolhe e achata perto do horizonte: 0 e igual em todo o
+## ceu, 1 e a perspectiva de um teto plano de verdade.
+@export_range(0.0, 1.0, 0.01) var ceu_perspectiva: float = 0.35
+## Tufos miudos entre os grandes: e o que deixa o alto em calombo.
+@export_range(0.0, 1.0, 0.01) var ceu_detalhe: float = 0.6
+## Largura da borda macia, de um a quatro pixels: a paleta da tela a
+## transforma em pixel solto. Menos que um pixel nao existe: borda seca treme.
+@export_range(0.0, 1.0, 0.01) var ceu_trama: float = 0.5
+## Quanto o cinza mais escuro puxa para o azul-acinzentado escuro.
+@export_range(0.0, 1.0, 0.01) var ceu_sombra: float = 0.5
+## Quanto a nuvem empilhada escurece: 0 e tudo branco; alto, o meio das massas
+## e o banco do horizonte ficam cinza.
+@export_range(0.0, 1.5, 0.01) var ceu_cinza: float = 1.0
+## Brilho do topo: 1 e branco; acima, o tonemap estoura.
+@export_range(0.5, 2.0, 0.05) var ceu_brilho: float = 1.1
+## Tons do baixo ao topo: 0 e degrade continuo, 2-6 e banda chapada.
+@export_range(0.0, 6.0, 1.0) var ceu_faixas_de_tom: float = 5.0
+## Velocidade com que o ceu gira, em graus por segundo.
+@export_range(0.0, 3.0, 0.05) var ceu_vento: float = 0.15
+## O cume mais alto da serra do horizonte, em graus. Zero tira a serra.
+@export_range(0.0, 16.0, 0.1) var ceu_serra_altura: float = 9.0
+## Quanto do relevo e picote: 0 e ondulado, 1 e serrilhado.
+@export_range(0.0, 1.0, 0.01) var ceu_serra_rugosidade: float = 0.5
+
+@export_group("Hora")
+
+## A corrida anoitece: larga ao meio-dia e cruza a linha de noite (`Relogio`).
+## O relogio e o progresso do jogador na rota, de 0 a 1. Nao mexe em fisica, e
+## o banco de provas ignora: medindo, a hora e fixa.
+
+## Ate onde da rota e meio-dia. Dali o sol comeca a descer.
+@export_range(0.0, 1.0, 0.01) var hora_comeca: float = 0.25
+## De onde a noite esta fechada. A ultima reta e de noite, de proposito: e
+## a reta da chegada, e chegar de farol aceso e a recompensa de ter andado.
+@export_range(0.0, 1.0, 0.01) var hora_fecha: float = 0.85
+## Trava a hora para olhar um momento so: 0 e meio-dia, 0,35 o entardecer,
+## 0,65 a hora azul, 1 a noite. Negativo segue a corrida.
+@export_range(-1.0, 1.0, 0.01) var hora_forcada: float = -1.0
+
+@export_group("Ator")
+
+## 1 desenha corredores e pedestres em sprite, recortados das folhas do Google
+## Flow, em vez dos modelos 3D. E o experimento de comparar os dois na pista:
+## ao vivo, sem reiniciar, para alternar e olhar o mesmo trecho. Um
+## slider de 0 a 1, e nao uma caixa de marcar, porque o painel so sabe
+## desenhar slider.
+@export_range(0, 1, 1) var ator_sprite: int = 0
+## Poses do ator por segundo; 0 e liso, uma por passo de fisica (`Cadencia`).
+## Travado e o ator "digitalizado" do `DIRECAO_VISUAL.md`: a moto anda liso
+## pela pista, e tudo o que ela mostra - inclinacao, virada, roda, guidao,
+## joelho, soco, tombo - pula de pose em pose. 12 foi decidido jogando, na V22:
+## o liso era o que os videos de referencia tem, e o travado foi o que leu
+## melhor na tela de pixel.
+@export_range(0, 30, 1) var ator_cadencia: int = 12
 
 
 static func load_or_default() -> WorldTuning:

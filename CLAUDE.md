@@ -6,13 +6,15 @@ aqui não funcionar na sua máquina, isso é um bug do contrato, não seu.
 O projeto é um protótipo *greybox* de Road Rash com entregadores de app, em
 Godot. Ele existe para responder **uma** pergunta: *acelerar, inclinar, se
 enfiar no corredor e bater está gostoso?* Nada de arte nem áudio até a resposta
-ser sim, com duas exceções. **Menu existe**, mas só o fluxo de entrar e sair de
+ser sim, com três exceções. **Menu existe**, mas só o fluxo de entrar e sair de
 uma corrida (`scripts/race_flow.gd`): o zip da release precisa ser jogável por
 quem não leu este repositório, senão ninguém responde a pergunta. **O
 entregador é modelo 3D** (`scripts/entregador.gd`), moto e piloto posados a
 cada passo pelo estado da física: roda, joelho, pé no chão e tombo mostram o
-que a moto está fazendo, e isso é feel, não enfeite. O mundo continua de
-caixas. Contexto e decisões de design em [docs/PROTOTIPO.md](docs/PROTOTIPO.md).
+que a moto está fazendo, e isso é feel, não enfeite. **Os carros também**
+(`scripts/carro.gd`), pelo mesmo motivo: a lanterna que acende, a carroceria
+que mergulha e rola e a porta que gira são o aviso de que o corredor vai
+fechar. Contexto e decisões de design em [docs/PROTOTIPO.md](docs/PROTOTIPO.md).
 
 Desenvolvido nos três sistemas — Windows, macOS e Linux. Toda ferramenta daqui
 funciona nos três, e o CI roda nos três.
@@ -30,8 +32,10 @@ qual binário usar, e no Windows escolhe a variante que não engole a saída.
 | `python tools/dev.py selftest` | Banco de provas: roda a moto de verdade e compara com o baseline. ~110 s. |
 | `python tools/dev.py selftest --fase curva` | Só até aquela fase. ~32 s, para iterar. |
 | `python tools/dev.py shots` | Regressão visual: roda com tela e mede o frame. |
-| `python tools/dev.py prova` | Os mesmos quatro quadros congelados, em `.dev/prova/`, para comparar visual antes e depois. |
-| `python tools/dev.py fps` | Tempo de quadro da corrida solta, com tela e sem vsync. Compara a mesma máquina. |
+| `python tools/dev.py shots --noite` | A mesma regressão visual de noite, contra o `baseline_visual_noite.json`. |
+| `python tools/dev.py prova` | Os mesmos cinco quadros congelados, em `.dev/prova/`, para comparar visual antes e depois. |
+| `python tools/dev.py prova --hora 1` | Os mesmos quadros em outra hora (0 meio-dia, 1 noite), em `.dev/prova/hora_X/`. |
+| `python tools/dev.py fps` | Tempo de quadro da corrida solta, com tela e sem vsync. Compara a mesma máquina. `--hora 1` mede a noite, que tem uma luz por poste e por farol. |
 | `python tools/dev.py lint` / `format` | gdlint e gdformat. |
 | `python tools/dev.py run` | Abre o jogo. |
 | `python tools/dev.py export` | Exporta as três plataformas. |
@@ -82,7 +86,7 @@ jogo continua rodando, só errado. Estão explicados em `docs/PROTOTIPO.md`.
 - **Winding horário.** Godot descarta face anti-horária *sem avisar*: a pista
   inteira some e o mundo vira caixas flutuando.
 - **`stretch_shrink`, nunca `SubViewport.size`.** Com `stretch` ligado o
-  container sobrescreve o tamanho, e você renderiza em 1280×720 achando que
+  container sobrescreve o tamanho, e você renderiza em 1920×1080 achando que
   está em 640×360.
 - **A HUD mora dentro do SubViewport.** HUD nítida sobre mundo pixelado é o
   visual de remaster preguiçoso.
@@ -105,6 +109,17 @@ jogo continua rodando, só errado. Estão explicados em `docs/PROTOTIPO.md`.
   deste repositório: leia qualquer arquivo em `scripts/` antes de escrever.
   Número mágico sem justificativa ao lado é dívida.
 - Tudo em português — código, comentário, commit, documento.
+- **Moto e piloto se escrevem para todos.** Mexeu no `Entregador`, na física
+  da moto, no `PlayerBike` ou no `RivalBike`: a mudança tem de servir a toda
+  moto e a todo corredor, jogador ou rival, e a mais de um ao mesmo tempo. O
+  que muda de uma moto para outra sai do modelo ou da `FichaDaMoto`, nunca de
+  `if modelo ==`; estado é por instância, nunca estático, global ou
+  "o jogador"; o que jogador e rival têm em comum mora no ator ou numa classe
+  pequena compartilhada (`Tremor`, `RodaLisa`, `FisicaDaMoto`), e não copiado
+  nos dois corpos. O teste do ator roda em todos os `_modelos()`. *Por quê:*
+  já são três motos e cinco corredores na tela, e a fila pede mais; melhoria
+  que só vale para a CG do jogador vira rival andando diferente e moto nova
+  nascendo pela metade — e ninguém nota, porque o jogo continua rodando.
 
 ## Branches e release
 
@@ -135,9 +150,18 @@ sessão — e ninguém consegue ler o diff de algo que não foi empurrado. A seg
 então a pior consequência de uma branch empurrada é uma branch a mais no
 remoto.
 
-O que **continua** precisando de aval: abrir PR, fazer merge, subir a versão,
-criar tag, publicar release. Empurrar a branch é para o trabalho ficar visível; decidir
+O que **continua** precisando de aval: abrir PR, subir a versão, criar tag,
+publicar release. Empurrar a branch é para o trabalho ficar visível; decidir
 que ele entra é outra coisa.
+
+**PR aberto já nasce com auto-merge em squash** (`gh pr merge <n> --auto
+--squash`), sem pedir de novo. O aval de abrir o PR é o aval de juntar: o que
+faltava era esperar o verde, e isso o GitHub faz melhor que alguém lembrando
+de voltar ao PR. Continua seguro porque a `master` exige os dois checks, e
+vermelho não entra. Se o `gh` responder `clean status`, os checks do PR ainda
+não começaram: espere alguns segundos e repita. Não troque isso por uma action
+que liga o auto-merge sozinha: merge feito com o `GITHUB_TOKEN` não dispara o
+`release.yml`, e o bump de versão entraria sem publicar.
 
 **Merge exige check verde conferido — não basta o aval humano.** São duas
 perguntas diferentes, e cada uma tem a sua resposta:
@@ -225,10 +249,26 @@ saber onde **não** há rede faz parte do contrato.
 | `scripts/bike_tuning.gd`, `world_tuning.gd` | Os sliders do F3. |
 | `scripts/entregador.gd` | O ator: moto e piloto, posados pelo estado da física. |
 | `arte/entregador.py` | Gera o modelo no Blender. É a fonte: o `.blend` e o `assets/entregador/` são build. |
+| `arte/xre300.py` | Gera a XRE 300 com a mesma árvore de nós da CG, reaproveitando peças e piloto do `entregador.py`. Nó novo ou renomeado numa moto tem que existir em todas: o ator não tem `if` por modelo. |
+| `arte/pcx160.py` | Gera a PCX 160 do mesmo jeito. Na scooter a `Balanca` é o motor oscilante e a `Pedaleira` é o assoalho. |
 | `assets/entregador/` | O modelo e as texturas que o jogo carrega. Não edite à mão: regere pelo script. |
+| `scripts/ficha_da_moto.gd` | Ficha técnica real de cada moto. Moto nova começa por ela: as medidas guiam o modelo do Blender e a mola sai dela (`FisicaDaMoto`). Sem ficha, o teste reprova. |
+| `scripts/carro.gd` | Os carros do trânsito por dentro: roda, mola, porta, luz e quem dirige. |
+| `arte/carros.py` | Gera hatch, sedã, SUV, táxi, ônibus, baú e van no Blender. Fonte do `assets/carros/`, que é build. |
+| `scripts/ik.gd` | IK de dois ossos, dos braços do piloto e de quem dirige. |
+| `scripts/pedestres.gd`, `scripts/multidao.gd` | A gente da calçada, em `MultiMesh`: onde nasce, o relógio e o atropelo. Quem anda é o `pedestres.gdshader`, no vértice, e o `Multidao` refaz a conta dele para saber onde cada um está. |
+| `scripts/pessoa.gd` | A pessoa articulada, posada no código: atravessa, desce do carro, pula da frente da moto e voa no atropelo. |
+| `scripts/travessia.gd` | Quem atravessa a rua: na zebra das transversais e fora da faixa, na avenida. |
+| `scripts/sangue.gd` | A mancha de quem foi atropelado, um `Decal`. O `World` limpa a cada largada. |
+| `arte/pedestres.py` | Gera a pessoa do `MultiMesh` e a articulada (`Articulada`). Fonte do `assets/pedestres/`, que é build. |
 | `arte/chao.py` | Gera as texturas de asfalto e calçada (`assets/visual/`). As regras de "visto a 180 km/h" estão no topo dele. |
-| `arte/paleta.py` | Gera o LUT de cor do dia (`assets/visual/lut_dia.png`). O clima da tela se ajusta ali. |
+| `scripts/via_expressa.gd` | O trecho de via expressa: muro, mureta, cerca, pista de serviço, viaduto e pilares, extrudados na curva da pista. A `Cidade` decide onde ele cai; ele soma pista à corrida, e não toma o lugar de um corredor. |
+| `arte/via_expressa.py` | Gera o atlas de murais e grafite, o concreto e a tela do alambrado (`assets/via_expressa/`). A geometria não mora aqui: segue a pista, então sai do `via_expressa.gd`. |
+| `arte/paleta.py` | Gera os LUTs de cor de cada hora (`assets/visual/lut_*.png`). O clima da tela se ajusta ali. |
 | `scripts/paleta.gdshader` | Quantização e dither: o último passe do mundo, abaixo da HUD. |
+| `scripts/ceu.gdshader` | O céu: gradiente, nuvem em campo de tufos, estrelas e lua. A nuvem são sliders do grupo Ceu no F3 (`WorldTuning`); cor, estrela e lua são da hora. |
+| `scripts/hora.gd` | Os números de cada hora-chave (meio-dia, entardecer, hora azul, noite) e a mistura entre elas. O meio-dia é o mundo de antes, número por número. |
+| `scripts/relogio.gd` | A corrida anoitece: o relógio é o progresso do jogador, e é ele que aplica a hora e acende a cidade (parâmetro global `noite`). Medindo, a hora é fixa no meio-dia. |
 | `scripts/prova.gd` | O quadro congelado da prova visual (`dev.py prova`). |
 | `tests/unit/` | Testes unitários. |
 | `tests/baseline.json` | Os números esperados. |
@@ -237,3 +277,4 @@ saber onde **não** há rede faz parte do contrato.
 | `docs/PROTOTIPO.md` | Por que o jogo é assim. Leia antes de mexer no feel. |
 | `docs/GDD.md` | O briefing original, congelado. O que o jogo queria ser. |
 | `docs/DIRECAO_VISUAL.md` | Como sair do greybox: resolução, sprite, luz, partícula. Leia antes de mexer no visual. |
+| `docs/BACKLOG_VISUAL.md` | A fila do que falta para chegar nas referências visuais. "Próxima tarefa" é o primeiro item aberto; ao fechar, marca-se no mesmo PR. |

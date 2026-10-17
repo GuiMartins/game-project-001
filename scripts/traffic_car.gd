@@ -6,26 +6,35 @@ extends AnimatableBody3D
 ## E o carro que cria o corredor. Ele anda devagar, muda de faixa sem olhar,
 ## abre a porta na sua cara, para no sinal e empaca no engarrafamento - e cada
 ## uma dessas coisas e um jeito diferente de fechar a pista e deixar so o vao.
+##
+## Este no e o carro na pista: onde esta, a que velocidade, quando abre a
+## porta. O modelo e tudo o que se mexe dentro dele - roda, mola, luz, quem
+## dirige - moram no `Carro`, filho dele.
 
 ## Emitido quando a porta abre, pra HUD/audio avisarem o jogador.
 signal door_opened
 
-## 1,80 de largura, e nao 1,90: com faixa de 3,30 isso e a diferenca entre
-## 1,40 e 1,50 de vao entre duas colunas de carro. Parece pouco e nao e - a
-## moto tem 0,75, entao o vao util por lado passou de 32 pra 37 cm.
-const SIZE := Vector3(1.8, 1.5, 4.4)
-const DOOR_SIZE := Vector3(1.1, 1.0, 1.6)
+## O que a porta de um carro encostado faz. Sorteado ao encostar, no `World`.
+##
+## Sao dois perigos que se leem de jeitos opostos. A porta aberta de longe e
+## obstaculo que se ve chegando: fecha meia faixa e fica. A porta na cara e o
+## susto, e so e justa porque e rara. A antiga, que abria num cronometro
+## qualquer, saiu: abrir sem saber onde o jogador esta e sorte pura - ou ele
+## nunca via, ou via sem chance de reagir.
+enum Porta { NENHUMA, ABERTA, NA_CARA }
 
-## Greybox com cor, nao greybox cinza. Em pixel grosso duas caixas cinzas
-## coladas nao se separam, e o corredor deixa de ser legivel.
-const CAR_COLORS: Array[Color] = [
-	Color(0.62, 0.64, 0.70),
-	Color(0.72, 0.45, 0.40),
-	Color(0.40, 0.52, 0.68),
-	Color(0.75, 0.72, 0.55),
-	Color(0.45, 0.60, 0.52),
-	Color(0.55, 0.50, 0.62),
-]
+## Quanto de cada modelo sai na rua, na ordem do `Carro.Modelo`: hatch, seda,
+## SUV, taxi, onibus, bau e van. Carro de passeio e o grosso; taxi e onibus sao
+## o que da cara de cidade, e um em oito e onibus porque ele e parede de 12 m -
+## mais que isso e o corredor virar fila de onibus. Bau e van sao um em sete
+## juntos: no video ha um bau entre os oito ou dez veiculos da tela
+## (`video_01/t3.0s`), e e ele que tapa a vista do corredor a frente.
+const FROTA: Array[float] = [0.22, 0.22, 0.15, 0.15, 0.12, 0.07, 0.07]
+
+## Mistura na semente do carro para sortear o modelo e as cores. Sorteio a
+## parte de proposito: tirar o modelo do `_rng` mudaria a hora de cada troca de
+## faixa e cada porta, e o banco de provas mediria outra corrida.
+const SEMENTE_VISUAL: int = 0x5EED
 
 ## Valores de fallback, usados so pelo carro que nao pertence a frota - o que
 ## fica largado dentro de um atalho. Esse nunca dirige, entao ele nunca leu
@@ -76,12 +85,21 @@ var _target_lateral: float = 0.0
 var _lane_change_timer: float = 0.0
 var _door_timer: float = 0.0
 var _door_open: bool = false
-## Este carro chega a abrir a porta em algum momento? Sorteado ao encostar.
-var _opens_door: bool = false
+## O que a porta deste carro faz. Sempre `NENHUMA` em carro no fluxo.
+var _porta: Porta = Porta.NENHUMA
+## De que lado a porta abre: -1 esquerda, 1 direita.
+var _door_side: int = -1
 var _rng := RandomNumberGenerator.new()
-var _door_mesh: MeshInstance3D
+var _rng_visual := RandomNumberGenerator.new()
+## O modelo, com tudo o que se mexe dentro dele.
+var _carro: Carro
+## Caixa da lataria, no espaco do carro: e o que bate e o que conta de
+## tamanho na pista (`meio_comprimento`, `meia_largura`).
+var _shape: CollisionShape3D
+var _caixa := AABB(Vector3(-0.9, 0.0, -2.2), Vector3(1.8, 1.5, 4.4))
+## A porta aberta. Segue a porta do modelo enquanto ela gira.
 var _door_shape: CollisionShape3D
-var _body_mesh: MeshInstance3D
+var _lateral_antes: float = 0.0
 
 
 func _ready() -> void:
@@ -89,24 +107,29 @@ func _ready() -> void:
 	collision_layer = Layers.WORLD
 	collision_mask = 0
 
-	_body_mesh = Greybox.box(SIZE, CAR_COLORS[randi() % CAR_COLORS.size()])
-	add_child(_body_mesh)
-	var cs := Greybox.box_shape(SIZE)
-	add_child(cs)
+	_carro = Carro.new()
+	_carro.name = "Carro"
+	add_child(_carro)
 
-	# Teto mais claro: em pixel grosso a leitura de silhueta e tudo.
-	var roof := Greybox.box(Vector3(SIZE.x * 0.82, 0.7, SIZE.z * 0.5), Color(0.72, 0.73, 0.78))
-	roof.position = Vector3(0.0, SIZE.y * 0.5 + 0.3, -0.2)
-	add_child(roof)
-
-	_door_mesh = Greybox.box(DOOR_SIZE, Color(0.85, 0.35, 0.2), true)
-	_door_mesh.visible = false
-	add_child(_door_mesh)
-
-	_door_shape = Greybox.box_shape(DOOR_SIZE)
+	_shape = Greybox.box_shape(Vector3.ONE)
+	add_child(_shape)
+	_door_shape = Greybox.box_shape(Vector3.ONE)
 	_door_shape.disabled = true
 	add_child(_door_shape)
-	_place_door(-1)
+
+
+## Metade do comprimento da lataria, em metros de pista.
+func meio_comprimento() -> float:
+	return _caixa.size.z * 0.5
+
+
+## Metade da largura da lataria, sem retrovisor.
+func meia_largura() -> float:
+	return _caixa.size.x * 0.5
+
+
+func modelo() -> Carro.Modelo:
+	return _carro.modelo
 
 
 func setup(
@@ -115,25 +138,29 @@ func setup(
 	a_lateral: float,
 	seed_value: int,
 	a_parked: bool = false,
-	a_opens_door: bool = false
+	a_porta: Porta = Porta.NENHUMA
 ) -> void:
 	track = a_track
 	_rng.seed = seed_value
+	_rng_visual.seed = seed_value ^ SEMENTE_VISUAL
 	_lane_change_timer = _rng.randf_range(3.0, 14.0)
 	# Consulta desencontrada: se todos perguntassem no mesmo frame, economizar
 	# tres frames em quatro so faria o pico ser quatro vezes maior.
 	_probe_in = _rng.randi_range(1, PROBE_EVERY)
-	_reset_at(a_offset, a_lateral, a_parked, a_opens_door)
+	_reset_at(a_offset, a_lateral, a_parked, a_porta)
 
 
-## Poe a porta de um dos lados do carro.
-##
-## Pista ou calcada, tanto faz - o que importa e voce nao poder decorar de que
-## lado ela vem. Porta previsivel deixa de ser susto e vira pedagio.
-func _place_door(side: int) -> void:
-	var at := Vector3(float(side) * (SIZE.x + DOOR_SIZE.x) * 0.5, -0.1, 0.2)
-	_door_mesh.position = at
-	_door_shape.position = at
+## Sorteia o modelo pela `FROTA`, poe a lataria e o colisor no tamanho dele.
+func _monta() -> void:
+	var sorteio := _rng_visual.randf()
+	var qual := 0
+	while qual < FROTA.size() - 1 and sorteio >= FROTA[qual]:
+		sorteio -= FROTA[qual]
+		qual += 1
+	_carro.montar(qual as Carro.Modelo, _rng_visual)
+	_caixa = _carro.caixa()
+	(_shape.shape as BoxShape3D).size = _caixa.size
+	_shape.position = _caixa.get_center()
 
 
 func _physics_process(delta: float) -> void:
@@ -150,6 +177,7 @@ func _physics_process(delta: float) -> void:
 
 	# Encostado nao muda de faixa: esta estacionado, nao no fluxo.
 	if not parked:
+		_sai_da_contramao()
 		_lane_change_timer -= delta
 		if _lane_change_timer <= 0.0:
 			_lane_change_timer = _rng.randf_range(4.0, 16.0)
@@ -157,22 +185,117 @@ func _physics_process(delta: float) -> void:
 			var dir := 1.0 if _rng.randf() < 0.5 else -1.0
 			var candidate := _target_lateral + RoadTrack.LANE_WIDTH * dir
 			var limit := RoadTrack.half_width() - RoadTrack.LANE_WIDTH * 0.5
-			if absf(candidate) <= limit:
+			# Sem olhar para a moto, que e o susto do corredor; olhando para os
+			# outros carros, que e o que impede um de entrar no outro. Faixa
+			# ocupada e troca cancelada, e o sorteio da proxima ja saiu acima.
+			var mao := track.mao_entre(offset, offset + _antevisao())
+			var na_mao := candidate >= mao.x and candidate <= mao.y
+			if absf(candidate) <= limit and na_mao and _faixa_livre(candidate):
 				_target_lateral = candidate
 
-	# `_opens_door` so e verdade em carro encostado, entao carro em movimento
-	# nunca chega aqui.
-	if _opens_door:
-		_door_timer -= delta
-		if _door_timer <= 0.0:
-			if _door_open:
+	# `NA_CARA` so existe em carro encostado, entao carro em movimento nunca
+	# chega aqui. A `ABERTA` ja abriu ao encostar e nao fecha mais.
+	if _porta == Porta.NA_CARA:
+		if _door_open:
+			_door_timer -= delta
+			if _door_timer <= 0.0:
 				_set_door(false)
-				_door_timer = _rng.randf_range(10.0, 35.0)
-			else:
-				_set_door(true)
-				_door_timer = _rng.randf_range(2.0, 4.0)
+				# Uma vez so: quem desceu do carro nao volta para abrir de novo.
+				_porta = Porta.NENHUMA
+		elif _jogador_chegando():
+			_set_door(true)
 
 	_apply_transform()
+	_pose(delta)
+
+
+## Quantos metros a frente o carro olha a pista antes de escolher faixa: 6 s de
+## estrada, e pelo menos 50 m. E o que ele leva para passar duas faixas a
+## 1,6 m/s de lado, com folga para esperar vaga.
+func _antevisao() -> float:
+	return maxf(50.0, speed * 6.0)
+
+
+## Na via expressa, a metade do lado do viaduto e mao contraria, e o zebrado
+## antes dela fecha as faixas daquele lado. O carro que vai dar nela passa
+## para o outro lado assim que tiver vaga - e, chegando no zebrado sem vaga,
+## passa assim mesmo, como no transito de verdade. Sem sorteio: fora da
+## expressa o carro gasta o gerador como sempre gastou.
+func _sai_da_contramao() -> void:
+	var mao := track.mao_entre(offset, offset + _antevisao())
+	if _target_lateral >= mao.x and _target_lateral <= mao.y:
+		return
+	var para := signf((mao.x + mao.y) * 0.5 - _target_lateral)
+	var candidate := _target_lateral + RoadTrack.LANE_WIDTH * para
+	var ja := track.mao_entre(offset, offset)
+	var chegou := _target_lateral < ja.x or _target_lateral > ja.y
+	if chegou or _faixa_livre(candidate):
+		_target_lateral = candidate
+
+
+## O jogador esta a menos de `door_ambush_time` segundos de alcancar este
+## carro, e perto o bastante de lado para a porta ser problema dele?
+##
+## Tempo e nao distancia: a 50 m/s, 20 m e meio segundo, e a 15 m/s a mesma
+## distancia e uma eternidade. Com tempo, a porta e igualmente justa nas duas.
+## O lado e decidido aqui, virado para o jogador - e isso que faz ela abrir
+## *nele*, e nao em quem passa na calcada.
+func _jogador_chegando() -> bool:
+	if world == null or world_tuning == null:
+		return false
+	var jogador: PlayerBike = world.get("player")
+	if jogador == null or jogador.speed < 1.0:
+		return false
+	var falta := (offset - meio_comprimento() - jogador.track_offset) / jogador.speed
+	if falta > world_tuning.door_ambush_time:
+		return false
+	# Passou da metade da janela sem abrir - o jogador entrou de lado no
+	# ultimo instante -, e ai ja nao abre: a porta que sai a meio segundo da
+	# moto e tiro, nao susto. Desiste de vez, para nao tentar de novo depois.
+	if falta < world_tuning.door_ambush_time * 0.5:
+		_porta = Porta.NENHUMA
+		return false
+	var de_lado := jogador.track_lateral - lateral
+	# Ate a faixa vizinha: mais longe que isso a porta abre no vazio, e o susto
+	# se gasta sem ninguem ver. Espera, que ele ainda pode chegar perto.
+	if absf(de_lado) > RoadTrack.LANE_WIDTH * 1.2:
+		return false
+	_door_side = 1 if de_lado > 0.0 else -1
+	return true
+
+
+## Passa o movimento deste passo para o modelo, e poe o colisor da porta onde a
+## porta do modelo esta.
+func _pose(delta: float) -> void:
+	var lateral_speed := (lateral - _lateral_antes) / delta
+	_lateral_antes = lateral
+	# A seta acende durante a troca, e nao antes: o transito daqui muda de
+	# faixa sem avisar, e e esse o susto que faz o corredor fechar. Ela diz
+	# "esta vindo", nao "vai vir".
+	var falta := _target_lateral - lateral
+	var seta := 0 if parked or absf(falta) < 0.05 else int(signf(falta))
+	_carro.atualizar(delta, speed, lateral_speed, parked, seta)
+
+	var porta := _carro.porta_ativa()
+	var bate := porta != null and _carro.abertura() > Carro.PORTA_BATE
+	if bate:
+		var caixa := porta.get_aabb()
+		var no_corpo := global_transform.affine_inverse() * porta.global_transform
+		_door_shape.transform = no_corpo * Transform3D(Basis.IDENTITY, caixa.get_center())
+		(_door_shape.shape as BoxShape3D).size = caixa.size
+	if _door_shape.disabled == bate:
+		_door_shape.set_deferred("disabled", not bate)
+
+
+## So o colisor da folha pode dobrar a porta. Devolve a direcao que tira a
+## moto de cima dela, no lado oposto ao carro, independente da curva da pista.
+func acertar_porta(forma: CollisionShape3D, chegada: float) -> Vector3:
+	if forma != _door_shape or _carro.porta_ativa() == null:
+		return Vector3.ZERO
+	_carro.amassar_porta(chegada)
+	var fora := global_basis.x * float(_door_side)
+	fora.y = 0.0
+	return fora.normalized()
 
 
 ## Ajusta a velocidade ao que a pista permite: o carro da frente na mesma
@@ -205,35 +328,85 @@ func _approach_speed(distance: float) -> float:
 
 
 ## Pista livre a frente na faixa deste carro.
+##
+## Olha ate onde ainda da para parar, mais uma folga: a distancia de frenagem
+## no talo cresce com o quadrado da velocidade. Eram 24 m fixos, que bastavam
+## a 25 km/h; a 90 km/h (V20) o carro so via o da frente quando ja nao dava
+## para frear, e entrava dentro dele.
 func _gap_ahead(follow_gap: float) -> float:
 	if world == null or not world.has_method("path_clearance"):
 		return INF
-	return world.path_clearance(offset, follow_gap + 24.0, lateral, self)
+	var alcance := follow_gap + maxf(24.0, speed * speed / (2.0 * _brake()) + 10.0)
+	var livre: float = world.path_clearance(offset, alcance, lateral, self)
+	# No meio da troca o carro ocupa as duas faixas, e o da frente na faixa
+	# nova tambem e o da frente. So quem esta a frente: o que vem atras na
+	# faixa nova e quem tem que frear, e contar ele aqui parava os dois.
+	if not is_equal_approx(_target_lateral, lateral):
+		livre = minf(livre, world.path_clearance(offset, alcance, _target_lateral, self, false))
+	return livre
 
 
+func _faixa_livre(alvo: float) -> bool:
+	if world == null or not world.has_method("faixa_livre"):
+		return true
+	return world.faixa_livre(self, alvo)
+
+
+## Este carro esta dentro de `outro`? Folga de 10 cm nas duas direcoes:
+## encostar nao e sobrepor.
+func sobrepoe(outro: TrafficCar) -> bool:
+	var largura := meia_largura() + outro.meia_largura() - 0.1
+	var comprimento := meio_comprimento() + outro.meio_comprimento() - 0.1
+	return absf(lateral - outro.lateral) < largura and absf(offset - outro.offset) < comprimento
+
+
+## Para onde o carro esta indo: a lateral da faixa de destino.
+func destino() -> float:
+	return _target_lateral
+
+
+## A origem do carro e o chao, embaixo do meio dele: a lataria e o colisor ja
+## estao em cima dela.
 func _apply_transform() -> void:
-	var t := track.transform_at(offset, lateral)
-	t.origin += t.basis.y * (SIZE.y * 0.5)
-	global_transform = t
+	global_transform = track.transform_at(offset, lateral)
 
 
+## Leva o carro para outro `offset` sem mexer no resto. E o que o `World` usa
+## para desencostar um carro que nasceu em cima de outro.
+func posicionar(a_offset: float) -> void:
+	offset = a_offset
+	_apply_transform()
+	_carro.reiniciar()
+
+
+## Abre ou fecha. O colisor nao liga aqui: liga quando a porta do modelo ja
+## abriu o bastante para bater (`Carro.PORTA_BATE`), e segue ela enquanto gira.
 func _set_door(open: bool) -> void:
 	_door_open = open
-	_door_mesh.visible = open
-	_door_shape.set_deferred("disabled", not open)
 	if open:
+		_carro.abrir_porta(_door_side)
 		door_opened.emit()
+		# A porta na cara e alguem descendo: ela bate quando o timer acaba, e
+		# a mao de quem desceu chega nela nessa hora. A `ABERTA` fica aberta
+		# de vez, longe de quem olha, e nao tem ninguem saindo.
+		if _porta == Porta.NA_CARA and track != null:
+			var meio_fio := RoadTrack.half_width() * signf(lateral)
+			# O meio da calcada andavel, no X do carro.
+			var calcada_x := meio_fio - lateral + signf(lateral) * RoadTrack.SHOULDER * 0.5
+			_carro.desembarcar(_door_timer, calcada_x)
+	else:
+		_carro.fechar_portas()
 
 
 ## Reposiciona o carro mais a frente em vez de instanciar outro.
 func recycle(
-	a_offset: float, a_lateral: float, a_parked: bool = false, a_opens_door: bool = false
+	a_offset: float, a_lateral: float, a_parked: bool = false, a_porta: Porta = Porta.NENHUMA
 ) -> void:
-	_reset_at(a_offset, a_lateral, a_parked, a_opens_door)
+	_reset_at(a_offset, a_lateral, a_parked, a_porta)
 
 
 ## Estado comum entre nascer e ser reciclado.
-func _reset_at(a_offset: float, a_lateral: float, a_parked: bool, a_opens_door: bool) -> void:
+func _reset_at(a_offset: float, a_lateral: float, a_parked: bool, a_porta: Porta) -> void:
 	offset = a_offset
 	lateral = a_lateral
 	_target_lateral = a_lateral
@@ -243,14 +416,38 @@ func _reset_at(a_offset: float, a_lateral: float, a_parked: bool, a_opens_door: 
 	if a_parked:
 		cruise_speed = 0.0
 	else:
-		cruise_speed = _rng.randf_range(
-			0.0, world_tuning.traffic_speed if world_tuning != null else 7.0
-		)
+		var teto := world_tuning.traffic_speed if world_tuning != null else 26.0
+		var piso := world_tuning.traffic_speed_min if world_tuning != null else 18.0
+		cruise_speed = _rng.randf_range(minf(piso, teto), teto)
 	speed = cruise_speed
 	_gap_cache = INF
-	_opens_door = a_parked and a_opens_door
+	_porta = a_porta if a_parked else Porta.NENHUMA
 	near_missed = false
+	_monta()
+	var meio_fio_esquerdo := RoadTrack.lane_center(0)
+	if a_parked and modelo() == Carro.Modelo.ONIBUS and is_equal_approx(lateral, meio_fio_esquerdo):
+		# Onibus para no ponto, e o ponto e na calcada da direita. Na esquerda
+		# ele vira parede de 12 m na faixa rapida, coisa que onibus nao faz.
+		# O modelo sai depois da faixa, entao a correcao e aqui; o `World`
+		# desencosta depois, e ja ve a faixa certa. So o meio-fio esquerdo:
+		# o banco de provas para carro no meio da pista de proposito.
+		lateral = RoadTrack.lane_center(RoadTrack.LANE_COUNT - 1)
+		_target_lateral = lateral
+	# A folha do onibus abre para a calcada e nao tem colisor: porta na cara
+	# de onibus seria um susto que nao acontece.
+	if modelo() == Carro.Modelo.ONIBUS and _porta == Porta.NA_CARA:
+		_porta = Porta.NENHUMA
 	_set_door(false)
-	_place_door(-1 if _rng.randf() < 0.5 else 1)
-	_door_timer = _rng.randf_range(6.0, 30.0)
+	_door_shape.set_deferred("disabled", true)
+	# Pista ou calcada, tanto faz - o que importa e voce nao poder decorar de
+	# que lado ela vem. Porta previsivel deixa de ser susto e vira pedagio.
+	_door_side = -1 if _rng.randf() < 0.5 else 1
+	# Quanto a porta na cara fica aberta: o tempo de alguem descer do carro.
+	_door_timer = _rng.randf_range(2.0, 4.0)
+	_lateral_antes = lateral
 	_apply_transform()
+	_carro.reiniciar()
+	# Abre ja, fora de vista: quando o jogador chega, ela esta escancarada e
+	# parada, e da para ver de longe que a meia faixa esta fechada.
+	if _porta == Porta.ABERTA:
+		_set_door(true)

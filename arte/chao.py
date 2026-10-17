@@ -20,7 +20,7 @@ tres regras, que valem para as duas texturas:
 
 1. **Detalhe fino corre ao longo da pista, nunca atravessado.** O grao do
    asfalto e quatro vezes mais comprido que largo, a marca de pneu e uma faixa
-   longitudinal, a onda da calcada e longa. Detalhe longitudinal parece rastro
+   longitudinal, e a pedra da calcada e sorteio, sem junta atravessada. Detalhe longitudinal parece rastro
    de velocidade em vez de piscar - e e o que o borrao da P7 vai esticar mais.
 2. **Contraste alto so no que e grande.** Grao fino tem amplitude baixa, para
    o mipmap engolir de longe sem deixar padrao; quem tem contraste e a marca de
@@ -29,8 +29,8 @@ tres regras, que valem para as duas texturas:
    calcada): a repeticao do proprio tile fica bem acima de 1,7 m.
 
 O mapeamento esta em `road_track.gd`: no asfalto o U cobre uma faixa de
-rolamento (3,3 m) e o V 6,6 m; na calcada o U vai do meio-fio (U = 0) ate a
-borda de fora, e o V cobre 4,4 m. A cor de base e neutra e um pouco escura de
+rolamento (3,3 m) e o V 6,6 m; na calcada o U cobre 2,2 m e repete do
+meio-fio ate a fachada, e o V cobre 4,4 m. A cor de base e neutra e um pouco escura de
 proposito: quem da a cor de meio-dia e o LUT (`arte/paleta.py`), como em todo o
 resto do mundo.
 """
@@ -105,13 +105,20 @@ GRAO = 15
 # brita, e nao como chiado de TV.
 PEDRA_CLARA = (0.04, 34)
 PEDRA_ESCURA = (0.03, -22)
-# Remendo e desgaste: manchas grandes, de metro, quase sem contraste.
-REMENDO = 12
+# Remendo e desgaste: manchas grandes, de metro. Era 12, quase sem contraste,
+# e o borrao de velocidade nao tinha o que esticar: a 128 km/h o asfalto saia
+# liso onde as referencias sao so risco (V08a). Mancha de metro e grande o
+# bastante para ter contraste sem piscar (regra 2).
+REMENDO = 22
+# Veio: faixas de um palmo, compridas ao longo da pista, do asfalto que
+# assentou diferente. Corre junto com a pista (regra 1), e e o que o borrao
+# transforma no risco claro e escuro do terco de baixo das referencias.
+VEIO = 14
 # Onde a roda dos carros passa, a 0,8 m do centro da faixa: o asfalto fica
 # mais escuro e liso. Centro em U = 0,5 +/- 0,8 / 3,3.
 TRILHA_U = (0.258, 0.742)
 TRILHA_LARGURA = 0.1
-TRILHA = -24
+TRILHA = -32
 # O pingo de oleo no meio da faixa, de carro parado no transito.
 OLEO_LARGURA = 0.035
 OLEO = -14
@@ -125,6 +132,12 @@ def asfalto(rng):
     # e larga em U e curta em V para a variacao ser ao longo do comprimento.
     falha = [Ruido(rng, 2, 6), Ruido(rng, 4, 12)]
     gotas = [Ruido(rng, 2, 10), Ruido(rng, 4, 20)]
+    # 24 celulas em U sao 14 cm; 2 e 3 em V, 3,3 e 2,2 m: veio de palmo por
+    # metros, nunca atravessado.
+    # Semente propria: sorteado do `rng`, ele deslocaria todo sorteio depois
+    # dele, e a calcada mudaria sem ninguem ter mexido nela.
+    rng_veio = random.Random(SEMENTE + 1)
+    veio = [Ruido(rng_veio, 24, 2), Ruido(rng_veio, 48, 3)]
     grao = [[rng.random() for _ in range(ASFALTO)] for _ in range(ASFALTO // 2)]
     pedra = [[rng.random() for _ in range(ASFALTO)] for _ in range(ASFALTO // 2)]
 
@@ -135,6 +148,7 @@ def asfalto(rng):
             u = (x + 0.5) / ASFALTO
             val = ASFALTO_BASE
             val += (fbm(remendo, u, v) - 0.5) * 2 * REMENDO
+            val += (fbm(veio, u, v) - 0.5) * 2 * VEIO
 
             # Triangular, e nao uniforme: a maioria dos graos fica perto da base
             # e so alguns se destacam, como numa brita de verdade.
@@ -167,64 +181,87 @@ def asfalto(rng):
 
 # --- Calcada -------------------------------------------------------------------
 #
-# 128x256: U sao os 2,2 m da calcada (58 px/m), do meio-fio (U = 0) para fora; V
-# sao 4,4 m (58 px/m). Texel quadrado, e 4,4 m de periodo ao longo da pista.
+# 128x256: U sao 2,2 m de calcada (58 px/m) e V sao 4,4 m (58 px/m). Texel
+# quadrado, e o tile repete nos dois eixos: a calcada vai do meio-fio ate a
+# fachada, e o meio-fio e geometria propria no `road_track.gd`.
+#
+# Pedra portuguesa lisa, sem desenho (V09a). A onda de Copacabana continua de
+# fora: e calcadao de praia, e o desenho dela repete em menos de 1,7 m. Mas a
+# avenida do Theatro (`01_centro`, `video_01/t0.0s`) e pedra clara e quente,
+# e o cimentado frio de antes lia como pista. Pedra miuda e sorteio, nao
+# padrao: nada se repete ao longo da pista, e o mipmap engole de longe.
 
 CALCADA_U = 128
 CALCADA_V = 256
-# Meio-fio: 20 cm de concreto. Sem junta transversal (regra 1): a de verdade
-# vem a cada metro, e a cada metro e exatamente o periodo que pisca.
-MEIO_FIO = 12
-MEIO_FIO_COR = (178, 174, 166)
-# Pedra portuguesa: pedrinhas de ~5 cm, 3x3 texels com rejunte de 1.
-PEDRA = 4
-CREME = (198, 189, 170)
-PRETA = (92, 90, 88)
-REJUNTE = -34
-# A onda de Copacabana, correndo ao longo da pista. Um comprimento de onda por
-# tile (4,4 m): a 180 km/h a onda passa de lado a lado em mais de 5 quadros,
-# entao ela desliza em vez de tremer.
-ONDA_CENTRO = 0.6
-ONDA_AMPLITUDE = 0.2
-ONDA_LARGURA = 0.11
+# Calcario claro puxando para o creme. Era (168, 164, 156), cimento frio; o LUT
+# esquenta, mas de um cinza neutro ele so tira um bege sujo.
+PEDRA = (180, 168, 148)
+# Manchas de metro, de chuva e de sujeira: quase sem contraste (regra 2).
+MANCHA = 16
+# Lado da pedra em texels: 4 sao 7 cm, a pedra portuguesa de verdade. 128 e
+# 256 sao multiplos de 4, entao a grade fecha nas bordas e o tile emenda.
+PEDRA_LADO = 4
+# Uma pedra e outra variam pouco, e o rejunte e so um pouco mais escuro: e
+# detalhe fino, e detalhe fino tem amplitude baixa (regra 2).
+PEDRA_VARIA = 12
+REJUNTE = -16
+# Chiclete e pingo de oleo: pontos escuros soltos, o que faz o liso ler como
+# chao pisado, e nao como plastico.
+PINGO = (0.012, -30)
+
+
+def _pedras(rng):
+    """Cada celula da grade tem uma pedra com o centro sorteado dentro dela."""
+    cx = CALCADA_U // PEDRA_LADO
+    cy = CALCADA_V // PEDRA_LADO
+    centros = [[(rng.random(), rng.random(), rng.random()) for _ in range(cx)] for _ in range(cy)]
+    return centros, cx, cy
+
+
+def _pedra_em(pedras, x, y):
+    """Devolve (tom da pedra mais perto, distancia ate a borda com a vizinha)."""
+    centros, cx, cy = pedras
+    gx = x / PEDRA_LADO
+    gy = y / PEDRA_LADO
+    ix = int(gx)
+    iy = int(gy)
+    d1 = d2 = 9.0
+    tom = 0.5
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            jx = ix + dx
+            jy = iy + dy
+            c = centros[jy % cy][jx % cx]
+            px = jx + 0.15 + c[0] * 0.7
+            py = jy + 0.15 + c[1] * 0.7
+            d = math.hypot(gx - px, gy - py)
+            if d < d1:
+                d2 = d1
+                d1 = d
+                tom = c[2]
+            elif d < d2:
+                d2 = d
+    return tom, d2 - d1
 
 
 def calcada(rng):
-    tom = [Ruido(rng, 2, 4), Ruido(rng, 4, 8)]
+    mancha = [Ruido(rng, 2, 4), Ruido(rng, 4, 8), Ruido(rng, 8, 16)]
+    pedras = _pedras(rng)
+    pingo = [[rng.random() for _ in range(CALCADA_U // 2)] for _ in range(CALCADA_V // 2)]
     pixels = [0] * (CALCADA_U * CALCADA_V * 3)
-    jitter = {}
     for y in range(CALCADA_V):
         v = y / CALCADA_V
         for x in range(CALCADA_U):
             k = (y * CALCADA_U + x) * 3
             u = (x + 0.5) / CALCADA_U
-            if x < MEIO_FIO:
-                cor = list(MEIO_FIO_COR)
-                # Aresta de cima pega sol; o pe do meio-fio, no lado do
-                # asfalto, e sombra. Le como degrau sem geometria nenhuma.
-                ajuste = 14 if x < 2 else (-10 if x == MEIO_FIO - 1 else 0)
-                ajuste += (rng.random() - 0.5) * 6
-                cor = [c + ajuste for c in cor]
-            else:
-                # Fileiras alternadas meia pedra, como a pedra assentada a mao.
-                linha = y // PEDRA
-                desloca = (PEDRA // 2) if linha % 2 else 0
-                coluna = (x - MEIO_FIO + desloca) // PEDRA
-                chave = (linha, coluna)
-                if chave not in jitter:
-                    jitter[chave] = (rng.random() - 0.5) * 18
-                # A onda e decidida por pedra, nao por texel: a borda da faixa
-                # preta segue as pedras, serrilhada, como na calcada.
-                cu = (MEIO_FIO + coluna * PEDRA - desloca + PEDRA / 2) / CALCADA_U
-                cv = (linha * PEDRA + PEDRA / 2) / CALCADA_V
-                onda = ONDA_CENTRO + ONDA_AMPLITUDE * math.sin(2 * math.pi * cv)
-                base = PRETA if abs(cu - onda) < ONDA_LARGURA else CREME
-                ajuste = jitter[chave] + (fbm(tom, u, v) - 0.5) * 14
-                rejunte = (x - MEIO_FIO + desloca) % PEDRA == PEDRA - 1 or y % PEDRA == PEDRA - 1
-                if rejunte:
-                    ajuste += REJUNTE * (0.6 if base is PRETA else 1.0)
-                cor = [c + ajuste for c in base]
-            pixels[k : k + 3] = [_limita(c) for c in cor]
+            ajuste = (fbm(mancha, u, v) - 0.5) * 2 * MANCHA
+            tom, borda = _pedra_em(pedras, x + 0.5, y + 0.5)
+            ajuste += (tom - 0.5) * 2 * PEDRA_VARIA
+            if borda < 0.12:
+                ajuste += REJUNTE
+            if pingo[y // 2][x // 2] < PINGO[0]:
+                ajuste += PINGO[1]
+            pixels[k : k + 3] = [_limita(c + ajuste) for c in PEDRA]
     return pixels
 
 

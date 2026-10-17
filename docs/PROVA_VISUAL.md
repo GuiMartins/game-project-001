@@ -54,7 +54,7 @@ O que **não** entra, e por quê:
 | Animação do ator | Uma pose parada já responde "lê como digitalizado?". A cadência de 12 fps entra na P5 só se a pose passar |
 | Rivais com arte própria | Mesmo rig, paleta trocada. Se a troca de paleta falhar, isso aparece na P5 |
 | Menu, resultado, pausa | Já existem e não estão em questão |
-| Noite, chuva, asfalto molhado | Outro sistema de luz inteiro |
+| Chuva, asfalto molhado | Outro sistema de luz inteiro. A noite entrou depois, fora da prova (ver `DIRECAO_VISUAL.md`) |
 | Áudio | Metade do impacto, e assunto de outro documento |
 | Otimização | Medir sim, otimizar não. Otimizar antes de saber se presta é gastar duas vezes |
 
@@ -133,7 +133,7 @@ pelo pós-processamento.
 | --- | --- | --- | --- |
 | `entregador.glb` | 800–1500 tris | glTF binário | Piloto + moto + bag, **uma pose parada**. Sem rig na prova |
 | `entregador_albedo.png` | 256×256 | RGB | Pintado, não fotografado. A "cara de foto" vem da luz e do LUT |
-| `entregador_mascara.png` | 256×256 | RGB | R = bag, G = jaqueta, B = moto. É a troca de paleta dos rivais |
+| `entregador_mascara.png` | 256×256 | RGB | R = bag, G = camiseta, B = moto. É a troca de paleta dos rivais |
 
 Se a rota A for escolhida em vez desta, o manifesto muda para dois atlas de
 4096×4096 (albedo e normal) mais a máscara, saídos do lote do Blender — e a
@@ -159,13 +159,12 @@ uma grande para número (velocidade, posição) e uma pequena para legenda.
 | `docs/referencias/*.png` | **As quatro imagens entram no repositório.** A prova compara contra elas; comparação contra arquivo que mora no chat de alguém não é reproduzível |
 | `docs/referencias/video_01.mp4` | A referência em movimento: 6 s de corrida, com câmera, inclinação, trânsito e HUD medidos quadro a quadro em [REFERENCIA_VIDEO.md](REFERENCIA_VIDEO.md) |
 
-**Pendente, e é a única linha do manifesto que não pode ser produzida por quem
-executa o plano:** as quatro imagens chegaram anexadas numa conversa, não como
-arquivo no disco. Elas precisam ser salvas em `docs/referencias/` por quem as
-tem. Até isso acontecer, a P9 não tem contra o quê comparar — e o critério de
-pronto deste plano inteiro depende delas.
+**Entregue em 12/10/2026 (V01 do backlog visual):** as quatro imagens chegaram
+anexadas numa conversa, não como arquivo no disco, e foram as últimas peças do
+manifesto a entrar, por só quem as tinha poder produzi-las. Agora a P9 tem
+contra o quê comparar.
 
-Nomear `01_centro.png`, `02_praca_maua.png`, `03_viaduto.png`,
+Nomeadas `01_centro.png`, `02_praca_maua.png`, `03_viaduto.png`,
 `04_vertical.png`, para que o texto possa citar uma imagem específica sem
 ambiguidade.
 
@@ -410,12 +409,16 @@ favor da prova:
 
 - **Não é pose parada.** A pose é lida do estado da física a cada passo: roda,
   guidão, joelho, pé no chão e tombo.
-- **A máscara troca mais que a bag.** Pinta também a moto e a jaqueta, uma cor
+- **A máscara troca mais que a bag.** Pinta também a moto e a camiseta, uma cor
   por corredor.
 
 O que é desta tarefa continua aberto: a cadência travada em 12 fps não existe,
 e o aceite — julgar rodando — espera o resto da prova (luz, paleta) para valer.
 O como está em `docs/PROTOTIPO.md`, seção *O entregador*.
+
+**Estado (14/10/2026):** a cadência travada existe desde a V22 do
+`BACKLOG_VISUAL.md` (slider `ator_cadencia` no F3), travada em 12 por
+default, decidido jogando.
 
 ### P6 — Partículas
 
@@ -444,6 +447,10 @@ Redesenhar para 640×360 seguindo o vocabulário das referências: legenda
 pequena amarela, número grande branco, contorno duro, barra segmentada.
 
 *Aceite:* legível a 640×360 sobre asfalto claro, que é o pior fundo.
+
+**Estado (08/10/2026):** feito na V25 do `BACKLOG_VISUAL.md`. Sem asset: a
+fonte é uma tabela de glifos em `scripts/fonte_hud.gd`, rasterizada na
+largada com contorno, sombra e degradê.
 
 ### P9 — O veredito
 

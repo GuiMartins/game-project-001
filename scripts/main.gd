@@ -1,19 +1,54 @@
 extends Node
 ## Pipeline de render e teclas globais.
 ##
-## O look pixel sai de um SubViewport de 640x360 com upscale INTEIRO de 2x pra
-## 1280x720. Inteiro importa: 2.5x deixa pixel de tamanhos diferentes na mesma
-## tela e o serrilhado fica sujo em vez de proposital. A janela escala o resto
-## (ver `scale_mode` no `project.godot`): 1920x1080 da 3x por pixel, exato.
+## O look pixel sai de um SubViewport pequeno com upscale INTEIRO. Inteiro
+## importa: 2.5x deixa pixel de tamanhos diferentes na mesma tela e o
+## serrilhado fica sujo em vez de proposital. A janela escala o resto (ver
+## `scale_mode` no `project.godot`). Em tamanho que nao fecha inteiro, o
+## `ampliacao.gdshader` segura o tremor.
 
-## 1280x720 / 2 = 640x360 exato. O SubViewportContainer faz a conta sozinho
-## via stretch_shrink - setar sub_viewport.size na mao nao funciona com stretch
-## ligado, o container sobrescreve.
+## O viewport base do projeto e 1920x1080, e o SubViewportContainer divide por
+## `stretch_shrink` - setar sub_viewport.size na mao nao funciona com stretch
+## ligado, o container sobrescreve. Shrink 3 da 640x360, o mundo que todas as
+## medidas e referencias usam; shrink 2 da 960x540, para tela grande.
 ##
 ## Era 4 (320x180). Subiu na P1 da prova visual: a 320x180 o piloto tem uns
 ## 37 px de altura no talo, e nao cabe nele o que faz um ator ler como foto em
 ## vez de boneco. A conta esta no `docs/DIRECAO_VISUAL.md`.
-const PIXEL_SHRINK: int = 2
+const SHRINK_BAIXA: int = 3
+const SHRINK_ALTA: int = 2
+## A partir de que altura de janela, em pixels, a resolucao automatica passa
+## para a alta. 640x360 em 1440p ja e 4x por pixel, mas em 4K sao 6x: o pixel
+## que em 1080p e "look" vira borrao de proposito de perto. 1440p fica no
+## baixo para a janela de 1080p, a mais comum, nao ser a unica a ter o look.
+const ALTURA_DA_ALTA: int = 1440
+## O que o menu percorre: 0 e automatico (pela altura da janela), 1 e a baixa,
+## 2 e a alta.
+const RESOLUCOES: Array[String] = ["AUTO", "360P", "540P"]
+
+## Onde a moto escolhida no menu fica guardada entre uma sessao e outra. Num
+## arquivo so dela, e nao no `tuning.tres`: o tuning e o que o F3 salva quando
+## alguem aperta Salvar, e escolher moto nao e mexer em slider.
+const MOTO_SALVA: String = "user://moto.cfg"
+## Tela cheia sobrevive ao fechar o jogo, no mesmo arquivo da moto: e escolha
+## de quem joga, como ela, e nao slider de feel.
+const SECAO_TELA: String = "tela"
+## As chaves do visual que o menu liga e desliga, gravadas na secao `visual`
+## do mesmo arquivo. Tudo ligado e o jogo como ele e: desligar e para comparar,
+## e o banco de provas, que nao le o arquivo, mede sempre o jogo inteiro.
+const VISUAL: Array[String] = [
+	"pixel", "paleta", "msaa", "cor", "sombra", "neblina", "brilho", "borrao"
+]
+## Os nomes delas no menu, na mesma ordem.
+const NOMES_VISUAL: Array[String] = [
+	"PIXEL", "PALETA", "ANTISSERRILHO", "COR DO DIA", "SOMBRA", "NEBLINA", "BRILHO", "BORRAO"
+]
+## As cadencias que as setas do menu percorrem, em poses por segundo; 0 e liso.
+## O F3 chega em qualquer uma de 0 a 30; o menu fica nas que valem comparar.
+const CADENCIAS: Array[int] = [0, 24, 15, 12, 8]
+## Passo das setas na linha do transito: de um em um, ir de 25 a 0 sao 25
+## toques.
+const PASSO_TRANSITO: int = 5
 
 var sub_viewport: SubViewport
 var container: SubViewportContainer
@@ -26,7 +61,15 @@ var world_tuning: WorldTuning
 ## De onde os valores vieram, pro relatorio do banco de provas dizer.
 var tuning_source: String = ""
 
-var _pixel_mode: bool = true
+## Cada chave de `VISUAL`, ligada ou nao.
+var _visual: Dictionary[String, bool] = {}
+var _paleta: CanvasItem
+## Indice em `RESOLUCOES`.
+var _resolucao: int = 0
+## Se a moto escolhida e lida e gravada no user://. Desligado no banco de
+## provas e na prova visual, pelo mesmo motivo do tuning: medida que depende
+## de qual moto alguem escolheu ontem nao compara com nada.
+var _moto_salva: bool = false
 
 
 func _ready() -> void:
@@ -50,35 +93,75 @@ func _ready() -> void:
 	container.name = "PixelPipeline"
 	container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	container.stretch = true
-	container.stretch_shrink = PIXEL_SHRINK
-	container.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	container.stretch_shrink = SHRINK_BAIXA
+	## Linear, e nao nearest: quem escolhe onde ler e o `ampliacao.gdshader`,
+	## que faz nearest no miolo do pixel e deixa o filtro misturar so a costura.
+	## Nearest puro em escala quebrada (tela cheia fora de 1080p) faz a tela
+	## inteira tremer com a camera andando.
+	container.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	var ampliacao := ShaderMaterial.new()
+	ampliacao.shader = preload("res://scripts/ampliacao.gdshader")
+	container.material = ampliacao
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(container)
 
 	sub_viewport = SubViewport.new()
 	sub_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	sub_viewport.msaa_3d = Viewport.MSAA_DISABLED
+	## MSAA 4x, e nao desligado: a 640x360 sem antialiasing, faixa pintada
+	## de 32 cm, quina de predio e caixilho de janela ficam mais finos que um
+	## pixel ao longe e acendem e apagam conforme a camera anda - a tela inteira
+	## cintila em movimento. O MSAA so amostra a borda da geometria, entao o
+	## pixel continua grande e a textura continua sendo do material; e a
+	## 640x360 quatro amostras custam o mesmo que uma em 1280x720.
+	sub_viewport.msaa_3d = Viewport.MSAA_4X
 	sub_viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 	sub_viewport.handle_input_locally = false
 	container.add_child(sub_viewport)
 
-	# A cor de cada carro do transito sai do sorteio global, e nao da semente
-	# do mundo. Semear o global aqui, antes de o mundo nascer, fixa a cor sem
-	# mexer na sequencia da semente - que e de onde saem pista e transito, e
-	# mexer nela mudaria todo numero do banco de provas.
-	if medindo:
-		seed(World.SEMENTE)
 	world = World.new()
 	world.name = "World"
 	sub_viewport.add_child(world)
 	world.setup(tuning, world_tuning)
+	# A corrida anoitece, mas medida nao: banco de provas, shots e prova
+	# fotografam o meio-dia, salvo `--hora=X` / `RUSHFOOD_HORA` pedindo outra
+	# hora (0 e meio-dia, 1 e noite). Sem isto o quadro dependeria de quanto a
+	# moto andou ate a captura, e "regrediu" e "estava mais escuro" seriam a
+	# mesma coisa.
+	var hora := _hora_pedida(args)
+	if medindo or hora >= 0.0:
+		world.relogio.fixar(maxf(hora, 0.0))
+	_moto_salva = use_saved
+	if _moto_salva:
+		world.player.usar_modelo(_le_moto())
+		world_tuning.ator_sprite = int(_le_config("jogador", "ator", world_tuning.ator_sprite))
+		world_tuning.ator_cadencia = int(
+			_le_config("jogador", "cadencia", world_tuning.ator_cadencia)
+		)
+		world_tuning.rival_count = int(_le_config("jogador", "rivais", world_tuning.rival_count))
+		world_tuning.traffic_count = int(
+			_le_config("jogador", "transito", world_tuning.traffic_count)
+		)
+		world.aplica_ator()
+		# So fora das medidas: prova e shots fotografam a janela no tamanho do
+		# `project.godot`, e tela cheia mudaria o quadro que eles comparam.
+		if _le_config(SECAO_TELA, "cheia", false):
+			_aplica_tela_cheia(true)
 
+	_resolucao = _resolucao_pedida(args)
+	if _resolucao < 0:
+		# Medida fica sempre em 640x360 (as referencias e os baselines sao
+		# dela); jogando, vale o que o jogador escolheu.
+		_resolucao = int(_le_config("visual", "resolucao", 0)) if _moto_salva else 1
+	get_window().size_changed.connect(_aplica_visual)
 	_monta_paleta()
+	for chave in VISUAL:
+		_visual[chave] = true if not _moto_salva else bool(_le_config("visual", chave, true))
+	_aplica_visual()
 
 	hud = Hud.new()
 	hud.name = "Hud"
 	sub_viewport.add_child(hud)
-	hud.bind(world.run, world.player)
+	hud.bind(world.run, world.player, world.track, world.rivals)
 
 	world.event_logged.connect(hud.show_event)
 	world.run_finished.connect(_on_run_finished)
@@ -86,11 +169,8 @@ func _ready() -> void:
 	fluxo = RaceFlow.new()
 	fluxo.name = "RaceFlow"
 	sub_viewport.add_child(fluxo)
-	fluxo.descreve_pixel = func() -> String: return "LIGADO" if _pixel_mode else "DESLIGADO"
-	fluxo.descreve_camera = func() -> String: return world.camera.mode_name()
+	_monta_opcoes()
 	fluxo.corrida_pedida.connect(_restart)
-	fluxo.pixel_alternado.connect(_toggle_pixel)
-	fluxo.camera_alternada.connect(world.camera.cycle_mode)
 	fluxo.tela_mudou.connect(_on_tela_mudou)
 
 	tuning_panel = TuningPanel.new()
@@ -117,6 +197,48 @@ func _ready() -> void:
 		prova.call("setup", self)
 
 
+## A hora pedida por `--hora=X` ou `RUSHFOOD_HORA`, ou -1 se ninguem pediu.
+static func _hora_pedida(args: PackedStringArray) -> float:
+	var texto := OS.get_environment("RUSHFOOD_HORA")
+	for arg in args:
+		if arg.begins_with("--hora="):
+			texto = arg.trim_prefix("--hora=")
+	return texto.to_float() if texto.is_valid_float() else -1.0
+
+
+## `--resolucao=360|540` (ou `RUSHFOOD_RESOLUCAO`) como indice de `RESOLUCOES`,
+## ou -1 se ninguem pediu. Existe para a prova e o shots fotografarem a alta.
+static func _resolucao_pedida(args: PackedStringArray) -> int:
+	var texto := OS.get_environment("RUSHFOOD_RESOLUCAO")
+	for arg in args:
+		if arg.begins_with("--resolucao="):
+			texto = arg.trim_prefix("--resolucao=")
+	match texto:
+		"360":
+			return 1
+		"540":
+			return 2
+	return -1
+
+
+## Quanto o container divide o viewport base. Com o pixel desligado e 1: o
+## mundo na resolucao do viewport base inteiro, para comparar.
+func _shrink() -> int:
+	if not _visual["pixel"]:
+		return 1
+	var alta := _resolucao == 2
+	if _resolucao == 0:
+		alta = get_window().size.y >= ALTURA_DA_ALTA
+	return SHRINK_ALTA if alta else SHRINK_BAIXA
+
+
+func _trocar_resolucao(passo: int) -> void:
+	_resolucao = posmod(_resolucao + passo, RESOLUCOES.size())
+	_aplica_visual()
+	if _moto_salva:
+		_grava_config("visual", "resolucao", _resolucao)
+
+
 ## O passe de quantizacao com dither (`paleta.gdshader`): o ultimo do mundo.
 ##
 ## Um ColorRect que le a tela ja desenhada, numa camada acima do 3D e abaixo da
@@ -135,19 +257,88 @@ func _monta_paleta() -> void:
 	material.shader = preload("res://scripts/paleta.gdshader")
 	tela.material = material
 	camada.add_child(tela)
+	_paleta = tela
 
 
-func _apply_pixel_mode() -> void:
-	container.stretch_shrink = PIXEL_SHRINK if _pixel_mode else 1
+## As linhas de opcao do menu, em duas colunas: o que muda a corrida e o que
+## muda so o visual. A ordem aqui e a ordem na tela.
+func _monta_opcoes() -> void:
+	fluxo.opcao("CORRIDA", "MOTO", _nome_da_moto, _trocar_moto)
+	fluxo.opcao(
+		"CORRIDA",
+		"PERSONAGENS",
+		func() -> String: return "SPRITE" if world_tuning.ator_sprite == 1 else "3D",
+		func(_passo: int) -> void: _trocar_ator()
+	)
+	fluxo.opcao("CORRIDA", "ANIMACAO", _nome_da_cadencia, _trocar_cadencia)
+	fluxo.opcao("CORRIDA", "CAMERA", world.camera.mode_name, _trocar_camera)
+	fluxo.opcao(
+		"CORRIDA",
+		"RIVAIS",
+		func() -> String: return str(world_tuning.rival_count),
+		func(passo: int) -> void: _ajusta("rival_count", "rivais", passo, 12)
+	)
+	fluxo.opcao(
+		"CORRIDA",
+		"TRANSITO",
+		func() -> String: return str(world_tuning.traffic_count),
+		func(passo: int) -> void: _ajusta("traffic_count", "transito", passo * PASSO_TRANSITO, 120)
+	)
+	fluxo.opcao(
+		"CORRIDA",
+		"TELA CHEIA",
+		func() -> String: return "SIM" if _tela_cheia() else "NAO",
+		func(_passo: int) -> void: _alterna_tela_cheia()
+	)
+	fluxo.opcao(
+		"VISUAL", "RESOLUCAO", func() -> String: return RESOLUCOES[_resolucao], _trocar_resolucao
+	)
+	for i in VISUAL.size():
+		var chave := VISUAL[i]
+		fluxo.opcao(
+			"VISUAL",
+			NOMES_VISUAL[i],
+			func() -> String: return "SIM" if _visual[chave] else "NAO",
+			func(_passo: int) -> void: _alterna_visual(chave)
+		)
+
+
+## Empurra o `_visual` para quem desenha. Cada chave e um interruptor so, sem
+## mexer no numero que o F3 ajusta: desligar o brilho e religar devolve o
+## brilho que estava.
+func _aplica_visual() -> void:
+	container.stretch_shrink = _shrink()
+	_paleta.visible = _visual["paleta"]
+	sub_viewport.msaa_3d = Viewport.MSAA_4X if _visual["msaa"] else Viewport.MSAA_DISABLED
+	world.ambiente.adjustment_enabled = _visual["cor"]
+	world.sol.shadow_enabled = _visual["sombra"]
+	world.ambiente.fog_enabled = _visual["neblina"]
+	world.ambiente.glow_enabled = _visual["brilho"]
+	world.borrao.visible = _visual["borrao"]
+
+
+func _alterna_visual(chave: String) -> void:
+	_visual[chave] = not _visual[chave]
+	_aplica_visual()
+	if _moto_salva:
+		_grava_config("visual", chave, _visual[chave])
 
 
 func _toggle_pixel() -> void:
-	_pixel_mode = not _pixel_mode
-	_apply_pixel_mode()
-	hud.show_event("pixel %s" % ("ligado" if _pixel_mode else "desligado"), Color(0.7, 0.9, 1.0))
+	_alterna_visual("pixel")
+	hud.show_event(
+		"pixel %s" % ("ligado" if _visual["pixel"] else "desligado"), Color(0.7, 0.9, 1.0)
+	)
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# O mouse antes do filtro de tecla apertada: passar por cima seleciona, e
+	# movimento nao e "apertado". A conta leva o ponto da janela para o
+	# SubViewport, onde o menu mora.
+	if event is InputEventMouse:
+		var na_janela := (event as InputEventMouse).position - container.global_position
+		fluxo.apontar(event, na_janela / container.stretch_shrink)
+		return
 	if not event.is_pressed() or event.is_echo():
 		return
 	# O fluxo tem a primeira palavra: no menu, ENTER e seta nao sao do jogo.
@@ -157,6 +348,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_toggle_pixel()
 	elif event.is_action("debug_camera_cycle"):
 		world.camera.cycle_mode()
+	elif event.is_action("tela_cheia"):
+		_alterna_tela_cheia()
 	elif event.is_action("debug_tuning_panel"):
 		tuning_panel.toggle()
 	elif event.is_action("debug_restart") and fluxo.tela == RaceFlow.Tela.CORRIDA:
@@ -183,7 +376,112 @@ func _on_tela_mudou(tela: int) -> void:
 	hud.visible = correndo
 
 
+func _trocar_moto(passo: int) -> void:
+	var total := Entregador.CENAS.size()
+	var nova := posmod(world.player.modelo() + passo, total)
+	world.player.usar_modelo(nova)
+	if not _moto_salva:
+		return
+	_grava_config("jogador", "moto", nova)
+
+
+## O menu e o slider do F3 mexem no mesmo numero: o que um mostra, o outro
+## mostra. A escolha do menu fica no arquivo da moto, que e escolha de quem
+## joga; o slider so fica se alguem salvar o painel.
+func _trocar_ator() -> void:
+	world_tuning.ator_sprite = 1 - world_tuning.ator_sprite
+	# Na hora, e nao no proximo quadro do mundo: no menu o mundo esta
+	# congelado, e a troca e para ser vista ali, na moto parada na largada.
+	world.aplica_ator()
+	if _moto_salva:
+		_grava_config("jogador", "ator", world_tuning.ator_sprite)
+
+
+func _nome_da_moto() -> String:
+	return Entregador.NOMES[world.player.modelo()]
+
+
+func _nome_da_cadencia() -> String:
+	var hz := world_tuning.ator_cadencia
+	return "LISA" if hz <= 0 else "%d FPS" % hz
+
+
+## Anda pela lista `CADENCIAS`. Um valor fora dela, vindo do F3, entra na
+## lista pela vizinha mais proxima no sentido da seta.
+func _trocar_cadencia(passo: int) -> void:
+	var i := CADENCIAS.find(world_tuning.ator_cadencia)
+	if i < 0:
+		i = 0
+		for k in CADENCIAS.size():
+			if (
+				absi(CADENCIAS[k] - world_tuning.ator_cadencia)
+				< absi(CADENCIAS[i] - world_tuning.ator_cadencia)
+			):
+				i = k
+	else:
+		i = posmod(i + passo, CADENCIAS.size())
+	world_tuning.ator_cadencia = CADENCIAS[i]
+	world.aplica_ator()
+	if _moto_salva:
+		_grava_config("jogador", "cadencia", world_tuning.ator_cadencia)
+
+
+func _trocar_camera(passo: int) -> void:
+	# A camera so sabe andar para a frente; para tras e dar a volta.
+	for _i in posmod(passo, ChaseCamera.Mode.size()):
+		world.camera.cycle_mode()
+
+
+## Soma `passo` a um contador do `world_tuning`, entre 0 e `maximo`. O mundo
+## reconcilia a frota sozinho quando volta a andar (`_sync_traffic_pool`).
+func _ajusta(campo: String, chave: String, passo: int, maximo: int) -> void:
+	var novo := clampi(int(world_tuning.get(campo)) + passo, 0, maximo)
+	world_tuning.set(campo, novo)
+	if _moto_salva:
+		_grava_config("jogador", chave, novo)
+
+
+func _le_moto() -> int:
+	return int(_le_config("jogador", "moto", Entregador.Modelo.CG_160))
+
+
+func _tela_cheia() -> bool:
+	return DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+
+
+func _alterna_tela_cheia() -> void:
+	var cheia := not _tela_cheia()
+	_aplica_tela_cheia(cheia)
+	if _moto_salva:
+		_grava_config(SECAO_TELA, "cheia", cheia)
+
+
+## FULLSCREEN, e nao EXCLUSIVE_FULLSCREEN: no macOS o exclusivo tira o jogo
+## do Mission Control e trava o Cmd+Tab, e no Windows troca o modo de video do
+## monitor. A janela sem borda do tamanho da tela da o mesmo quadro.
+func _aplica_tela_cheia(cheia: bool) -> void:
+	DisplayServer.window_set_mode(
+		DisplayServer.WINDOW_MODE_FULLSCREEN if cheia else DisplayServer.WINDOW_MODE_WINDOWED
+	)
+
+
+## Le e grava no `MOTO_SALVA` preservando o resto do arquivo: gravar a moto
+## com um ConfigFile novo apagaria a tela cheia, e vice-versa.
+func _le_config(secao: String, chave: String, padrao: Variant) -> Variant:
+	var arquivo := ConfigFile.new()
+	if arquivo.load(MOTO_SALVA) != OK:
+		return padrao
+	return arquivo.get_value(secao, chave, padrao)
+
+
+func _grava_config(secao: String, chave: String, valor: Variant) -> void:
+	var arquivo := ConfigFile.new()
+	arquivo.load(MOTO_SALVA)
+	arquivo.set_value(secao, chave, valor)
+	arquivo.save(MOTO_SALVA)
+
+
 func _restart() -> void:
 	world.set_physics_process(true)
 	world.restart()
-	hud.bind(world.run, world.player)
+	hud.bind(world.run, world.player, world.track, world.rivals)

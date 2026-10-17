@@ -8,6 +8,7 @@ Três camadas, e nenhuma substitui a outra.
 | Banco de provas | `python tools/dev.py selftest` | ~110 s | A moto e o mundo rodando de verdade |
 | Baseline | (dentro do selftest) | — | O número *andou*, mesmo continuando na faixa jogável |
 | Regressão visual | `python tools/dev.py shots` | ~90 s | A tela ficou errada por inteiro |
+| Regressão visual de noite | `python tools/dev.py shots --noite` | ~90 s | A noite ficou errada por inteiro: tudo apagado, tudo aceso |
 
 ## Unitários (GdUnit4)
 
@@ -29,6 +30,14 @@ guidão, e a regressão visual só pega a tela errada por inteiro. Os casos são
 sinal (roda, tombo), alcance (pé no chão, mão na manopla com o guidão virado),
 direção (joelho que fecha com a velocidade) e a sincronia entre as cores de
 `Entregador` e a textura que o `arte/entregador.py` escreve.
+
+`test_carro.gd` faz o mesmo com os carros do trânsito: monta cada modelo na
+árvore e avança a pose na mão. Sinal (roda para a frente, nariz que mergulha
+na freada e sobe na arrancada, rolagem para fora da troca de faixa, volante
+virando para o lado da roda), alcance (mãos no aro com o volante virado,
+cabeça de quem dirige dentro da cabine), sentido (porta de carro abre para
+fora, folha de ônibus dobra para dentro), luz (lanterna na freada, alerta
+encostado) e as cores de fábrica contra a textura do `arte/carros.py`.
 
 E `test_chase_camera.gd` põe uma moto e a câmera na árvore para medir o giro
 da câmera, que o banco de provas nem vê — ele roda sem câmera. Inclinação
@@ -78,8 +87,8 @@ de coisa que faz alguém procurar variação no lugar errado.
 
 ### Fases
 
-Nove, nesta ordem: `aceleracao`, `freada`, `inclinacao`, `curva`, `soco`,
-`calcada`, `combate`, `corrida`, `disputa`.
+Dez, nesta ordem: `aceleracao`, `freada`, `inclinacao`, `curva`, `soco`,
+`calcada`, `combate`, `corrida`, `disputa`, `batida`.
 
 ```bash
 python tools/dev.py selftest --fase curva    # 32 s em vez de 110 s
@@ -114,11 +123,29 @@ redundantes: o baseline aponta que o número **andou**, o `_check` aponta que el
 andou para o lado que importa — e continua valendo depois que alguém atualizar o
 baseline, que é justamente quando uma regressão de agressividade passaria batida.
 
+`combate` mede o empurrão do soco do jogador no rival emparelhado, e **só
+enquanto ele cambaleia**: de volta a RACING, a IA dele volta a dirigir, e o que
+ele andar de lado dali em diante é perseguição. Já mediu errado duas vezes. Na
+primeira contava qualquer deslocamento e passava sem o soco acertar; na segunda
+o rival chegava caído das fases anteriores, o soco "acertava" sem empurrar, e
+os 3,3 m do baseline eram ele indo embora ao levantar. Mora em
+`scripts/selftest_combate.gd`, pelo mesmo limite de linhas da `batida`.
+
 `disputa` é a mais nova e a mais barata pelo que cobre: larga o grid a 260 m da
-chegada em vez de pagar os 3,2 km da rota, e é a única prova de que a corrida
+chegada em vez de pagar os 4 km da rota, e é a única prova de que a corrida
 **termina**. Além de medir a colocação final, ela confere que quem cruzou a
 linha antes do jogador está na frente dele no resultado — se a ordenação do
 pelotão quebrar, o jogo continua rodando e o placar passa a mentir em silêncio.
+
+`batida` é a última de propósito: ela mexe no trânsito e nos rivais à mão, e
+depois dela não sobra corrida para contaminar. Monta quatro batidas a 15 m, uma
+de cada vez, com o resto do mundo longe, e confere o desfecho de cada uma —
+traseira de carro lento a 72 km/h **quica**, carro parado a 126 km/h
+**derruba**, quina a 126 km/h **desvia** e traseira de moto a 126 km/h
+**quica**. A corrida solta conta quedas, mas não diz quais; foi olhando só a
+contagem que "toda batida derruba" passou despercebido. Mora em
+`scripts/selftest_batida.gd` porque o `selftest.gd` já encostava no limite de
+mil linhas do gdlint.
 
 ## Baseline
 
@@ -140,6 +167,30 @@ em enfeite.
 
 As medidas da última rodada ficam em `.dev/metricas.json` — é de lá que se
 copiam os valores novos.
+
+### Número por sistema
+
+Cada sistema é determinístico sozinho: a mesma máquina repete a corrida até a
+última casa. Entre sistemas, não. Seno e cosseno saem da libm de cada um, e o
+Linux arredonda diferente do macOS e do Windows. Quase sempre isso some, mas
+num contato longo da física (a moto raspando a lateral de um carro por vários
+quadros) 8 mm de diferença num quadro separam a corrida solta inteira. Foi o
+que aconteceu no PR das portas: macOS e Windows bateram com o baseline, e o
+Linux terminou 86 m à frente, nas duas rodadas.
+
+`valores_por_sistema` no `baseline.json` sobrepõe `valores` só no sistema que
+roda (`linux`, `macos`, `windows`). Afrouxar a tolerância resolveria também,
+mas afrouxaria nos três, e a regressão de verdade passaria calada junto.
+
+O número de um sistema que você não tem sai do CI: o `selftest` reprovado no CI
+imprime as medidas inteiras no log. Só entra o que diverge de verdade, e entrada
+que voltou a ficar igual a `valores` sai.
+
+Commit que só mexe em markdown e em `docs/` não roda as provas: o job
+`mudancas` do `ci.yml` olha o que mudou, e os jobs pesados pulam. Os checks
+obrigatórios continuam reportando (pulado conta como verde), então o PR de
+texto entra em um minuto. Qualquer outro arquivo, inclusive o próprio
+workflow, roda tudo.
 
 ## Onde **não** há rede
 
@@ -163,6 +214,10 @@ Saber disto faz parte do contrato. Nenhum destes é pego por nada automatizado:
   para o lado certo e que mão e pé chegam onde devem. Se o joelho abre o
   quanto devia, se o tronco deita o bastante e se o tombo lê como queda é
   olho, e foi conferido em captura, não em teste.
+- **"O carro convence?"** Os unitários provam o sentido de cada movimento —
+  roda, mola, porta, volante —, não a medida. Se o mergulho de 0,55° por m/s²
+  lê como freada a 20 m, se a rolagem anuncia a troca de faixa a tempo e se o
+  vidro deixa ver quem dirige sem virar buraco é olho, conferido em captura.
 - **"A corrida está disputada?"** O banco prova que ela termina e que o placar
   bate com a ordem de chegada. Se o pelotão está no ritmo certo é outra
   pergunta, e o piloto automático não serve de referência: ele faz uns 24 m/s
@@ -178,6 +233,13 @@ python tools/dev.py shots
 Roda o jogo **com tela** — e isso não é escolha, é limitação: em headless o
 viewport não renderiza e saem zero PNGs, sem erro nenhum. Por isso é um
 comando à parte, e no CI um job à parte com `xvfb`.
+
+**Feche o jogo antes.** Com uma janela do jogo aberta (`dev.py run`), a
+`prova` salvou dois quadros e parou ali, sem erro e sem sair: o processo fica
+vivo esperando um quadro que não vem, e quem roda com a saída num pipe só vê o
+comando não terminar. Visto na V14 com a `prova`; `shots` e `fps` passam pelo
+mesmo caminho de render com tela, então valem a mesma regra. Um Godot rodando
+`selftest` em outra worktree, headless, não atrapalha.
 
 Ele existe para pegar o que nenhuma medida de física pega: **a tela ficar
 errada por inteiro**. O caso registrado no `PROTOTIPO.md` é a pista saindo com
@@ -218,6 +280,11 @@ O ruído de CI, que é o que obrigou a tolerância de 20%, se mede lá.
 A medida mora em `scripts/medida_de_quadro.gd`, fora do banco: ele mede a moto,
 ela mede a tela.
 
+**A medida é do mundo, sem a HUD.** O pixel de HUD sai igual no quadro e no céu
+de referência, e contava como céu: a HUD de arcade (V25) sozinha subia a
+`fracao_ceu`. O banco esconde a HUD nos quadros medidos e salva o PNG no quadro
+seguinte, com ela de volta e o mundo congelado.
+
 A tolerância é larga (**20%**) de propósito: o CI roda em software rendering sem
 GPU contra um baseline gravado numa máquina com GPU, e — o que pesa mais — o
 instante do frame capturado flutua com a velocidade do render. Estreitar isso
@@ -255,6 +322,31 @@ Consequência prática: **inserir fase antes da corrida obriga a regerar o
 baseline**, e a justificativa é essa. Não é regressão.
 
 
+## A noite
+
+A corrida anoitece, mas toda medida roda ao meio-dia: o `main.gd` trava a hora
+quando mede. O que cobre a noite:
+
+- `tests/unit/test_hora.gd` confere que o meio-dia da `Hora` é o de antes,
+  número por número. É o que segura o banco de provas e os shots.
+- `tests/unit/test_noite.gd` confere que cada lâmpada é achada e aponta para o
+  lugar certo: a cor do farol na paleta da moto, a marca do farol do carro, o
+  segundo UV das janelas.
+- `python tools/dev.py shots --noite` mede a corrida de noite contra o
+  `tests/baseline_visual_noite.json`. Baseline próprio, porque luminância de
+  noite não tem nada a ver com a do dia.
+
+### O `fps` não é determinístico
+
+O `dev.py fps` larga direto na corrida solta, com tela e sem vsync, e os
+primeiros quadros pagam a compilação de shader: passam de 130 ms. Acima de oito
+passos de física por quadro o Godot descarta o resto, e quantos ele descarta
+depende de quanto o quadro demorou. Então a corrida do `fps` muda com qualquer
+coisa que mexa no tempo de carga, mesmo sem tocar em física: na noite ela
+passou a ter dois carros entrando um no outro, numa corrida que o `selftest`
+headless não faz. O `selftest` segue determinístico, e é ele o portão. O que o
+`fps` acusa de trânsito é pista para investigar, não regressão.
+
 ## Variáveis de ambiente
 
 | Variável | |
@@ -262,4 +354,5 @@ baseline**, e a justificativa é essa. Não é regressão.
 | `RUSHFOOD_SELFTEST_TRACE=1` | Telemetria da corrida solta, segundo a segundo |
 | `RUSHFOOD_SELFTEST_SHOTS=<pasta>` | Despeja PNGs durante a corrida (precisa de display) |
 | `RUSHFOOD_SELFTEST_METRICS=<arquivo>` | Grava as medidas em JSON. O `dev.py` já faz isso. |
+| `RUSHFOOD_HORA=<0 a 1>` | Trava a hora (0 meio-dia, 1 noite), mesmo medindo. O `--hora` do `dev.py` usa isto. |
 | `GODOT_BIN=<caminho>` | Usa outro binário do Godot em vez do gerenciado |

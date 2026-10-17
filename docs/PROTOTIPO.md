@@ -21,9 +21,9 @@ Os cinco pilares e onde cada um vive no código:
 
 **Mundo 3D real, não pseudo-3D por scanlines.** A pista é uma `Curve3D` gerada
 com curvatura e inclinação sorteadas (`scripts/road_track.gd`); ladeira e curva
-saem de graça. Confirmado na prática: o salto na crista da ladeira não tem uma
-linha de código de rampa — cai fora do fato de a moto herdar a subida da pista
-e a gravidade cuidar do resto.
+saem de graça. O salto na crista da ladeira não tem uma linha de código de
+rampa — cai fora do fato de a moto herdar a subida da pista e a gravidade
+cuidar do resto.
 
 **O chão não tem colisor.** Altura e direção são amostradas analiticamente da
 curva. A 50 m/s um `CharacterBody3D` atravessaria um trimesh de pista. Colisor
@@ -34,11 +34,13 @@ cada um sabe seu próprio offset e nunca precisa se projetar. Só a moto do
 jogador faz a projeção, e mesmo assim com busca local em janela (`RoadTrack.project`),
 não com `get_closest_offset()`, que varre todos os pontos bakeados.
 
-**640×360 com upscale inteiro de 2×.** Via `SubViewportContainer.stretch_shrink = 2`,
-e a janela escalando o resto em modo fracionário: 1920×1080 dá 3× por pixel,
-exato. O modo `integer` foi tentado e saiu — ele arredonda sobre o viewport
-base de 1280×720, e em 1920×1080 desenhava o jogo em metade da janela. Setar `SubViewport.size` na mão **não funciona** com `stretch`
-ligado — o container sobrescreve e você renderiza em 1280×720 achando que está
+**640×360 com upscale inteiro de 3×.** Via `SubViewportContainer.stretch_shrink = 3`
+sobre o viewport base de 1920×1080, e a janela escalando o resto em modo
+fracionário: 1920×1080 dá 3× por pixel, exato. Janela de 1440p ou mais
+renderiza em 960×540 (`stretch_shrink = 2`, V30), só jogando: a medida fica
+sempre em 640×360. O modo `integer` foi tentado e saiu — ele arredonda sobre
+o viewport base, e uma janela menor que ele desenhava o jogo em metade dela. Setar `SubViewport.size` na mão **não funciona** com `stretch`
+ligado — o container sobrescreve e você renderiza no viewport base achando que está
 em 640×360. Foi 320×180 (`stretch_shrink = 4`) até a P1 da prova visual: a
 320×180 o piloto tem uns 37 px no talo, e não cabe nele o que faz um ator ler
 como foto. A conta está no `DIRECAO_VISUAL.md`. A HUD continua escrita em
@@ -52,9 +54,12 @@ A HUD mora dentro do SubViewport de propósito: HUD nítida sobre mundo pixelado
 
 Isso é a decisão de design mais importante do arquivo. Você precisa se
 comprometer com um lado antes de virar, e precisa endireitar antes de flicar
-pro outro. Duas taxas separadas (`lean_rate` pra deitar, `lean_return_rate` pra
-levantar) fazem a moto cair fácil pro lado e voltar sozinha. É daí que sai o
-peso.
+pro outro. A inclinação é uma mola (ângulo e velocidade angular), e são duas:
+a de deitar (`lean_freq`) é amortecida no crítico e chega ao pedido sem passar
+dele; a de levantar (`lean_return_freq`, `lean_return_damping`) é mais rápida
+e passa do zero, deitando uns graus pro outro lado antes de assentar. É daí
+que sai o peso: com `lerp` a troca de lado lia como ponteiro voltando ao
+centro.
 
 Em cima disso:
 
@@ -159,8 +164,9 @@ houve. Hoje tem aviso na HUD.
 
 Deliberadamente fora do escopo até o feel fechar:
 
-- **Arte do mundo.** Prédio, carro, poste e pista são caixa. A exceção é o
-  entregador, que é modelo 3D (ver *O entregador*). Sprite pré-renderizado,
+- **Arte do mundo.** Poste e pista são caixa. As exceções são o entregador e
+  os carros, que são modelo 3D (ver *O entregador* e *Os carros*), e os
+  prédios. Sprite pré-renderizado,
   se entrar no cenário, entra como `Sprite3D` com `billboard = Y-Billboard`,
   `texture_filter = Nearest` e **`alpha_cut = Discard` em todos** — sem isso o
   depth sorting quebra e o sprite some atrás do carro errado.
@@ -171,7 +177,8 @@ Deliberadamente fora do escopo até o feel fechar:
   acha o commit que os tirou, e com ele o estado completo de cada um.
 - Áudio, progressão, upgrade de moto.
 - Shader de mundo curvo ("SEGA curved world").
-- Chuva, noite com neon no asfalto molhado.
+- Chuva e neon no asfalto molhado. A noite em si entrou: a corrida anoitece
+  (ver *A corrida que anoitece* no `DIRECAO_VISUAL.md`).
 
 ## A corrida
 
@@ -281,28 +288,35 @@ release não lê o README. O protótipo é exportado para as três plataformas
 justamente para alguém sentar e responder *"está gostoso?"* — e essa pessoa
 estava esbarrando na porta antes de chegar na pergunta.
 
-Quatro telas, em [`scripts/race_flow.gd`](../scripts/race_flow.gd):
+Três telas, em [`scripts/race_flow.gd`](../scripts/race_flow.gd):
 
 | Tela | O que faz |
 | --- | --- |
-| `MENU` | JOGAR / CONFIGURACOES / SAIR |
+| `MENU` | JOGAR, as opções em colunas por seção, PAINEL DE TUNING e SAIR |
 | `CORRIDA` | o jogo; o fluxo não desenha nada |
-| `CONFIGURACOES` | pixel, câmera e painel de tuning — os três atalhos de `F1`–`F3` |
 | `RESULTADO` | o placar de `RaceRun.summary()`, com CORRER DE NOVO e MENU |
 
 Quatro decisões que não são óbvias:
 
-**As configurações mostram o que existe, e nada além.** As três linhas são os
-três atalhos de debug que já existiam e que ninguém achava sem o README. Um
-slider de volume numa tela sem áudio seria menu de mentira, e menu de mentira é
-pior que menu nenhum.
+**O menu é uma página só, e as opções são as diferenças do projeto.** Era
+JOGAR / CONFIGURACOES / SAIR, com pixel, câmera e tela cheia numa segunda tela.
+Só que o uso real do menu virou comparar: pixel ou não, piloto 3D ou sprite,
+ator liso ou a 12 fps, sombra, borrão. Escondido numa segunda tela, cada
+comparação custava três teclas a mais. Agora cada opção é uma linha (`←` `→`
+mudam), registrada pelo `Main` com `RaceFlow.opcao(secao, nome, valor, muda)`:
+quem sabe o estado é quem descreve e quem muda. O menu não tem limite de
+linhas — com mais do que cabe, fonte e passo encolhem juntos e a seção quebra
+em mais uma coluna. As opções de VISUAL são interruptores, e não sliders: o
+número de cada passe continua no F3, e desligar e religar devolve o que
+estava. Tudo ligado é o jogo como ele é, e o banco de provas, que não lê o
+`user://`, mede sempre ele.
 
 **`ESC` no meio da corrida congela, e `CONTINUAR` devolve a mesma corrida.**
 Menu de pausa que larga tudo de novo apagaria a colocação de quem pausou
 faltando 200 m — e menu que faz isso é menu que ninguém abre. Por isso a
 primeira linha troca de **nome** (JOGAR ↔ CONTINUAR) e nunca de lugar: mexer no
 número de itens moveria o índice que `_escolher` usa, e SAIR passaria a morar
-onde CONFIGURACOES morava. É um bug que continua desenhando lindamente, e que
+onde o PAINEL morava. É um bug que continua desenhando lindamente, e que
 só aparece quando alguém fecha o jogo sem querer.
 
 **O mundo congela por `process_mode` no `World`, não nó a nó.** Uma linha
@@ -334,67 +348,242 @@ numa tela de 180 (a resolução da época; o layout da HUD ainda é escrito nela
 ## O entregador
 
 O contrato mandava arte para depois do feel, e o entregador entrou antes, por
-decisão de 30/09/2026 registrada no `CLAUDE.md`. O mundo continua de caixas; o
-que mudou é o ator. Moto e piloto são um modelo 3D low-poly de 1380 triângulos
+decisão de 30/09/2026 registrada no `CLAUDE.md`. O ator é uma **Honda CG 160**
+e quem pilota: modelo 3D de ~6.900 triângulos
 ([`assets/entregador/`](../assets/entregador)), gerado por script no Blender
 ([`arte/entregador.py`](../arte/entregador.py)) e posado a cada passo de
 física por [`scripts/entregador.gd`](../scripts/entregador.gd), no nó `Visual`
 de `player_bike.gd` e `rival_bike.gd`.
 
-Cinco decisões que não são óbvias:
+A CG porque é ela a moto de entrega brasileira: motor aletado, garfo
+telescópico, balança com dois amortecedores, protetor de perna e bagageiro. As
+medidas são da ficha da Titan (caster de 27°, aro 18, banco a 0,80 m); o entre
+eixos ficou em 1,32 m, e não 1,31, porque o `camera_garupa.gd` mede a partir
+do eixo traseiro em 0,66 m.
 
-**A pose sai do estado, não de clipe.** Quatro números por passo — velocidade,
-acelerador, esterço e se caiu — e o resto é conta: a roda gira na velocidade
-da moto, o joelho fecha conforme ela ganha velocidade, o tronco deita no gás,
-o pé esquerdo desce quando ela para abaixo de 1 m/s, e na queda a moto tomba
-para o lado em que estava inclinada. Clipe de animação desencontra da física
-no primeiro passo em que os dois discordam; pose lida do estado não tem como.
+A segunda moto é a **Honda XRE 300** ([`arte/xre300.py`](../arte/xre300.py)),
+a de quem entrega na rua esburacada: alta, aro 21 na frente e 18 atrás,
+paralama alto, asas no tanque, protetor de mão. Ela tem a **mesma árvore de
+nós** da CG, e é isso que faz toda a pose acima valer para as duas sem um
+`if` por modelo: o ator lê do próprio modelo o raio de cada roda e a altura de
+cada eixo. O mono Pro-Link ocupa o par `Amortecedor_E`/`Mola_E`, e o `_D` é
+vazio. O jogador escolhe a moto no menu (guardada em `user://moto.cfg`, que o
+banco de provas ignora); cada rival sorteia a sua uma vez, com semente
+derivada da dele. A escolha é **só visual** — a física não sabe qual moto está
+montada, e o baseline não se mexe. Moto com física própria é outra pergunta
+de feel, e fica para quando a primeira tiver resposta.
+
+A terceira é a **Honda PCX 160** ([`arte/pcx160.py`](../arte/pcx160.py)), a
+scooter do app: roda 14/13, carenagem inteira na cor da moto, escudo com farol
+em V, assoalho e piloto sentado reto. Mesma árvore de nós, com dois sentidos
+trocados: a `Balanca` é o **motor oscilante** (motor, variador e escapamento
+balançam com a roda), e a `Pedaleira` é o ponto do **assoalho** onde a bota
+apoia. Parada, ela deita 5°, menos que a CG: banco mais baixo, pé que chega
+no chão com o joelho dobrado.
+
+Oito decisões que não são óbvias:
+
+**A pose sai do estado, não de clipe.** Velocidade, acelerador, esterço,
+inclinação e se caiu, a cada passo — e o resto é conta: a roda gira na
+velocidade da moto, o joelho fecha conforme ela ganha velocidade, o tronco
+deita no gás, o pé esquerdo desce quando ela para abaixo de 1 m/s. Clipe de
+animação desencontra da física no primeiro passo em que os dois discordam;
+pose lida do estado não tem como. O que não é estado contínuo — o soco que
+saiu, a pancada que chegou — entra por evento (`socar`, `levar_golpe`), no
+mesmo passo em que o corpo abre a hitbox ou recebe o empurrão.
+
+**O ator mede o próprio movimento.** Aceleração longitudinal, vertical e da
+inclinação saem de diferenças finitas da velocidade, da altura e do ângulo,
+com filtro de 60 ms e teleporte (largada, respawn) descartado. Medir lá, e não
+receber do corpo, é o que deixa o jogador (com física) e o rival (paramétrico
+na curva) usarem o mesmo ator sem um caminho para cada.
+
+**As rodas nunca saem do chão; quem se mexe é o resto.** Dois números por
+passo — quanto a frente e a traseira afundam — vêm de molas de ~2 Hz puxadas
+pela freada, pela arrancada, pelo peso extra da curva (1/cos da inclinação) e
+pelo pouso. Daí o quanto a bainha corre no garfo e o ângulo da balança saem de
+conta, exata, para os eixos continuarem na altura de repouso; o corpo do
+amortecedor mira na mola, e a mola mira nele e encolhe. O mergulho passa por
+`tanh`: o freio do jogo é de 30 m/s², três vezes o de uma CG, e linear ele
+batia o garfo no batente a cada freada.
+
+**O tronco é uma massa presa por mola no quadril.** A freada joga ele para a
+frente, a arrancada para trás, o pouso para baixo, e a troca brusca de lado
+deixa ele para trás um instante (a aceleração da inclinação, na altura dos
+ombros). As mãos continuam na manopla pelo IK, então os cotovelos dobram e
+esticam sozinhos. A cabeça desfaz 35% da inclinação, procurando o horizonte, e
+olha para dentro da curva.
+
+**O soco tem o tempo da hitbox.** O braço do lado solta a manopla, arma na
+frente do peito durante `punch_windup`, abre para o lado na altura do capacete
+de quem está emparelhado em 60% de `punch_active` e volta para a manopla até o
+`punch_cooldown`. O tronco gira para trás armando e para o lado batendo, e a
+cabeça vira para o alvo antes de a mão sair: é o que diz para quem joga de que
+lado vem o golpe. Quem apanha joga o tronco com o empurrão, vira a cabeça para
+longe do punho e o guidão treme meio segundo.
+
+**Na queda o piloto larga a moto.** Ela tomba de lado em volta da lateral que
+bate no chão; ele sai com 40% da velocidade (até 9 m/s), dá cambalhota, quica,
+arrasta e assenta deitado — de costas ou de bruços, porque de lado o braço de
+baixo escorava o corpo meio metro acima do asfalto. O voo é no espaço do
+`Visual`, que anda com o corpo: os dois continuam deslizando depois de cair
+(o do jogador pelo que sobrou da batida, ver "A batida"), e o voo desconta a
+velocidade dele. O teto de 9 m/s
+é o que mantém o corpo na tela: a 25 m/s ele para a uns 12 m da moto.
 
 **Moto e piloto são árvores separadas, de peças rígidas.** Cada peça tem a
 origem na articulação e nenhuma rotação em repouso. Braço e perna são cadeias
-de dois ossos resolvidas por IK — é o que põe a mão na manopla quando o guidão
-vira e o pé no chão quando a moto para —, e o comprimento de cada osso é lido
-do próprio modelo. Não há rig nem skin: o que o jogo anima é transformação de
-nó.
+de dois ossos resolvidas por IK, e o comprimento de cada osso é lido do
+próprio modelo. O piloto é filho da raiz, e não da moto: montado, ele segue a
+massa suspensa por conta; caído, o voo é dele.
 
-**O `Visual` desceu para o chão.** Ele ficava no centro da cápsula de colisão,
-0,875 m acima do asfalto, e a moto inclinava em volta desse ponto. Com caixa
-não se via; com roda, nos 38° de fábrica o pneu escorregaria 54 cm para fora
-da curva. Agora a moto inclina em volta do pneu, e o tombo pivota na lateral que
-bate no chão — em volta do centro, meia moto afundaria no asfalto.
-
-**O tronco acompanha metade do esterço.** Devagar e com o guidão no batente, a
-manopla de fora sai do alcance do braço: o `test_entregador.gd` pegou a mão
-4 cm curta. Girar os ombros para o lado da curva é o que todo piloto faz, e é
-o que deixa o IK chegar. O guidão também vira pouco (20° parado, 4° a partir de
-50 km/h), porque no `PlayerBike` a curva sai da inclinação, e guidão girando
-muito em velocidade mentiria sobre isso.
-
-**Uma cor por corredor.** Bag e moto na cor, jaqueta num tom escuro dela,
-trocadas por shader com a máscara do modelo (R = bag, G = jaqueta, B =
-pintura). De longe, o que separa um entregador do outro é a mancha de cor, e
-"passei o amarelo" só funciona se o amarelo for amarelo da bag ao paralama. O
-jogador é laranja, como a bag do primeiro cubo.
+**O `Visual` mora no chão, e uma cor por corredor.** A moto inclina em volta
+do pneu, não do centro da cápsula (nos 38° de fábrica o pneu escorregaria 54 cm
+para fora da curva). Bag e moto vão na cor do corredor e a camiseta um tom
+abaixo dela, trocadas por shader com a máscara do modelo (R = bag, G =
+camiseta, B = pintura): de longe, o que separa um entregador do outro é a
+mancha de cor. O jogador é vermelho, como nas T-poses; foi laranja, como a
+bag do primeiro cubo, até a roupa da V21.
 
 ### O que está medido, e o que não está
 
-Os sete casos do `test_entregador.gd` cobrem o que a física não enxerga e que
+Os treze casos do `test_entregador.gd` cobrem o que a física não enxerga e que
 nasce de um sinal trocado: a roda girando para a frente, o pé no chão e de
 volta na pedaleira, as mãos nas manoplas com o guidão virado, o joelho que
-fecha, o tombo para o lado pedido sem o pé atravessar o asfalto e as cores de
-fábrica batendo com a textura. Com o erro plantado — roda de sinal invertido,
-cor da bag fora da textura — eles reprovam.
+fecha, as rodas que não saem do chão enquanto a moto afunda e levanta, o garfo
+que afunda e o capacete que vai para a frente na freada, a mola presa no
+amortecedor, o soco que sai do lado pedido e volta para a manopla, a pancada
+que joga o tronco com o empurrão, o tombo para o lado pedido, o arremesso para
+a frente sem nada atravessar o asfalto e as cores de fábrica batendo com a
+textura. Com o erro plantado — garfo correndo para o lado errado, sinal da
+freada, do soco ou da pancada invertido — eles reprovam.
 
 O banco de provas não andou: o ator não toca na física, e as medidas ficaram
-idênticas. O baseline visual foi regravado depois de olhar os frames —
-luminância +9,9%, céu +3,8%, famílias de cor −1,6% —, porque, mesmo dentro dos
-20% de tolerância, a mudança de propósito comia metade da margem de um teste
-cujo ruído medido chega a 13,5%.
+idênticas.
 
-O que **não** está feito: o piloto não se solta da moto na queda (os dois
-tombam juntos, embora o modelo já tenha as árvores separadas para isso), e a
-cadência travada da animação, que faria o ator ler como digitalizado em vez de
-3D, não existe.
+O que **não** está feito: o voo do piloto não sabe de carro nenhum (a 9 m/s ele pode atravessar o que
+estiver logo à frente) e o chão do voo é o plano do `Visual`, não a pista —
+numa ladeira o corpo afunda ou flutua alguns centímetros. A cadência travada
+da animação, que faria o ator ler como digitalizado em vez de 3D, também não
+existe.
+
+## O entregador em sprite (experimento)
+
+O Road Rash que é referência não tem ator 3D: o do Mega Drive é sprite
+desenhado, e o do 3DO, que é o look perseguido, é sprite digitalizado sobre
+pista de polígono. O modelo acima entrou antes da pergunta "e se fosse
+sprite?" ser testada, e o `DIRECAO_VISUAL.md` já apontava o risco dele: ler
+como "3D com filtro". Este experimento coloca as duas respostas na mesma
+pista.
+
+A linha PILOTO do menu (ou o slider `ator_sprite`, grupo Ator, no F3) troca
+todo corredor, ao vivo, por
+um quad de frente para a câmera com um quadro do atlas
+[`assets/sprites/entregador.png`](../assets/sprites). O atlas sai de quatro
+folhas geradas no Google Flow a partir de uma imagem de referência
+([`arte/flow/`](../arte/flow)), recortadas por
+[`arte/sprites_flow.gd`](../arte/sprites_flow.gd) (`python tools/dev.py
+sprites`): fundo verde fora, borda dura, todos os desenhos alinhados pelo pé
+do pneu traseiro e reduzidos, quadro a quadro, à mesma área de silhueta. A
+IA não desenha o piloto duas vezes no mesmo tamanho (os quadros deitados
+saíram 12% maiores que o reto, e a folha de combate veio com a câmera mais
+baixa), e igualado por folha ou por altura ele inchava a cada troca de
+quadro.
+
+O que o sprite mostra sai do mesmo estado do ator 3D, e por isso mora dentro
+do `Entregador` ([`scripts/ator_sprite.gd`](../scripts/ator_sprite.gd)):
+cinco quadros de inclinação, de 15 em 15 graus, e três de soco para cada lado.
+A cor do corredor entra no vermelho da bag e da camiseta. O modelo continua
+posado embaixo, sem aparecer na câmera e lançando a sombra, que um quad não
+tem como projetar direito.
+
+O que **não** está feito: o tombo (quem cai é o modelo 3D, por falta de
+quadro), a guinada da moto em relação à câmera (as folhas tentaram, e os
+ângulos saíram inconsistentes), o golpe recebido e a diferença entre as
+motos: XRE e PCX aparecem com o desenho da CG, só mais altas.
+
+## Os carros
+
+O trânsito saiu da caixa pelo mesmo motivo que o entregador: o que o carro
+mostra é o que o jogador lê para decidir se entra no corredor. São sete
+modelos ([`assets/carros/`](../assets/carros)), gerados por
+[`arte/carros.py`](../arte/carros.py) e posados a cada passo por
+[`scripts/carro.gd`](../scripts/carro.gd), filho de cada `TrafficCar`:
+
+| modelo | medida | na rua |
+| --- | --- | --- |
+| hatch de duas portas | 3,9 × 1,7 m | 22% |
+| sedã | 4,4 × 1,7 m | 22% |
+| SUV | 4,3 × 1,8 m | 15% |
+| táxi do Rio, amarelo com faixa azul e luminoso | 4,4 × 1,7 m | 15% |
+| ônibus urbano, porta dupla à direita | 12,2 × 2,5 m | 12% |
+| caminhão baú (VUC), cabine avançada e baú de alumínio | 6,3 × 2,2 m | 7% |
+| van de carga de teto alto | 5,4 × 2,05 m | 7% |
+
+O que se mexe, e por que cada um é aviso e não enfeite:
+
+- **Lanterna** acesa de dia, como no vídeo, e mais forte na freada — e parado
+  no trânsito, com o pé no freio. É o primeiro sinal de que o corredor da
+  frente vai fechar.
+- **Carroceria na mola.** Mergulha na freada, levanta na arrancada e rola para
+  fora na troca de faixa, com o balanço de uma suspensão de 1,3 Hz (o ônibus,
+  0,85 Hz, rola mais). Exagerada de propósito: 0,55° por m/s² contra uns 0,35
+  de verdade, porque o carro é visto de trás a 20 m.
+- **Guinada e esterço.** Na troca de faixa o nariz aponta para onde o carro
+  vai, as rodas da frente esterçam e o volante gira — com as mãos de quem
+  dirige indo junto, por IK, como o piloto na manopla. A seta acende durante a
+  troca, não antes: o trânsito daqui muda de faixa sem avisar, e a seta diz
+  "está vindo", não "vai vir".
+- **Pisca-alerta** no carro encostado, que é o único que abre porta. Não diz
+  qual vai abrir — nem todo encostado abre, e o lado continua sorteado.
+- **Porta de verdade.** Gira na dobradiça, passa um pouco do ponto e volta (o
+  tranco do limitador), e bate balançando a carroceria. O colisor da porta
+  segue a porta do modelo enquanto ela gira, e só liga depois de 15% da
+  abertura: a fresta não derruba ninguém. O ônibus abre as folhas para dentro,
+  e por isso não tem colisor de porta.
+- **Vidro e gente.** O vidro é transparente de frente e espelho de raspão
+  (`scripts/vidro.gdshader`), e dentro há banco, painel, motorista e às vezes
+  passageiro — no táxi, quase sempre, no banco de trás. Porta aberta mostra a
+  perna de quem dirige, e não um bloco.
+
+Três decisões que não são óbvias:
+
+**O colisor é a lataria.** A caixa de bater sai do AABB do modelo, e não de um
+número: o hatch bate 25 cm antes do sedã, o ônibus ocupa 12 m de faixa. As
+contas que foram afinadas para a caixa de 4,4 × 1,8 m do greybox — o vão de
+seguir do `path_clearance`, a janela da raspada, a folga da câmera de garupa —
+recebem o tamanho de cada carro como correção sobre aquele padrão, e a regra
+continua a mesma para todos.
+
+**O rival mira o vão de verdade, e conta a curva.** O corredor, que é o
+meio entre duas faixas, deixa de ser o meio do vão quando um dos vizinhos é
+largo: ao lado do ônibus o vão anda 18 cm, e o rival mira no meio dele
+(`World._meio_do_vao`), com 15 cm de sobra contados da lataria. E o carro é
+uma caixa reta numa pista curva: na curva mais fechada (78 m), a ponta do
+ônibus sai 24 cm da faixa, e essa margem entra como largura a mais na conta
+do rival. Antes disso o limiar era 1,6 m centro a centro, afinado para o
+carro de 1,8 m, e qualquer carro mais largo fechava o corredor na cabeça da
+IA. Medido em 20 sementes de 45 s, quedas de rival sozinho no trânsito por
+corrida: 1,65 nas caixas, 8,05 com os carros e esse limiar, 2,05 agora. O
+piloto automático do banco continua com a regra antiga: ele pilota uma moto
+de verdade e precisa da margem para o erro dela.
+
+Um colisor que seguisse a curva, em gomos, chegou a 1,70, e ficou de fora:
+com três shapes no mesmo corpo a moto recebe várias colisões do mesmo ônibus
+por quadro, numa ordem que muda de sistema para sistema, e o banco de provas
+do Linux mediu outra corrida.
+
+**Ninguém nasce dentro de ninguém.** Com caixa de 4,4 m e 5 m de espaçamento
+mínimo isso quase não acontecia, e quando acontecia o de trás freava até
+soltar. Com ônibus de 12 m e carro encostado, que nunca anda, virava um carro
+dentro do outro para sempre. O `World._desencosta` empurra para a frente quem
+nasceu em cima de outro, sem sorteio: o sorteio do mundo é o mesmo, só a
+posição anda.
+
+**O modelo sai de um sorteio à parte.** Cada carro tem um segundo gerador,
+semeado da semente dele, só para modelo, cor e quem está dentro. Tirar isso do
+gerador do carro mudaria a hora de cada troca de faixa e cada porta, e o
+banco de provas mediria outra corrida por causa de uma cor.
 
 ## A porta do carro
 
@@ -402,45 +591,80 @@ Porta só abre em **carro encostado**: parado de verdade (velocidade zero) e
 numa das duas faixas da ponta. Carro no fluxo nunca abre — porta abrindo a
 25 km/h no meio da pista é bug com cara de recurso.
 
-Duas coisas são sorteadas de propósito:
+**Ônibus encosta só na direita**, que é onde fica o ponto. Carro encosta nos
+dois lados. Ônibus parado na faixa da esquerda era parede de 12 m na faixa
+rápida, coisa que ônibus de verdade não faz.
 
-- **Nem todo encostado abre** (`door_chance`, 0.6). Se encostar fosse sinônimo
-  de porta, a faixa da ponta viraria regra decorada e o jogador aprenderia a
-  nunca chegar perto, em vez de calcular o risco.
-- **O lado é sorteado**, pista ou calçada. Porta previsível deixa de ser susto
-  e vira pedágio.
+A porta do encostado é de um de dois tipos, sorteado quando ele encosta:
 
-Medido em 120 s de simulação, 19 aberturas: nenhuma em carro em movimento,
-nenhuma fora das faixas da ponta, os dois lados usados. `parked_chance` (0.3)
-controla quantos carros encostam — é ele que decide se as faixas da ponta são
-uma aposta ou uma parede.
+- **Aberta de longe** (`door_open_chance`, 0.2). Abre fora de vista e fica
+  aberta. É obstáculo que se lê chegando: meia faixa fechada, parada. O lado é
+  sorteado, pista ou calçada.
+- **Na cara** (`door_ambush_chance`, 0.08). Abre uma vez quando o jogador está
+  a `door_ambush_time` (0,8 s) de alcançar o carro e até a faixa vizinha, do
+  lado em que ele está, e fecha 2 a 4 s depois. Tempo, e não distância: a
+  50 m/s, 20 m é meio segundo, e a 15 m/s é uma eternidade. Abaixo de 0,5 s
+  ela fica inevitável, e porta inevitável é tiro, não susto.
+
+Quando a moto pega a folha aberta, a porta cede para a frente além do batente
+(112°) e fica dobrada até o carro ser reciclado. A moto perde um pouco de
+velocidade e recebe o desvio curto da quina para fora do carro. A pancada na
+lataria continua seguindo as regras normais de raspada, quique e queda.
+
+O resto dos encostados não abre nada. Se encostar fosse sinônimo de porta, a
+faixa da ponta viraria regra decorada e o jogador aprenderia a nunca chegar
+perto, em vez de calcular o risco. Com 0.3 de encostados, dá um carro em cada
+dezessete de porta aberta e um em cada quarenta de porta na cara.
+
+Antes havia um tipo só, que abria num cronômetro (2 a 4 s aberta, 10 a 35 s
+fechada) sem saber onde o jogador estava: ou ele nunca via, ou via sem chance
+de reagir. `parked_chance` (0.3) controla quantos carros encostam — é ele que
+decide se as faixas da ponta são uma aposta ou uma parede.
 
 ## A calçada
 
-Dá pra subir na calçada e continuar andando, com teto de velocidade — grama do
-Mario Kart. É a válvula de escape quando o trânsito fecha: você foge por ali,
-mas paga em tempo.
+Dá pra subir na calçada e continuar andando, na mesma velocidade do asfalto. É
+a válvula de escape quando o trânsito fecha.
 
-O limite andável passou de `half_width + SHOULDER*0.6` (7,92 m) para
-`half_width + SHOULDER` (8,80 m). O número antigo caía no **meio** da faixa de
-acostamento, que o mesh já desenha numa cor distinta — parede invisível no meio
-de uma coisa com cara de andável. Agora o limite coincide com onde o terreno
-cai 0,35 m, que o jogador vê.
+Já foi grama do Mario Kart, com teto de 55% da velocidade máxima
+(`sidewalk_speed_factor`): fugir por ali custava tempo, para a calçada não
+virar a linha ótima e matar o corredor, que é o jogo. O teto saiu junto com o
+atropelo de pedestre, a pedido: o preço da calçada passou a ser o que ela tem
+em cima — gente, árvore, carro parado —, e não um freio invisível. Postes e
+placas fincadas cedem ao jogador sem tirar velocidade nem provocar queda. Se o
+corredor esvaziar porque todo mundo foge pela calçada, é aqui que se volta.
 
-Medido: 42,7 m/s no asfalto contra 18,6 m/s encostado na calçada, e a parede
-segurou exatamente em 8,80 sem vazar.
+**Não existe mais guard-rail.** Até a 0.0.6 havia uma parede analítica em
+`sidewalk_limit()` (8,80 m do eixo), e a rua era um tubo: a fachada, a rua
+transversal e o carro parado no semáforo eram cenário que não dava para tocar.
+Hoje a moto anda até onde o chão vai (`limite_do_mundo()`, o fim do
+`GROUND`), e o que a segura são colisores na camada `WORLD`: poste, semáforo,
+carro parado e prédio (`scripts/cidade.gd`). Bater em prédio segue a mesma
+regra de bater em carro — raspa, quina, quica ou cai, pelo ângulo e pela
+velocidade de chegada. O colisor de poste e placa só existe até o jogador
+atingi-los; a peça se solta, voa à frente da moto com giro, quica e desliza
+até parar sobre o chão. Continua visível até a próxima largada, quando volta
+ao lugar. Faísca e um tranco curto na suspensão e na câmera mostram o contato,
+sem registrar raspada ou queda. Gravidade, inércia e contato com a altura
+analítica da pista animam o destroço; o chão continua sem colisor.
 
-Duas ressalvas honestas:
+A calçada vai do meio-fio à fachada (6 m de recuo depois dos 2,2 m de
+`SHOULDER`), cimentado liso, sem grama. O `sidewalk_limit()` continua
+existindo como o fim da calçada livre: dali para fora vem a faixa de serviço,
+a tira mais escura onde ficam os postes, e é até ali que a câmera de garupa
+vai.
 
-- **A faixa é estreita.** 2,2 m de calçada para uma moto de 0,76 m deixa ~1,4 m
-  de jogo antes de raspar o guard-rail. Funciona, mas exige linha. Alargar é
-  mexer em `SHOULDER` no `road_track.gd`, e o mesh acompanha sozinho.
-- **Hoje o banco de provas cobre isto**, numa fase própria. Ela sobe na
-  calçada de propósito, porque o piloto automático da corrida solta nunca
-  sobe: `free_lateral` só considera centros de faixa e de corredor, e por isso
-  os números da corrida ficaram idênticos quando o limite andável mudou. A
-  fase mede a velocidade estabilizada contra o teto que o `sidewalk_speed_factor`
-  declara, e confere que a parede segura exatamente no `sidewalk_limit()`.
+O que o banco de provas cobre, na fase própria: que a calçada não voltou a
+frear (a velocidade no meio dela não fica abaixo da do asfalto), e que a moto passa da beira da calçada e para
+antes do fim do chão. Onde ela para entre os dois depende do que estava na
+frente — no trecho da prova ela raspa na quina de um prédio e entra numa
+transversal até o prédio do fundo, e o baseline aponta se esse caminho mudou.
+Que o prédio tem colisor e que ele começa atrás do toldo é o `test_cidade.gd`.
+
+Uma ressalva: **dá para andar por trás dos prédios.** Entre os fundos da
+fileira e o fim do chão sobram uns 15 m, e a transversal leva até lá. É mais
+lento que a avenida (teto da calçada), então não é atalho — mas é um lugar
+onde o jogo não foi pensado para ser visto.
 
 ## Ladeira
 
@@ -458,6 +682,14 @@ Duas coisas caem de graça da arquitetura:
 - **O salto na crista.** A moto herda a subida da pista ao chegar no topo
   (`_integrate`), então rampa que troca de sinal em poucos metros cospe a moto
   no ar. Não há código de rampa nenhum — quem controla isso é o `GRADE_BLEND`.
+  A conta é `v² · (−dgrade/ds) > g`: decola onde a crista curva mais forte que
+  a gravidade. Na rota da semente fixa isso só acontece numa crista (~300 m) e
+  acima de ~180 km/h — salto é prêmio de boost, não evento de toda ladeira.
+
+  Até a 0.0.5 parecia muito mais comum, e era bug: a moto herdava só a subida
+  **positiva**, pousava na descida com vertical zero e quicava 40 cm a cada
+  12 m até a ladeira acabar. Se o salto fizer falta, ele volta com crista mais
+  seca (`GRADE_BLEND`) ou com rampa de verdade — não reabrindo o `maxf`.
 - **O sorteio se corrige.** Sem puxar os sinais de volta pro nível do mar, a
   sequência é um passeio aleatório e a rota de 3 km termina 200 m acima de onde
   começou. Com a correção, o desnível total ficou em 40 m.
@@ -466,6 +698,50 @@ O que a ladeira cobra da moto é o `slope_pull` (16 m/s² por 100% de rampa, no
 F3): subida come o gás que você não tinha sobrando, descida devolve. Ele entra
 como aceleração e **não** como teto — mexer no teto faria `max_speed` deixar de
 ser a velocidade máxima, e slider que mente é slider que ninguém ajusta.
+
+## A batida
+
+Toda batida derrubava. A regra era uma pergunta só — velocidade da moto acima
+de 58 km/h e ângulo acima de 38 graus — e no corredor isso é quase toda
+encostada: na traseira de um carro a 25 km/h, a 100 km/h você caía como se
+tivesse entrado num muro. Agora cada batida vira uma de quatro coisas, nesta
+ordem (`PlayerBike._resolve_collisions`):
+
+1. **Raspada**, de lado (ângulo abaixo de `crash_angle`). Como sempre foi.
+2. **Quina**, quando menos de `corner_fraction` (60%) da moto pegou a face
+   batida. A moto desvia para fora do canto, até `corner_deflect` (8°), e
+   segue mais lenta. A caixa de colisão devolve a normal da face que entrou, e
+   na quina essa face é a traseira — por isso a medida é quanto da moto ficou
+   em cima da lataria, e não a normal nem o ponto de contato (que, face contra
+   face, é quase sempre a borda).
+3. **Quique**, de frente mas devagar, ou em qualquer moto. Fica com a
+   velocidade do que estava na frente menos um tranco, e perde o guidão por
+   0,25 s. **Moto não derruba moto**, a qualquer velocidade.
+4. **Queda**, só quando a velocidade de **aproximação** passa de
+   `crash_min_speed` (22 m/s, 80 km/h). É a diferença entre as duas, e não a da
+   moto: o carro a 25 km/h só derruba quem chega a mais de 105.
+
+A queda também deixou de ser sempre igual. Ela tomba para onde a batida
+empurrou (somado à inclinação que a moto já tinha), gira deitada para longe do
+que bateu e desliza o que sobrou da velocidade depois da lataria, a 12 m/s². A
+batida reta, que não empurra para lado nenhum, desempata num sorteio de
+semente fixa — sem ele ela caía sempre para a direita, alinhada com a pista. A
+moto levanta onde parou de deslizar, 6 m para trás, como antes.
+
+Mexer nisso tirou de baixo do tapete um bug do rival: a hitbox do soco dele
+religava no passo seguinte ao acerto, e um soco só acertava o jogador três
+vezes. Enquanto o piloto automático caía quatro vezes em 45 s, ele ficava para
+trás do pelotão e ninguém socava. De pé, ele passou a correr no meio dele, e o
+teto de socos da corrida solta reprovou. O soco do jogador tem o mesmo defeito
+e continua com ele: consertar muda o empurrão do combate, que é feel e merece
+conversa própria.
+
+Na corrida solta, as quedas foram de 3 para 0 e a distância do líder de 86
+para 48 m: de pé, o piloto automático corre no pelotão, quicando na traseira
+dos rivais. A distância percorrida ficou em 1346 m, a posição caiu de 5 para 6
+e as seis quedas de rival contra o ônibus parado sumiram. É o mesmo efeito de
+outro lado: o trânsito é reciclado em volta da moto, e uma moto que não fica
+para trás muda o trânsito que o pelotão encontra.
 
 ## Próximos passos, em ordem de risco
 
@@ -513,10 +789,16 @@ ser a velocidade máxima, e slider que mente é slider que ninguém ajusta.
    exige também chegar na frente — metade da nota é posição. É a intenção, mas
    não foi verificada com um humano no controle.
 6. **O entregador low-poly** entrou antes desta lista acabar, por decisão
-   (ver *O entregador*). O que continua para depois do feel é o resto da arte:
-   mundo, céu, partículas.
+   (ver *O entregador*), e os carros foram atrás (ver *Os carros*). O que
+   continua para depois do feel é o resto da arte: céu, partículas, poste.
 
 ## Nota de marca
 
-O nome do protótipo é **RushFood**, paródia óbvia. Nada de nome, logo ou cor
-exata de app real.
+O nome do protótipo é **RushFood**, paródia óbvia. Nada de nome ou logo de
+app real.
+
+A cor era a terceira proibição, e caiu na V21 (14/10/2026), por decisão: a
+roupa vermelha das T-poses (`docs/referencias/tpose/`) e das folhas do
+sprite ficou, camiseta e bag lisas, sem nome nem logo. Vermelho com vermelho
+lembra um app real, e isso foi pesado e aceito; o que continua fora é a
+marca escrita em qualquer lugar.

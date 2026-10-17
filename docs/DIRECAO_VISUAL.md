@@ -41,9 +41,10 @@ seis meses perseguindo o impossível:
   por causa disso.
 
 E uma observação de escopo que o contrato já cobre: a imagem 4 tem **logo de
-app real** na bag. Está fora. `PROTOTIPO.md` fecha com "nada de nome, logo ou
-cor exata de app real", e a referência não muda isso — o que se copia dela é o
-enquadramento e a leitura, não a marca.
+app real** na bag. Está fora. `PROTOTIPO.md` fecha com "nada de nome ou logo
+de app real", e a referência não muda isso — o que se copia dela é o
+enquadramento e a leitura, não a marca. (A cor vermelha da roupa entrou na
+V21, por decisão registrada na *Nota de marca* do `PROTOTIPO.md`.)
 
 ## Os nove pilares do look
 
@@ -55,9 +56,9 @@ Leitura das imagens, cada uma traduzida para o que ela é tecnicamente. A coluna
 | 1 | Câmera baixa, atrás, piloto centralizado ocupando ~⅓ da altura | Perseguição por posição com atraso, FOV que abre com a velocidade | **já existe** (`chase_camera.gd`) |
 | 2 | Piloto e moto lidos como foto, não como desenho | Sprite digitalizado: fonte fotográfica ou renderizada offline, quantizada, com borda dura | falta |
 | 3 | Sol duro, céu azul saturado, sombra de contato sob cada veículo | Uma `DirectionalLight3D` com sombra ligada + ambiente vindo do céu | sol existe, **sombra desligada** |
-| 4 | Periferia borrada, faixas da pista esticadas em risco | Borrão radial em pós-processamento, mascarado por profundidade | falta |
+| 4 | Periferia borrada, faixas da pista esticadas em risco | Borrão radial em pós-processamento, mascarado por profundidade e stencil | **feito** (`borrao.gdshader`, V08) |
 | 5 | Fumaça, faísca, poeira, fogo | `GPUParticles3D` com flipbook e escala de tempo travada | falta |
-| 6 | Nuvens com bandas e dithering visíveis | Céu procedural com textura de cobertura + debanding desligado de propósito | falta (fundo é cor chapada) |
+| 6 | Nuvens com bandas e dithering visíveis | Céu procedural com textura de cobertura + debanding desligado de propósito | **feito**, mas em shader de céu próprio, não textura (`ceu.gdshader`, V14) |
 | 7 | HUD gorda, com contorno, barras segmentadas em degradê | Fonte bitmap + `ColorRect`s dentro do mesmo SubViewport | existe, mas magra e sem estilo |
 | 8 | Cor alta, contraste alto, paleta coerente entre tudo | LUT de correção de cor no `Environment` | falta |
 | 9 | Placa verde, mural, ônibus, palmeira, contêiner — leitura de Rio | Conteúdo, não tecnologia | falta |
@@ -211,7 +212,7 @@ compressão são ~67 MB; com compressão VRAM, uma fração disso.
 
 Os cinco rivais **não** multiplicam nada: `world.gd` já declara "mesmo rig,
 paleta trocada" em `RIVAL_COLORS`. Basta renderizar um passe de máscara
-(bag no vermelho, jaqueta no verde, moto no azul) e trocar a cor no shader.
+(bag no vermelho, camiseta no verde, moto no azul) e trocar a cor no shader.
 
 ### Correção a uma premissa do PROTOTIPO.md
 
@@ -302,10 +303,20 @@ fácil que existe.
 | 2 | Ambiente vindo do céu | `Environment.ambient_light_source = AMBIENT_SOURCE_SKY` | A sombra fica azul em vez de cinza, e é isso que faz a cena ler como "sol do Rio" |
 | 3 | Tonemap + LUT | `tonemap_mode`, `adjustment_color_correction` | É o passo que cria a paleta, e paleta é metade do look |
 | 4 | Glow | `glow_enabled`, `glow_hdr_threshold` | Faísca, farol, placa refletindo. Sem glow a faísca é um pixel laranja |
-| 5 | SSAO | `ssao_enabled` | Escurece o encontro do pneu com o chão. Sutil, e o primeiro a cortar se o orçamento apertar |
+| 5 | SSAO | `ssao_enabled` | Escurece o encontro do pneu com o chão. Sutil, e o primeiro a cortar se o orçamento apertar. **Cortado na V12**: leve, não aparece; forte, escurece a sombra inteira |
 | 6 | Neblina aérea | `fog_aerial_perspective`, `fog_sun_scatter` | Dá profundidade ao fundo sem custo de geometria |
 
 Todas verificadas como existentes no 4.7.2 (apêndice A).
+
+**O limiar do glow vem depois do desfoque** (V12, lido no `copy.glsl` do
+Godot). O primeiro passe reduz à meia resolução, desfoca e só então compara
+com `glow_hdr_threshold`. Área grande passa inteira; ponto pequeno chega
+diluído — a 30 m uma lanterna de 3 px chega com ~13% do que tem. Por isso o
+limiar sozinho não separa luz de sol: o que brilha precisa de emissão muito
+acima dele (a lanterna de freio tem 45 com limiar 2,2), e o que não brilha
+fica abaixo dele em área (a calçada branca ao sol chega a 2,0). Vale para
+tudo que vier depois: faísca, outdoor, farol. Emissão "um pouco acima do
+limiar" não acende nada a mais de alguns metros.
 
 ### O que **não** ligar, e por quê
 
@@ -322,7 +333,8 @@ Esta lista importa tanto quanto a de cima, porque são as opções que parecem
   já pôs fora de escopo.
 - **Neblina volumétrica.** Bonita, e cara, e a neblina exponencial que já
   existe resolve o problema real (esconder o fim do mundo). Fica como opção
-  para a fase de noite, se ela existir.
+  para a noite, que existe (*A corrida que anoitece*), se a de agora não
+  bastar.
 - **TAA.** `Viewport.use_taa` existe e **não pode ser ligado**: TAA é média
   temporal, e média temporal em 640×360 com upscale nearest é exatamente o
   borrão que o projeto inteiro existe para evitar.
@@ -391,7 +403,7 @@ gatilho de quase todo efeito já existe como número no código.** O trabalho aq
 | Efeito | Gatilho — e ele já existe | Nó | O parâmetro que decide |
 | --- | --- | --- | --- |
 | **Fumaça de pneu** | `player_bike.gd::_integrate`: `(desired - horizontal).length()` já é a derrapada, e o `PROTOTIPO.md` já a nomeia assim | `GPUParticles3D` no eixo traseiro | limiar de derrapada que liga a emissão |
-| **Poeira / terra** | `_off_road` e o teto de velocidade da calçada | idem, cor amostrada do terreno | taxa em função da velocidade |
+| **Poeira / terra** | `_off_road` e a moto na calçada | idem, cor amostrada do terreno | taxa em função da velocidade |
 | **Faísca** | sinal `scraped(intensity)` — já chega com a intensidade pronta | `GPUParticles3D` com `trail_enabled` | emissão alta + vida curta + glow |
 | **Fumaça de escapamento** | contínua; engrossa em `boosting` | `GPUParticles3D` de taxa baixa | `amount_ratio` amarrado ao acelerador |
 | **Poeira de queda** | sinal `crashed(reason)` | `one_shot` + `explosiveness = 1.0` | raio, e o fato de ser único |
@@ -485,6 +497,17 @@ caminhos:
 `CompositorEffect` fica guardado para o dia em que fizer falta um buffer que o
 2D não vê — vetor de movimento por objeto, por exemplo.
 
+**Corrigido na V08: o `ColorRect` não alcança profundidade.** O Godot 4.7.2
+recusa `hint_depth_texture` em shader `canvas_item` ("not supported in
+'canvas_item' shaders"). O que foi feito é o terceiro caminho, fora da tabela:
+um quad preso à câmera, em shader `spatial` no passe transparente, que lê
+`hint_screen_texture` e `hint_depth_texture` (`borrao.gdshader`). O piloto sai
+da máscara por **stencil**, e não por profundidade: ele, o asfalto em volta da
+roda e o carro colado estão à mesma distância da câmera. Quem grava o stencil
+é um `material_overlay` no ator (`foco.gdshader`). Consequência para a ordem
+dos passes: o borrão roda antes de glow, tonemap e LUT, e não depois — ver o
+diagrama abaixo.
+
 O efeito tem três ingredientes, e o terceiro é o que separa "parece velocidade"
 de "parece sujeira na tela":
 
@@ -524,10 +547,10 @@ O que é nosso é o que vem depois:
 mundo 3D (640x360)
   -> sombra, SSAO                 <- Environment
   -> neblina                      <- Environment
+  -> borrao radial                <- nosso: quad 3D na camera (V08)
   -> glow (em HDR)                <- Environment
   -> tonemap                      <- Environment
   -> LUT de cor (adjustment)      <- Environment, e ja e o ultimo passo dele
-  -> borrao radial                <- nosso: ColorRect com shader
   -> quantizacao + dither         <- nosso: ColorRect com shader (POR ULTIMO)
   -> HUD                          <- CanvasLayer dentro do mesmo SubViewport
   -> upscale inteiro por nearest  <- SubViewportContainer
@@ -536,15 +559,21 @@ mundo 3D (640x360)
 A HUD entra depois da quantização de propósito: ela já é desenhada em cores
 escolhidas à mão, e passá-la pelo dither só suja o texto.
 
-Dois `ColorRect` em sequência precisam de duas camadas — o segundo lê o
-resultado do primeiro por `hint_screen_texture`, e para isso o primeiro já tem
-que ter sido desenhado. Na prática são dois `CanvasLayer` com `layer` crescente,
-e a HUD (`layer = 10`, hoje) acima dos dois.
+Com o borrão dentro do 3D, sobrou um `ColorRect` só, o da paleta, num
+`CanvasLayer` (`layer = 5`) abaixo da HUD (`layer = 10`). Um passe 2D novo que
+precise ler o resultado de outro entra em camada própria, com `layer`
+crescente: o segundo lê o primeiro por `hint_screen_texture`, e para isso o
+primeiro já tem que ter sido desenhado.
 
 ## Céu, paleta e dithering
 
 O fundo hoje é `BG_COLOR` chapado. As referências têm céu azul saturado com
 nuvem visivelmente em bandas — e a banda é intencional, é o sotaque de época.
+
+> **Feito na V14** (`BACKLOG_VISUAL.md`), por outro caminho: o
+> `ProceduralSkyMaterial` saiu e o céu é `scripts/ceu.gdshader`, com o mesmo
+> gradiente e a nuvem desenhada no shader. A textura com trama gravada nela
+> tremia andando (dither preso ao céu, que gira) e foi descartada jogando.
 
 **`ProceduralSkyMaterial`** dá o gradiente e tem duas propriedades que servem
 direto (verificadas): `sky_cover`, que aceita uma textura de nuvem — é onde
@@ -573,6 +602,12 @@ visível — que é a intenção. Duas regras, e ambas são armadilhas conhecida
   rasteja quando a câmera anda, e a esse efeito se dá o nome de "chuvisco".
 
 ## HUD
+
+> **Feito na V25** (`BACKLOG_VISUAL.md`). O que segue é o estudo; o que mudou
+> na execução: a fonte não é `FontFile` — fonte bitmap no Godot não tem
+> contorno nem degradê, então os dois são assados no glifo por
+> `scripts/fonte_hud.gd` —, e a adrenalina virou barra curta, não efeito de
+> borda.
 
 A HUD das referências é o mesmo vocabulário nas quatro imagens: legenda pequena
 em amarelo, número grande em branco, contorno preto duro, barra segmentada em
@@ -731,7 +766,8 @@ ou substituída pela alternativa; `fps` dentro do orçamento com o pior caso
 (queda no meio do trânsito).
 
 **Fase 5 — borrão.** Shader radial com máscara de profundidade. Testar antes a
-versão barata (linhas de velocidade): pode ser que ela baste.
+versão barata (linhas de velocidade): pode ser que ela baste. *Feito na V08,
+direto no borrão: o vídeo de referência não usa linhas de velocidade.*
 *Aceite:* a 180 km/h o piloto está nítido e a periferia não.
 
 **Fase 6 — o ator.** Aqui entra a decisão rota A / rota B, e só aqui: as cinco
@@ -750,12 +786,67 @@ borrão mudam completamente a aparência do sprite, e arte produzida antes deles
 é arte que vai ser refeita. É a mesma lógica que pôs o greybox antes da arte no
 `PROTOTIPO.md`.
 
+## A corrida que anoitece
+
+Entrou fora da fila do backlog, por curiosidade, e ficou: a corrida larga ao
+meio-dia e cruza a linha de noite. Não há interruptor de dia e noite. A
+passagem é o ponto, porque a cidade acendendo em volta enquanto se corre é a
+coisa que um modo noturno parado não tem.
+
+**O relógio é o progresso do jogador na rota**, e não o cronômetro
+(`Relogio`, sliders do grupo Hora no F3). Até 25% da rota é meio-dia; de 85%
+em diante é noite fechada. Quem anda chega na noite, e a noite chega junto com
+a reta final, seja a corrida de dois minutos ou de quatro. Só anda para a
+frente: bater e ficar para trás não devolve a tarde.
+
+**Quatro horas-chave** (`Hora`): meio-dia, entardecer (sol a 12°, laranja,
+sombra comprida), hora azul (sol abaixo do horizonte, horizonte ainda aceso) e
+noite (lua, azul-marinho em cima, laranja sujo de cidade embaixo). O que fica
+entre elas é mistura, aplicada a cada 1/256 de hora, abaixo de um degrau da
+paleta. As duas chaves do meio existem porque misturar o meio-dia direto com a
+noite passa por um cinza lavado.
+
+- **Um astro só.** A mesma `DirectionalLight3D` desce como sol, apaga abaixo do
+  horizonte e volta como lua do outro lado. Duas direcionais com sombra custam
+  o dobro. A lua só acende no fim do giro, senão atravessaria o céu em vinte
+  segundos.
+- **Um LUT por chave**, pela mesma receita (`arte/paleta.py`). O `Environment`
+  só aceita um, então o `Relogio` mistura os dois vizinhos na CPU (16³ cores,
+  0,4 ms).
+- **O que acende lê um parâmetro global de shader**, `noite` (o escuro de 0 a
+  1). Cada lâmpada tem o seu limiar, e a cidade acende aos poucos: poste como
+  fotocélula, farol quando o motorista lembra, janela quando alguém chega em
+  casa. O limiar sai de hash de posição ou de número já sorteado, **nunca de
+  sorteio novo**: tirar número do gerador do mundo mudaria a corrida do banco
+  de provas.
+- **Luz de verdade só onde o chão precisa dela.** A poça embaixo do poste e o
+  cone do farol (carro e moto) são `SpotLight3D` sem sombra, que somem a 140 m
+  (`LuzDaNoite`). O que só brilha é emissão: a lente do poste, o farol, a
+  lanterna (que sobe à noite e cresce no freio), a janela e a vitrine.
+- **De dia, nada disso custa ou aparece.** Luz da noite nasce invisível, e todo
+  termo de shader novo é multiplicado pelo escuro. A prova visual do meio-dia
+  sai igual à de antes, dentro do ruído dela mesma.
+
+Onde cada coisa acha a sua lâmpada:
+
+| O quê | Como |
+| --- | --- |
+| Poste | Lente na superfície 1 da malha, com `lampada.gdshader`; duas poças por poste |
+| Carro | Meio no canal B da máscara é o farol, "só de noite"; 1 continua sendo "sempre aceso" |
+| Moto | Pela cor pintada: farol e lanterna são células únicas da paleta, fora da máscara (`FarolDaMoto`) |
+| Prédio | Segundo UV do modelo: semente por face de vidro e o tipo (janela, vitrine); somada à posição do prédio, cada cópia acende diferente |
+| Sprite | É `unshaded`, então escurece inteiro com a noite |
+
+Medindo, a hora é fixa: banco de provas, shots e prova fotografam o meio-dia,
+salvo `--hora` (`dev.py prova --hora 1`, `dev.py shots --noite`, `dev.py fps
+--hora 1`).
+
 ## O que fica de fora
 
 Herdado do `PROTOTIPO.md` e confirmado aqui:
 
-- **Chuva, noite, asfalto molhado e neon.** Cada um é um sistema de
-  iluminação próprio. Depois que o de dia estiver fechado.
+- **Chuva, asfalto molhado e neon.** Cada um é um sistema de iluminação
+  próprio. A noite saiu desta lista: ver *A corrida que anoitece*.
 - **Shader de mundo curvo (SEGA curved world).** Bonito, e ortogonal a tudo
   aqui; entra quando entrar.
 - **Áudio.** Metade da percepção de impacto, e assunto de outro documento.
@@ -865,7 +956,7 @@ Refazer a verificação num bump de engine é barato, e o motivo de registrar aq
 
 | | |
 | --- | --- |
-| `Environment.motion_blur_enabled` | **não existe no 4.7.2.** Motion blur é código nosso: `ColorRect` com shader lendo cor + profundidade, ou `CompositorEffect` |
+| `Environment.motion_blur_enabled` | **não existe no 4.7.2.** Motion blur é código nosso: quad 3D preso à câmera lendo cor + profundidade (`borrao.gdshader`), ou `CompositorEffect`. `ColorRect` não serve: `canvas_item` não lê profundidade |
 
 **A confirmar rodando** (com o teste ao lado):
 

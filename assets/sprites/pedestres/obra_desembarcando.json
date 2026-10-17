@@ -1,0 +1,21 @@
+{
+	"altura_m": 1.78,
+	"animacao": "desembarcando",
+	"celula": [
+		256,
+		208
+	],
+	"colunas": 8,
+	"espelha_o_lado_esquerdo": true,
+	"linhas": [
+		"carro_de_lado",
+		"carro_tres_quartos_frente",
+		"carro_tres_quartos_costas",
+		"carro_de_frente"
+	],
+	"pe": [
+		128,
+		204
+	],
+	"pixels_por_metro": 100.0
+}
