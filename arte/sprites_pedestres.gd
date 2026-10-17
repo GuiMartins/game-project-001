@@ -251,6 +251,10 @@ func _atlas(id: String, animacao: String, ficha: Dictionary, folhas: Dictionary)
 		var da_linha: Array = (desenhos[na_folha] as Array).duplicate()
 		if animacao == "andando" and linha == REPARO_LINHA:
 			da_linha[REPARO_COLUNA] = da_linha[REPARO_DE]
+		# O Flow virou de costas o ultimo quadro frontal do operario. O
+		# primeiro quadro fecha o ciclo na mesma pose e direcao.
+		if id == "obra" and animacao == "andando" and linha == 0:
+			da_linha[7] = da_linha[0]
 		quadros.append(da_linha)
 	var escala_folha := _escala_da_folha(regra, quadros, altura_px)
 	for linha in linhas.size():

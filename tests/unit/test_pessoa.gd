@@ -243,3 +243,58 @@ func test_quem_anda_no_multimesh_vai_e_volta_sem_sair_do_trecho() -> void:
 		maior = maxf(maior, absf(agora - antes))
 		antes = agora
 	assert_float(maior).is_less(0.1)
+
+
+func test_menu_troca_toda_a_multidao_e_mantem_o_atropelado() -> void:
+	var multidao: Multidao = auto_free(Multidao.new())
+	add_child(multidao)
+	var gente: Array = []
+	for i in 15:
+		gente.append([Transform3D(Basis.IDENTITY, Vector3(float(i) * 20.0, 0.0, 0.0)), Color.RED])
+	multidao.montar(gente, true)
+	var total := 0
+	for no in multidao.get_children():
+		if no is MultiMeshInstance3D:
+			total += (no as MultiMeshInstance3D).multimesh.instance_count
+			assert_bool(no.visible).is_false()
+	assert_int(total).is_equal(gente.size())
+	multidao.sprite = true
+	for no in multidao.get_children():
+		if no is MultiMeshInstance3D:
+			assert_bool(no.visible).is_true()
+	var corpo := multidao.atropelar(2, Vector3(20.0, 0.0, 0.0))
+	assert_bool(corpo.find_child("Sprite", false, false).visible).is_true()
+	multidao.sprite = false
+	corpo.usar_sprite(false)
+	assert_bool(corpo.find_child("Sprite", false, false).visible).is_false()
+	multidao.reiniciar()
+	assert_bool(multidao.caiu(2)).is_false()
+
+
+func test_pessoa_em_sprite_tem_folha_para_todos_os_estados() -> void:
+	var pessoa: Pessoa = auto_free(Pessoa.new())
+	add_child(pessoa)
+	pessoa.usar_sprite(true)
+	var desenho := pessoa.find_child("Sprite", false, false) as PedestreSprite
+	for avatar in PedestreSprite.ANDANDO.size():
+		pessoa.avatar = avatar
+		for estado: int in Pessoa.Estado.values():
+			pessoa.estado = estado
+			pessoa._aplica()
+			var esperado: Texture2D = PedestreSprite.ANDANDO[avatar]
+			match estado:
+				Pessoa.Estado.SUSTO:
+					esperado = PedestreSprite.SUSTO[avatar]
+				Pessoa.Estado.SENTADA, Pessoa.Estado.DESEMBARCANDO:
+					esperado = PedestreSprite.DESEMBARCANDO[avatar]
+				Pessoa.Estado.VOANDO:
+					esperado = PedestreSprite.VOANDO[avatar]
+				Pessoa.Estado.CAIDA:
+					esperado = PedestreSprite.CAIDA[avatar]
+			assert_bool(desenho.visible).is_true()
+			(
+				assert_object(
+					(desenho.material_override as ShaderMaterial).get_shader_parameter(&"atlas")
+				)
+				. is_equal(esperado)
+			)

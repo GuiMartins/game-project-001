@@ -581,6 +581,10 @@ func aplica_ator() -> void:
 	# A gente da calcada pula de pose no mesmo ritmo, senao ela fica lisa num
 	# mundo travado, ou travada num liso.
 	for no in get_tree().get_nodes_in_group(Pedestres.GRUPO_NOS):
+		if no is Multidao:
+			(no as Multidao).sprite = ligado
+		elif no is Pessoa:
+			(no as Pessoa).usar_sprite(ligado)
 		if no.get(&"cadencia") != cadencia:
 			no.set(&"cadencia", cadencia)
 

@@ -35,6 +35,21 @@ var cadencia: float = 0.0:
 	set(valor):
 		cadencia = valor
 		set_instance_shader_parameter(&"cadencia", valor)
+		for no in _sprites:
+			no.set_instance_shader_parameter(&"cadencia", valor)
+
+var sprite: bool = false:
+	set(valor):
+		if sprite == valor:
+			return
+		sprite = valor
+		cast_shadow = (
+			GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+			if valor
+			else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		)
+		for no in _sprites:
+			no.visible = valor
 
 var _andando: bool = false
 var _tempo: float = 0.0
@@ -45,6 +60,9 @@ var _caidos: Dictionary[int, bool] = {}
 var _grade: Dictionary[Vector2i, PackedInt32Array] = {}
 var _motos: Dictionary[int, Vector3] = {}
 var _corpos: Array[Pessoa] = []
+var _sprites: Array[MultiMeshInstance3D] = []
+var _avatar: Array[int] = []
+var _slot: Array[int] = []
 
 
 ## `gente` e o que o `Pedestres.posicoes` devolve para esta pose.
@@ -56,6 +74,7 @@ func montar(gente: Array, andando: bool) -> void:
 	mm.use_custom_data = true
 	mm.mesh = Pedestres.malha()
 	mm.instance_count = gente.size()
+	var grupos: Array[Array] = [[], [], [], [], []]
 	for i in gente.size():
 		var t: Transform3D = gente[i][0]
 		var camisa: Color = gente[i][1]
@@ -66,11 +85,38 @@ func montar(gente: Array, andando: bool) -> void:
 		_base.append(t)
 		_camisas.append(camisa)
 		_sorteios.append(sorteio)
+		# Sorteio independente da rua: a semente e a posicao da multidão
+		# continuam identicas no 3D e no sprite.
+		var avatar := (
+			int(hash(i * 8191 + (1 if andando else 2) * 131)) % PedestreSprite.ANDANDO.size()
+		)
+		_avatar.append(avatar)
+		_slot.append(grupos[avatar].size())
+		grupos[avatar].append(i)
 		var celula := _celula(t.origin)
 		if not _grade.has(celula):
 			_grade[celula] = PackedInt32Array()
 		_grade[celula].append(i)
 	multimesh = mm
+	for avatar in grupos.size():
+		var mmi := MultiMeshInstance3D.new()
+		mmi.name = "Sprites" + str(avatar)
+		var folha := MultiMesh.new()
+		folha.transform_format = MultiMesh.TRANSFORM_3D
+		folha.use_custom_data = true
+		folha.mesh = PedestreSprite.malha_da_multidao(PedestreSprite.ANDANDO[avatar])
+		folha.instance_count = grupos[avatar].size()
+		for slot in grupos[avatar].size():
+			var original: int = grupos[avatar][slot]
+			folha.set_instance_transform(slot, _base[original])
+			var s := _sorteios[original]
+			folha.set_instance_custom_data(slot, Color(s.x, s.y, 0.0, 0.0))
+		mmi.multimesh = folha
+		mmi.extra_cull_margin = 6.0
+		mmi.visible = sprite
+		add_child(mmi)
+		mmi.set_instance_shader_parameter(&"andando", 1.0 if andando else 0.0)
+		_sprites.append(mmi)
 	set_instance_shader_parameter(&"andando", 1.0 if andando else 0.0)
 	# O shader leva cada um ate meio trecho para frente ou para tras, longe do
 	# transform que o `MultiMesh` usa para saber o que esta na tela.
@@ -125,6 +171,7 @@ func caiu(i: int) -> bool:
 func reiniciar() -> void:
 	for i: int in _caidos:
 		multimesh.set_instance_transform(i, _base[i])
+		_sprites[_avatar[i]].multimesh.set_instance_transform(_slot[i], _base[i])
 	_caidos.clear()
 	for corpo in _corpos:
 		if is_instance_valid(corpo):
@@ -138,6 +185,8 @@ func reiniciar() -> void:
 func _physics_process(delta: float) -> void:
 	_tempo += delta
 	set_instance_shader_parameter(&"tempo", _tempo)
+	for no in _sprites:
+		no.set_instance_shader_parameter(&"tempo", _tempo)
 	for no in get_tree().get_nodes_in_group(Pessoa.GRUPO_MOTOS):
 		var moto := no as Node3D
 		var id := moto.get_instance_id()
@@ -178,10 +227,13 @@ func atropelar(i: int, v_mundo: Vector3) -> Pessoa:
 	var sumido := _base[i]
 	sumido.origin.y -= 1000.0
 	multimesh.set_instance_transform(i, sumido)
+	_sprites[_avatar[i]].multimesh.set_instance_transform(_slot[i], sumido)
 	var corpo := Pessoa.new()
 	corpo.name = "Atropelado"
+	corpo.avatar = _avatar[i]
 	add_child(corpo)
 	corpo.cadencia = cadencia
+	corpo.usar_sprite(sprite)
 	corpo.vestir(_camisas[i])
 	var frente := -_base[i].basis.z
 	corpo.colocar(lugar_agora, atan2(-frente.x, -frente.z))

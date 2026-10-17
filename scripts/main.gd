@@ -266,7 +266,7 @@ func _monta_opcoes() -> void:
 	fluxo.opcao("CORRIDA", "MOTO", _nome_da_moto, _trocar_moto)
 	fluxo.opcao(
 		"CORRIDA",
-		"PILOTO",
+		"PERSONAGENS",
 		func() -> String: return "SPRITE" if world_tuning.ator_sprite == 1 else "3D",
 		func(_passo: int) -> void: _trocar_ator()
 	)

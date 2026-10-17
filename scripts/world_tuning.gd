@@ -249,9 +249,9 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 
 @export_group("Ator")
 
-## 1 desenha cada corredor em sprite, recortado das folhas do Google Flow
-## (`AtorSprite`), em vez do modelo 3D. E o experimento de comparar os dois na
-## pista: ao vivo, sem reiniciar, para alternar e olhar o mesmo trecho. Um
+## 1 desenha corredores e pedestres em sprite, recortados das folhas do Google
+## Flow, em vez dos modelos 3D. E o experimento de comparar os dois na pista:
+## ao vivo, sem reiniciar, para alternar e olhar o mesmo trecho. Um
 ## slider de 0 a 1, e nao uma caixa de marcar, porque o painel so sabe
 ## desenhar slider.
 @export_range(0, 1, 1) var ator_sprite: int = 0
