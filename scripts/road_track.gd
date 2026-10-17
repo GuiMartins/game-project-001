@@ -23,7 +23,9 @@ const MAX_GRADE: float = 0.14
 ## no ar. Alto demais e a pista vira serra e a moto passa a corrida voando.
 const GRADE_BLEND: float = 0.3
 
-const LANE_WIDTH: float = 3.3
+## 3,8 m deixam 0,625 m de cada lado da moto entre carros de 1,8 m.
+## Nos 3,3 m anteriores sobravam so 0,375 m, exigindo precisao demais.
+const LANE_WIDTH: float = 3.8
 const LANE_COUNT: int = 4
 const SHOULDER: float = 2.2
 ## Terreno plano de cada lado. Sem ele o mundo vira uma fita flutuando no

@@ -438,7 +438,7 @@ jogador para dentro.
 
 ## A rua
 
-- **Faixas:** 3 a 4 no mesmo sentido, como as 4 de 3,3 m do jogo
+- **Faixas:** 3 a 4 no mesmo sentido, como as 4 de 3,8 m do jogo
   (`LANE_COUNT`, `LANE_WIDTH`).
 - **Marcação:**
   - tracejado branco entre faixas, com traço longo e espaço longo;
