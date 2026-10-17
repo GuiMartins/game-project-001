@@ -55,3 +55,29 @@ func test_o_credito_do_soco_expira() -> void:
 	for i in 20:
 		rival._physics_process(0.1)
 	assert_bool(rival.derrubado_pelo_jogador()).is_false()
+
+
+func test_tombo_vira_rampa_e_prolonga_recuperacao() -> void:
+	var rival := _rival()
+	rival.state = RivalBike.State.DOWN
+	assert_int(rival.collision_layer).is_equal(0)
+	rival.state_timer = 0.5
+	var jogador: PlayerBike = auto_free(PlayerBike.new())
+	add_child(jogador)
+	jogador.global_transform = rival.global_transform
+	jogador.position += rival.global_basis.z * 3.0
+	var caminho := -rival.global_basis.z * 6.0
+	var impulso := FisicaDaMoto.impulso_de_rampa(jogador, caminho, 40.0)
+	assert_float(impulso).is_greater(0.0)
+	assert_float(rival.state_timer).is_greater(1.5)
+	var lento := FisicaDaMoto.impulso_de_rampa(jogador, caminho, 10.0)
+	assert_float(lento).is_less(impulso)
+	jogador.position += rival.global_basis.x * 3.0
+	assert_float(FisicaDaMoto.impulso_de_rampa(jogador, caminho, 40.0)).is_equal(0.0)
+	rival.state = RivalBike.State.RACING
+	assert_int(rival.collision_layer).is_equal(Layers.RIVAL)
+
+
+func test_corredor_em_pe_nao_vira_rampa() -> void:
+	var rival := _rival()
+	assert_float(FisicaDaMoto.impulso_de_rampa(rival, Vector3.ZERO, 40.0)).is_equal(0.0)

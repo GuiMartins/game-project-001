@@ -46,7 +46,11 @@ const SEMENTE_DA_QUEDA: int = 20260831
 var tuning: BikeTuning
 var track: RoadTrack
 
-var state: State = State.RIDING
+var state: State = State.RIDING:
+	set(valor):
+		state = valor
+		# O banco e a largada tambem podem repor o estado diretamente.
+		collision_layer = 0 if valor == State.CRASHED else Layers.PLAYER
 var state_timer: float = 0.0
 
 var speed: float = 0.0  ## Escalar, m/s, sempre >= 0.
@@ -440,6 +444,10 @@ func _integrate(delta: float) -> void:
 	var road_climb := (road_y - _last_road_y) / maxf(delta, 0.0001)
 	_last_road_y = road_y
 
+	if not airborne:
+		var impulso := FisicaDaMoto.impulso_de_rampa(self, horizontal * delta, speed)
+		if impulso > 0.0:
+			_vertical_speed = maxf(road_climb, 0.0) + impulso
 	_vertical_speed -= GRAVITY * delta
 	var next_y := global_position.y + _vertical_speed * delta
 	if next_y <= road_y:
@@ -788,6 +796,7 @@ func place_on_track(at_offset: float, at_lateral: float, at_speed: float) -> voi
 	_crash_recover_offset = track_offset
 	_off_road = false
 	state = State.RIDING
+	airborne = false
 	state_timer = 0.0
 
 
