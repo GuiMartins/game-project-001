@@ -164,6 +164,7 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	camera.name = "Camera"
 	add_child(camera)
 	camera.setup(tuning, player)
+	player.obstaculo_quebrado.connect(func(forca: float) -> void: camera.add_shake(0.35 * forca))
 	camera.current = true
 	borrao = Borrao.new()
 	camera.add_child(borrao)

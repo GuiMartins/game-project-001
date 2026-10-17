@@ -637,7 +637,11 @@ Hoje a moto anda até onde o chão vai (`limite_do_mundo()`, o fim do
 carro parado e prédio (`scripts/cidade.gd`). Bater em prédio segue a mesma
 regra de bater em carro — raspa, quina, quica ou cai, pelo ângulo e pela
 velocidade de chegada. O colisor de poste e placa só existe até o jogador
-atingi-los; a peça tomba e volta inteira na próxima largada.
+atingi-los; a peça se solta, voa à frente da moto com giro, quica e desliza
+até parar sobre o chão. Continua visível até a próxima largada, quando volta
+ao lugar. Faísca e um tranco curto na suspensão e na câmera mostram o contato,
+sem registrar raspada ou queda. Gravidade, inércia e contato com a altura
+analítica da pista animam o destroço; o chão continua sem colisor.
 
 A calçada vai do meio-fio à fachada (6 m de recuo depois dos 2,2 m de
 `SHOULDER`), cimentado liso, sem grama. O `sidewalk_limit()` continua
