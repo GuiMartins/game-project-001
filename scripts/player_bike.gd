@@ -13,6 +13,7 @@ signal crashed(reason: String)
 signal scraped(intensity: float)
 signal punch_landed(target: Node3D)
 signal took_hit
+signal obstaculo_quebrado(intensidade: float)
 
 enum State { RIDING, STAGGERED, CRASHED }
 
@@ -489,6 +490,17 @@ func _resolve_collisions() -> void:
 		normal = normal.normalized()
 
 		var outro := col.get_collider()
+		if outro is Quebravel:
+			var peca := outro as Quebravel
+			if not peca.quebrado:
+				peca.quebrar(_antes_da_batida)
+				var forca := clampf(_antes_da_batida.length() / tuning.max_speed, 0.25, 1.0)
+				_estrago.faisca(forca)
+				_ator.impacto(forca)
+				obstaculo_quebrado.emit(forca)
+			# O slide encurta este passo, mas nao tira embalo nem provoca queda.
+			velocity = _antes_da_batida
+			continue
 		var v_outro := _velocidade_de(outro)
 		var relativa := _antes_da_batida - v_outro
 		var chegada := maxf(-relativa.dot(normal), 0.0)
