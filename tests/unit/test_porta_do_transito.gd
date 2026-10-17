@@ -124,7 +124,7 @@ func test_onibus_nao_abre_porta_na_cara() -> void:
 
 func test_pancada_dobra_porta_e_aponta_desvio_para_fora_dos_dois_lados() -> void:
 	for lado: int in [-1, 1]:
-		var carro := _carro(TrafficCar.Porta.ABERTA, MEIO_FIO_DIREITO)
+		var carro := _carro(TrafficCar.Porta.ABERTA, _meio_fio_direito)
 		carro.set("_door_side", lado)
 		var visual := carro.get("_carro") as Carro
 		visual.fechar_portas(true)
@@ -147,5 +147,5 @@ func test_pancada_dobra_porta_e_aponta_desvio_para_fora_dos_dois_lados() -> void
 		for i in 60:
 			carro._pose(PASSO)
 		assert_float(visual.abertura()).is_greater(90.0 / Carro.PORTA_ABERTA)
-		carro.recycle(600.0, MEIO_FIO_DIREITO, true, TrafficCar.Porta.NENHUMA)
+		carro.recycle(600.0, _meio_fio_direito, true, TrafficCar.Porta.NENHUMA)
 		assert_float(visual.abertura()).is_equal(0.0)
