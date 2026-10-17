@@ -87,7 +87,22 @@ static func posicoes(
 					continue
 				var t := track.transform_at(aqui, lateral)
 				t.basis = t.basis * Basis(Vector3.UP, giro)
-				onde[pose].append([t, camisa])
+				# O passeio da multidão atravessa curvas de rampa: a tangente no
+				# nascimento não acompanha a altura real da calçada nas pontas.
+				var relevo := Vector2.ZERO
+				if pose == Pose.ANDANDO:
+					var meio_trecho := Multidao.TRECHO * 0.5
+					var sentido := 1.0 if giro == 0.0 else -1.0
+					var frente_y := -t.basis.z.y
+					relevo.x = (
+						track.sample_position(aqui + sentido * meio_trecho).y
+						- (t.origin.y + frente_y * meio_trecho)
+					)
+					relevo.y = (
+						track.sample_position(aqui - sentido * meio_trecho).y
+						- (t.origin.y - frente_y * meio_trecho)
+					)
+				onde[pose].append([t, camisa, relevo])
 			o += rua.randf_range(PASSO.x, PASSO.y)
 	return onde
 

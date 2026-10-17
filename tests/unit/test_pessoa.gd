@@ -271,6 +271,32 @@ func test_menu_troca_toda_a_multidao_e_mantem_o_atropelado() -> void:
 	assert_bool(multidao.caiu(2)).is_false()
 
 
+func test_sprite_da_multidao_acompanha_a_rampa() -> void:
+	var pista: RoadTrack = auto_free(RoadTrack.new())
+	add_child(pista)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20260831
+	pista.build(3000.0, rng)
+	var gente: Array = Pedestres.posicoes(pista, [], rng)[Pedestres.Pose.ANDANDO]
+	assert_bool(gente.is_empty()).is_false()
+	var maior_erro := 0.0
+	var maior_erro_sem_relevo := 0.0
+	for item: Array in gente:
+		var base: Transform3D = item[0]
+		var relevo: Vector2 = item[2]
+		var o := pista.curve.get_closest_offset(base.origin)
+		var sentido := 1.0 if base.basis.z.dot(pista.sample_basis(o).z) > 0.0 else -1.0
+		for passo in 15:
+			var deslocado := -Multidao.TRECHO * 0.5 + float(passo) * Multidao.TRECHO / 14.0
+			var piso := pista.sample_position(o + sentido * deslocado).y
+			var sem_relevo := base.origin.y - base.basis.z.y * deslocado
+			var sprite := sem_relevo + Multidao.altura_do_relevo(deslocado, relevo)
+			maior_erro_sem_relevo = maxf(maior_erro_sem_relevo, absf(sem_relevo - piso))
+			maior_erro = maxf(maior_erro, absf(sprite - piso))
+	assert_float(maior_erro_sem_relevo).is_greater(0.05)
+	assert_float(maior_erro).is_less(0.05)
+
+
 func test_pessoa_em_sprite_tem_folha_para_todos_os_estados() -> void:
 	var pessoa: Pessoa = auto_free(Pessoa.new())
 	add_child(pessoa)
