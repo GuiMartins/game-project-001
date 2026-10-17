@@ -64,6 +64,8 @@ const DEITADO: float = 0.12
 ## liso.
 var cadencia: float = 12.0
 var estado: Estado = Estado.PARADA
+## A roupa de quem veio da calcada continua a mesma quando voa e cai.
+var avatar: int = PedestreSprite.PRAIA
 ## Velocidade de caminhada, em m/s.
 var velocidade: float = 1.4
 
@@ -87,6 +89,8 @@ var _nos_braco: Array[Node3D] = []
 var _nos_coxa: Array[Node3D] = []
 var _nos_canela: Array[Node3D] = []
 var _malhas: Array[MeshInstance3D] = []
+var _sprite := PedestreSprite.new()
+var _em_sprite: bool = false
 
 var _desde: float = 0.0
 var _fase: float = 0.0
@@ -147,7 +151,9 @@ func _ready() -> void:
 				s, Pedestres.material(malha.mesh.surface_get_material(s))
 			)
 	add_to_group(Pedestres.GRUPO_NOS)
+	add_child(_sprite)
 	_aplica()
+	usar_sprite(_em_sprite)
 
 
 func _junta_malhas(no: Node) -> void:
@@ -162,6 +168,21 @@ func vestir(camisa: Color, pele := Color(0, 0, 0, 0)) -> void:
 	for malha in _malhas:
 		malha.set_instance_shader_parameter(&"camisa", camisa)
 		malha.set_instance_shader_parameter(&"pele", pele)
+
+
+## A mesma escolha PERSONAGENS do menu vale para quem atravessa, desembarca e cai.
+func usar_sprite(ligado: bool) -> void:
+	_em_sprite = ligado
+	_sprite.visible = ligado
+	var sombra := (
+		GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+		if ligado
+		else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	)
+	for malha in _malhas:
+		malha.cast_shadow = sombra
+	if ligado:
+		_sprite.posar(estado, _fase, _relogio, _giro, _vel.length(), avatar)
 
 
 ## Sorteia o que a deixa diferente das outras: o passo e o ritmo de quem
@@ -612,3 +633,4 @@ func _aplica() -> void:
 		_nos_coxa[i].rotation = Vector3(_coxa[i], 0.0, 0.0)
 		_nos_canela[i].rotation = Vector3(-_joelho[i], 0.0, 0.0)
 		_nos_braco[i].rotation = Vector3(_braco[i], 0.0, _abre[i] * lado)
+	_sprite.posar(estado, _fase, _relogio, _giro, _vel.length(), avatar)
