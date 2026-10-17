@@ -22,16 +22,16 @@
 		"calcada_velocidade_asfalto_ms": 39.55794,
 		"calcada_velocidade_calcada_ms": 43.183138,
 		"combate_empurrao_m": 2.1,
-		"corrida_atras_do_lider_m": 258.436508,
-		"corrida_distancia_m": 1236.665527,
-		"corrida_pancadas_tomadas": 2.0,
+		"corrida_atras_do_lider_m": 191.819642,
+		"corrida_distancia_m": 1168.593018,
+		"corrida_pancadas_tomadas": 1.0,
 		"corrida_posicao": 6.0,
-		"corrida_quedas": 2.0,
+		"corrida_quedas": 1.0,
 		"corrida_raspadas": 17.0,
-		"corrida_ritmo_lider_kmh": 115.248193,
-		"corrida_rivais_caidos": 6.0,
+		"corrida_ritmo_lider_kmh": 106.715852,
+		"corrida_rivais_caidos": 11.0,
 		"corrida_rivais_derrubados": 0.0,
-		"disputa_posicao": 5.0,
+		"disputa_posicao": 3.0,
 		"disputa_rivais_na_linha": 5.0,
 		"freada_distancia_m": 37.499951,
 		"freada_tempo_s": 1.483333,
@@ -43,5 +43,11 @@
 		"soco_janela_s": 0.133333,
 		"velocidade_22s_kmh": 183.647097
 	},
-	"valores_por_sistema": {}
+	"valores_por_sistema": {
+		"linux": {
+			"batida_traseira_kmh": 8.544962,
+			"corrida_distancia_m": 1242.415771,
+			"corrida_quedas": 0.0
+		}
+	}
 }

@@ -120,13 +120,7 @@ static func _poste(onde: Transform3D, altura: float, mat: Dictionary) -> Node3D:
 	braco.material_override = mat["poste"]
 	raiz.add_child(braco)
 	braco.position = Vector3(-BRACO_COMPRIMENTO * 0.5, altura, 0.0)
-	var corpo := StaticBody3D.new()
-	corpo.collision_layer = Layers.WORLD
-	corpo.collision_mask = 0
-	var forma := Greybox.box_shape(COLISOR)
-	forma.position = Vector3.UP * COLISOR.y * 0.5
-	corpo.add_child(forma)
-	raiz.add_child(corpo)
+	Quebravel.com_colisor(raiz, COLISOR)
 	return raiz
 
 

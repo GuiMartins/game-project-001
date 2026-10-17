@@ -23,20 +23,36 @@ const HZ := Vector2(8.0, 15.0)
 ## Fase, em ciclos. Integrada, e nao `tempo * frequencia`: a frequencia muda
 ## com a velocidade, e o produto pularia de fase a cada passo.
 var _fase: float = 0.0
+var _impacto: float = 0.0
+var _tempo_impacto: float = 0.0
+
+
+## Afunda a frente por um instante sem mudar a velocidade nem a direcao da moto.
+func impacto(forca: float) -> void:
+	_impacto = maxf(_impacto, clampf(forca, 0.0, 1.0))
+	_tempo_impacto = 0.0
 
 
 ## Duas senoides fora de fase, a traseira um pouco mais forte (e onde esta o
 ## motor): soma de frequencias que nao se dividem nao repete o desenho, e o
 ## tremor nao le como mola balancando.
 func passo(delta: float, v: float, caido: bool) -> Vector2:
+	_tempo_impacto += delta
+	var tranco := _impacto * exp(-18.0 * _tempo_impacto) * sin(32.0 * _tempo_impacto)
+	if caido:
+		_impacto = 0.0
+		tranco = 0.0
 	var k := clampf(v / CHEIO, 0.0, 1.0)
 	_fase = fmod(_fase + lerpf(HZ.x, HZ.y, k) * delta, 1000.0)
 	var amplitude := 0.0 if caido else PICO * k * k
 	var a := TAU * _fase
 	return (
-		Vector2(
-			0.6 * sin(a) + 0.4 * sin(a * 1.618 + 0.7),
-			0.7 * sin(a + 1.9) + 0.3 * sin(a * 2.414 + 0.3),
+		(
+			Vector2(
+				0.6 * sin(a) + 0.4 * sin(a * 1.618 + 0.7),
+				0.7 * sin(a + 1.9) + 0.3 * sin(a * 2.414 + 0.3),
+			)
+			* amplitude
 		)
-		* amplitude
+		+ Vector2(0.1, 0.025) * tranco
 	)
