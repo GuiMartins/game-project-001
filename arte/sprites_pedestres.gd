@@ -36,7 +36,7 @@ const PPM: float = 100.0
 ## (0-255). O JPEG suja a borda: abaixo disso sobra uma franja verde.
 const MARGEM_VERDE: int = 40
 ## Faixa vazia, em pixels da folha, que separa dois desenhos.
-const VAO: int = 12
+const VAO: int = 4
 ## Quanto do topo do desenho entra no calculo do centro do tronco.
 const FRACAO_TRONCO: float = 0.4
 ## O quadro 7 da linha de tres quartos de costas do andar sai virado de lado em
@@ -93,7 +93,7 @@ const ANIMACOES: Dictionary = {
 	{
 		"linhas": ["frente", "tres_quartos_frente", "lado"],
 		"colunas": 6,
-		"celula": Vector2i(160, 224),
+		"celula": Vector2i(224, 224),
 		"pe_y": 220,
 		"area_minima": 4000,
 		"escala": "altura",
@@ -110,7 +110,7 @@ const ANIMACOES: Dictionary = {
 			"carro_de_frente"
 		],
 		"colunas": 8,
-		"celula": Vector2i(192, 208),
+		"celula": Vector2i(256, 208),
 		"pe_y": 204,
 		"area_minima": 4000,
 		"escala": "altura_alta",
@@ -148,8 +148,30 @@ const ANIMACOES: Dictionary = {
 ## tem o passo certo em todas as linhas menos a de costas, que saiu de frente; a
 ## segunda tem as costas, e o passo de lado e mais fraco.
 const PESSOAS: Dictionary = {
-	"vovo": {"altura": 1.55, "fontes": {"andando": ["vovo_andando", 0, 1, 2, 3, 4]}},
-	"obra": {"altura": 1.78, "fontes": {"andando": ["obra_andando", 0, 1, 2, 3, 4]}},
+	"vovo":
+	{
+		"altura": 1.55,
+		"fontes":
+		{
+			"andando": ["vovo_andando", 0, 1, 2, 3, 4],
+			"susto": ["vovo_susto", 0, 1, 2],
+			"desembarcando": ["vovo_desembarcando", 0, 1, 2, 3],
+			"voando": ["vovo_voando", 0, 1, 2, 3],
+			"caida": ["vovo_caida", 0, 1, 2, 3],
+		},
+	},
+	"obra":
+	{
+		"altura": 1.78,
+		"fontes":
+		{
+			"andando": ["obra_andando", 0, 1, 2, 3, 4],
+			"susto": ["obra_susto", 0, 1, 2],
+			"desembarcando": ["obra_desembarcando", 0, 1, 2, 3],
+			"voando": ["obra_voando", 0, 1, 2, 3],
+			"caida": ["obra_caida", 0, 1, 2, 3],
+		},
+	},
 	"praia":
 	{
 		"altura": 1.75,
@@ -162,11 +184,29 @@ const PESSOAS: Dictionary = {
 			"caida": ["praia_caida", 0, 1, 2, 3],
 		},
 	},
-	"adolescente": {"altura": 1.65, "fontes": {"andando": ["adolescente_andando", 0, 1, 2, 3, 4]}},
+	"adolescente":
+	{
+		"altura": 1.65,
+		"fontes":
+		{
+			"andando": ["adolescente_andando", 0, 1, 2, 3, 4],
+			"susto": ["adolescente_susto", 0, 1, 2],
+			"desembarcando": ["adolescente_desembarcando", 0, 1, 2, 3],
+			"voando": ["adolescente_voando", 0, 1, 2, 3],
+			"caida": ["adolescente_caida", 0, 1, 2, 3],
+		},
+	},
 	"escritorio":
 	{
 		"altura": 1.68,
-		"fontes": {"andando": ["escritorio_andando", 0, 1, 2, 3, "escritorio_andando_costas", 4]},
+		"fontes":
+		{
+			"andando": ["escritorio_andando", 0, 1, 2, 3, "escritorio_andando_costas", 4],
+			"susto": ["escritorio_susto", 0, 1, 2],
+			"desembarcando": ["escritorio_desembarcando", 0, 1, 2, 3],
+			"voando": ["escritorio_voando", 0, 1, 2, 3],
+			"caida": ["escritorio_caida", 0, 1, 2, 3],
+		},
 	},
 }
 

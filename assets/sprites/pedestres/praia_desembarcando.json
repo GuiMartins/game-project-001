@@ -2,7 +2,7 @@
 	"altura_m": 1.75,
 	"animacao": "desembarcando",
 	"celula": [
-		192,
+		256,
 		208
 	],
 	"colunas": 8,
@@ -14,7 +14,7 @@
 		"carro_de_frente"
 	],
 	"pe": [
-		96,
+		128,
 		204
 	],
 	"pixels_por_metro": 100.0
