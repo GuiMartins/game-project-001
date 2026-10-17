@@ -215,6 +215,7 @@ func start_race(grid_offset: float = 0.0, at_speed: float = 0.0) -> void:
 	# Largada nova, calcada nova: quem foi atropelado volta, e o chao e lavado.
 	get_tree().call_group(&"multidao", &"reiniciar")
 	get_tree().call_group(&"contramao", &"reiniciar")
+	get_tree().call_group(&"quebraveis", &"reiniciar")
 	for mancha in _sangue.get_children():
 		mancha.queue_free()
 

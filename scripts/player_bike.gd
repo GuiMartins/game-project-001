@@ -489,6 +489,11 @@ func _resolve_collisions() -> void:
 		normal = normal.normalized()
 
 		var outro := col.get_collider()
+		if outro is Quebravel:
+			(outro as Quebravel).quebrar(_antes_da_batida)
+			# O slide encurta este passo, mas nao tira embalo nem provoca queda.
+			velocity = _antes_da_batida
+			continue
 		var v_outro := _velocidade_de(outro)
 		var relativa := _antes_da_batida - v_outro
 		var chegada := maxf(-relativa.dot(normal), 0.0)
