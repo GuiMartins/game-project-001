@@ -57,6 +57,8 @@ common/physics_ticks_per_second=60
 
 [rendering]
 
+limits/global_shader_variables/buffer_size=131072
+
 ; 16x, e nao o padrao de 4x: o chao e visto quase de lado, e nessa inclinacao
 ; a razao de anisotropia passa de 4 logo a frente da moto. Acima do limite o
 ; grao claro do asfalto deixa de ser media e vira ponto que acende e apaga.

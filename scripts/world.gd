@@ -147,7 +147,11 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	extra.seed = hash(_rng.seed + 5)
 	track.build(ROUTE_LENGTH, _rng, Cidade.extra_de_expressas(semente_da_cidade), extra)
 
+	track.chegada_desde = track.length - FINISH_MARGIN - 100.0
 	_build_scenery()
+	var chegada := Chegada.new()
+	add_child(chegada)
+	chegada.montar(track, track.length - FINISH_MARGIN)
 
 	player = PlayerBike.new()
 	player.name = "Player"
@@ -202,7 +206,7 @@ func restart() -> void:
 ## linha de chegada pra medir a chegada sem pagar os 3 km inteiros - e medir a
 ## chegada e o unico jeito de saber se a ordem de chegada existe.
 func start_race(grid_offset: float = 0.0, at_speed: float = 0.0) -> void:
-	run.start(track.length - FINISH_MARGIN, rivals.size() + 1)
+	run.start(track.length - FINISH_MARGIN + Chegada.COMPRIMENTO * 0.5, rivals.size() + 1)
 	var slot := grid_slot(rivals.size(), grid_offset)
 	player.place_on_track(slot.x, slot.y, at_speed)
 	player.adrenaline = 0.0
@@ -217,6 +221,7 @@ func start_race(grid_offset: float = 0.0, at_speed: float = 0.0) -> void:
 	get_tree().call_group(&"multidao", &"reiniciar")
 	get_tree().call_group(&"contramao", &"reiniciar")
 	get_tree().call_group(&"quebraveis", &"reiniciar")
+	get_tree().call_group(&"torcida_chegada", &"reiniciar")
 	for mancha in _sangue.get_children():
 		mancha.queue_free()
 
@@ -599,7 +604,10 @@ func _physics_process(delta: float) -> void:
 	# posicao que ele congelar no resultado tem que ser a deste frame.
 	_position_event_timer = maxf(_position_event_timer - delta, 0.0)
 	_update_standings()
-	run.tick(delta, player_progress())
+	var recuo := Chegada.recuo_traseira(
+		player.global_basis, PlayerBike.SIZE, track.sample_basis(player_progress())
+	)
+	run.tick(delta, player_progress(), recuo)
 	_sync_traffic_pool()
 	_recycle_traffic()
 	_score_corridor()

@@ -475,7 +475,8 @@ func _advance(delta: float) -> void:
 	# O tempo de chegada e o que ordena quem ja cruzou a linha. Sem ele, dois
 	# rivais que terminaram ficariam empatados pelo offset e a ordem de chegada
 	# passaria a depender da ordem da lista.
-	if finish_time < 0.0 and offset >= finish_offset:
+	var recuo := Chegada.recuo_traseira(global_basis, SIZE, track.sample_basis(offset))
+	if finish_time < 0.0 and offset - recuo >= finish_offset:
 		finish_time = race_time
 	_apply_transform()
 

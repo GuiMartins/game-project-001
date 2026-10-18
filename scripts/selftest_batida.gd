@@ -91,12 +91,16 @@ func _monta_batida() -> void:
 	var em := 400.0 + 150.0 * float(_batida)
 	var faixa := RoadTrack.lane_center(1)
 	var carro: TrafficCar = _mundo.traffic[0]
+	# A chegada mais longa muda quantas vezes este carro foi reciclado na
+	# disputa. Reciclar novamente aqui sorteava outra lataria: a prova de
+	# colisao acabava medindo um modelo diferente conforme a fase anterior.
+	if BATIDAS[_batida] != "moto":
+		carro.setup(_mundo.track, em + 15.0, faixa, World.SEMENTE, BATIDAS[_batida] != "traseira")
 	var lateral := faixa
 	var velocidade := 35.0  # 126 km/h
 	match BATIDAS[_batida]:
 		"traseira":
 			# 72 km/h num carro a 25: 47 km/h de aproximacao, longe de cair.
-			carro.recycle(em + 15.0, faixa, false)
 			carro.cruise_speed = 7.0
 			carro.speed = 7.0
 			# Sem troca de faixa no meio da prova: o timer vem do sorteio da
@@ -105,10 +109,8 @@ func _monta_batida() -> void:
 			velocidade = 20.0
 			_batida_obstaculo = carro
 		"parado":
-			carro.recycle(em + 15.0, faixa, true)
 			_batida_obstaculo = carro
 		"quina":
-			carro.recycle(em + 15.0, faixa, true)
 			# Um quarto da moto em cima da lataria: o guidao pega o canto.
 			lateral = faixa + carro.meia_largura() + PlayerBike.SIZE.x * 0.25
 			_batida_obstaculo = carro
