@@ -16,7 +16,7 @@ func test_fiscal_segura_bandeira_e_acena_com_o_braco() -> void:
 	var fiscal := chegada.find_child("FiscalDaBandeira", true, false) as Pessoa
 	assert_object(fiscal).is_not_null()
 	assert_vector(fiscal.global_position).is_equal_approx(
-		pista.point(fim + Chegada.COMPRIMENTO * 0.5 + 2.0, 0.0), Vector3.ONE * 0.001
+		pista.point(fim - Chegada.COMPRIMENTO * 0.5, 0.0), Vector3.ONE * 0.001
 	)
 	var braco := fiscal.find_child("Braco_E", true, false) as Node3D
 	var antes := braco.rotation
@@ -53,3 +53,26 @@ func test_mede_traseira_tambem_com_moto_atravessada() -> void:
 	assert_float(Chegada.recuo_traseira(de_lado, PlayerBike.SIZE, Basis.IDENTITY)).is_equal_approx(
 		0.375, 0.001
 	)
+
+
+func test_fiscal_nao_desvia_mas_pode_ser_atropelado_e_volta_na_largada() -> void:
+	var fiscal: Chegada.Torcedor = auto_free(Chegada.Torcedor.new())
+	fiscal.fiscal = true
+	add_child(fiscal)
+	fiscal.set_physics_process(false)
+	fiscal.colocar(Vector3.ZERO, PI)
+	var moto: Node3D = auto_free(Node3D.new())
+	add_child(moto)
+	moto.add_to_group(Pessoa.GRUPO_MOTOS)
+	moto.position = Vector3(0.0, 0.8, 8.0)
+	for i in 30:
+		moto.position.z -= 20.0 / 60.0
+		fiscal._physics_process(1.0 / 60.0)
+		assert_int(fiscal.estado).is_not_equal(Pessoa.Estado.SUSTO)
+		if fiscal.estado == Pessoa.Estado.VOANDO:
+			break
+	assert_int(fiscal.estado).is_equal(Pessoa.Estado.VOANDO)
+	fiscal.reiniciar()
+	assert_int(fiscal.estado).is_equal(Pessoa.Estado.PARADA)
+	assert_vector(fiscal.position).is_equal(Vector3.ZERO)
+	assert_bool(fiscal._corpo.is_equal_approx(Basis.IDENTITY)).is_true()

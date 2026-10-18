@@ -2,9 +2,9 @@ class_name Chegada
 extends Node3D
 ## A festa fica no endereco que decide a corrida, sem consumir sorteios do mundo.
 
-## Seis metros permitem ler a quadricula antes de passar por cima dela.
-const COMPRIMENTO: float = 6.0
-const FILEIRAS: int = 8
+## Dez metros deixam o atropelo acontecer antes de a moto inteira terminar.
+const COMPRIMENTO: float = 10.0
+const FILEIRAS: int = 14
 
 const BRANCO := Color(0.94, 0.94, 0.9)
 const PRETO := Color(0.035, 0.045, 0.06)
@@ -16,6 +16,21 @@ class Torcedor:
 	extends Pessoa
 	var fiscal: bool = false
 	var fase: float = 0.0
+	var posto := Vector3.ZERO
+	var direcao: float = 0.0
+
+	func _ready() -> void:
+		super._ready()
+		add_to_group(&"torcida_chegada")
+
+	func reiniciar() -> void:
+		estado = Estado.PARADA
+		_corpo = Basis.IDENTITY
+		_vel = Vector3.ZERO
+		_relogio = 0.0
+		_motos.clear()
+		_caminho.clear()
+		colocar(posto, direcao)
 
 	# As poses de torcida precisam dos bracos articulados; os atlas de caminhada
 	# nao contem o gesto nem a mao que segura a haste.
@@ -23,9 +38,10 @@ class Torcedor:
 		super.usar_sprite(false)
 
 	func _olha_motos(delta: float) -> void:
-		# O fiscal recebe os corredores depois da linha, sem fugir do seu posto.
-		if not fiscal:
-			super._olha_motos(delta)
+		# Ele segura o posto, mas continua sujeito ao mesmo atropelo dos pedestres.
+		if fiscal:
+			_sem_susto = 1.0
+		super._olha_motos(delta)
 
 	func _fica() -> void:
 		super._fica()
@@ -82,7 +98,9 @@ func montar(pista: RoadTrack, distancia: float) -> void:
 			var pessoa := Torcedor.new()
 			add_child(pessoa)
 			var p := pista.point(o, lateral)
-			pessoa.colocar(to_local(p), lado * PI * 0.5)
+			pessoa.posto = to_local(p)
+			pessoa.direcao = lado * PI * 0.5
+			pessoa.colocar(pessoa.posto, pessoa.direcao)
 			pessoa.fase = float(i) * 1.73 + lado
 			pessoa.vestir(Color.from_hsv(fposmod(float(i) * 0.137 + lado * 0.12, 1.0), 0.7, 0.9))
 		# A grade deixa o corredor visualmente livre, sem mudar a fisica da prova.
@@ -96,13 +114,14 @@ func montar(pista: RoadTrack, distancia: float) -> void:
 			_caixa(grade, Vector3(0.07, 1.1, 0.07), Vector3.ZERO + Vector3.UP * 0.55, LARANJA)
 	var palco := Node3D.new()
 	add_child(palco)
-	palco.global_transform = pista.transform_at(distancia + COMPRIMENTO * 0.5 + 2.0, 0.0)
+	palco.global_transform = pista.transform_at(distancia - COMPRIMENTO * 0.5, 0.0)
 	var fiscal := Torcedor.new()
 	fiscal.name = "FiscalDaBandeira"
 	fiscal.fiscal = true
 	fiscal.cadencia = 0.0
 	palco.add_child(fiscal)
-	fiscal.colocar(Vector3.ZERO, PI)
+	fiscal.direcao = PI
+	fiscal.colocar(fiscal.posto, fiscal.direcao)
 	fiscal.vestir(BRANCO)
 	# A haste e filha do braco: a mao e a bandeira nunca se separam no aceno.
 	var braco := fiscal.find_child("Braco_E", true, false) as Node3D

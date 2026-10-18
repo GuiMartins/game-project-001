@@ -221,6 +221,7 @@ func start_race(grid_offset: float = 0.0, at_speed: float = 0.0) -> void:
 	get_tree().call_group(&"multidao", &"reiniciar")
 	get_tree().call_group(&"contramao", &"reiniciar")
 	get_tree().call_group(&"quebraveis", &"reiniciar")
+	get_tree().call_group(&"torcida_chegada", &"reiniciar")
 	for mancha in _sangue.get_children():
 		mancha.queue_free()
 
