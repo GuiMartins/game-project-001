@@ -17,7 +17,7 @@
 	"valores": {
 		"aceleracao_0_100_s": 2.75,
 		"batida_quina_desvio_m": 2.10784825086594,
-		"batida_traseira_kmh": 8.544953,
+		"batida_traseira_kmh": 9.01561913966528,
 		"calcada_lateral_max_m": 44.3,
 		"calcada_velocidade_asfalto_ms": 39.55794,
 		"calcada_velocidade_calcada_ms": 43.183138,
@@ -45,7 +45,6 @@
 	},
 	"valores_por_sistema": {
 		"linux": {
-			"batida_traseira_kmh": 9.01561913966528,
 			"corrida_atras_do_lider_m": 297.262607728184,
 			"corrida_distancia_m": 1179.888671875
 		}
