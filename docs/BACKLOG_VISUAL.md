@@ -1582,7 +1582,7 @@ no passo de ampliar, não no render.
 
 ### Fechamento
 
-- [ ] **V26** — Barril na `GARUPA` (opcional)
+- [x] **V26** — Barril na `GARUPA` (opcional) (18/10/2026)
 
   Última etapa da `REFERENCIA_CAMERA_GARUPA.md`: a distorção de barril que faz
   o poste curvar na borda, como a lente 0,5× do celular. Opcional porque
@@ -1591,6 +1591,16 @@ no passo de ampliar, não no render.
 
   - **Referências:** `video_02/folha` e `video_02/tempo_1`–`tempo_4` (o poste
     curvando na borda, lente 0,5×).
+
+  **Resultado:** entrou. `barril.gdshader` roda num `CanvasLayer` logo abaixo
+  da paleta (layer 4 contra 5), só quando a câmera é `GARUPA`, com
+  `r_fonte = r·(1 + k·r²)/(1 + k)` e `k` = `garupa_barril` (padrão 0,15, no F3;
+  0 desliga). A leitura é linear: com nearest o pixel sai de tamanho irregular.
+  Medido com `dev.py prova --garupa` antes e depois: o dither segue em célula
+  de 2 px e a quantização cai sobre a imagem já distorcida, então o pixel não
+  suja; só a borda fica um pouco mais macia. O centro cresce em `1 + k` (o
+  piloto 15% maior): não compensei com `garupa_fov`, para não mexer na câmera
+  que já foi ajustada à mão; se pesar, é o `garupa_fov` ou o `k`.
 
 - [ ] **V27** — O veredito
 

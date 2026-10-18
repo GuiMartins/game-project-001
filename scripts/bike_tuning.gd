@@ -252,6 +252,9 @@ const SAVE_PATH: String = "user://tuning.tres"
 ## aqui ela vem da proximidade, e FOV abrindo perto do piloto encolhe ele
 ## justo quando deveria pesar.
 @export_range(60.0, 100.0, 1.0) var garupa_fov: float = 74.0
+## Distorcao de barril da lente (V26, `barril.gdshader`): 0 desliga, 0,10 a
+## 0,20 e a faixa da referencia. O centro cresce em (1 + k), e o piloto junto.
+@export_range(0.0, 0.5, 0.01) var garupa_barril: float = 0.15
 ## Quanto a camera fica de lado, em metros: tres quartos a ~21 graus. E o que
 ## deixa o fundo da rua aparecer ao lado do piloto. Zero = sempre atras.
 @export_range(0.0, 1.5, 0.05) var garupa_lado: float = 0.7
