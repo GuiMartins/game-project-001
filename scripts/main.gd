@@ -68,6 +68,8 @@ var _fiscal: Pessoa
 ## Cada chave de `VISUAL`, ligada ou nao.
 var _visual: Dictionary[String, bool] = {}
 var _paleta: CanvasItem
+## O passe de barril da GARUPA (`barril.gdshader`), logo abaixo da paleta.
+var _barril: CanvasItem
 ## Indice em `RESOLUCOES`.
 var _resolucao: int = 0
 ## Se a moto escolhida e lida e gravada no user://. Desligado no banco de
@@ -157,6 +159,7 @@ func _ready() -> void:
 		# dela); jogando, vale o que o jogador escolheu.
 		_resolucao = int(_le_config("visual", "resolucao", 0)) if _moto_salva else 1
 	get_window().size_changed.connect(_aplica_visual)
+	_monta_barril()
 	_monta_paleta()
 	for chave in VISUAL:
 		_visual[chave] = true if not _moto_salva else bool(_le_config("visual", chave, true))
@@ -262,6 +265,26 @@ func _monta_paleta() -> void:
 	tela.material = material
 	camada.add_child(tela)
 	_paleta = tela
+
+
+## O barril da lente da garupa (`barril.gdshader`): um passe de tela abaixo da
+## paleta (layer 4 contra 5), porque a quantizacao tem de cair sobre a imagem
+## ja distorcida. Fica escondido fora da GARUPA, onde a lente e a de jogo.
+func _monta_barril() -> void:
+	var camada := CanvasLayer.new()
+	camada.name = "Barril"
+	camada.layer = 4
+	sub_viewport.add_child(camada)
+	var tela := ColorRect.new()
+	tela.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tela.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var material := ShaderMaterial.new()
+	material.shader = preload("res://scripts/barril.gdshader")
+	material.set_shader_parameter("k", world.tuning.garupa_barril)
+	tela.material = material
+	tela.visible = false
+	camada.add_child(tela)
+	_barril = tela
 
 
 ## As linhas de opcao do menu, em duas colunas: o que muda a corrida e o que
@@ -490,6 +513,10 @@ func _grava_config(secao: String, chave: String, valor: Variant) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_barril.visible = (
+		world.camera.mode == ChaseCamera.Mode.GARUPA and world.tuning.garupa_barril > 0.0
+	)
+	(_barril.material as ShaderMaterial).set_shader_parameter("k", world.tuning.garupa_barril)
 	if _largada < 0.0 or fluxo == null or fluxo.tela != RaceFlow.Tela.CORRIDA:
 		return
 	var antes := _largada
