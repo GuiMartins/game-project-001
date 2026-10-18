@@ -5,7 +5,7 @@ Três camadas, e nenhuma substitui a outra.
 | Camada | Comando | Tempo | Pega o quê |
 | --- | --- | --- | --- |
 | Unitários | `python tools/dev.py test` | ~4 s | Lógica pura: pontuação, geometria de faixa, prazo |
-| Banco de provas | `python tools/dev.py selftest` | ~110 s | A moto e o mundo rodando de verdade |
+| Banco de provas | `python tools/dev.py selftest` | ~15 s | A moto e o mundo rodando de verdade |
 | Baseline | (dentro do selftest) | — | O número *andou*, mesmo continuando na faixa jogável |
 | Regressão visual | `python tools/dev.py shots` | ~90 s | A tela ficou errada por inteiro |
 | Regressão visual de noite | `python tools/dev.py shots --noite` | ~90 s | A noite ficou errada por inteiro: tudo apagado, tudo aceso |

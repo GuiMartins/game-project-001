@@ -511,7 +511,12 @@ def cmd_selftest(args: argparse.Namespace) -> int:
     if code != 0:
         return code
 
-    extra = ["--headless", "--", "--selftest"]
+    # --fixed-fps: sem ele o headless simula em tempo real (22 s de jogo = 26 s
+    # de relogio) e o banco inteiro leva ~110 s. Com ele cada quadro avanca
+    # 1/60 s o mais rapido que a maquina der, e a fisica ve o mesmo delta de
+    # sempre, entao as medidas nao mudam. So vale headless: com tela o quadro
+    # real e justamente o que se mede.
+    extra = ["--headless", "--fixed-fps", "60", "--", "--selftest"]
     if args.user_tuning:
         extra.append("--selftest-user")
     if args.fase:
