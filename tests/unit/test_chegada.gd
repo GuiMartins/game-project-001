@@ -15,6 +15,9 @@ func test_fiscal_segura_bandeira_e_acena_com_o_braco() -> void:
 	assert_vector(chegada.global_position).is_equal(pista.sample_position(fim))
 	var fiscal := chegada.find_child("FiscalDaBandeira", true, false) as Pessoa
 	assert_object(fiscal).is_not_null()
+	assert_vector(fiscal.global_position).is_equal_approx(
+		pista.point(fim + 2.0, 0.0), Vector3.ONE * 0.001
+	)
 	var braco := fiscal.find_child("Braco_E", true, false) as Node3D
 	var antes := braco.rotation
 	fiscal._physics_process(0.3)

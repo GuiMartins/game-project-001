@@ -17,6 +17,11 @@ class Torcedor:
 	func usar_sprite(_ligado: bool) -> void:
 		super.usar_sprite(false)
 
+	func _olha_motos(delta: float) -> void:
+		# O fiscal recebe os corredores depois da linha, sem fugir do seu posto.
+		if not fiscal:
+			super._olha_motos(delta)
+
 	func _fica() -> void:
 		super._fica()
 		var aceno := sin(_relogio * 6.0 + fase)
@@ -76,13 +81,12 @@ func montar(pista: RoadTrack, distancia: float) -> void:
 			_caixa(grade, Vector3(0.07, 1.1, 0.07), Vector3.ZERO + Vector3.UP * 0.55, LARANJA)
 	var palco := Node3D.new()
 	add_child(palco)
-	palco.global_transform = pista.transform_at(distancia - 2.5, meio + 2.0)
-	_caixa(palco, Vector3(2.0, 0.8, 2.0), Vector3(0, 0.4, 0), LARANJA)
+	palco.global_transform = pista.transform_at(distancia + 2.0, 0.0)
 	var fiscal := Torcedor.new()
 	fiscal.name = "FiscalDaBandeira"
 	fiscal.fiscal = true
 	palco.add_child(fiscal)
-	fiscal.colocar(Vector3(0, 0.8, 0), -0.6)
+	fiscal.colocar(Vector3.ZERO, PI)
 	fiscal.vestir(BRANCO)
 	# A haste e filha do braco: a mao e a bandeira nunca se separam no aceno.
 	var braco := fiscal.find_child("Braco_E", true, false) as Node3D
