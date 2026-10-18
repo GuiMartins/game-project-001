@@ -111,10 +111,19 @@ jobs:
   # Ele pega o que nenhuma medida de fisica pega: a tela ficar errada por
   # inteiro. O caso registrado no PROTOTIPO.md e a pista sumindo por backface
   # culling, que o Godot descarta sem um erro no console.
-  regressao-visual:
+  visual:
     needs: mudancas
     if: needs.mudancas.outputs.codigo == 'true'
     runs-on: ubuntu-latest
+    # Dia e noite em paralelo: cada passada leva ~18 min em software
+    # rendering, e uma atras da outra o job inteiro levava 36. Sao runners
+    # independentes, entao o tempo do portao cai para o da passada mais longa.
+    # O nome `regressao-visual`, que a master exige, fica com o agregador.
+    strategy:
+      fail-fast: false
+      matrix:
+        hora: [dia, noite]
+    name: visual (${{ matrix.hora }})
     steps:
       # Com LFS pelo mesmo motivo do job de provas, e aqui pesa mais: e o
       # unico job que olha a tela, e ponteiro no lugar de textura vira modelo
@@ -131,6 +140,7 @@ jobs:
           sudo apt-get install -y -qq xvfb mesa-vulkan-drivers
 
       - name: Regressao visual
+        if: matrix.hora == 'dia'
         # LIBGL_ALWAYS_SOFTWARE porque o runner nao tem GPU. O baseline tolera
         # 12%: e software rendering contra a GPU de quem gravou o baseline, e
         # estreitar isso troca regressao por alarme falso.
@@ -141,6 +151,7 @@ jobs:
       # A corrida anoitece, e a noite tem o seu baseline: e outra tela, com
       # outras coisas para dar errado por inteiro - tudo apagado, tudo aceso.
       - name: Regressao visual de noite
+        if: matrix.hora == 'noite'
         env:
           LIBGL_ALWAYS_SOFTWARE: "1"
         run: xvfb-run -a --server-args="-screen 0 1280x720x24" python tools/dev.py shots --noite
@@ -149,7 +160,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: frames
+          name: frames-${{ matrix.hora }}
           path: |
             .dev/shots/*.png
             .dev/shots_noite/*.png
@@ -180,5 +191,25 @@ jobs:
           echo "provas:    ${{ needs.provas.result }}"
           if [ "${{ needs.qualidade.result }}" != "success" ] ||              [ "${{ needs.provas.result }}" != "success" ]; then
             echo "::error::algum job não passou"
+            exit 1
+          fi
+
+  # Agregador do visual, pelo mesmo motivo do `banco-de-provas`: a master exige
+  # um check chamado `regressao-visual`, e a matrix so produz `visual (dia)` e
+  # `visual (noite)`. Passa quando as duas passam, ou quando so docs mudaram.
+  regressao-visual:
+    needs: [mudancas, visual]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conferir dia e noite
+        run: |
+          if [ "${{ needs.mudancas.result }}" = "success" ] && [ "${{ needs.mudancas.outputs.codigo }}" = "false" ]; then
+            echo "::notice::só markdown e docs/ mudaram: regressão visual pulada"
+            exit 0
+          fi
+          echo "visual: ${{ needs.visual.result }}"
+          if [ "${{ needs.visual.result }}" != "success" ]; then
+            echo "::error::dia ou noite não passou"
             exit 1
           fi
