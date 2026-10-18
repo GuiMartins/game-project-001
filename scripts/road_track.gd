@@ -130,6 +130,8 @@ var pilares_no_meio: Array[bool] = []
 var cruzamentos: Array[Vector2] = []
 ## Meia largura da boca das ruas que cruzam, no meio-fio da avenida.
 var boca: float = 0.0
+## A festa de chegada reserva o asfalto para a faixa quadriculada.
+var chegada_desde: float = INF
 ## O nome da avenida e o de cada trecho de via expressa, na ordem de
 ## `expressas`, como a `Cidade` deu. E o que o GPS escreve embaixo do mapa.
 var nome: String = ""
@@ -539,6 +541,8 @@ func pintar(a_cruzamentos: Array[Vector2], a_boca: float) -> void:
 			sem_bordo[k].append(Vector2(retencao, fim))
 			if abre:
 				sem_meio_fio[k].append(Vector2(c.x - boca, c.x + boca))
+		if zebra_inicio >= chegada_desde:
+			continue
 		for x in listras_da_zebra(road_w * 2.0):
 			_quad(
 				tinta, zebra_inicio, zebra_fim, x - ZEBRA_LISTRA * 0.5, x + ZEBRA_LISTRA * 0.5, 0.03

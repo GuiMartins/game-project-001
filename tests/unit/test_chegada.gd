@@ -24,3 +24,21 @@ func test_fiscal_segura_bandeira_e_acena_com_o_braco() -> void:
 	assert_bool(braco.rotation.is_equal_approx(antes)).is_false()
 	# A haste segue a mao, em vez de flutuar ao lado de uma pessoa parada.
 	assert_object(braco.get_node("BandeiraQuadriculada")).is_not_null()
+	var tecido := braco.get_node("BandeiraQuadriculada/Tecido") as MeshInstance3D
+	assert_object(tecido.material_override).is_instanceof(ShaderMaterial)
+	assert_int((tecido.mesh as PlaneMesh).subdivide_width).is_greater(20)
+
+
+func test_chegada_retira_zebra_e_retencao_sem_apagar_cruzamento() -> void:
+	var pista: RoadTrack = auto_free(RoadTrack.new())
+	add_child(pista)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = World.SEMENTE
+	pista.build(500.0, rng)
+	var ruas: Array[Vector2] = [Vector2(200.0, 0.0)]
+	pista.pintar(ruas, 8.0)
+	var antes: int = pista._pintura.mesh.surface_get_array_len(0)
+	pista.chegada_desde = 100.0
+	pista.pintar(ruas, 8.0)
+	assert_int(pista._pintura.mesh.surface_get_array_len(0)).is_less(antes)
+	assert_int(pista.cruzamentos.size()).is_equal(1)

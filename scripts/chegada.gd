@@ -4,6 +4,7 @@ extends Node3D
 
 const BRANCO := Color(0.94, 0.94, 0.9)
 const PRETO := Color(0.035, 0.045, 0.06)
+const TECIDO: Shader = preload("res://scripts/bandeira.gdshader")
 const LARANJA := Color(0.95, 0.28, 0.055)
 
 
@@ -24,10 +25,19 @@ class Torcedor:
 
 	func _fica() -> void:
 		super._fica()
-		var aceno := sin(_relogio * 6.0 + fase)
-		_braco[0] = 2.5 + aceno * 0.35
-		_abre[0] = 0.3 + aceno * 0.25
-		if not fiscal:
+		if fiscal:
+			# Uma varrida larga e mais lenta; o peso acompanha o ombro em vez de
+			# sacudir apenas a ponta de um braco levantado.
+			var ciclo := _relogio * TAU / 1.65
+			_braco[0] = 2.1 + 0.25 * cos(ciclo)
+			_abre[0] = 0.85 + 0.65 * sin(ciclo)
+			_tronco = 0.09 * cos(ciclo)
+			_coxa[0] = 0.07 * sin(ciclo)
+			_coxa[1] = -_coxa[0]
+		else:
+			var aceno := sin(_relogio * 6.0 + fase)
+			_braco[0] = 2.5 + aceno * 0.35
+			_abre[0] = 0.3 + aceno * 0.25
 			_braco[1] = 2.4 - aceno * 0.3
 			_abre[1] = 0.3
 
@@ -85,6 +95,7 @@ func montar(pista: RoadTrack, distancia: float) -> void:
 	var fiscal := Torcedor.new()
 	fiscal.name = "FiscalDaBandeira"
 	fiscal.fiscal = true
+	fiscal.cadencia = 0.0
 	palco.add_child(fiscal)
 	fiscal.colocar(Vector3.ZERO, PI)
 	fiscal.vestir(BRANCO)
@@ -95,14 +106,21 @@ func montar(pista: RoadTrack, distancia: float) -> void:
 	braco.add_child(haste)
 	haste.position = Vector3(0, -0.55, 0)
 	_caixa(haste, Vector3(0.035, 1.8, 0.035), Vector3(0, -0.65, 0), BRANCO)
-	for x in 6:
-		for y in 4:
-			_caixa(
-				haste,
-				Vector3(0.22, 0.22, 0.018),
-				Vector3(0.11 + float(x) * 0.22, -1.4 + float(y) * 0.22, 0),
-				BRANCO if (x + y) % 2 == 0 else PRETO
-			)
+	var tecido := MeshInstance3D.new()
+	tecido.name = "Tecido"
+	# Subdivisoes deixam a onda curvar o pano, mantendo a borda presa a haste.
+	var plano := PlaneMesh.new()
+	plano.orientation = PlaneMesh.FACE_Z
+	plano.size = Vector2(1.32, 0.88)
+	plano.subdivide_width = 31
+	plano.subdivide_depth = 19
+	tecido.mesh = plano
+	tecido.position = Vector3(0.66, -0.96, 0)
+	var material := ShaderMaterial.new()
+	material.shader = TECIDO
+	tecido.material_override = material
+	tecido.custom_aabb = AABB(Vector3(-0.8, -0.6, -0.6), Vector3(1.6, 1.2, 1.2))
+	haste.add_child(tecido)
 	# A corrida chega de noite: ilumina a faixa, o fiscal e o publico.
 	for lado: float in [-1.0, 1.0]:
 		var luz := OmniLight3D.new()

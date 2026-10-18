@@ -147,6 +147,7 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	extra.seed = hash(_rng.seed + 5)
 	track.build(ROUTE_LENGTH, _rng, Cidade.extra_de_expressas(semente_da_cidade), extra)
 
+	track.chegada_desde = track.length - FINISH_MARGIN - 100.0
 	_build_scenery()
 	var chegada := Chegada.new()
 	add_child(chegada)
