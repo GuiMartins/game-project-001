@@ -1695,8 +1695,10 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
 - [ ] **V33** — O trânsito contrário obedece ao slider de tráfego
 
   O Arthur pôs o tráfego em 0 e o lado contrário continuou com carros: "o
-  sentido contrário não é afetado". Existe um `Contramao` (`contramao.gd`) separado; a hipótese (não
-  verificada) é que ele não leia o `traffic_count` do slider do F3.
+  sentido contrário não é afetado". Os carros do sentido contrário são do `Contramao` (`contramao.gd`), que
+  só existe na via expressa e tem gerador próprio de propósito (para o
+  trânsito e os rivais do banco de provas não gastarem sorteio com ele),
+  então não passa pelo `traffic_count` do slider do F3.
 
   - **Referências:** nenhuma; é o comportamento do slider.
   - **O que fazer:** o `Contramao` lê a mesma densidade (ou uma fração
@@ -1777,9 +1779,10 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
 - [ ] **V38** 👤 — "Não entendi a cor do dia"
 
   O Arthur escreveu "não entendi o cor do dia" (às 14:54), e a conversa
-  seguiu sem explicação. A corrida larga ao meio-dia e anoitece por
-  progresso (`Relogio`, `Hora`); ele pode ter estranhado o dia virando noite
-  sem aviso, ou a troca do LUT. 👤 Perguntar a ele qual momento foi: o que
+  seguiu sem explicação. A corrida larga ao meio-dia e anoitece pelo **progresso do jogador na
+  rota**, não pelo cronômetro, e só anda para a frente (`Relogio`, `Hora`);
+  a cor da tela muda sozinha, sem nada que avise. É a explicação provável
+  da dúvida, e a hipótese mais forte. 👤 Perguntar a ele qual momento foi: o que
   viu, e em que ponto da corrida. Sem isso o item é palpite.
 
   - **Referências:** nenhuma; o item é a pergunta.
@@ -1808,7 +1811,10 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
 - [ ] **V40** 👤 — Câmera do capacete que inclina nas curvas
 
   O Arthur: "a câmera do capacete deveria inclinar nas curvas", e a da
-  `GARUPA` "parece aleatória", sem lógica. A perseguição (`chase_camera.gd`)
+  `GARUPA` "parece aleatória", sem lógica. A lógica existe e está no
+  cabeçalho de `camera_garupa.gd`: a câmera é um cinegrafista em **outro
+  veículo**, com velocidade própria, que fica para trás no talo e encosta na
+  freada, e não uma câmera presa à moto. Ninguém avisa isso ao jogador. A perseguição (`chase_camera.gd`)
   e a `GARUPA` (`camera_garupa.gd`, `garupa_giro` já deita pela inclinação)
   são as duas câmeras que existem. 👤 Perguntar a ele **qual** é a "do
   capacete": pode ser a perseguição baixa, ou uma terceira que ele espera. A
