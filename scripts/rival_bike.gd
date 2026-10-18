@@ -62,7 +62,11 @@ var player: PlayerBike
 var offset: float = 0.0
 var lateral: float = 0.0
 var speed: float = 0.0
-var state: State = State.RACING
+var state: State = State.RACING:
+	set(valor):
+		state = valor
+		# O banco e a largada tambem podem repor o estado diretamente.
+		collision_layer = 0 if valor == State.DOWN else Layers.RIVAL
 var mode: Mode = Mode.FOLLOW
 var state_timer: float = 0.0
 var bag_color: Color = Color(0.3, 0.8, 0.4)
@@ -101,6 +105,8 @@ var _hitbox: Area3D
 var _sensor: Area3D
 var _lean: float = 0.0
 var _lean_vel: float = 0.0
+var _altura_rampa: float = 0.0
+var _vertical_rampa: float = 0.0
 ## A mola da inclinacao da moto sorteada: rival de PCX troca de lado mais
 ## nervoso que rival de XRE, como o jogador.
 var _fisica := FisicaDaMoto.new()
@@ -198,6 +204,8 @@ func reset_race(at_offset: float, at_lateral: float, a_finish_offset: float) -> 
 	finish_time = -1.0
 	race_time = 0.0
 	state = State.RACING
+	_altura_rampa = 0.0
+	_vertical_rampa = 0.0
 	mode = Mode.FOLLOW
 	state_timer = 0.0
 	_punch_timer = -1.0
@@ -457,6 +465,12 @@ func _inclinar(alvo: float, delta: float) -> void:
 func _advance(delta: float) -> void:
 	if finish_time < 0.0:
 		race_time += delta
+	if state != State.DOWN:
+		if _altura_rampa <= 0.0:
+			var frente := -global_basis.z * speed * delta
+			_vertical_rampa = FisicaDaMoto.impulso_de_rampa(self, frente, speed)
+		_vertical_rampa -= PlayerBike.GRAVITY * delta
+		_altura_rampa = maxf(_altura_rampa + _vertical_rampa * delta, 0.0)
 	offset += speed * delta
 	# O tempo de chegada e o que ordena quem ja cruzou a linha. Sem ele, dois
 	# rivais que terminaram ficariam empatados pelo offset e a ordem de chegada
@@ -468,7 +482,7 @@ func _advance(delta: float) -> void:
 
 func _apply_transform() -> void:
 	var t := track.transform_at(offset, lateral)
-	t.origin += t.basis.y * (SIZE.y * 0.5)
+	t.origin += t.basis.y * (SIZE.y * 0.5) + Vector3.UP * _altura_rampa
 	global_transform = t
 	if state != State.DOWN:
 		_visual.rotation = Vector3(0.0, 0.0, -_lean)
@@ -517,6 +531,8 @@ func _alcance(body: Node3D) -> float:
 
 func _go_down() -> void:
 	state = State.DOWN
+	_altura_rampa = 0.0
+	_vertical_rampa = 0.0
 	state_timer = 2.6
 	_lado_queda = -1.0 if _lean <= 0.0 else 1.0
 	_punch_timer = -1.0

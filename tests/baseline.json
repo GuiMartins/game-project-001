@@ -16,18 +16,18 @@
 	},
 	"valores": {
 		"aceleracao_0_100_s": 2.75,
-		"batida_quina_desvio_m": 2.10732468366623,
-		"batida_traseira_kmh": 7.093882,
-		"calcada_lateral_max_m": 42.3,
+		"batida_quina_desvio_m": 2.10784825086594,
+		"batida_traseira_kmh": 8.544953,
+		"calcada_lateral_max_m": 44.3,
 		"calcada_velocidade_asfalto_ms": 39.55794,
 		"calcada_velocidade_calcada_ms": 43.183138,
 		"combate_empurrao_m": 2.1,
-		"corrida_atras_do_lider_m": 191.819642,
-		"corrida_distancia_m": 1168.593018,
+		"corrida_atras_do_lider_m": 69.1981775992158,
+		"corrida_distancia_m": 1408.37634277344,
 		"corrida_pancadas_tomadas": 0.0,
 		"corrida_posicao": 6.0,
-		"corrida_quedas": 0.0,
-		"corrida_raspadas": 21.0,
+		"corrida_quedas": 1.0,
+		"corrida_raspadas": 26.0,
 		"corrida_ritmo_lider_kmh": 106.715852,
 		"corrida_rivais_caidos": 11.0,
 		"corrida_rivais_derrubados": 0.0,
@@ -43,5 +43,13 @@
 		"soco_janela_s": 0.133333,
 		"velocidade_22s_kmh": 183.647097
 	},
-	"valores_por_sistema": {}
+	"valores_por_sistema": {
+		"linux": {
+			"corrida_distancia_m": 1378.81897
+		},
+		"windows": {
+			"batida_traseira_kmh": 7.093882,
+			"corrida_distancia_m": 1287.202026
+		}
+	}
 }
