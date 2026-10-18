@@ -45,11 +45,9 @@
 	},
 	"valores_por_sistema": {
 		"linux": {
-			"corrida_distancia_m": 1378.81897
-		},
-		"windows": {
-			"batida_traseira_kmh": 7.093882,
-			"corrida_distancia_m": 1287.202026
+			"batida_traseira_kmh": 9.01561913966528,
+			"corrida_atras_do_lider_m": 297.262607728184,
+			"corrida_distancia_m": 1179.888671875
 		}
 	}
 }
