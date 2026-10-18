@@ -324,3 +324,19 @@ func test_pessoa_em_sprite_tem_folha_para_todos_os_estados() -> void:
 				)
 				. is_equal(esperado)
 			)
+
+
+func test_fiscal_marca_contagem_e_baixa_braco_na_largada() -> void:
+	var pessoa: Pessoa = auto_free(Pessoa.new())
+	add_child(pessoa)
+	pessoa.set_physics_process(false)
+	pessoa.usar_sprite(true)
+	pessoa.sinalizar_largada(0.0)
+	var alto := pessoa._nos_braco[1].rotation.x
+	pessoa.sinalizar_largada(0.5)
+	assert_float(pessoa._nos_braco[1].rotation.x).is_less(alto)
+	pessoa.sinalizar_largada(1.0)
+	assert_float(pessoa._nos_braco[1].rotation.x).is_equal_approx(alto, 0.001)
+	pessoa.sinalizar_largada(3.3)
+	assert_float(pessoa._nos_braco[1].rotation.x).is_less(0.3)
+	assert_bool(pessoa._sprite.visible).is_false()

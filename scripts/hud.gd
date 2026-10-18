@@ -55,6 +55,7 @@ const COR_APAGADO: Color = Color(0.2, 0.21, 0.25)
 const COR_MOLDURA: Color = Color(0.82, 0.85, 0.92)
 const COR_FUNDO_BARRA: Color = Color(0.05, 0.06, 0.08, 0.85)
 
+var contagem_largada: String = ""
 var run: RaceRun
 var player: PlayerBike
 
@@ -207,6 +208,9 @@ func _desenha() -> void:
 	var direita := tela.x - MARGEM.x
 	var alto_legenda := fonte_legenda.altura
 	var alto_valor := fonte_valor.altura
+
+	if not contagem_largada.is_empty():
+		_centralizado(fonte_valor, 85, contagem_largada, Color(1.0, 0.9, 0.25))
 
 	# --- Topo esquerdo: POS e as estrelas.
 	var y := MARGEM.y

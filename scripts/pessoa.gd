@@ -347,6 +347,24 @@ func _pose_de_pe() -> void:
 		_abre[i] = 0.06
 
 
+## A fiscal usa o corpo articulado porque o atlas de caminhada nao tem sinal
+## de largada. Quem dirige a sequencia fornece o mesmo relogio da contagem.
+func sinalizar_largada(segundos: float) -> void:
+	usar_sprite(false)
+	_pose_de_pe()
+	var pulso := sin(PI * fmod(maxf(segundos, 0.0), 1.0))
+	if segundos < 3.0:
+		_braco[1] = 2.5 - 0.5 * pulso
+		_abre[0] = 0.7
+	else:
+		var baixa := smoothstep(3.0, 3.3, segundos)
+		_braco[1] = lerpf(2.5, 0.2, baixa)
+		_braco[0] = lerpf(2.0, 0.2, baixa)
+		_abre[0] = lerpf(0.7, 0.15, baixa)
+		_tronco = 0.2 * sin(PI * baixa)
+	_aplica()
+
+
 func _pose_andando(para_tras: bool = false) -> void:
 	var f0 := -_fase if para_tras else _fase
 	for i in 2:
