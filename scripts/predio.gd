@@ -193,3 +193,51 @@ static func _material_compartilhado() -> ShaderMaterial:
 		_material.set_shader_parameter("loja_fabrica", LOJA_FABRICA)
 		_material.set_shader_parameter("tela_fabrica", TELA_FABRICA)
 	return _material
+
+
+## Uma segunda quadra fecha a vista pelas esquinas e por cima dos muros.
+## Gerador proprio: completar o cenario nao muda pedestres, carros nem a
+## distribuicao das fachadas e dos obstaculos que ja existiam na avenida.
+static func montar_fundo_urbano(
+	cidade: Cidade, cruzamentos: Array[Vector2], semente: int, props: Node3D
+) -> void:
+	var track := cidade.track
+	var fundo := RandomNumberGenerator.new()
+	fundo.seed = semente + 7819
+	var beira := RoadTrack.half_width()
+	for side: float in [-1.0, 1.0]:
+		var o := 0.0
+		while o < track.length:
+			var tipo := cidade._tipo_de_predio(fundo.randf_range(18.0, 38.0))
+			var caixa := Predio.malha(tipo).get_aabb()
+			# Alem do fim das transversais e da chegada lateral do tabuleiro:
+			# o fundo nao fecha a rua antes do T nem atravessa o viaduto.
+			var lateral := (beira + Cidade.RUA_COMPRIMENTO + 18.0 + Predio.frente(tipo)) * side
+			var escala := track.point(o, lateral).distance_to(track.point(o + 1.0, lateral))
+			# Pequena sobreposicao fecha a junta tambem na parte externa da curva.
+			var passo := caixa.size.x * 0.9 / maxf(escala, 0.2)
+			var base := track.transform_at(o + passo * 0.5, lateral)
+			cidade._predio(props, fundo, tipo, base.origin, base.basis.x * -side)
+			o += passo
+	for c in cruzamentos:
+		for side: float in [-1.0, 1.0]:
+			if not cidade._abre(c.y, side):
+				continue
+			var centro := track.point(c.x, beira * side)
+			var fora := track.sample_basis(c.x).x * side
+			fora.y = 0.0
+			fora = fora.normalized()
+			var eixo := track.sample_basis(c.x).z
+			eixo.y = 0.0
+			eixo = eixo.normalized()
+			for lado: float in [-1.0, 1.0]:
+				# A primeira quadra ocupa a esquina. A continuacao comeca
+				# depois dela, deixando livre o chanfro da mao contraria.
+				var distancia := 22.0
+				while distancia < Cidade.RUA_COMPRIMENTO:
+					var tipo := cidade._tipo_de_predio(fundo.randf_range(12.0, 30.0))
+					var largura := Predio.malha(tipo).get_aabb().size.x
+					var recuo := Cidade.RUA_LARGURA * 0.5 + Cidade.RUA_CALCADA + Predio.frente(tipo)
+					var pe := centro + fora * (distancia + largura * 0.5) + eixo * lado * recuo
+					cidade._predio(props, fundo, tipo, pe, -eixo * lado)
+					distancia += largura * 0.95

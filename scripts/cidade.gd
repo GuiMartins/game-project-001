@@ -192,6 +192,7 @@ func montar(rua: RandomNumberGenerator, props: Node3D) -> void:
 	_monta_portais(cruzamentos, props)
 	Marcos.montar(track, rua.seed, marcos, props)
 	Pedestres.montar(track, cruzamentos, rua, props)
+	Predio.montar_fundo_urbano(self, cruzamentos, rua.seed, props)
 
 
 ## Os nomes da avenida e das expressas, por hash da semente, e nao pelo `rua`:
