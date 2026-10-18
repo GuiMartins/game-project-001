@@ -61,6 +61,10 @@ var world_tuning: WorldTuning
 ## De onde os valores vieram, pro relatorio do banco de provas dizer.
 var tuning_source: String = ""
 
+## Um unico relogio sincroniza a fiscal, a HUD e a liberacao do mundo.
+var _largada: float = -1.0
+var _fiscal: Pessoa
+
 ## Cada chave de `VISUAL`, ligada ou nao.
 var _visual: Dictionary[String, bool] = {}
 var _paleta: CanvasItem
@@ -368,7 +372,11 @@ func _on_run_finished() -> void:
 ## o proprio menu e o painel de tuning.
 func _on_tela_mudou(tela: int) -> void:
 	var correndo := tela == RaceFlow.Tela.CORRIDA
-	world.process_mode = (Node.PROCESS_MODE_INHERIT if correndo else Node.PROCESS_MODE_DISABLED)
+	world.process_mode = (
+		Node.PROCESS_MODE_INHERIT
+		if correndo and not (_largada >= 0.0 and _largada < 3.0)
+		else Node.PROCESS_MODE_DISABLED
+	)
 	# A Hud some em qualquer tela que nao seja a corrida, o resultado incluso.
 	# Deixa-la por baixo do placar parecia dar contexto e na pratica so
 	# embaralhou: sao dois textos claros, do mesmo tamanho, no mesmo lugar da
@@ -481,7 +489,56 @@ func _grava_config(secao: String, chave: String, valor: Variant) -> void:
 	arquivo.save(MOTO_SALVA)
 
 
+func _physics_process(delta: float) -> void:
+	if _largada < 0.0 or fluxo == null or fluxo.tela != RaceFlow.Tela.CORRIDA:
+		return
+	var antes := _largada
+	_largada += delta
+	if _largada < 3.35:
+		_fiscal.sinalizar_largada(_largada)
+	elif antes < 3.35:
+		# Depois do sinal ela libera o centro do grid e vai para a calcada.
+		_fiscal.velocidade = 3.5
+		_fiscal.ir(PackedVector3Array([world.track.point(world.player.track_offset + 9.0, 8.0)]))
+		_fiscal.set_physics_process(true)
+	hud.contagem_largada = str(ceili(3.0 - _largada)) if _largada < 3.0 else "VAI!"
+	if antes < 3.0 and _largada >= 3.0:
+		for corpo: AnimatableBody3D in world.find_children("*", "AnimatableBody3D", true, false):
+			corpo.sync_to_physics = true
+		_on_tela_mudou(fluxo.tela)
+	if _largada >= 4.0:
+		_largada = -1.0
+		hud.contagem_largada = ""
+
+
 func _restart() -> void:
+	# O grid precisa aparecer antes do proximo passo: com sincronizacao os
+	# corpos parametricos guardam o teleporte ate a fisica voltar a rodar.
+	for corpo: AnimatableBody3D in world.find_children("*", "AnimatableBody3D", true, false):
+		corpo.sync_to_physics = false
 	world.set_physics_process(true)
 	world.restart()
+	for rival in world.rivals:
+		rival.speed = 0.0
 	hud.bind(world.run, world.player, world.track, world.rivals)
+
+	world.camera.encaixar()
+	_largada = 0.0
+	if _fiscal == null:
+		_fiscal = Pessoa.new()
+		_fiscal.cena_articulada = preload("res://assets/pedestres/fiscal.glb")
+		_fiscal.name = "FiscalDaLargada"
+		world.add_child(_fiscal)
+		# A sequencia posa a fiscal manualmente, inclusive com o mundo parado.
+		_fiscal.set_physics_process(false)
+		_fiscal.vestir(Color(1.0, 0.65, 0.08))
+	_fiscal.set_physics_process(false)
+	_fiscal.estado = Pessoa.Estado.PARADA
+	_fiscal.visible = true
+	var offset := world.player.track_offset + 9.0
+	var frente := world.track.sample_basis(offset)
+	var lugar := world.track.sample_position(offset)
+	_fiscal.colocar(lugar, frente.get_euler().y + PI)
+	_fiscal.sinalizar_largada(0.0)
+	hud.contagem_largada = "3"
+	_on_tela_mudou(fluxo.tela)
