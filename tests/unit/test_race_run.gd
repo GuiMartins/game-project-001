@@ -195,3 +195,15 @@ func test_rival_que_cai_sozinho_nao_paga_estilo() -> void:
 	assert_int(corrida.rivals_fell).is_equal(2)
 	assert_int(corrida.rivals_downed).is_equal(0)
 	assert_float(corrida.style).is_equal(0.0)
+
+
+func test_so_termina_quando_a_traseira_sai_da_faixa() -> void:
+	var corrida := _corrida(1000.0)
+	corrida.tick(0.1, 999.0, 1.05)
+	assert_int(corrida.phase).is_equal(RaceRun.Phase.RACING)
+	corrida.tick(0.1, 1000.0, 1.05)
+	assert_int(corrida.phase).is_equal(RaceRun.Phase.RACING)
+	corrida.tick(0.1, 1001.04, 1.05)
+	assert_int(corrida.phase).is_equal(RaceRun.Phase.RACING)
+	corrida.tick(0.1, 1001.06, 1.05)
+	assert_int(corrida.phase).is_equal(RaceRun.Phase.FINISHED)

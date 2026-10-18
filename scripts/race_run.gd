@@ -37,7 +37,7 @@ const FINISHED_KEY_BASE: float = 100000.0
 const LATE_SCORE_CAP: float = 58.0
 
 var phase: int = Phase.RACING
-## Onde a linha de chegada esta, em metros de rota. E o mesmo numero pro
+## Onde a borda final da faixa de chegada esta, em metros de rota. E o mesmo numero pro
 ## jogador e pros rivais: linha diferente por corredor e placar que mente.
 var distance_total: float = 0.0
 var distance_done: float = 0.0
@@ -92,7 +92,7 @@ func start(finish_distance: float, racer_count: int = 1) -> void:
 	phase = Phase.RACING
 
 
-func tick(delta: float, offset_on_track: float) -> void:
+func tick(delta: float, offset_on_track: float, recuo_traseira: float = 0.0) -> void:
 	if phase != Phase.RACING:
 		return
 	distance_done = clampf(offset_on_track, 0.0, distance_total)
@@ -107,9 +107,8 @@ func tick(delta: float, offset_on_track: float) -> void:
 		time_left = 0.0
 		late = true
 
-	# `distance_done` e grampeado em `distance_total`, entao a igualdade so
-	# acontece quando a moto passou da linha - nao precisa de margem.
-	if distance_done >= distance_total:
+	# O centro pode estar alem da faixa com a roda traseira ainda sobre ela.
+	if offset_on_track - recuo_traseira >= distance_total:
 		finish_time = elapsed
 		phase = Phase.FINISHED
 

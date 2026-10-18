@@ -16,7 +16,7 @@ func test_fiscal_segura_bandeira_e_acena_com_o_braco() -> void:
 	var fiscal := chegada.find_child("FiscalDaBandeira", true, false) as Pessoa
 	assert_object(fiscal).is_not_null()
 	assert_vector(fiscal.global_position).is_equal_approx(
-		pista.point(fim + 2.0, 0.0), Vector3.ONE * 0.001
+		pista.point(fim + Chegada.COMPRIMENTO * 0.5 + 2.0, 0.0), Vector3.ONE * 0.001
 	)
 	var braco := fiscal.find_child("Braco_E", true, false) as Node3D
 	var antes := braco.rotation
@@ -42,3 +42,14 @@ func test_chegada_retira_zebra_e_retencao_sem_apagar_cruzamento() -> void:
 	pista.pintar(ruas, 8.0)
 	assert_int(pista._pintura.mesh.surface_get_array_len(0)).is_less(antes)
 	assert_int(pista.cruzamentos.size()).is_equal(1)
+
+
+func test_mede_traseira_tambem_com_moto_atravessada() -> void:
+	(
+		assert_float(Chegada.recuo_traseira(Basis.IDENTITY, PlayerBike.SIZE, Basis.IDENTITY))
+		. is_equal_approx(1.05, 0.001)
+	)
+	var de_lado := Basis(Vector3.UP, PI * 0.5)
+	assert_float(Chegada.recuo_traseira(de_lado, PlayerBike.SIZE, Basis.IDENTITY)).is_equal_approx(
+		0.375, 0.001
+	)

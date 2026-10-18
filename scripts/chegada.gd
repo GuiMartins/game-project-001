@@ -2,6 +2,10 @@ class_name Chegada
 extends Node3D
 ## A festa fica no endereco que decide a corrida, sem consumir sorteios do mundo.
 
+## Seis metros permitem ler a quadricula antes de passar por cima dela.
+const COMPRIMENTO: float = 6.0
+const FILEIRAS: int = 8
+
 const BRANCO := Color(0.94, 0.94, 0.9)
 const PRETO := Color(0.035, 0.045, 0.06)
 const TECIDO: Shader = preload("res://scripts/bandeira.gdshader")
@@ -59,13 +63,14 @@ func montar(pista: RoadTrack, distancia: float) -> void:
 	letreiro.position = Vector3(0, 6.0, 0.28)
 	add_child(letreiro)
 	for i in 28:
-		for j in 3:
+		for j in FILEIRAS:
 			var largura := meio * 2.0 / 28.0
-			var o := distancia + (float(j) - 1.0) * 0.55
+			var passo := COMPRIMENTO / float(FILEIRAS)
+			var o := distancia - COMPRIMENTO * 0.5 + (float(j) + 0.5) * passo
 			var p := pista.point(o, -meio + (float(i) + 0.5) * largura)
 			var bloco := _caixa(
 				self,
-				Vector3(largura, 0.018, 0.55),
+				Vector3(largura, 0.018, passo),
 				to_local(p) + Vector3.UP * 0.025,
 				BRANCO if (i + j) % 2 == 0 else PRETO
 			)
@@ -91,7 +96,7 @@ func montar(pista: RoadTrack, distancia: float) -> void:
 			_caixa(grade, Vector3(0.07, 1.1, 0.07), Vector3.ZERO + Vector3.UP * 0.55, LARANJA)
 	var palco := Node3D.new()
 	add_child(palco)
-	palco.global_transform = pista.transform_at(distancia + 2.0, 0.0)
+	palco.global_transform = pista.transform_at(distancia + COMPRIMENTO * 0.5 + 2.0, 0.0)
 	var fiscal := Torcedor.new()
 	fiscal.name = "FiscalDaBandeira"
 	fiscal.fiscal = true
@@ -140,3 +145,15 @@ func _caixa(pai: Node3D, tamanho: Vector3, lugar: Vector3, cor: Color) -> MeshIn
 	no.position = lugar
 	pai.add_child(no)
 	return no
+
+
+## Projeta a caixa inteira na direcao da pista, inclusive ao cruzar enviesado.
+static func recuo_traseira(eixos: Basis, tamanho: Vector3, rumo: Basis) -> float:
+	return (
+		(
+			absf(eixos.x.dot(rumo.z)) * tamanho.x
+			+ absf(eixos.y.dot(rumo.z)) * tamanho.y
+			+ absf(eixos.z.dot(rumo.z)) * tamanho.z
+		)
+		* 0.5
+	)
