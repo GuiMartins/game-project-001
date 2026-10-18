@@ -125,6 +125,14 @@ func setup(main: Node) -> void:
 	# dela. Sem isso "regrediu" e "deu azar" viram a mesma coisa.
 	_bench_begin()
 	_read_phase_arg()
+	# O `shots` so tira foto na corrida solta. As fases antes dela precisam
+	# rodar (comecar direto na corrida muda o pelotao e a contagem de quadros),
+	# mas ninguem olha a tela ali, e no CI, a ~3 fps de render por software,
+	# desenhar o mundo nelas era o grosso dos ~18 min da passada. A simulacao
+	# nao depende do desenho. Desliga so o SubViewport do mundo: desligar o
+	# loop de render inteiro travou o jogo.
+	if not _shots_dir.is_empty():
+		_desenha_o_mundo(false)
 	if _fps:
 		_phase = PHASE_NAMES.find("corrida")
 		_stop_after = _phase
@@ -211,8 +219,17 @@ func _next_phase() -> void:
 	_phase += 1
 	_t = 0.0
 	_release_all()
+	if not _shots_dir.is_empty() and _phase == PHASE_NAMES.find("corrida"):
+		_desenha_o_mundo(true)
 	if _phase > _stop_after:
 		_finish()
+
+
+func _desenha_o_mundo(ligado: bool) -> void:
+	var viewport := _main.get("sub_viewport") as SubViewport
+	viewport.render_target_update_mode = (
+		SubViewport.UPDATE_ALWAYS if ligado else SubViewport.UPDATE_DISABLED
+	)
 
 
 ## O banco mede a MOTO, nao a pista. Sem isolar, a primeira raspada em
