@@ -148,6 +148,9 @@ func setup(a_tuning: BikeTuning, a_world_tuning: WorldTuning, world_seed: int = 
 	track.build(ROUTE_LENGTH, _rng, Cidade.extra_de_expressas(semente_da_cidade), extra)
 
 	_build_scenery()
+	var chegada := Chegada.new()
+	add_child(chegada)
+	chegada.montar(track, track.length - FINISH_MARGIN)
 
 	player = PlayerBike.new()
 	player.name = "Player"

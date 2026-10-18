@@ -1,0 +1,120 @@
+class_name Chegada
+extends Node3D
+## A festa fica no endereco que decide a corrida, sem consumir sorteios do mundo.
+
+const BRANCO := Color(0.94, 0.94, 0.9)
+const PRETO := Color(0.035, 0.045, 0.06)
+const LARANJA := Color(0.95, 0.28, 0.055)
+
+
+class Torcedor:
+	extends Pessoa
+	var fiscal: bool = false
+	var fase: float = 0.0
+
+	# As poses de torcida precisam dos bracos articulados; os atlas de caminhada
+	# nao contem o gesto nem a mao que segura a haste.
+	func usar_sprite(_ligado: bool) -> void:
+		super.usar_sprite(false)
+
+	func _fica() -> void:
+		super._fica()
+		var aceno := sin(_relogio * 6.0 + fase)
+		_braco[0] = 2.5 + aceno * 0.35
+		_abre[0] = 0.3 + aceno * 0.25
+		if not fiscal:
+			_braco[1] = 2.4 - aceno * 0.3
+			_abre[1] = 0.3
+
+
+func montar(pista: RoadTrack, distancia: float) -> void:
+	name = "Chegada"
+	var meio := RoadTrack.half_width()
+	transform = pista.transform_at(distancia, 0.0)
+	# O portico acompanha a inclinacao da pista; o publico usa a altura local
+	# de cada amostra para nao flutuar quando a chegada cai numa rampa.
+	for lado: float in [-1.0, 1.0]:
+		_caixa(self, Vector3(0.65, 6.7, 0.65), Vector3(lado * (meio + 0.7), 3.35, 0), LARANJA)
+	_caixa(self, Vector3(meio * 2.0 + 2.0, 1.5, 0.5), Vector3(0, 6.0, 0), PRETO)
+	var letreiro := Label3D.new()
+	letreiro.text = "CHEGADA"
+	letreiro.font_size = 110
+	letreiro.pixel_size = 0.011
+	letreiro.outline_size = 12
+	letreiro.position = Vector3(0, 6.0, 0.28)
+	add_child(letreiro)
+	for i in 28:
+		for j in 3:
+			var largura := meio * 2.0 / 28.0
+			var o := distancia + (float(j) - 1.0) * 0.55
+			var p := pista.point(o, -meio + (float(i) + 0.5) * largura)
+			var bloco := _caixa(
+				self,
+				Vector3(largura, 0.018, 0.55),
+				to_local(p) + Vector3.UP * 0.025,
+				BRANCO if (i + j) % 2 == 0 else PRETO
+			)
+			bloco.basis = global_basis.inverse() * pista.sample_basis(o)
+	for lado: float in [-1.0, 1.0]:
+		for i in 18:
+			var o := distancia - 18.0 + float(i % 9) * 3.0
+			var lateral := lado * (meio + 1.6 + float(i / 9) * 0.8)
+			var pessoa := Torcedor.new()
+			add_child(pessoa)
+			var p := pista.point(o, lateral)
+			pessoa.colocar(to_local(p), lado * PI * 0.5)
+			pessoa.fase = float(i) * 1.73 + lado
+			pessoa.vestir(Color.from_hsv(fposmod(float(i) * 0.137 + lado * 0.12, 1.0), 0.7, 0.9))
+		# A grade deixa o corredor visualmente livre, sem mudar a fisica da prova.
+		for i in 10:
+			var o := distancia - 20.0 + float(i) * 3.0
+			var grade := Node3D.new()
+			add_child(grade)
+			grade.global_transform = pista.transform_at(o, lado * (meio + 0.5))
+			for h: float in [0.5, 1.0]:
+				_caixa(grade, Vector3(0.06, 0.06, 2.8), Vector3(0, h, 0), BRANCO)
+			_caixa(grade, Vector3(0.07, 1.1, 0.07), Vector3.ZERO + Vector3.UP * 0.55, LARANJA)
+	var palco := Node3D.new()
+	add_child(palco)
+	palco.global_transform = pista.transform_at(distancia - 2.5, meio + 2.0)
+	_caixa(palco, Vector3(2.0, 0.8, 2.0), Vector3(0, 0.4, 0), LARANJA)
+	var fiscal := Torcedor.new()
+	fiscal.name = "FiscalDaBandeira"
+	fiscal.fiscal = true
+	palco.add_child(fiscal)
+	fiscal.colocar(Vector3(0, 0.8, 0), -0.6)
+	fiscal.vestir(BRANCO)
+	# A haste e filha do braco: a mao e a bandeira nunca se separam no aceno.
+	var braco := fiscal.find_child("Braco_E", true, false) as Node3D
+	var haste := Node3D.new()
+	haste.name = "BandeiraQuadriculada"
+	braco.add_child(haste)
+	haste.position = Vector3(0, -0.55, 0)
+	_caixa(haste, Vector3(0.035, 1.8, 0.035), Vector3(0, -0.65, 0), BRANCO)
+	for x in 6:
+		for y in 4:
+			_caixa(
+				haste,
+				Vector3(0.22, 0.22, 0.018),
+				Vector3(0.11 + float(x) * 0.22, -1.4 + float(y) * 0.22, 0),
+				BRANCO if (x + y) % 2 == 0 else PRETO
+			)
+	# A corrida chega de noite: ilumina a faixa, o fiscal e o publico.
+	for lado: float in [-1.0, 1.0]:
+		var luz := OmniLight3D.new()
+		luz.position = Vector3(lado * meio * 0.65, 5, 0)
+		luz.omni_range = 24.0
+		luz.light_energy = 2.5
+		luz.light_color = Color(1.0, 0.88, 0.7)
+		add_child(luz)
+
+
+func _caixa(pai: Node3D, tamanho: Vector3, lugar: Vector3, cor: Color) -> MeshInstance3D:
+	var no := MeshInstance3D.new()
+	var malha := BoxMesh.new()
+	malha.size = tamanho
+	no.mesh = malha
+	no.material_override = RoadTrack.material_liso(cor)
+	no.position = lugar
+	pai.add_child(no)
+	return no
