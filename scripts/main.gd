@@ -526,6 +526,7 @@ func _restart() -> void:
 	_largada = 0.0
 	if _fiscal == null:
 		_fiscal = Pessoa.new()
+		_fiscal.cena_articulada = preload("res://assets/pedestres/fiscal.glb")
 		_fiscal.name = "FiscalDaLargada"
 		world.add_child(_fiscal)
 		# A sequencia posa a fiscal manualmente, inclusive com o mundo parado.

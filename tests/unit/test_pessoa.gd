@@ -326,17 +326,24 @@ func test_pessoa_em_sprite_tem_folha_para_todos_os_estados() -> void:
 			)
 
 
-func test_fiscal_marca_contagem_e_baixa_braco_na_largada() -> void:
+func test_fiscal_ergue_um_braco_depois_outro_e_baixa_os_dois() -> void:
 	var pessoa: Pessoa = auto_free(Pessoa.new())
+	pessoa.cena_articulada = preload("res://assets/pedestres/fiscal.glb")
 	add_child(pessoa)
 	pessoa.set_physics_process(false)
 	pessoa.usar_sprite(true)
 	pessoa.sinalizar_largada(0.0)
-	var alto := pessoa._nos_braco[1].rotation.x
-	pessoa.sinalizar_largada(0.5)
-	assert_float(pessoa._nos_braco[1].rotation.x).is_less(alto)
+	assert_float(pessoa._nos_braco[1].rotation.x).is_equal_approx(0.0, 0.001)
 	pessoa.sinalizar_largada(1.0)
-	assert_float(pessoa._nos_braco[1].rotation.x).is_equal_approx(alto, 0.001)
-	pessoa.sinalizar_largada(3.3)
-	assert_float(pessoa._nos_braco[1].rotation.x).is_less(0.3)
+	assert_float(pessoa._nos_braco[1].rotation.x).is_greater(2.7)
+	assert_float(pessoa._nos_braco[0].rotation.x).is_equal_approx(0.0, 0.001)
+	pessoa.sinalizar_largada(2.0)
+	for braco in pessoa._nos_braco:
+		assert_float(braco.rotation.x).is_greater(2.7)
+	pessoa.sinalizar_largada(3.0)
+	for braco in pessoa._nos_braco:
+		assert_float(braco.rotation.x).is_equal_approx(0.0, 0.001)
 	assert_bool(pessoa._sprite.visible).is_false()
+	assert_vector(pessoa._no_quadril.position).is_equal_approx(
+		Vector3(0, Pessoa.QUADRIL, 0), Vector3.ONE * 0.001
+	)

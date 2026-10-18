@@ -133,7 +133,7 @@ def pessoa(nome: str, passo: float) -> Peca:
 JOELHO = 0.48
 
 
-def articulada(materiais, colecao, x) -> bpy.types.Object:
+def articulada(materiais, colecao, x, fiscal=False) -> bpy.types.Object:
     """A mesma pessoa em pecas, cada uma com a origem na articulacao, para o
     `Pessoa` do jogo posar no codigo: atravessar a rua, sair do carro, pular
     da frente da moto. O `MultiMesh` nao serve para isso, e sao poucas.
@@ -157,21 +157,33 @@ def articulada(materiais, colecao, x) -> bpy.types.Object:
     colecao.objects.link(q)
 
     t = Peca("Tronco")
-    t.caixa((0.0, 0.0, (quadril + ombro) * 0.5 + 0.02), (0.44, 0.22, ombro - quadril + 0.08), "roupa")
+    if fiscal:
+        # Silhueta provisoria da mulher adulta: cintura marcada, top ajustado
+        # e cabelo comprido. O sprite definitivo vira outra etapa.
+        t.caixa((0.0, 0.0, 1.04), (0.30, 0.20, 0.22), "roupa")
+        t.caixa((0.0, 0.01, 1.29), (0.37, 0.25, 0.30), "roupa")
+        t.caixa((0.0, 0.0, 0.94), (0.40, 0.24, 0.16), "calca")
+    else:
+        t.caixa((0.0, 0.0, (quadril + ombro) * 0.5 + 0.02), (0.44, 0.22, ombro - quadril + 0.08), "roupa")
     t.caixa((0.0, 0.0, ombro + 0.06), (0.1, 0.1, 0.1), "pele")
     t.cabeca((0.0, 0.01, ombro + 0.22))
     t.caixa((0.0, -0.02, ombro + 0.3), (0.22, 0.22, 0.08), "cabelo")
+    if fiscal:
+        t.caixa((0.0, -0.09, 1.49), (0.26, 0.17, 0.38), "cabelo")
     tronco = t.objeto(materiais, colecao, 0.0, q, (0.0, 0.0, quadril))
     for lado, nome in ((-1.0, "E"), (1.0, "D")):
         b = Peca("Braco_" + nome)
         b.caixa((lado * 0.27, 0.0, ombro - 0.3), (0.1, 0.11, 0.6), "pele")
-        b.caixa((lado * 0.27, 0.0, ombro - 0.08), (0.12, 0.13, 0.18), "roupa")
+        if not fiscal:
+            b.caixa((lado * 0.27, 0.0, ombro - 0.08), (0.12, 0.13, 0.18), "roupa")
         b.objeto(materiais, colecao, 0.0, tronco, (lado * 0.27, 0.0, ombro))
         c = Peca("Coxa_" + nome)
-        c.caixa((lado * 0.1, 0.0, (quadril + JOELHO) * 0.5), (0.14, 0.16, quadril - JOELHO), "calca")
+        c.caixa((lado * 0.1, 0.0, (quadril + JOELHO) * 0.5), (0.16 if fiscal else 0.14, 0.18 if fiscal else 0.16, quadril - JOELHO), "pele" if fiscal else "calca")
+        if fiscal:
+            c.caixa((lado * 0.1, 0.0, 0.85), (0.19, 0.23, 0.20), "calca")
         coxa = c.objeto(materiais, colecao, 0.0, q, (lado * 0.1, 0.0, quadril))
         k = Peca("Canela_" + nome)
-        k.caixa((lado * 0.1, 0.0, JOELHO * 0.5), (0.13, 0.15, JOELHO), "calca")
+        k.caixa((lado * 0.1, 0.0, JOELHO * 0.5), (0.13, 0.15, JOELHO), "pele" if fiscal else "calca")
         k.caixa((lado * 0.1, 0.05, 0.04), (0.13, 0.26, 0.08), "cabelo")
         k.objeto(materiais, colecao, 0.0, coxa, (lado * 0.1, 0.0, JOELHO))
     return raiz
@@ -229,6 +241,19 @@ def main() -> None:
             continue
         dims = obj.dimensions
         print("%s: %d tris, %.1f x %.1f x %.1f m" % (obj.name, len(obj.data.polygons), dims.x, dims.y, dims.z))
+
+    # Cena propria para manter a pessoa comum e seu MultiMesh identicos.
+    limpa_cena()
+    colecao = bpy.data.collections.new("Fiscal")
+    bpy.context.scene.collection.children.link(colecao)
+    materiais = [material(*m) for m in MATERIAIS]
+    articulada(materiais, colecao, 0.0, fiscal=True)
+    bpy.ops.export_scene.gltf(
+        filepath=os.path.join(SAIDA, "fiscal.glb"),
+        export_format="GLB", export_yup=True, export_apply=False,
+        export_animations=False, export_cameras=False, export_lights=False,
+        export_all_vertex_colors=False, export_extras=False,
+    )
 
 
 main()

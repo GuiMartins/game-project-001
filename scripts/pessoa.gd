@@ -60,8 +60,9 @@ const RASTRO: float = 0.7
 ## Quanto acima do chao fica o meio do corpo deitado.
 const DEITADO: float = 0.12
 
-## Poses por segundo (`WorldTuning.ator_cadencia`, repassada pelo `World`); 0 e
-## liso.
+## A fiscal tem silhueta propria, mantendo as mesmas articulacoes.
+var cena_articulada: PackedScene = CENA
+## Poses por segundo (`WorldTuning.ator_cadencia`, repassada pelo `World`); 0 e liso.
 var cadencia: float = 12.0
 var estado: Estado = Estado.PARADA
 ## A roupa de quem veio da calcada continua a mesma quando voa e cai.
@@ -129,7 +130,7 @@ var _saida := PackedVector3Array()
 
 
 func _ready() -> void:
-	var cena := CENA.instantiate()
+	var cena := cena_articulada.instantiate()
 	var raiz := cena.find_child("Articulada", true, false) as Node3D
 	assert(raiz != null, "pedestres.glb sem o no Articulada")
 	raiz.get_parent().remove_child(raiz)
@@ -352,17 +353,25 @@ func _pose_de_pe() -> void:
 func sinalizar_largada(segundos: float) -> void:
 	usar_sprite(false)
 	_pose_de_pe()
-	var pulso := sin(PI * fmod(maxf(segundos, 0.0), 1.0))
-	if segundos < 3.0:
-		_braco[1] = 2.5 - 0.5 * pulso
-		_abre[0] = 0.7
-	else:
-		var baixa := smoothstep(3.0, 3.3, segundos)
-		_braco[1] = lerpf(2.5, 0.2, baixa)
-		_braco[0] = lerpf(2.0, 0.2, baixa)
-		_abre[0] = lerpf(0.7, 0.15, baixa)
-		_tronco = 0.2 * sin(PI * baixa)
+	# Tres frases de um segundo: um braco, o outro, os dois descendo.
+	# O arco lateral e o contrapeso do tronco fazem o gesto fluir pelo corpo.
+	var t := clampf(segundos, 0.0, 3.0)
+	var primeiro := smoothstep(0.08, 0.85, t)
+	var segundo := smoothstep(1.08, 1.85, t)
+	var baixa := smoothstep(2.15, 3.0, t)
+	_braco[1] = 2.8 * primeiro * (1.0 - baixa)
+	_braco[0] = 2.8 * segundo * (1.0 - baixa)
+	_abre[1] = 0.12 + 0.65 * sin(PI * primeiro) + 0.7 * sin(PI * baixa)
+	_abre[0] = 0.12 + 0.65 * sin(PI * segundo) + 0.7 * sin(PI * baixa)
+	var peso := 0.10 * sin(TAU * t / 3.0)
+	_coxa[0] = 0.10 * primeiro * (1.0 - baixa)
+	_joelho[0] = 0.20 * primeiro * (1.0 - baixa)
+	_tronco = -0.06 * (primeiro + segundo) + 0.22 * sin(PI * baixa)
+	_corpo = Basis.IDENTITY
 	_aplica()
+	_no_quadril.position.x = peso
+	_no_tronco.rotation.z = -peso * 0.65
+	_no_tronco.rotation.y = 0.10 * sin(PI * t)
 
 
 func _pose_andando(para_tras: bool = false) -> void:
