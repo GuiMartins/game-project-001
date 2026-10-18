@@ -400,6 +400,26 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
   Jogador e rival ganham os dois, nas três motos. Baseline sem variação; a
   prova de trás sai igual, porque dali a roda mal aparece.
 
+- [ ] **V06a** 👤 — Trepidação que se explica: só em alta e em todas as câmeras
+
+  O Arthur achou a trepidação "chata" e "aleatória". Sugeriu trepidar todas
+  as câmeras, e só em alta velocidade. Hoje o tremor mora na `GARUPA`
+  (`garupa_tremor`, `camera_garupa.gd`) e na cabeça do piloto da V06; a
+  perseguição só sacode em batida (`_shake` em `chase_camera.gd`). 👤 A pergunta é de produto: o vídeo de garupa treme
+  de verdade, e tirar o tremor da `GARUPA` afasta a referência. Recomendação:
+  manter o tremor da `GARUPA` e dar a ele **uma regra legível** (some abaixo
+  de uma velocidade, cresce até o boost, nunca em parado nem na queda), em vez
+  de tirar.
+
+  - **Referências:** `video_02/folha` e `video_02/tempo_1`–`tempo_4` (o
+    tremor do celular na garupa); `video_01` não treme. Nenhuma mostra
+    tremor na perseguição: o alvo ali é o feedback do Arthur.
+  - **O que fazer:** perguntar ao Guilherme (tremor na perseguição: sim ou
+    não); ligar a amplitude a `speed / max_speed` com piso e teto na
+    `GARUPA`, e a mesma curva em qualquer câmera que ganhe tremor.
+  - **Aceite:** jogando, o tremor aparece quando a velocidade pede e não em
+    corredor lento ou parado. Julgado **jogando**, com o Arthur se der.
+
 - [x] **V07** — Postura do vídeo: sentado e de cotovelo aberto (12/10/2026, #77)
 
   A 128 km/h o entregador do vídeo continua **sentado**, tronco a 10–15°, com
@@ -546,6 +566,34 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
   risca mais claro e escuro, porque o asfalto dela tem mais contraste que o
   nosso. `fps` p50 8,33 ms, preso no refresh de 120 Hz deste Mac, como na
   V08. Baseline sem variação.
+
+- [ ] **V08b** 👤 — Borrão que se ganha: tarde e crescendo, com pico no nitro
+
+  O Arthur (áudio) acha que o borrão **entra cedo demais**: acelerou depois
+  de uma batida e em instantes está tudo borrado, então "não funciona". A
+  referência dele é GTA San Andreas: o borrão só vem depois de um bom tempo
+  em velocidade alta, ou no nitro, e aí dá o "caramba, tô rápido". 👤 Isto
+  **contradiz** a V08 e a V08a, que desceram o início para 30% da velocidade
+  máxima porque as cinco referências estão borradas a 128 km/h. Os dois
+  querem coisas diferentes: a referência pede o chão em risco em cruzeiro, o
+  Arthur pede que o borrão seja prêmio. Recomendação: manter o chão riscando
+  em cruzeiro (é o que a referência mostra) e separar **dois níveis**, o chão
+  e a periferia sempre, e o borrão radial forte só depois de segurar
+  velocidade alta por alguns segundos ou no boost, com subida lenta.
+
+  - **Referências:** `01_centro`, `02_praca_maua`, `04_vertical` e
+    `video_01/t3.0s` a `t6.0s` (todas a 128 km/h, já borradas no chão: é o
+    que a V08a perseguiu). Nenhuma mostra o borrão **subindo** com o tempo:
+    esse alvo é do feedback do Arthur e da referência de feel dele.
+  - **O que fazer:** perguntar ao Guilherme qual dos dois vale. Se for o
+    segundo: uma "carga de velocidade" por instância, que sobe segurando
+    acima de um limiar e cai na batida e na freada, multiplicando a força em
+    `Borrao`; slider `borrao_subida` no F3. Estado por instância, sem
+    estático.
+  - **Aceite:** logo depois de uma batida o borrão não passa de uma fração
+    do que tem depois de segurar velocidade; no boost chega ao máximo.
+    `dev.py prova --kmh 128` e `--kmh 180` comparados antes e depois, `fps`
+    medido, e o baseline visual com o motivo do número que andar.
 
 ### A rua
 
@@ -1217,6 +1265,26 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   fora da faixa, na avenida. Todo pedestre tem atropelo, com mancha de
   sangue (`Sangue`), e a calçada perdeu o teto de velocidade.
 
+- [ ] **V19a** — Pedestres com variedade e que combinam com o lugar
+
+  O Arthur gostou do sprite ("melhores que os blocos 3D") e pediu duas
+  coisas: **mais variedade**, e **ligar a gente à geografia da pista**: "o
+  cara de sunga de praia não deve parecer na cidade". Não achei no `Multidao` nem
+  nos `Pedestres` escolha de roupa por trecho; confirmar ao implementar.
+
+  - **Referências:** `01_centro` e `02_praca_maua` (a calçada do centro).
+    Abrir as quatro imagens e o `video_01` para ver quem aparece em cada
+    cenário; nenhuma foi conferida para orla. O alvo da sunga na praia e do
+    social no centro é o feedback do Arthur.
+  - **O que fazer:** atlas e sorteio em `arte/pedestres.py` com um **tipo de
+    trecho** (centro, orla, via expressa) como parâmetro e uma lista de
+    roupas por tipo, em dado e não em `if` por lugar. O `Multidao` recebe o
+    tipo do trecho que a `Cidade` já conhece. Mais peças (cabelo, camisa,
+    bermuda, mochila) combináveis, para o elenco não repetir.
+  - **Aceite:** na orla aparece sunga e canga e no centro não; no centro,
+    social e uniforme de entregador, na orla não. Mesma semente, mesmo
+    elenco. `fps` medido, porque o `MultiMesh` ganha instâncias.
+
 ### O trânsito
 
 - [x] **V20** — Trânsito do vídeo: denso, quase na velocidade da moto (13/10/2026, #101)
@@ -1579,6 +1647,178 @@ no passo de ampliar, não no render.
 
   **Custo medido** (`dev.py fps`, mesma máquina): 360p p50 8,33 ms (120 fps);
   540p p50 11,11 ms (90 fps). O `selftest` não andou nada.
+
+### Playtest do Arthur (18/10/2026)
+
+O Arthur jogou a 0.0.8 e mandou o feedback por texto e áudio no WhatsApp.
+O veredito dele foi "ainda não é um jogo divertido", e o ponto de partida foi
+a pergunta de produto da V32. Os itens abaixo são o que **não** cabia como
+reabertura de um item fechado (essas são a V06a, a V08b e a V19a, nas suas
+seções). O que ele pediu e já existe fica na linha do item, para ninguém
+refazer.
+
+Fica de fora, por decisão do Guilherme na própria conversa: as estrelas da
+HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
+
+- [ ] **V31** — Moto travada num carro sai sozinha
+
+  Bug. O Arthur ficou com a moto travada num carro, e acelerar para o lado
+  travado não a desvia. É o tipo de preso que não aparece no console: o jogo
+  segue rodando, só o jogador fica parado. Primeiro reproduzir, depois
+  resolver; a hipótese (não verificada) é que o empurrão de saída contra o colisor
+  do carro não leve em conta o rumo pedido pelo jogador.
+
+  - **Referências:** nenhuma; não há imagem para um bug de colisão. O alvo é
+    o comportamento descrito pelo Arthur.
+  - **O que fazer:** cenário no `selftest` que encosta a moto de lado num
+    carro e pede o desvio; a saída considera a direção da inclinação
+    pedida, e vale para toda moto e todo corredor (jogador e rival), pela
+    regra de moto e piloto do `CLAUDE.md`.
+  - **Aceite:** no cenário a moto deixa o carro em tempo curto e medido
+    (proposta: 1 s), e o número entra em `baseline.json` com o motivo.
+
+- [ ] **V32** 👤 — A pergunta de produto: o que torna isto divertido?
+
+  O Arthur: "ainda não é um jogo divertido", "falta mais velocidade", "um
+  pico mais". Você respondeu que as crianças gostaram de bater e atropelar.
+  Os dois estão certos, e o backlog visual não decide o que fazer com o
+  descompasso. 👤 Antes de gastar mais item de visual, perguntar o que o
+  próximo ciclo prova: velocidade, o soco e o atropelo, ou a corrida contra
+  rival. Recomendação: velocidade de pico e o prêmio dela (V08b, V35), porque
+  é a pergunta do `CLAUDE.md` ("acelerar, inclinar, se enfiar no corredor e
+  bater está gostoso?").
+
+  - **Referências:** nenhuma; é decisão de produto.
+  - **Aceite:** a resposta escrita aqui, com a data. Sim ou não, as duas são
+    resultado.
+
+- [ ] **V33** — O trânsito contrário obedece ao slider de tráfego
+
+  O Arthur pôs o tráfego em 0 e o lado contrário continuou com carros: "o
+  sentido contrário não é afetado". Existe um `Contramao` (`contramao.gd`) separado; a hipótese (não
+  verificada) é que ele não leia o `traffic_count` do slider do F3.
+
+  - **Referências:** nenhuma; é o comportamento do slider.
+  - **O que fazer:** o `Contramao` lê a mesma densidade (ou uma fração
+    própria dela) e responde ao slider ao vivo, como o `traffic_count` já
+    faz. Estado por instância.
+  - **Aceite:** com tráfego 0 não há carro em nenhum sentido, e a mudança no
+    slider vale sem reiniciar a corrida. Teste unitário da densidade.
+
+- [ ] **V34** 👤 — Poste que tomba, e não que sai arrancado
+
+  O Arthur viu os postes "arrancados" e achou que deveriam **derrubar**,
+  "como qualquer outro item" (o resto da frase, "poderíamos ter re...",
+  ficou cortada na conversa). 👤 Antes de mexer: ver como o poste reage hoje
+  ao impacto e perguntar ao Arthur o que ele queria no resto da frase. O
+  colisor do poste serve ao combate (jogar rival no poste), e o banco de
+  provas mede essa colisão, então qualquer mudança passa pelo `selftest`.
+
+  - **Referências:** nenhuma mostra poste caído. O alvo é o feedback do
+    Arthur.
+  - **O que fazer:** reação ao impacto em `poste.gd`: tomba em torno do pé,
+    com a velocidade da batida, e fica no chão como obstáculo e cenário. A
+    mesma peça serve ao poste de dois braços (V15) e ao do portal.
+  - **Aceite:** o poste atingido cai para o lado da batida e não some. Os
+    números de combate do `baseline.json` não andam, ou andam com motivo.
+
+- [ ] **V35** — Nitro com chama azul
+
+  O Arthur: "o nitro poderia soltar fogo azul, como uma indicação do uso".
+  Não achei partícula de escape ligada ao boost; só a velocidade e o
+  borrão sinalizam. Cabe junto da V24 (partículas) e da V08b (o prêmio do pico).
+
+  - **Referências:** nenhuma mostra nitro. O alvo é o feedback do Arthur e
+    a convenção de arcade (chama azul no escape).
+  - **O que fazer:** `GPUParticles3D` no escape de toda moto, ligado
+    pelo boost, com a cor e a escala em dado da `FichaDaMoto`; luz azul
+    curta sob a moto de noite, como o fogo da V24.
+  - **Aceite:** a chama aparece só durante o boost, em todas as motos e em
+    rival que usa boost; `fps` medido.
+
+- [ ] **V36** — Neblina só no horizonte
+
+  Áudio do Arthur: a neblina "parece muito presente na câmera, perto da
+  câmera", e deixa as cores dos carros e da cidade "lavadas e
+  esbranquiçadas". Ele a tirou, pôs e tirou de novo; pediu para você rever.
+  A neblina é `Environment` (`world.gd`, `fog_aerial_perspective` 0,5) com
+  densidade exponencial; a conta e a distância de partida estão no
+  `DIRECAO_VISUAL.md`.
+
+  - **Referências:** `01_centro`, `02_praca_maua` e `04_vertical`: abrir
+    antes e medir a cor do carro próximo contra a do fundo; o alvo é cor
+    cheia de perto e véu só no longe. `DIRECAO_VISUAL.md` tem a conta.
+  - **O que fazer:** começar a neblina mais longe (`fog_depth_begin`, ou a
+    densidade menor com curva de altura) para o terço próximo ficar com a
+    cor do carro, e checar o `paleta.gdshader` e o LUT, que também lavam. O
+    quadro congelado da `dev.py prova` antes e depois, **dia e noite**
+    (`--hora 1`).
+  - **Aceite:** na folha, a cor do carro a 15 m é a da textura (sem véu
+    branco), e o fundo continua se dissolvendo. Baseline visual com o motivo.
+
+- [ ] **V37** — Variação de faixas na pista
+
+  O Arthur: "hoje o jogo tem a mesma quantidade de faixas no jogo inteiro".
+  Quer variação. Hoje são `LANE_COUNT` faixas
+  de `LANE_WIDTH` em toda a pista (`road_track.gd`).
+
+  - **Referências:** `video_01` (avenida de 3 a 4 faixas no mesmo sentido,
+    ver `REFERENCIA_VIDEO.md`) e as quatro imagens paradas, a abrir para ver
+    quantas faixas cada uma mostra. Nenhuma foi conferida quanto a pista
+    estreita ou larga: esse alvo é o feedback do Arthur.
+  - **O que fazer:** nº de faixas **por trecho**, em dado da `RoadTrack`
+    (2 a 4), com transição por afunilamento ou por trecho de via expressa.
+    O trânsito, os pedestres, o `Contramao` e a pintura leem o número do
+    trecho, nunca um fixo. Peça reaproveitável, pela regra do kit.
+  - **Aceite:** a pista muda de 2 para 4 faixas e de volta sem degrau; o
+    trânsito e a pintura acompanham. Semente fixa, então o `selftest` não
+    anda, ou anda com motivo no baseline.
+
+- [ ] **V38** 👤 — "Não entendi a cor do dia"
+
+  O Arthur escreveu "não entendi o cor do dia" (às 14:54), e a conversa
+  seguiu sem explicação. A corrida larga ao meio-dia e anoitece por
+  progresso (`Relogio`, `Hora`); ele pode ter estranhado o dia virando noite
+  sem aviso, ou a troca do LUT. 👤 Perguntar a ele qual momento foi: o que
+  viu, e em que ponto da corrida. Sem isso o item é palpite.
+
+  - **Referências:** nenhuma; o item é a pergunta.
+  - **Aceite:** o que ele quis dizer, escrito aqui. Se for a transição, o
+    item vira "aviso de que a corrida anoitece" ou "transição mais lenta".
+
+- [ ] **V39** — Atalhos de depuração e câmera achável
+
+  Áudio do Arthur: pôr em F1 a F12 as características que se quer mudar
+  jogando, em toggle: sombra, neblina, brilho, borrão, mais e menos trânsito.
+  Sobre a câmera: "não tem botão para mudar a câmera", e acha que deveria
+  ter, como muitos jogos. Já existe: **F1** liga e desliga o pixel, **F2**
+  troca a câmera (`debug_camera_cycle`) e **F3** abre o painel de sliders
+  (`controls.gd`). Ele não achou. O furo é a descoberta, e os toggles que
+  faltam.
+
+  - **Referências:** nenhuma; é ferramenta de playtest.
+  - **O que fazer:** (1) uma linha de ajuda no menu e na pausa dizendo F1,
+    F2 e F3; (2) toggles em F4 a F10 para sombra, neblina, glow, borrão e
+    trânsito (liga e desliga, sem passar pelo painel), em `controls.gd`; (3)
+    botão de câmera visível. Tudo vale só na build de desenvolvimento ou
+    atrás de F3, para o zip da release continuar limpo.
+  - **Aceite:** o Arthur troca de câmera e liga e desliga cada efeito sem
+    perguntar. Cobertura em `docs/TESTES.md` se o painel entrar sem teste.
+
+- [ ] **V40** 👤 — Câmera do capacete que inclina nas curvas
+
+  O Arthur: "a câmera do capacete deveria inclinar nas curvas", e a da
+  `GARUPA` "parece aleatória", sem lógica. A perseguição (`chase_camera.gd`)
+  e a `GARUPA` (`camera_garupa.gd`, `garupa_giro` já deita pela inclinação)
+  são as duas câmeras que existem. 👤 Perguntar a ele **qual** é a "do
+  capacete": pode ser a perseguição baixa, ou uma terceira que ele espera. A
+  `GARUPA` já gira com a inclinação; o que parece aleatório pode ser o
+  tremor (V06a) ou a lógica da distância.
+
+  - **Referências:** `video_01` (perseguição: o horizonte inclina com a
+    moto) e `video_02` (garupa).
+  - **Aceite:** o que ele chamou de capacete, e a câmera inclinando com a
+    moto na curva, julgada **jogando**.
 
 ### Fechamento
 
