@@ -9,6 +9,7 @@ Três camadas, e nenhuma substitui a outra.
 | Baseline | (dentro do selftest) | — | O número *andou*, mesmo continuando na faixa jogável |
 | Regressão visual | `python tools/dev.py shots` | ~90 s | A tela ficou errada por inteiro |
 | Regressão visual de noite | `python tools/dev.py shots --noite` | ~90 s | A noite ficou errada por inteiro: tudo apagado, tudo aceso |
+| Testador de sprites | `python tools/dev.py sprites-ver` | interativo | Folha com defeito: pé que escorrega, altura que muda, quadro cortado ou em branco. Os olhos fazem o resto |
 
 ## Unitários (GdUnit4)
 
@@ -356,3 +357,23 @@ headless não faz. O `selftest` segue determinístico, e é ele o portão. O que
 | `RUSHFOOD_SELFTEST_METRICS=<arquivo>` | Grava as medidas em JSON. O `dev.py` já faz isso. |
 | `RUSHFOOD_HORA=<0 a 1>` | Trava a hora (0 meio-dia, 1 noite), mesmo medindo. O `--hora` do `dev.py` usa isto. |
 | `GODOT_BIN=<caminho>` | Usa outro binário do Godot em vez do gerenciado |
+
+## Testador de sprites
+
+`python tools/dev.py sprites-ver` abre uma janela com todas as folhas de
+`assets/sprites/` (a lista nasce da varredura da pasta, então folha nova
+aparece sozinha). Cada uma abre em **Folha 2D** — pixel inteiro, com grade,
+linha do chão, ponto do pé, régua na altura da ficha e a caixa medida — ou em
+**Cena 3D**, com o `AtorSprite` e o `PedestreSprite` de verdade sobre asfalto,
+câmera orbitável, noite, elenco lado a lado e régua de 2 m. Atalhos: espaço
+toca, setas trocam o quadro, tab troca 2D/3D.
+
+A parte que não precisa de olho é o `CatalogoSprites`, e o
+`test_catalogo_sprites.gd` a guarda: toda ficha bate com a imagem, nenhum
+quadro está em branco e os avisos que aparecem na lista são só os conhecidos.
+Aviso novo é folha nova com defeito (ou limite que precisa de justificativa),
+e não ruído. O que o catálogo **não** vê é o movimento: se a passada parece
+errada, só o modo Cena mostra.
+
+`--sprite=<id> --cena --captura=arquivo.png` abre direto numa folha e salva a
+tela, para conferir sem abrir a janela na mão.
