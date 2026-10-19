@@ -62,8 +62,8 @@ var _grupo_voo: Control
 var _grupo_queda: Control
 var _grupo_outra: Control
 var _info: RichTextLabel
-var _vista: OptionButton
-var _linha: OptionButton
+var _vista: Control
+var _linhas: HBoxContainer
 var _quadro: HSlider
 var _quadro_rotulo: Label
 var _tocar: CheckButton
@@ -71,8 +71,8 @@ var _zoom: SpinBox
 var _espelhar: CheckBox
 var _inclina_2d: HSlider
 var _inclina_rotulo: Label
-var _modo_botao: OptionButton
-var _outra: OptionButton
+var _modo_botao: Control
+var _outra_rotulo: Label
 var _status: Label
 
 
@@ -216,11 +216,20 @@ func _monta_lista() -> Control:
 			if i >= 0 and i < _visiveis.size():
 				_escolhe(_visiveis[i])
 	)
+	_lista.item_clicked.connect(
+		func(i: int, _onde: Vector2, botao: int) -> void:
+			if botao == MOUSE_BUTTON_RIGHT and i >= 0 and i < _visiveis.size():
+				_compara_com(_visiveis[i])
+				_muda_vista(TelaSprite.Vista.DUAS)
+	)
 	caixa.add_child(_lista)
 	_resumo = Label.new()
 	caixa.add_child(_resumo)
 	var ajuda := Label.new()
-	ajuda.text = "espaco: tocar   setas: quadro e linha   tab: 2D/3D   esc: sair"
+	ajuda.text = (
+		"espaco: tocar   setas: quadro e linha   tab: 2D/3D\n"
+		+ "botao direito na lista: comparar   esc: sair"
+	)
 	ajuda.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	ajuda.modulate = Color(1, 1, 1, 0.6)
 	caixa.add_child(ajuda)
@@ -231,8 +240,7 @@ func _monta_direita() -> Control:
 	var caixa := VBoxContainer.new()
 	caixa.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var topo := HBoxContainer.new()
-	topo.add_child(_rotulo("Modo"))
-	_modo_botao = _opcoes(["Folha 2D", "Cena 3D"], func(i: int) -> void: _muda_modo(i))
+	_modo_botao = _segmentado(["Folha 2D", "Cena 3D"], 0, func(i: int) -> void: _muda_modo(i))
 	topo.add_child(_modo_botao)
 	caixa.add_child(topo)
 
@@ -277,15 +285,16 @@ func _monta_direita() -> Control:
 
 func _monta_barra_folha() -> Control:
 	var fluxo := HFlowContainer.new()
-	fluxo.add_child(_rotulo("Vista"))
-	_vista = _opcoes(
-		["Quadro", "Folha toda", "Referencia 3D", "Antes e depois", "Duas folhas"],
+	_vista = _segmentado(
+		["Quadro", "Folha", "Referencia", "Antes/depois", "Duas folhas"],
+		0,
 		func(i: int) -> void: _muda_vista(i)
 	)
 	fluxo.add_child(_vista)
-	_linha = _opcoes([], func(i: int) -> void: _escolhe_linha(i))
-	fluxo.add_child(_rotulo("Linha"))
-	fluxo.add_child(_linha)
+	# Um botao por angulo, com o primeiro quadro da linha no lugar do nome: o
+	# angulo se escolhe olhando para ele.
+	_linhas = HBoxContainer.new()
+	fluxo.add_child(_linhas)
 	_espelhar = _check("espelhar", false, func(b: bool) -> void: _tela.espelhar = b)
 	fluxo.add_child(_espelhar)
 	_tocar = CheckButton.new()
@@ -303,9 +312,7 @@ func _monta_barra_folha() -> Control:
 	var ao_escolher_cadencia := func(i: int) -> void:
 		_fps = FPS_PADRAO if CADENCIAS[i] == 0 else float(CADENCIAS[i])
 		fps.set_value_no_signal(_fps)
-	fluxo.add_child(
-		_opcoes(["livre", "24 Hz", "15 Hz", "12 Hz (padrao)", "8 Hz"], ao_escolher_cadencia)
-	)
+	fluxo.add_child(_segmentado(["livre", "24", "15", "12", "8"], 0, ao_escolher_cadencia))
 	var anterior := Button.new()
 	anterior.text = "<"
 	anterior.pressed.connect(func() -> void: _passo_quadro(-1))
@@ -333,12 +340,7 @@ func _monta_barra_folha() -> Control:
 	_zoom.value_changed.connect(func(v: float) -> void: _tela.zoom = int(v))
 	fluxo.add_child(_zoom)
 	fluxo.add_child(_rotulo("Fundo"))
-	fluxo.add_child(
-		_opcoes(
-			["Cinza", "Asfalto", "Calcada", "Branco", "Preto"],
-			func(i: int) -> void: _tela.fundo = i
-		)
-	)
+	fluxo.add_child(_amostras_de_fundo())
 	fluxo.add_child(_check("noite", false, func(b: bool) -> void: _tela.noite = b))
 	fluxo.add_child(_check("grade", true, func(b: bool) -> void: _tela.grade = b))
 	fluxo.add_child(_check("chao e pe", true, func(b: bool) -> void: _tela.chao = b))
@@ -373,12 +375,8 @@ func _monta_barra_folha() -> Control:
 	base.add_child(_status)
 
 	_grupo_outra = HBoxContainer.new()
-	_grupo_outra.add_child(_rotulo("Comparar com"))
-	_outra = OptionButton.new()
-	for item in _itens:
-		_outra.add_item(item.nome() if item.tipo == CatalogoSprites.Tipo.MOTO else item.id)
-	_outra.item_selected.connect(func(i: int) -> void: _tela.outro = _itens[i])
-	_grupo_outra.add_child(_outra)
+	_outra_rotulo = Label.new()
+	_grupo_outra.add_child(_outra_rotulo)
 	_grupo_outra.visible = false
 
 	_grupo_moto = HBoxContainer.new()
@@ -429,8 +427,9 @@ func _monta_barra_cena() -> Control:
 	)
 	fluxo.add_child(_rotulo("cadencia"))
 	fluxo.add_child(
-		_opcoes(
-			["livre", "24 Hz", "15 Hz", "12 Hz", "8 Hz"],
+		_segmentado(
+			["livre", "24", "15", "12", "8"],
+			0,
 			func(i: int) -> void: _cena.cadencia_hz = float(CADENCIAS[i])
 		)
 	)
@@ -447,7 +446,9 @@ func _monta_barra_cena() -> Control:
 	var moto := HBoxContainer.new()
 	moto.add_child(_rotulo("Moto"))
 	moto.add_child(
-		_opcoes(["CG 160", "XRE 300", "PCX 160"], func(i: int) -> void: _cena.modelo_moto = i)
+		_segmentado(
+			["CG 160", "XRE 300", "PCX 160"], 0, func(i: int) -> void: _cena.modelo_moto = i
+		)
 	)
 	moto.add_child(_rotulo("inclinacao"))
 	moto.add_child(
@@ -509,12 +510,106 @@ func _slider(
 	return slider
 
 
-func _opcoes(nomes: Array, ao_escolher: Callable) -> OptionButton:
-	var botao := OptionButton.new()
-	for nome: String in nomes:
-		botao.add_item(nome)
-	botao.item_selected.connect(ao_escolher)
-	return botao
+## Botoes lado a lado, um sempre marcado: o que uma lista suspensa esconde atras
+## de um clique, e que aqui se troca com um so.
+func _segmentado(nomes: Array, marcado: int, ao_escolher: Callable) -> HBoxContainer:
+	var caixa := HBoxContainer.new()
+	caixa.add_theme_constant_override("separation", 0)
+	var grupo := ButtonGroup.new()
+	for i in nomes.size():
+		var botao := Button.new()
+		botao.text = nomes[i]
+		botao.toggle_mode = true
+		botao.button_group = grupo
+		botao.set_pressed_no_signal(i == marcado)
+		botao.pressed.connect(ao_escolher.bind(i))
+		caixa.add_child(botao)
+	return caixa
+
+
+## Marca o botao `indice` de um `_segmentado` sem disparar a escolha.
+func _marca(segmentado: Control, indice: int) -> void:
+	var botoes := segmentado.get_children()
+	for i in botoes.size():
+		(botoes[i] as Button).set_pressed_no_signal(i == indice)
+
+
+## O fundo da folha em amostras de cor, no lugar de uma lista de nomes.
+func _amostras_de_fundo() -> HBoxContainer:
+	var caixa := HBoxContainer.new()
+	var grupo := ButtonGroup.new()
+	var nomes := ["cinza", "asfalto", "calcada", "branco", "preto"]
+	for i in nomes.size():
+		var botao := Button.new()
+		botao.toggle_mode = true
+		botao.button_group = grupo
+		botao.tooltip_text = nomes[i]
+		botao.custom_minimum_size = Vector2(34, 30)
+		botao.expand_icon = true
+		botao.icon = _amostra(i)
+		botao.set_pressed_no_signal(i == 0)
+		botao.pressed.connect(func() -> void: _tela.fundo = i)
+		caixa.add_child(botao)
+	return caixa
+
+
+func _amostra(fundo: int) -> Texture2D:
+	if TelaSprite.TEXTURAS.has(fundo):
+		var recorte := AtlasTexture.new()
+		recorte.atlas = TelaSprite.TEXTURAS[fundo]
+		recorte.region = Rect2(0, 0, 32, 32)
+		return recorte
+	var imagem := Image.create_empty(16, 16, false, Image.FORMAT_RGBA8)
+	imagem.fill(TelaSprite.COR_FUNDO[fundo])
+	return ImageTexture.create_from_image(imagem)
+
+
+## Um botao por angulo da folha, com o primeiro quadro da linha como icone.
+func _monta_as_linhas(item: CatalogoSprites.Item) -> void:
+	for filho in _linhas.get_children():
+		_linhas.remove_child(filho)
+		filho.queue_free()
+	_linhas.visible = item.linhas > 1
+	if item.linhas <= 1:
+		return
+	var grupo := ButtonGroup.new()
+	var textura := item.textura()
+	for l in item.linhas:
+		var botao := Button.new()
+		botao.toggle_mode = true
+		botao.button_group = grupo
+		var rotulo := item.rotulos_linhas[l] if l < item.rotulos_linhas.size() else str(l + 1)
+		botao.tooltip_text = rotulo
+		botao.text = rotulo.replace("tres_quartos_", "3/4 ").replace("_", " ")
+		botao.add_theme_font_size_override("font_size", 11)
+		var icone := AtlasTexture.new()
+		icone.atlas = textura
+		icone.region = Rect2(Vector2(0, l) * Vector2(item.celula), Vector2(item.celula))
+		botao.icon = icone
+		botao.expand_icon = true
+		botao.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+		botao.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		botao.custom_minimum_size = Vector2(76, 86)
+		botao.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		botao.set_pressed_no_signal(l == 0)
+		botao.pressed.connect(_escolhe_linha.bind(l))
+		_linhas.add_child(botao)
+
+
+## A outra folha da vista "Duas folhas": a mesma animacao de outra pessoa, se
+## houver, e senao a moto.
+func _outra_padrao() -> CatalogoSprites.Item:
+	for item in _itens:
+		if item != _item and item.animacao == _item.animacao:
+			return item
+	return _itens[0]
+
+
+func _compara_com(item: CatalogoSprites.Item) -> void:
+	_tela.outro = item
+	_outra_rotulo.text = (
+		"Comparando com: %s   (botao direito em outra folha da lista troca)" % item.id
+	)
 
 
 # --- comportamento ---------------------------------------------------------
@@ -564,10 +659,7 @@ func _escolhe(item: CatalogoSprites.Item) -> void:
 	_tela.base = BaseSprites.carregar(item)
 	_espelhar.button_pressed = false
 	_espelhar.visible = item.tipo == CatalogoSprites.Tipo.PEDESTRE
-	_linha.clear()
-	for rotulo in item.rotulos_linhas:
-		_linha.add_item(rotulo)
-	_linha.visible = item.linhas > 1
+	_monta_as_linhas(item)
 	_quadro.min_value = 0
 	_quadro.max_value = maxi(item.colunas - 1, 0)
 	_quadro.value = 0
@@ -592,12 +684,12 @@ func _muda_grupos_da_cena() -> void:
 
 
 func _muda_vista(vista: int) -> void:
-	_vista.select(vista)
+	_marca(_vista, vista)
 	_tela.vista = vista
 	_tocar.disabled = vista != TelaSprite.Vista.QUADRO
 	_grupo_outra.visible = vista == TelaSprite.Vista.DUAS
 	if vista == TelaSprite.Vista.DUAS and _tela.outro == null:
-		_tela.outro = _itens[_outra.selected]
+		_compara_com(_outra_padrao())
 	_atualiza_a_moto_3d()
 
 
@@ -684,7 +776,7 @@ func _info_da_base(item: CatalogoSprites.Item) -> PackedStringArray:
 
 func _muda_modo(modo: int) -> void:
 	_modo = modo
-	_modo_botao.select(modo)
+	_marca(_modo_botao, modo)
 	_tela.visible = modo == Modo.FOLHA
 	_contentor_cena.visible = modo == Modo.CENA
 	_barra_folha.visible = modo == Modo.FOLHA
@@ -712,7 +804,8 @@ func _escolhe_linha(linha: int) -> void:
 	if _item == null:
 		return
 	_tela.linha = clampi(linha, 0, maxi(_item.linhas - 1, 0))
-	_linha.select(_tela.linha)
+	if _linhas.get_child_count() > _tela.linha:
+		(_linhas.get_child(_tela.linha) as Button).set_pressed_no_signal(true)
 
 
 ## A moto na folha: o quadro que o `AtorSprite` escolheria para essa
