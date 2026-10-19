@@ -20,8 +20,6 @@ enum Modo { FOLHA, CENA }
 
 ## Largura da galeria: as cinco animacoes de uma pessoa numa fileira so.
 const LARGURA_LISTA: float = 440.0
-const MINIATURA := Vector2(82, 100)
-const COR_DO_AVISO := Color(1.0, 0.8, 0.3)
 const FPS_PADRAO: float = 8.0
 ## Quantas vezes o mundo do jogo e menor que a tela: 640x360 em 1920x1080.
 const ENCOLHE_DO_JOGO: int = 3
@@ -52,10 +50,7 @@ var _status_texto: String = ""
 
 var _filtro: LineEdit
 var _so_avisos: CheckBox
-## Folha -> o botao da miniatura dela, e cabecalho de cada pessoa.
-var _miniaturas: Dictionary = {}
-var _rolagem: ScrollContainer
-var _cabecalhos: Dictionary = {}
+var _galeria := GaleriaSprites.new()
 var _resumo: Label
 var _tela: TelaSprite
 var _contentor_cena: SubViewportContainer
@@ -214,7 +209,14 @@ func _monta_lista() -> Control:
 	_so_avisos.text = "so com avisos"
 	_so_avisos.toggled.connect(func(_b: bool) -> void: _preenche_lista())
 	caixa.add_child(_so_avisos)
-	caixa.add_child(_monta_galeria())
+	_galeria.montar(_itens)
+	_galeria.escolhida.connect(_escolhe)
+	_galeria.comparada.connect(
+		func(item: CatalogoSprites.Item) -> void:
+			_compara_com(item)
+			_muda_vista(TelaSprite.Vista.DUAS)
+	)
+	caixa.add_child(_galeria)
 	_resumo = Label.new()
 	caixa.add_child(_resumo)
 	var ajuda := Label.new()
@@ -226,71 +228,6 @@ func _monta_lista() -> Control:
 	ajuda.modulate = Color(1, 1, 1, 0.6)
 	caixa.add_child(ajuda)
 	return caixa
-
-
-## As folhas como miniaturas, uma fileira por pessoa: o primeiro quadro de cada
-## folha no lugar do nome, e o nome da animacao embaixo. A analise marca em
-## laranja as que tem aviso.
-func _monta_galeria() -> Control:
-	var rolagem := ScrollContainer.new()
-	_rolagem = rolagem
-	rolagem.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	rolagem.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	var galeria := VBoxContainer.new()
-	galeria.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	rolagem.add_child(galeria)
-	var grupo := ButtonGroup.new()
-	var dono := ""
-	var fluxo: HFlowContainer = null
-	for item in _itens:
-		if item.grupo != dono:
-			dono = item.grupo
-			var cabecalho := _rotulo(item.grupo)
-			galeria.add_child(cabecalho)
-			fluxo = HFlowContainer.new()
-			galeria.add_child(fluxo)
-			_cabecalhos[item.grupo] = [cabecalho, fluxo]
-		fluxo.add_child(_miniatura(item, grupo))
-	return rolagem
-
-
-func _miniatura(item: CatalogoSprites.Item, grupo: ButtonGroup) -> Button:
-	var botao := Button.new()
-	botao.toggle_mode = true
-	botao.button_group = grupo
-	botao.custom_minimum_size = MINIATURA
-	botao.text = item.animacao
-	botao.add_theme_font_size_override("font_size", 10)
-	botao.tooltip_text = item.id
-	if item.celula != Vector2i.ZERO:
-		# A moto de frente e reta; o resto, o primeiro quadro.
-		var quadro := AtorSprite.RETO if item.tipo == CatalogoSprites.Tipo.MOTO else 0
-		var icone := AtlasTexture.new()
-		icone.atlas = item.textura()
-		icone.region = Rect2(Vector2(quadro * item.celula.x, 0), Vector2(item.celula))
-		botao.icon = icone
-		botao.expand_icon = true
-		botao.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
-		botao.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		botao.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	botao.pressed.connect(_escolhe.bind(item))
-	botao.gui_input.connect(
-		func(evento: InputEvent) -> void:
-			var clique := evento as InputEventMouseButton
-			if clique != null and clique.pressed and clique.button_index == MOUSE_BUTTON_RIGHT:
-				_compara_com(item)
-				_muda_vista(TelaSprite.Vista.DUAS)
-	)
-	_miniaturas[item] = botao
-	return botao
-
-
-## Marca na galeria a folha aberta, sem disparar a escolha.
-func _marca_na_galeria(aberta: CatalogoSprites.Item) -> void:
-	for item: CatalogoSprites.Item in _miniaturas:
-		(_miniaturas[item] as Button).set_pressed_no_signal(item == aberta)
-	# A folha aberta por argumento ou pelas setas pode estar fora da vista.
-	_rolagem.ensure_control_visible.call_deferred(_miniaturas[aberta] as Control)
 
 
 func _monta_direita() -> Control:
@@ -630,24 +567,14 @@ func _monta_as_linhas(item: CatalogoSprites.Item) -> void:
 	if item.linhas <= 1:
 		return
 	var grupo := ButtonGroup.new()
-	var textura := item.textura()
 	for l in item.linhas:
-		var botao := Button.new()
-		botao.toggle_mode = true
-		botao.button_group = grupo
 		var rotulo := item.rotulos_linhas[l] if l < item.rotulos_linhas.size() else str(l + 1)
+		var curto := rotulo.replace("tres_quartos_", "3/4 ").replace("_", " ")
+		var botao := GaleriaSprites.botao_com_icone(
+			GaleriaSprites.recorte(item, 0, l), curto, Vector2(76, 86)
+		)
+		botao.button_group = grupo
 		botao.tooltip_text = rotulo
-		botao.text = rotulo.replace("tres_quartos_", "3/4 ").replace("_", " ")
-		botao.add_theme_font_size_override("font_size", 11)
-		var icone := AtlasTexture.new()
-		icone.atlas = textura
-		icone.region = Rect2(Vector2(0, l) * Vector2(item.celula), Vector2(item.celula))
-		botao.icon = icone
-		botao.expand_icon = true
-		botao.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
-		botao.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		botao.custom_minimum_size = Vector2(76, 86)
-		botao.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		botao.set_pressed_no_signal(l == 0)
 		botao.pressed.connect(_escolhe_linha.bind(l))
 		_linhas.add_child(botao)
@@ -678,21 +605,14 @@ func _preenche_lista() -> void:
 	var texto := _filtro.text.strip_edges().to_lower()
 	_visiveis.clear()
 	var avisos := 0
-	var mostra: Dictionary = {}
 	for item in _itens:
-		var botao: Button = _miniaturas[item]
 		avisos += 1 if item.tem_aviso() else 0
 		var nome := item.id.replace("_", " ") + " " + item.nome()
 		var passa := not (_so_avisos.button_pressed and not item.tem_aviso())
-		passa = passa and (texto == "" or nome.to_lower().contains(texto))
-		botao.visible = passa
-		if passa:
+		if passa and (texto == "" or nome.to_lower().contains(texto)):
 			_visiveis.append(item)
-			mostra[item.grupo] = true
-		_marca_o_aviso(botao, item)
-	for grupo: String in _cabecalhos:
-		for no: Control in _cabecalhos[grupo]:
-			no.visible = mostra.has(grupo)
+	_galeria.mostrar(_visiveis)
+	_galeria.marcar_avisos()
 	var analisando := ""
 	if not _tarefas.is_empty():
 		analisando = (
@@ -703,24 +623,9 @@ func _preenche_lista() -> void:
 	)
 
 
-## A miniatura de quem tem aviso fica laranja, com "!" e os avisos na dica.
-func _marca_o_aviso(botao: Button, item: CatalogoSprites.Item) -> void:
-	var tem := item.tem_aviso()
-	botao.text = ("! " if tem else "") + item.animacao
-	var cores := ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]
-	for cor: String in cores:
-		if tem:
-			botao.add_theme_color_override(cor, COR_DO_AVISO)
-		else:
-			botao.remove_theme_color_override(cor)
-	botao.tooltip_text = item.id
-	if tem:
-		botao.tooltip_text += "\n" + "\n".join(item.todos_os_avisos())
-
-
 func _escolhe(item: CatalogoSprites.Item) -> void:
 	_item = item
-	_marca_na_galeria(item)
+	_galeria.marcar(item)
 	# Quem abre a folha espera o resultado dela: a thread ja pode ter feito, ou
 	# o trabalho e feito aqui, uma vez so (`Item.trava`).
 	AnaliseSprites.analisar(item)
