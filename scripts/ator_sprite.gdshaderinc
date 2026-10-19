@@ -16,11 +16,11 @@ uniform sampler2D atlas : source_color, filter_nearest_mipmap;
 uniform int quadro = 2;
 uniform int quadros = 11;
 // A ginga (`AtorSprite.posar`): quanto o quad gira em volta do pe do pneu
-// (radianos, + topo para a direita da tela), desliza para o lado (metros) e
-// encolhe na vertical.
+// (radianos, + topo para a direita da tela), desliza para o lado e desce com
+// a suspensao (metros). Desce inteiro, e nao encolhe: o tamanho nao muda.
 uniform float rolagem = 0.0;
 uniform float desvio = 0.0;
-uniform float estica = 1.0;
+uniform float afunda = 0.0;
 // A cor do corredor. A camiseta e a bag das folhas sao vermelhas, e e nelas
 // que a cor entra, como no modelo 3D.
 uniform vec3 cor : source_color = vec3(0.82, 0.12, 0.10);
@@ -40,13 +40,13 @@ void vertex() {
 	para_camera.y = 0.0;
 	vec3 frente = length(para_camera) > 0.001 ? normalize(para_camera) : vec3(0.0, 0.0, 1.0);
 	vec3 direita = normalize(cross(vec3(0.0, 1.0, 0.0), frente));
-	// O vertice ja vem com o pe do pneu na origem (`center_offset`): girar e
-	// encolher em volta dela deixa a roda no asfalto.
-	vec2 p = vec2(VERTEX.x, VERTEX.y * estica);
+	// O vertice ja vem com o pe do pneu na origem (`center_offset`): girar em
+	// volta dela deixa a roda no asfalto.
+	vec2 p = VERTEX.xy;
 	float c = cos(rolagem);
 	float s = sin(rolagem);
 	p = vec2(p.x * c + p.y * s, -p.x * s + p.y * c);
-	p.x += desvio;
+	p += vec2(desvio, -afunda);
 	vec3 mundo = origem + direita * p.x + vec3(0.0, 1.0, 0.0) * p.y;
 	VERTEX = (VIEW_MATRIX * vec4(mundo, 1.0)).xyz;
 	NORMAL = normalize((VIEW_MATRIX * vec4(frente, 0.0)).xyz);

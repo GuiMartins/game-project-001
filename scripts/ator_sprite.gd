@@ -25,24 +25,40 @@ const PE := Vector2(96.0, 156.0)
 const ALTURA_PX: float = 120.0
 
 ## Os cinco quadros da curva, de deitado para a esquerda a deitado para a
-## direita, e quantos graus de inclinacao separam um do outro. As folhas
-## desenham perto de 15 e 30 graus; a moto deita ate 38, e passa do ultimo
-## quadro deitada mais do que ele mostra.
+## direita.
 const RETO: int = 2
-const PASSO_DA_CURVA: float = 15.0
+## Quantos graus cada quadro da curva desenha a moto deitada, + direita,
+## medidos no atlas pelo recorte (`arte/sprites_flow.gd`, `inclinacao`), que
+## imprime estes numeros; o teste confere que batem. Mudou o atlas, muda aqui.
+##
+## Medido, e nao suposto: ate a auditoria (`docs/AUDITORIA_SPRITES.md`, S04)
+## o ator supunha 15 e 30 graus, e as folhas desenham 11 e 28. Na troca do
+## reto para o primeiro deitado a moto na tela voltava 3 graus, e quem
+## oscilava perto dos 7,5 tremia entre os dois quadros.
+const INCLINACOES: Array[float] = [-27.8, -11.0, -1.0, 10.8, 27.6]
+## Graus que o quadro novo tem de estar mais perto que o atual para tomar o
+## lugar dele. Sem folga, a moto que oscila na fronteira entre dois quadros
+## pisca de um para o outro a cada pose; o giro do quad cobre a diferenca, e a
+## inclinacao na tela continua a da moto.
+const FOLGA_DA_TROCA: float = 2.0
 ## Os tres quadros do soco por lado (arma, estica, recolhe), -1 esquerda.
 const SOCO: Dictionary[int, Array] = {-1: [5, 6, 7], 1: [8, 9, 10]}
 ## Quanto o afundamento da suspensao e exagerado no sprite. Na escala real, os
 ## 4 cm de garfo da freada sao 3 px de piloto: existem, mas nao se veem, e o
 ## sprite parado num quadro so le como recorte colado na pista.
-const GINGA: float = 2.5
+##
+## O sprite inteiro desce, e nao encolhe: ate a S03 da auditoria o quad
+## achatava na vertical com 2,5 de exagero, a altura oscilava 5% a cada
+## lombada, e o piloto parecia crescer e diminuir. Quique de Road Rash e o
+## desenho todo descendo e subindo, do mesmo tamanho.
+const GINGA: float = 1.5
 
 var _material := ShaderMaterial.new()
 ## O modelo que este sprite substitui agora, e se o sprite estava na tela.
 var _modelo: Node3D
 var _na_tela: bool = false
-## A altura do piloto em metros, do ultimo `medir`.
-var _altura: float = 1.7
+## O quadro da curva na tela, que so troca com folga (`FOLGA_DA_TROCA`).
+var _curva: int = RETO
 
 
 func _init() -> void:
@@ -72,7 +88,6 @@ func medir(modelo: Node3D, ancestral: Node3D, recuo: float) -> void:
 			xform = (atual as Node3D).transform * xform
 			atual = atual.get_parent()
 		topo = maxf(topo, (xform * (malha as MeshInstance3D).get_aabb()).end.y)
-	_altura = topo
 	var m := topo / ALTURA_PX
 	var quad := mesh as QuadMesh
 	quad.size = CELULA * m
@@ -119,19 +134,31 @@ func marcar_foco(sim: bool) -> void:
 func posar(inclinacao: float, soco_lado: int, soco_fase: int, ginga: Vector3) -> void:
 	if not _na_tela:
 		return
-	var quadro := RETO
-	var desenhado := 0.0
+	_curva = quadro_da_curva(rad_to_deg(inclinacao), _curva)
+	var quadro := _curva
+	var desenhado := deg_to_rad(INCLINACOES[_curva])
 	if soco_fase >= 0:
+		# O soco e desenhado com a moto em pe; quem deita e o quad inteiro.
 		quadro = SOCO[-1 if soco_lado < 0 else 1][clampi(soco_fase, 0, 2)]
-	else:
-		var passos := clampi(roundi(rad_to_deg(inclinacao) / PASSO_DA_CURVA), -RETO, RETO)
-		quadro = RETO + passos
-		desenhado = deg_to_rad(passos * PASSO_DA_CURVA)
+		desenhado = 0.0
 	_material.set_shader_parameter("quadro", quadro)
-	# O quadro desenha a inclinacao de 15 em 15 graus, e o resto o quad gira
-	# na mao, em volta do pneu: entre dois quadros a moto continua deitando, e
-	# passa do ultimo. Sem isto a curva anda aos saltos de 15 graus.
+	# O quadro desenha a inclinacao de uns poucos angulos, e o resto o quad
+	# gira na mao, em volta do pneu: entre dois quadros a moto continua
+	# deitando, e passa do ultimo. Sem isto a curva anda aos saltos.
 	_material.set_shader_parameter("rolagem", inclinacao - desenhado + ginga.x)
 	_material.set_shader_parameter("desvio", ginga.y)
-	# Encolhe em volta do pneu, que fica no chao: quem afunda e o resto.
-	_material.set_shader_parameter("estica", 1.0 - ginga.z * GINGA / _altura)
+	_material.set_shader_parameter("afunda", ginga.z * GINGA)
+
+
+## O quadro da curva para `graus` de inclinacao (+ direita), saindo de `atual`:
+## o de inclinacao desenhada mais perto, mas so se ganhar do atual por mais
+## que a `FOLGA_DA_TROCA`.
+static func quadro_da_curva(graus: float, atual: int) -> int:
+	var melhor := atual
+	var distancia := absf(graus - INCLINACOES[atual]) - FOLGA_DA_TROCA
+	for i in INCLINACOES.size():
+		var d := absf(graus - INCLINACOES[i])
+		if d < distancia:
+			melhor = i
+			distancia = d
+	return melhor

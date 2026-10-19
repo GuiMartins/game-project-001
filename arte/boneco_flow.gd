@@ -168,9 +168,6 @@ func _initialize() -> void:
 
 	_pessoa = Pessoa.new()
 	_vp.add_child(_pessoa)
-	# A pose e do script, nao do relogio do jogo: sem isto o `_physics_process`
-	# refaz a pose por cima a cada passo.
-	_pessoa.set_physics_process(false)
 
 	_roda.call_deferred()
 
@@ -179,6 +176,13 @@ func _roda() -> void:
 	DirAccess.make_dir_recursive_absolute(PASTA)
 	# O `_ready` da pessoa, que monta as malhas, so roda depois do `_initialize`.
 	await process_frame
+	# A pose e do script, nao do relogio do jogo: sem isto o `_physics_process`
+	# anda a fase e refaz a pose por cima, na cadencia, entre a pose do quadro
+	# e a captura. Desligado so depois do `_ready`: antes dele nao adianta, o
+	# Godot religa o processo de quem tem `_physics_process` ao entrar na
+	# arvore. Foi o que embaralhou o ciclo de andar e o susto das folhas do
+	# Flow, cada coluna com a pose de um instante qualquer.
+	_pessoa.set_physics_process(false)
 	_pinta_de_cinza()
 	_poe_nariz()
 	for folha in FOLHAS:
@@ -345,9 +349,13 @@ func _monta_banco() -> Node3D:
 
 ## Pinta o quadro atual e cola na folha.
 func _quadro(folha: Image, coluna: int, linha: int, celula: Vector2i) -> void:
-	# O primeiro quadro depois de mexer na cena pode sair com a pose antiga.
-	for i in 3:
-		await process_frame
+	# Espera o desenho, e nao o quadro: com a janela atras de outra o macOS
+	# segura o desenho e o `process_frame` continua chegando, e a folha saia
+	# com a pose de outra coluna. Foi assim que o ciclo de andar e o susto das
+	# folhas do Flow sairam embaralhados. O primeiro desenho depois de mexer
+	# na cena pode ainda ser o da pose antiga; o segundo e o dela.
+	for i in 2:
+		await RenderingServer.frame_post_draw
 	var img := _vp.get_texture().get_image()
 	img.convert(Image.FORMAT_RGB8)
 	folha.blit_rect(img, Rect2i(Vector2i.ZERO, celula), Vector2i(coluna, linha) * celula)
