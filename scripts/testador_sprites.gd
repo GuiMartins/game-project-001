@@ -12,11 +12,12 @@ extends Control
 ## conforme elas terminam.
 ##
 ## Argumentos (depois de `--`): `--sprite=<id>` abre naquela folha, `--cena`
-## abre no modo 3D, `--vista=<quadro|folha|referencia|base|duas>`,
-## `--quadro=<n>` e `--linha=<n>` (de 1), e `--captura=<arquivo.png>` salva a
+## abre no modo 3D, `--jogar` abre no playground, `--vista=<quadro|folha|referencia|base|duas>`,
+## `--quadro=<n>` e `--linha=<n>` (de 1), `--evento=<atropelar|susto|carro|carro_rua|
+## largada>` (com `--jogar`), `--espera=<s>` e `--captura=<arquivo.png>` salva a
 ## tela e sai (para conferir sem olhar).
 
-enum Modo { FOLHA, CENA }
+enum Modo { FOLHA, CENA, JOGAR }
 
 ## Largura da galeria: as cinco animacoes de uma pessoa numa fileira so.
 const LARGURA_LISTA: float = 440.0
@@ -55,6 +56,9 @@ var _resumo: Label
 var _tela: TelaSprite
 var _contentor_cena: SubViewportContainer
 var _cena: CenaSprite
+var _contentor_jogo: SubViewportContainer
+var _jogo: JogoSprite
+var _barra_jogo := BarraDoJogo.new()
 var _moto_3d: ReferenciaMoto
 var _barra_folha: Control
 var _barra_cena: Control
@@ -84,6 +88,8 @@ func _ready() -> void:
 	var args := _argumentos()
 	if args.has("cena"):
 		_muda_modo(Modo.CENA)
+	if args.has("jogar"):
+		_muda_modo(Modo.JOGAR)
 	var alvo := String(args.get("sprite", ""))
 	var inicial := 0
 	for i in _visiveis.size():
@@ -99,8 +105,10 @@ func _ready() -> void:
 	if args.has("linha"):
 		_escolhe_linha(int(args["linha"]) - 1)
 	_comeca_a_analisar()
+	if args.has("evento") and _jogo != null:
+		_dispara_o_evento(String(args["evento"]))
 	if args.has("captura"):
-		_captura_e_sai.call_deferred(String(args["captura"]))
+		_captura_e_sai.call_deferred(String(args["captura"]), float(args.get("espera", 0.0)))
 
 
 func _exit_tree() -> void:
@@ -125,6 +133,9 @@ func _unhandled_key_input(evento: InputEvent) -> void:
 	var tecla := evento as InputEventKey
 	if tecla == null or not tecla.pressed or tecla.echo:
 		return
+	# Jogando, as setas e a barra de espaco sao da moto e da pessoa.
+	if _modo == Modo.JOGAR and tecla.keycode not in [KEY_TAB, KEY_ESCAPE]:
+		return
 	match tecla.keycode:
 		KEY_SPACE:
 			_tocar.button_pressed = not _tocar.button_pressed
@@ -137,9 +148,9 @@ func _unhandled_key_input(evento: InputEvent) -> void:
 		KEY_DOWN:
 			_escolhe_linha(_tela.linha + 1)
 		KEY_TAB:
-			_muda_modo(Modo.CENA if _modo == Modo.FOLHA else Modo.FOLHA)
+			_muda_modo((_modo + 1) % Modo.size())
 		KEY_ESCAPE:
-			get_tree().quit()
+			_encerra(0)
 		_:
 			return
 	get_viewport().set_input_as_handled()
@@ -234,7 +245,9 @@ func _monta_direita() -> Control:
 	var caixa := VBoxContainer.new()
 	caixa.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var topo := HBoxContainer.new()
-	_modo_botao = _segmentado(["Folha 2D", "Cena 3D"], 0, func(i: int) -> void: _muda_modo(i))
+	_modo_botao = _segmentado(
+		["Folha 2D", "Cena 3D", "Jogar"], 0, func(i: int) -> void: _muda_modo(i)
+	)
 	topo.add_child(_modo_botao)
 	caixa.add_child(topo)
 
@@ -261,6 +274,17 @@ func _monta_direita() -> Control:
 	porta.add_child(_cena)
 	_contentor_cena.add_child(porta)
 	palco.add_child(_contentor_cena)
+	_contentor_jogo = SubViewportContainer.new()
+	_contentor_jogo.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_contentor_jogo.stretch = true
+	_contentor_jogo.visible = false
+	var porta_do_jogo := SubViewport.new()
+	porta_do_jogo.own_world_3d = true
+	porta_do_jogo.msaa_3d = Viewport.MSAA_DISABLED
+	# O jogo so nasce quando alguem vai jogar: a pista, o carro e a chegada custam
+	# a montar, e quem so olha folhas nao precisa deles.
+	_contentor_jogo.add_child(porta_do_jogo)
+	palco.add_child(_contentor_jogo)
 	caixa.add_child(palco)
 
 	_barra_folha = _monta_barra_folha()
@@ -268,6 +292,8 @@ func _monta_direita() -> Control:
 	_barra_cena = _monta_barra_cena()
 	_barra_cena.visible = false
 	caixa.add_child(_barra_cena)
+	_barra_jogo.visible = false
+	caixa.add_child(_barra_jogo)
 
 	_info = RichTextLabel.new()
 	_info.bbcode_enabled = true
@@ -476,56 +502,25 @@ func _monta_barra_cena() -> Control:
 
 
 func _rotulo(texto: String) -> Label:
-	var rotulo := Label.new()
-	rotulo.text = texto
-	rotulo.modulate = Color(1, 1, 1, 0.75)
-	return rotulo
+	return PecasDeUi.rotulo(texto)
 
 
 func _check(texto: String, ligado: bool, ao_mudar: Callable) -> CheckBox:
-	var caixa := CheckBox.new()
-	caixa.text = texto
-	caixa.button_pressed = ligado
-	caixa.toggled.connect(ao_mudar)
-	return caixa
+	return PecasDeUi.marcar(texto, ligado, ao_mudar)
 
 
 func _slider(
 	minimo: float, maximo: float, passo: float, valor: float, ao_mudar: Callable
 ) -> HSlider:
-	var slider := HSlider.new()
-	slider.min_value = minimo
-	slider.max_value = maximo
-	slider.step = passo
-	slider.value = valor
-	slider.custom_minimum_size.x = 140
-	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	slider.value_changed.connect(ao_mudar)
-	return slider
+	return PecasDeUi.slider(minimo, maximo, passo, valor, ao_mudar)
 
 
-## Botoes lado a lado, um sempre marcado: o que uma lista suspensa esconde atras
-## de um clique, e que aqui se troca com um so.
 func _segmentado(nomes: Array, marcado: int, ao_escolher: Callable) -> HBoxContainer:
-	var caixa := HBoxContainer.new()
-	caixa.add_theme_constant_override("separation", 0)
-	var grupo := ButtonGroup.new()
-	for i in nomes.size():
-		var botao := Button.new()
-		botao.text = nomes[i]
-		botao.toggle_mode = true
-		botao.button_group = grupo
-		botao.set_pressed_no_signal(i == marcado)
-		botao.pressed.connect(ao_escolher.bind(i))
-		caixa.add_child(botao)
-	return caixa
+	return PecasDeUi.segmentado(nomes, marcado, ao_escolher)
 
 
-## Marca o botao `indice` de um `_segmentado` sem disparar a escolha.
-func _marca(segmentado: Control, indice: int) -> void:
-	var botoes := segmentado.get_children()
-	for i in botoes.size():
-		(botoes[i] as Button).set_pressed_no_signal(i == indice)
+func _marca(grupo: Control, indice: int) -> void:
+	PecasDeUi.marca_o_segmento(grupo, indice)
 
 
 ## O fundo da folha em amostras de cor, no lugar de uma lista de nomes.
@@ -626,6 +621,8 @@ func _preenche_lista() -> void:
 func _escolhe(item: CatalogoSprites.Item) -> void:
 	_item = item
 	_galeria.marcar(item)
+	if _jogo != null and item.tipo == CatalogoSprites.Tipo.PEDESTRE:
+		_jogo.avatar = CenaSprite._avatar_do(item)
 	# Quem abre a folha espera o resultado dela: a thread ja pode ter feito, ou
 	# o trabalho e feito aqui, uma vez so (`Item.trava`).
 	AnaliseSprites.analisar(item)
@@ -758,8 +755,31 @@ func _muda_modo(modo: int) -> void:
 	_marca(_modo_botao, modo)
 	_tela.visible = modo == Modo.FOLHA
 	_contentor_cena.visible = modo == Modo.CENA
+	_contentor_jogo.visible = modo == Modo.JOGAR
 	_barra_folha.visible = modo == Modo.FOLHA
 	_barra_cena.visible = modo == Modo.CENA
+	_barra_jogo.visible = modo == Modo.JOGAR
+	if modo == Modo.JOGAR:
+		_garante_o_jogo()
+		# O foco no campo de busca engoliria o WASD.
+		get_viewport().gui_release_focus()
+	if _jogo != null:
+		# O jogo parado nao le os controles nem gasta fisica: a moto responderia
+		# ao teclado de dentro de outro modo.
+		_jogo.process_mode = (
+			Node.PROCESS_MODE_INHERIT if modo == Modo.JOGAR else Node.PROCESS_MODE_DISABLED
+		)
+
+
+## O playground so e montado na primeira vez que alguem vai jogar.
+func _garante_o_jogo() -> void:
+	if _jogo != null:
+		return
+	_jogo = JogoSprite.new()
+	if _item != null and _item.tipo == CatalogoSprites.Tipo.PEDESTRE:
+		_jogo.avatar = CenaSprite._avatar_do(_item)
+	_contentor_jogo.get_child(0).add_child(_jogo)
+	_barra_jogo.montar(_jogo)
 
 
 func _passo_quadro(delta: int) -> void:
@@ -874,6 +894,38 @@ static func _nome_do_quadro(item: CatalogoSprites.Item, coluna: int) -> String:
 	return "quadro %d de %d" % [coluna + 1, item.colunas]
 
 
+## Sai do programa. Os `SubViewport` 3D (a cena, o jogo, a foto da moto) param de
+## desenhar e saem da arvore um quadro antes: sair no meio do desenho deixava o
+## processo pendurado no macOS, esperando a GPU, em metade das saidas.
+func _encerra(codigo: int) -> void:
+	for contentor: SubViewportContainer in [_contentor_cena, _contentor_jogo]:
+		for porta in contentor.get_children():
+			(porta as SubViewport).render_target_update_mode = SubViewport.UPDATE_DISABLED
+		contentor.visible = false
+	_moto_3d.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	if _jogo != null:
+		_jogo.process_mode = Node.PROCESS_MODE_DISABLED
+	for i in 3:
+		await get_tree().process_frame
+	get_tree().quit(codigo)
+
+
+## Uma situacao do playground a partir da linha de comando, para conferir sem
+## pilotar: `--jogar --evento=atropelar --espera=0.6 --captura=a.png`.
+func _dispara_o_evento(nome: String) -> void:
+	match nome:
+		"atropelar":
+			_jogo.atropelar(25.0)
+		"susto":
+			_jogo.passar_uma_moto(25.0, 1.0)
+		"carro":
+			_jogo.sair_do_carro(1)
+		"carro_rua":
+			_jogo.sair_do_carro(-1)
+		"largada":
+			_jogo.largada()
+
+
 static func _argumentos() -> Dictionary:
 	var achados := {}
 	for arg in OS.get_cmdline_user_args():
@@ -884,12 +936,14 @@ static func _argumentos() -> Dictionary:
 	return achados
 
 
-func _captura_e_sai(caminho: String) -> void:
+func _captura_e_sai(caminho: String, espera: float = 0.0) -> void:
 	# Alguns quadros para o 3D assentar, e para a analise e a foto da moto
 	# chegarem: o primeiro quadro sai antes do shader compilar.
 	for i in 40:
 		await get_tree().process_frame
+	if espera > 0.0:
+		await get_tree().create_timer(espera).timeout
 	var imagem := get_viewport().get_texture().get_image()
 	var erro := imagem.save_png(caminho)
 	print("captura: ", caminho, " (", error_string(erro), ")")
-	get_tree().quit(0 if erro == OK else 1)
+	_encerra(0 if erro == OK else 1)

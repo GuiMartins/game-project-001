@@ -104,6 +104,7 @@ func _miniatura(item: CatalogoSprites.Item, grupo: ButtonGroup) -> Button:
 static func botao_com_icone(icone: Texture2D, texto: String, tamanho: Vector2) -> Button:
 	var botao := Button.new()
 	botao.toggle_mode = true
+	botao.focus_mode = Control.FOCUS_NONE
 	botao.custom_minimum_size = tamanho
 	botao.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	var coluna := VBoxContainer.new()

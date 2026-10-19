@@ -412,6 +412,27 @@ referência da queda (`caida.png`) é **cortada pela grade da própria folha**: 
 braço do boneco passa da célula, e é a hipótese mais forte de por que as folhas
 de queda saem diferentes dela.
 
+**Jogar** (a terceira aba): um trecho reto de pista com calçada, um carro parado e
+a chegada, onde se joga com o sprite em vez de só olhar para ele. Quem anda é o
+que o jogo tem, instanciado solto: a `Pessoa` (WASD ou setas, Shift corre), o
+`PlayerBike` com os mesmos controles e a mesma física da corrida (W, S, A, D,
+Shift, Q e E, R recomeça) e o `Carro` que deixa alguém descer. A galeria
+escolhe quem é a pessoa e a barra troca quem se conduz, sprite ou 3D e a
+cadência. Cada botão de situação chama a função que o jogo já chama:
+
+| Botão | O que chama |
+| --- | --- |
+| Atropelar | `Pessoa.atropelar`, na velocidade do slider: voo, dois quiques, queda deitada e mancha no chão |
+| Moto em cima dela, de raspão, de longe | uma `MotoFantasma` (só passa, no grupo das motos) pela `_olha_motos` da pessoa: ela pula (susto) |
+| Sair do carro (calçada ou rua) | `Carro.abrir_porta` e `desembarcar`: a porta abre, a pessoa sai e a porta bate; do lado da rua ela contorna a traseira |
+| Largada | a fiscal com as bandeiras (`sinalizar_largada`) e a saída para a calçada, como no `main.gd` |
+| Levantar, moto no início, limpar manchas | refazem o ator e o chão |
+
+Quem está de pé na frente de uma moto **pula**: "moto em cima dela" mostra o
+susto, e não o atropelo. A pessoa só deixa de pular se acabou de pular (1 s),
+está descendo do carro ou a moto aparece de repente; por isso há o botão
+*Atropelar*. Para atropelar de verdade, conduza a moto até ela.
+
 `python tools/dev.py sprites-relatorio` faz a mesma análise sem janela e grava,
 em `.dev/sprites_relatorio/`, o `relatorio.md`, a folha marcada e a comparação
 com a referência (referência, quadro e sobreposição empilhados por ângulo) das
@@ -420,12 +441,14 @@ folhas com aviso. Sai com 1 só por defeito de `borda:`. No testador, os botões
 `.dev/sprites_export/`, para mandar de volta ao Flow ou a quem desenha.
 
 Os testes (`test_silhueta`, `test_analise_sprites`, `test_referencia_sprites`,
-`test_base_sprites`, `test_exporta_sprites`, `test_catalogo_sprites`) guardam o
+`test_base_sprites`, `test_exporta_sprites`, `test_catalogo_sprites`,
+`test_galeria_sprites`, `test_jogo_sprite` e `test_jogo_sprite_atores`) guardam o
 que não depende de opinião: a conta da silhueta, a detecção de borda suja em
 imagens sintéticas, **nenhuma folha entregue com borda suja**, a referência
 carregando na grade dos atlas e o estado conhecido dela. O que o catálogo
 **não** vê é o movimento a olho: se a passada parece errada, só a Cena mostra.
 
 `sprites-ver` aceita `--sprite=<id>`, `--cena`, `--vista=<quadro|folha|
-referencia|base|duas>`, `--quadro=<n>`, `--linha=<n>` e `--captura=arquivo.png`,
-que abre direto naquela tela e salva, para conferir sem abrir a janela na mão.
+referencia|base|duas>`, `--quadro=<n>`, `--linha=<n>`, `--jogar`, `--evento=<atropelar|
+susto|carro|carro_rua|largada>`, `--espera=<s>` e `--captura=arquivo.png`, que abre
+direto naquela tela e salva, para conferir sem abrir a janela na mão.

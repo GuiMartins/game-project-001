@@ -12,8 +12,6 @@ extends Node3D
 ## Sem isso, o sprite que parece bom parado treme ou desliza na estrada.
 
 const ASFALTO: Texture2D = preload("res://assets/visual/asfalto_albedo.png")
-const CEU: Shader = preload("res://scripts/ceu.gdshader")
-const PALETA: Shader = preload("res://scripts/paleta.gdshader")
 ## Onde a camera olha: a altura do peito, para o sprite ficar centrado.
 const ALVO := Vector3(0.0, 0.9, 0.0)
 ## A camera do jogo (`BikeTuning`): 4,5 m atras, a 1,2 m de altura, lente de 50.
@@ -70,18 +68,16 @@ var regua: bool = true:
 		regua = valor
 		if _regua != null:
 			_regua.visible = valor
-## A hora do jogo, de 0 (meio-dia) a 1 (noite fechada), pelo `Relogio`.
+## A hora do jogo, de 0 (meio-dia) a 1 (noite fechada), e a quantizacao do
+## jogo por cima de tudo: do `AmbienteSprite`.
 var hora: float = 0.0:
 	set(valor):
-		hora = clampf(valor, 0.0, 1.0)
-		if is_node_ready():
-			_relogio_do_dia.fixar(hora)
-## A quantizacao com dither do jogo por cima de tudo.
+		hora = valor
+		_ambiente.hora = valor
 var paleta: bool = false:
 	set(valor):
 		paleta = valor
-		if _tela_da_paleta != null:
-			_tela_da_paleta.visible = valor
+		_ambiente.paleta = valor
 ## Da moto.
 var inclinacao_graus: float = 0.0
 var modelo_moto: int = Entregador.Modelo.CG_160:
@@ -94,11 +90,7 @@ var movendo: bool = true
 
 var _item: CatalogoSprites.Item
 var _camera := Camera3D.new()
-var _ambiente := Environment.new()
-var _sol := DirectionalLight3D.new()
-var _ceu := ShaderMaterial.new()
-var _relogio_do_dia := Relogio.new()
-var _tela_da_paleta: ColorRect
+var _ambiente := AmbienteSprite.new()
 var _chao_material: StandardMaterial3D
 var _regua: Node3D
 var _postes: Node3D
@@ -112,7 +104,7 @@ var _avatar: int = 0
 
 
 func _ready() -> void:
-	_monta_ambiente()
+	add_child(_ambiente)
 	add_child(_chao())
 	_regua = _monta_regua()
 	_regua.visible = regua
@@ -124,16 +116,6 @@ func _ready() -> void:
 	_camera.current = true
 	add_child(_camera)
 	_posiciona_camera()
-	_monta_paleta()
-	add_child(_relogio_do_dia)
-	_relogio_do_dia.montar(_ambiente, _sol, _ceu)
-	_relogio_do_dia.fixar(hora)
-
-
-func _exit_tree() -> void:
-	# O global e do projeto inteiro: nao deixa a noite do testador para o jogo.
-	RenderingServer.global_shader_parameter_set(&"noite", 0.0)
-	Relogio.escuro = 0.0
 
 
 ## Poe `item` em cena. Folha que nao e de pedestre nem de moto fica vazia.
@@ -279,41 +261,6 @@ func _posiciona_camera() -> void:
 	var el := deg_to_rad(elevacao_graus)
 	_camera.position = ALVO + distancia * Vector3(sin(yaw) * cos(el), sin(el), cos(yaw) * cos(el))
 	_camera.look_at(ALVO)
-
-
-## O ambiente do jogo (`World`): ceu em shader, tonemap filmic, LUT. O que muda
-## com a hora o `Relogio` aplica.
-func _monta_ambiente() -> void:
-	_ceu.shader = CEU
-	var ceu := Sky.new()
-	ceu.sky_material = _ceu
-	_ambiente.background_mode = Environment.BG_SKY
-	_ambiente.sky = ceu
-	_ambiente.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	_ambiente.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	_ambiente.tonemap_white = 6.0
-	_ambiente.adjustment_enabled = true
-	var mundo := WorldEnvironment.new()
-	mundo.environment = _ambiente
-	add_child(mundo)
-	_sol.shadow_enabled = true
-	add_child(_sol)
-
-
-## A quantizacao do jogo, no mesmo lugar: um passe de tela por cima do 3D.
-func _monta_paleta() -> void:
-	var viewport := get_viewport()
-	var camada := CanvasLayer.new()
-	camada.layer = 5
-	viewport.add_child.call_deferred(camada)
-	_tela_da_paleta = ColorRect.new()
-	_tela_da_paleta.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_tela_da_paleta.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var material := ShaderMaterial.new()
-	material.shader = PALETA
-	_tela_da_paleta.material = material
-	_tela_da_paleta.visible = paleta
-	camada.add_child(_tela_da_paleta)
 
 
 func _chao() -> MeshInstance3D:
