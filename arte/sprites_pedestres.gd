@@ -160,9 +160,9 @@ const ANIMACOES: Dictionary = {
 
 ## Cada pessoa: a altura real e de que folha vem cada linha de cada animacao.
 ## Na lista, um texto troca a folha e os numeros seguintes sao as linhas dela,
-## na ordem das linhas do atlas. O escritorio anda por duas folhas: a primeira
-## tem o passo certo em todas as linhas menos a de costas, que saiu de frente; a
-## segunda tem as costas, e o passo de lado e mais fraco.
+## na ordem das linhas do atlas. Uma folha so por animacao, desde a leva de
+## 18/10/2026 (`docs/AUDITORIA_SPRITES.md`, S06); o texto continua aceitando
+## mais, para quando uma linha sair errada e so ela for refeita.
 const PESSOAS: Dictionary = {
 	"vovo":
 	{
@@ -220,7 +220,7 @@ const PESSOAS: Dictionary = {
 		"altura": 1.68,
 		"fontes":
 		{
-			"andando": ["escritorio_andando", 0, 1, 2, 3, "escritorio_andando_costas", 4],
+			"andando": ["escritorio_andando", 0, 1, 2, 3, 4],
 			"susto": ["escritorio_susto", 0, 1, 2],
 			"desembarcando": ["escritorio_desembarcando", 0, 1, 2, 3],
 			"voando": ["escritorio_voando", 0, 1, 2, 3],
@@ -234,12 +234,18 @@ func _initialize() -> void:
 	var folhas: Dictionary = {}
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SAIDA))
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(CONFERENCIA))
+	# Segue depois de uma folha reprovada: o Flow erra varias numa leva, e
+	# saber todas de uma vez e refazer todas de uma vez.
+	var reprovadas: Array[String] = []
 	for id: String in PESSOAS:
 		var ficha: Dictionary = PESSOAS[id]
 		for animacao: String in ficha["fontes"]:
 			if not _atlas(id, animacao, ficha, folhas):
-				quit(1)
-				return
+				reprovadas.append(id + "_" + animacao)
+	if not reprovadas.is_empty():
+		push_error("refaca no Flow: %s" % ", ".join(reprovadas))
+		quit(1)
+		return
 	quit(0)
 
 

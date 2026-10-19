@@ -62,21 +62,25 @@ folha do Flow tem de ser refeita a partir da referência certa.
 
 ### Pedestres
 
-- [ ] **S06** 👤 — **Refazer as 25 folhas no Flow** a partir das referências
-  novas (S01): cinco pessoas × andar, susto, desembarque, voo e queda. Precisa
-  do login do Guilherme no Flow. O prompt e a ordem das imagens estão em
-  `arte/flow/referencia/README.md`.
+- [x] **S06** — **Refazer as 25 folhas no Flow** a partir das referências
+  novas (S01): cinco pessoas × andar, susto, desembarque, voo e queda. Feito no
+  Chrome do Guilherme, no projeto **NumFood NPCS**; o passo a passo e o prompt
+  estão em `arte/flow/referencia/README.md` (*Leva de 18/10/2026*). Cinco
+  folhas vieram com a grade errada na primeira tentativa e uma com figuras
+  fantasma; o recorte reprovou as seis, e foram refeitas. Resultado: o andar
+  de costas não mostra mais o rosto, o susto sobe e desce em arco em vez de
+  piscar, e cada pessoa vem de uma folha só por animação.
 - [x] **S07** — **Ciclo de andar em ordem, mesmo com folha torta.** Enquanto
   S06 não vem (e para quando o Flow errar de novo): o recorte mede a abertura
   das pernas de cada quadro e reordena a linha no ciclo junto, médio, aberto,
   médio, duas vezes. Os dois mais fechados viram as passagens, os dois mais
   abertos os contatos.
 - [x] **S08** — **Linhas viradas para o lado errado.** O adolescente andava de
-  costas mostrando o rosto (a linha `costas` da folha saiu de frente): agora a
-  de costas usa a de 3/4 de costas da folha, que já era costas pura, com o
-  mesmo reparo do quadro 7. Fica para a S06: a 3/4 de costas do escritório é
-  costas pura, e o operário vira o rosto em dois quadros dela.
-- [ ] **S09** — **Susto, voo, queda e desembarque.** Todas embaralhadas pela
-  mesma causa (S01): o susto pisca, o voo tem quadro minúsculo no meio
-  (`obra`, costas, coluna 7), a queda de costas mostra o rosto, o desembarque
-  muda de lado entre linhas. Só a S06 resolve; não há reordenação que salve.
+  costas mostrando o rosto, e as linhas de 3/4 de costas saíam de costas puras.
+  Resolvido pela S06; o reparo provisório do adolescente saiu. Os dois reparos
+  antigos do recorte continuam valendo na leva nova (o quadro 7 da 3/4 de costas
+  virado de lado, e o último quadro de frente do operário de costas).
+- [x] **S09** — **Susto, voo, queda e desembarque** embaralhados pela mesma
+  causa (S01). Resolvido pela S06. Ficou um defeito pequeno: no voo de costas
+  da moça do escritório, dois quadros saíram quase em pé. Num voo de 1 s a 8
+  quadros por segundo, não compensou outra rodada.
