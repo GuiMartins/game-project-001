@@ -66,16 +66,16 @@ folha do Flow tem de ser refeita a partir da referência certa.
   novas (S01): cinco pessoas × andar, susto, desembarque, voo e queda. Precisa
   do login do Guilherme no Flow. O prompt e a ordem das imagens estão em
   `arte/flow/referencia/README.md`.
-- [ ] **S07** — **Ciclo de andar em ordem, mesmo com folha torta.** Enquanto
+- [x] **S07** — **Ciclo de andar em ordem, mesmo com folha torta.** Enquanto
   S06 não vem (e para quando o Flow errar de novo): o recorte mede a abertura
   das pernas de cada quadro e reordena a linha no ciclo junto, médio, aberto,
   médio, duas vezes. Os dois mais fechados viram as passagens, os dois mais
   abertos os contatos.
-- [ ] **S08** — **Linhas viradas para o lado errado.** O adolescente anda de
-  costas mostrando o rosto (a linha `costas` saiu de frente) e a linha de 3/4
-  de costas dele e da do escritório saíram de costas puras; o operário vira o
-  rosto nos quadros 3 e 4 de 3/4 de costas. Até a S06, a linha errada usa a
-  vizinha certa.
+- [x] **S08** — **Linhas viradas para o lado errado.** O adolescente andava de
+  costas mostrando o rosto (a linha `costas` da folha saiu de frente): agora a
+  de costas usa a de 3/4 de costas da folha, que já era costas pura, com o
+  mesmo reparo do quadro 7. Fica para a S06: a 3/4 de costas do escritório é
+  costas pura, e o operário vira o rosto em dois quadros dela.
 - [ ] **S09** — **Susto, voo, queda e desembarque.** Todas embaralhadas pela
   mesma causa (S01): o susto pisca, o voo tem quadro minúsculo no meio
   (`obra`, costas, coluna 7), a queda de costas mostra o rosto, o desembarque

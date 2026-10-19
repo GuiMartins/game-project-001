@@ -39,6 +39,22 @@ const MARGEM_VERDE: int = 40
 const VAO: int = 4
 ## Quanto do topo do desenho entra no calculo do centro do tronco.
 const FRACAO_TRONCO: float = 0.4
+## Quanto do pe da silhueta mede a abertura das pernas.
+const FRACAO_PES: float = 0.15
+## Em que ponto do passo cada coluna do ciclo de andar esta, pela abertura das
+## pernas: 0 junto (a perna passando pela outra), 1 no meio, 2 aberto (o
+## calcanhar da frente tocando o chao). Dois passos em oito quadros, como a
+## folha de pose (`arte/boneco_flow.gd`, `_pose_andando`) desenha.
+const CICLO_DA_PASSADA: Array[int] = [0, 1, 2, 1, 0, 1, 2, 1]
+## Os angulos em que a abertura mede a passada. De frente e de costas a perna
+## que vai e a que volta ficam uma atras da outra, e a largura dos pes muda
+## com o pe que levanta, nao com o passo: reordenar ali trocaria o ciclo da
+## folha por um sorteio.
+const ANGULOS_DA_PASSADA: Array[String] = ["tres_quartos_frente", "lado", "tres_quartos_costas"]
+## Nem nesses a linha e reordenada quando a abertura quase nao varia nela: a
+## medida vira ruido. Diferenca entre a maior e a menor abertura, sobre a
+## altura.
+const VARIACAO_MINIMA: float = 0.08
 ## O quadro 7 da linha de tres quartos de costas do andar sai virado de lado em
 ## todas as folhas: o Flow le a fase de 270 graus como uma virada. Vira copia do
 ## vizinho.
@@ -188,8 +204,11 @@ const PESSOAS: Dictionary = {
 	{
 		"altura": 1.65,
 		"fontes":
+		# A linha de costas da folha saiu de frente: ele andava para longe
+		# mostrando o rosto. A de tres quartos de costas e costas puras, e
 		{
-			"andando": ["adolescente_andando", 0, 1, 2, 3, 4],
+			# serve as duas.
+			"andando": ["adolescente_andando", 0, 1, 2, 3, 3],
 			"susto": ["adolescente_susto", 0, 1, 2],
 			"desembarcando": ["adolescente_desembarcando", 0, 1, 2, 3],
 			"voando": ["adolescente_voando", 0, 1, 2, 3],
@@ -249,12 +268,14 @@ func _atlas(id: String, animacao: String, ficha: Dictionary, folhas: Dictionary)
 			push_error("%s: a folha nao tem a linha %d" % [nome, na_folha])
 			return false
 		var da_linha: Array = (desenhos[na_folha] as Array).duplicate()
-		if animacao == "andando" and linha == REPARO_LINHA:
+		if animacao == "andando" and na_folha == REPARO_LINHA:
 			da_linha[REPARO_COLUNA] = da_linha[REPARO_DE]
 		# O Flow virou de costas o ultimo quadro frontal do operario. O
 		# primeiro quadro fecha o ciclo na mesma pose e direcao.
 		if id == "obra" and animacao == "andando" and linha == 0:
 			da_linha[7] = da_linha[0]
+		if animacao == "andando" and linhas[linha] in ANGULOS_DA_PASSADA:
+			da_linha = _ordena_passada(da_linha)
 		quadros.append(da_linha)
 	var escala_folha := _escala_da_folha(regra, quadros, altura_px)
 	for linha in linhas.size():
@@ -288,6 +309,32 @@ func _atlas(id: String, animacao: String, ficha: Dictionary, folhas: Dictionary)
 		)
 	)
 	return true
+
+
+## A linha do andar na ordem do passo (`CICLO_DA_PASSADA`), pela abertura das
+## pernas de cada quadro: os dois mais fechados nas passagens, os dois mais
+## abertos nos contatos, e os quatro do meio entre eles. Dentro de cada grupo,
+## a ordem da folha.
+##
+## O Flow nao segue a ordem das colunas da referencia ao pe da letra, e as
+## folhas da primeira leva vieram de uma referencia embaralhada (ver
+## `docs/AUDITORIA_SPRITES.md`, S01): a passada abria e fechava fora de
+## ritmo, e o pedestre andava como quem tropeca. Qual perna esta na frente a
+## medida nao ve; a 60 px de altura, na calcada, o olho tambem nao. O ritmo,
+## ve.
+func _ordena_passada(linha: Array) -> Array:
+	var aberturas: Array = linha.map(func(q: Dictionary) -> float: return q["abertura"])
+	if aberturas.max() - aberturas.min() < VARIACAO_MINIMA:
+		return linha
+	var indices: Array = range(linha.size())
+	indices.sort_custom(func(a: int, b: int) -> bool: return aberturas[a] < aberturas[b])
+	var grupos: Array[Array] = [indices.slice(0, 2), indices.slice(2, 6), indices.slice(6)]
+	for grupo in grupos:
+		grupo.sort()
+	var saida: Array = []
+	for ponto in CICLO_DA_PASSADA:
+		saida.append(linha[grupos[ponto].pop_front()])
+	return saida
 
 
 ## As folhas de onde vem cada linha: o nome da folha e a linha dentro dela. Na
@@ -466,12 +513,24 @@ func _caixa(cheio: PackedByteArray, largura: int, regiao: Rect2i) -> Dictionary:
 			if cheio[y * largura + x] == 1:
 				soma_x += x
 				n += 1
+	# A abertura das pernas: a largura dos pixels na faixa de baixo, onde so ha
+	# pe e canela, sobre a altura. E o que diz em que ponto do passo o quadro
+	# esta (`_ordena_passada`).
+	var pe_min := maximo.x
+	var pe_max := minimo.x
+	var faixa_pe := maxi(int(float(maximo.y - minimo.y) * FRACAO_PES), 1)
+	for y in range(maximo.y - faixa_pe, maximo.y + 1):
+		for x in range(minimo.x, maximo.x + 1):
+			if cheio[y * largura + x] == 1:
+				pe_min = mini(pe_min, x)
+				pe_max = maxi(pe_max, x)
 	return {
 		"retangulo": Rect2i(minimo, maximo - minimo + Vector2i.ONE),
 		"area": area,
 		"tronco_x": float(soma_x) / maxf(n, 1.0),
 		"centro": soma / maxf(area, 1.0),
 		"fundo": float(maximo.y + 1),
+		"abertura": float(maxi(pe_max - pe_min, 0)) / float(maximo.y - minimo.y + 1),
 	}
 
 
