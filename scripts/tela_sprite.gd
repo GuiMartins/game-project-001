@@ -44,6 +44,8 @@ const COR_SO_FOLHA := Color(0.3, 0.8, 1.0)
 const COR_AS_DUAS := Color(0.95, 0.95, 0.95)
 const ZOOM_MAX: int = 16
 const MARGEM: float = 12.0
+const ALTURA_DO_RODAPE: float = 32.0
+const COR_DO_RODAPE := Color(0.0, 0.0, 0.0, 0.6)
 
 var item: CatalogoSprites.Item:
 	set(valor):
@@ -186,21 +188,47 @@ func _draw() -> void:
 			_desenha_base(tinta)
 		Vista.DUAS:
 			_desenha_duas(tinta)
-	var rodape := "x%d   quadro %d/%d" % [int(_escala), coluna + 1, item.colunas]
-	if item.linhas > 1 and linha < item.rotulos_linhas.size():
-		rodape += "   %s" % item.rotulos_linhas[linha]
-	if espelhar:
-		rodape += "   espelhado"
-	_texto(Vector2(12, size.y - 12), rodape, Color.WHITE)
+	_desenha_rodape()
 	if vista == Vista.QUADRO:
 		_desenha_notas()
+
+
+## O rodape, igual em toda vista: o grupo e a animacao da folha, e o quadro. Na
+## vista "Duas folhas" cada nome fica embaixo do seu painel. Fixo de proposito:
+## o nome mudava de lugar a cada vista (titulo de painel, canto, legenda) e a
+## folha que se olhava era a primeira coisa a procurar.
+func _desenha_rodape() -> void:
+	draw_rect(Rect2(0.0, size.y - ALTURA_DO_RODAPE, size.x, ALTURA_DO_RODAPE), COR_DO_RODAPE)
+	var y := size.y - 9.0
+	if vista == Vista.DUAS and outro != null:
+		var paineis := _paineis(2)
+		_nome_no_rodape(item, Vector2(paineis[0].position.x, y), "")
+		_nome_no_rodape(outro, Vector2(paineis[1].position.x, y), "")
+		return
+	var detalhe := "quadro %d/%d" % [coluna + 1, item.colunas]
+	if item.linhas > 1 and linha < item.rotulos_linhas.size():
+		detalhe += "   %s" % item.rotulos_linhas[linha]
+	detalhe += "   x%d" % int(_escala)
+	if espelhar:
+		detalhe += "   espelhado"
+	_nome_no_rodape(item, Vector2(MARGEM, y), detalhe)
+
+
+func _nome_no_rodape(alvo: CatalogoSprites.Item, onde: Vector2, detalhe: String) -> void:
+	var fonte := get_theme_default_font()
+	var nome := "%s  /  %s" % [alvo.grupo, alvo.animacao]
+	draw_string(fonte, onde, nome, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
+	if detalhe != "":
+		var largura := fonte.get_string_size(nome, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
+		var resto := onde + Vector2(largura + 24.0, 0.0)
+		draw_string(fonte, resto, detalhe, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 1, 1, 0.7))
 
 
 func _escala_para(fonte: Vector2) -> float:
 	if zoom > 0:
 		return float(zoom)
 	# Folga para as bordas e o texto, e inteiro: pixel meio pixel borra.
-	var cabe := minf((size.x - 24.0) / fonte.x, (size.y - 48.0) / fonte.y)
+	var cabe := minf((size.x - 24.0) / fonte.x, (size.y - 48.0 - ALTURA_DO_RODAPE) / fonte.y)
 	return maxf(floorf(cabe), 1.0)
 
 
@@ -334,7 +362,7 @@ func _paineis(n: int) -> Array[Rect2]:
 	var lista: Array[Rect2] = []
 	var largura := (size.x - MARGEM * (n + 1)) / n
 	for i in n:
-		lista.append(Rect2(MARGEM + i * (largura + MARGEM), 40.0, largura, size.y - 100.0))
+		lista.append(Rect2(MARGEM + i * (largura + MARGEM), 40.0, largura, size.y - 104.0))
 	return lista
 
 
@@ -484,8 +512,8 @@ func _desenha_duas(tinta: Color) -> void:
 	var chao_y := paineis[0].end.y - 24.0
 	for i in 2:
 		var alvo := duas[i]
-		var legenda := "%s   (quadro %d, linha %d)" % [alvo.nome(), colunas[i] + 1, linhas[i] + 1]
-		_titulo(paineis[i], legenda)
+		# O nome da folha mora no rodape, sempre no mesmo lugar; aqui so o quadro.
+		_titulo(paineis[i], "quadro %d, linha %d" % [colunas[i] + 1, linhas[i] + 1])
 		_desenha_fundo(paineis[i])
 		# O pe da folha cai no meio do painel, e a base dele no chao comum.
 		var origem := (
