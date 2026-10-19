@@ -16,15 +16,21 @@ extends SceneTree
 ## 2. acha cada desenho pelas faixas vazias entre eles, sem grade fixa;
 ## 3. alinha todos pelo pe do pneu traseiro, que e o ponto que encosta no
 ##    asfalto - alinhado pela caixa, o piloto que soca pularia de lado;
-## 4. reduz cada quadro para a mesma area de silhueta.
+## 4. reduz cada quadro para o tamanho do reto, pela medida que vale para ele;
+## 5. mede a inclinacao que cada quadro desenha, que o `AtorSprite` tem de
+##    saber (`INCLINACOES`) para girar so o que falta.
 ##
-## A medida comum e a area, quadro a quadro, e nao a altura nem a folha. A IA
-## nao desenha o mesmo piloto duas vezes no mesmo tamanho: na mesma folha, os
-## quadros deitados sairam com 12% mais area que o reto, e a folha de combate
-## veio com a camera mais baixa, o piloto mais alto e mais estreito. Qualquer
-## medida por folha deixava o ator inflando e desinflando a cada troca de
-## quadro. A area e a que nao muda quando o desenho gira, e e a que o olho le
-## como tamanho.
+## A medida comum e quadro a quadro, e nao a folha. A IA nao desenha o mesmo
+## piloto duas vezes no mesmo tamanho: na mesma folha, os quadros deitados
+## sairam com 12% mais area que o reto, e a folha de combate veio com a camera
+## mais baixa, o piloto mais alto e mais estreito. Qualquer medida por folha
+## deixava o ator inflando e desinflando a cada troca de quadro.
+##
+## Na curva a medida e a area, que nao muda quando o desenho gira; a altura
+## mudaria, porque o deitado e mais baixo de verdade. No soco e a altura do
+## quadro de voltar a pilotar: a camera da folha de combate e mais baixa, e
+## igualado pela area o piloto ficava 4% a 6% mais alto que o reto - o
+## capacete pulava para cima a cada soco, que e o que se le como crescer.
 
 ## Altura do piloto reto (`MEDIDA`) no atlas, do pneu ao capacete, em pixels;
 ## os outros quadros tem a area dele, e podem passar disto. Na camera de
@@ -52,29 +58,29 @@ const AREA_MINIMA: int = 4000
 const MEDIDA: Array = ["pilotando_a", 0, 2]
 
 ## Os quadros do atlas, na ordem do `AtorSprite`: folha, linha, coluna de cada
-## um e a coluna, na mesma linha, cuja area mede o quadro. So entra o que o
-## jogo tem como mostrar - o chute das folhas de combate fica de fora porque
-## nao existe chute.
+## um, a coluna, na mesma linha, que mede o quadro, e o que se mede nela
+## (`area` ou `altura`, ver o topo). So entra o que o jogo tem como mostrar - o
+## chute das folhas de combate fica de fora porque nao existe chute.
 ##
 ## O soco se mede pelo quadro de voltar a pilotar da propria folha, e nao por
-## ele mesmo: o braco esticado e area a mais, e medido por ela o piloto
-## encolheria justamente no quadro do soco.
+## ele mesmo: o braco esticado e area a mais, e o punho armado e altura a mais,
+## e medido por eles o piloto encolheria justamente no quadro do soco.
 const QUADROS: Array[Array] = [
 	# A inclinacao, da esquerda para a direita, indo reto.
-	["pilotando_a", 0, 0, 0],
-	["pilotando_a", 0, 1, 1],
-	["pilotando_a", 0, 2, 2],
-	["pilotando_a", 0, 3, 3],
-	["pilotando_a", 0, 4, 4],
+	["pilotando_a", 0, 0, 0, "area"],
+	["pilotando_a", 0, 1, 1, "area"],
+	["pilotando_a", 0, 2, 2, "area"],
+	["pilotando_a", 0, 3, 3, "area"],
+	["pilotando_a", 0, 4, 4, "area"],
 	# Soco para a esquerda: arma, estica, recolhe.
-	["combate_a", 0, 0, 3],
-	["combate_a", 0, 1, 3],
-	["combate_a", 0, 2, 3],
+	["combate_a", 0, 0, 3, "altura"],
+	["combate_a", 0, 1, 3, "altura"],
+	["combate_a", 0, 2, 3, "altura"],
 	# Soco para a direita: o punho armado da folha e o do braco errado, e o
 	# recolhido serve para armar e para recolher.
-	["combate_b", 0, 2, 3],
-	["combate_b", 0, 1, 3],
-	["combate_b", 0, 2, 3],
+	["combate_b", 0, 2, 3, "altura"],
+	["combate_b", 0, 1, 3, "altura"],
+	["combate_b", 0, 2, 3, "altura"],
 ]
 
 const ORIGEM: String = "res://arte/flow/"
@@ -107,9 +113,18 @@ func _initialize() -> void:
 		if desenho == null or medida == null:
 			quit(1)
 			return
-		var escala := sqrt(area_alvo / float(medida["area"]))
-		print("  quadro %d (%s): escala %.4f" % [i, nome, escala])
+		var escala := (
+			sqrt(area_alvo / float(medida["area"]))
+			if QUADROS[i][4] == "area"
+			else float(ALTURA) / float((medida["retangulo"] as Rect2i).size.y)
+		)
 		_cola(atlas, i, folhas[nome]["imagem"], desenho, escala)
+		print(
+			(
+				"  quadro %d (%s): escala %.4f, inclinacao desenhada %.1f graus"
+				% [i, nome, escala, inclinacao(atlas, i)]
+			)
+		)
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SAIDA.get_base_dir()))
 	var erro := atlas.save_png(SAIDA)
 	if erro != OK:
@@ -276,3 +291,35 @@ func _cola(atlas: Image, indice: int, folha: Image, desenho: Dictionary, escala:
 	if colado.size != tamanho:
 		print("  ! quadro %d passou da celula e foi cortado" % indice)
 	atlas.blit_rect(recorte, Rect2i(colado.position - destino, colado.size), colado.position)
+
+
+## Quanto o quadro `indice` do atlas desenha a moto deitada, em graus, positivo
+## para a direita: o angulo da reta do pe do pneu ao alto do capacete, os
+## centros das 11 linhas de baixo e das 13 de cima da silhueta. O
+## `AtorSprite.INCLINACOES` tem de ter estes numeros, e o teste confere.
+static func inclinacao(atlas: Image, indice: int) -> float:
+	var topo := Vector2.ZERO
+	var base := Vector2.ZERO
+	var n_topo := 0
+	var n_base := 0
+	var primeira := -1
+	var ultima := -1
+	for y in CELULA.y:
+		for x in CELULA.x:
+			if atlas.get_pixel(indice * CELULA.x + x, y).a > 0.5:
+				if primeira < 0:
+					primeira = y
+				ultima = y
+	for y in range(primeira, ultima + 1):
+		for x in CELULA.x:
+			if atlas.get_pixel(indice * CELULA.x + x, y).a <= 0.5:
+				continue
+			if y <= primeira + 12:
+				topo += Vector2(x, y)
+				n_topo += 1
+			if y >= ultima - 10:
+				base += Vector2(x, y)
+				n_base += 1
+	topo /= maxf(n_topo, 1.0)
+	base /= maxf(n_base, 1.0)
+	return rad_to_deg(atan2(topo.x - base.x, base.y - topo.y))
