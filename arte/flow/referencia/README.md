@@ -7,6 +7,14 @@ de **pose e ângulo**; quem a pessoa é vem da folha de personagem (turnaround).
 Suba duas imagens no Flow, nesta ordem: **1) a folha de pose, 2) o turnaround
 do personagem**.
 
+**Folhas de antes de 18/10/2026 vieram de referência embaralhada.** O
+`_physics_process` do `Pessoa` seguia rodando durante a captura, e cada coluna
+saía com a pose de um instante qualquer: o ciclo de andar abria e fechava fora
+de ritmo e o susto piscava. As folhas em `arte/flow/pedestres/` são dessa leva;
+refazer a partir das referências de agora (`docs/AUDITORIA_SPRITES.md`, S06).
+A referência hoje é determinística: rodar `dev.py boneco` duas vezes dá o mesmo
+PNG.
+
 ## Prompt genérico
 
 ```

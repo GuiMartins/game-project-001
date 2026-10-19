@@ -1864,6 +1864,13 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
   na fila: entrou por curiosidade, e o desenho está no `DIRECAO_VISUAL.md`.
   Não muda a "próxima tarefa", que continua sendo o primeiro `[ ]` acima.
 
+- [ ] **A auditoria dos sprites** (18/10/2026). O pedestre andando
+  "estranho" e a moto "mudando de tamanho" depois do playtest em sprite. A
+  fila própria, com o que foi medido e a causa de cada item, está em
+  [AUDITORIA_SPRITES.md](AUDITORIA_SPRITES.md). A moto e as ferramentas foram
+  consertadas no código; falta refazer as folhas dos pedestres no Flow (S06),
+  que depende do login do Guilherme. Também não muda a "próxima tarefa".
+
 ## Fora do backlog
 
 Herdado dos estudos, e continua fora: chuva, asfalto molhado e neon;
