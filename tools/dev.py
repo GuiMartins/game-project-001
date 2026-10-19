@@ -981,6 +981,12 @@ def cmd_sprites_ver(args: argparse.Namespace) -> int:
         extra.append(f"--sprite={args.sprite}")
     if args.cena:
         extra.append("--cena")
+    if args.vista:
+        extra.append(f"--vista={args.vista}")
+    if args.quadro:
+        extra.append(f"--quadro={args.quadro}")
+    if args.linha:
+        extra.append(f"--linha={args.linha}")
     if args.captura:
         extra.append(f"--captura={pathlib.Path(args.captura).resolve()}")
     return _godot(binary, "res://scenes/sprites.tscn", "--", *extra)
@@ -1087,6 +1093,10 @@ def main() -> int:
     p_ver = sub.add_parser("sprites-ver", help="abre o testador: todas as folhas, em 2D e em cena")
     p_ver.add_argument("--sprite", help="id da folha para abrir (ex.: vovo_andando, moto)")
     p_ver.add_argument("--cena", action="store_true", help="abre no modo 3D")
+    p_ver.add_argument("--vista", choices=["quadro", "folha", "referencia", "base", "duas"],
+                       help="vista da folha 2D")
+    p_ver.add_argument("--quadro", type=int, help="quadro para abrir (de 1)")
+    p_ver.add_argument("--linha", type=int, help="linha para abrir (de 1)")
     p_ver.add_argument("--captura", help="salva a tela neste PNG e sai")
     p_versao = sub.add_parser("versao", help="mostra ou sobe a versao; o merge da versao nova publica")
     p_versao.add_argument("nova", nargs="?", metavar="X.Y.Z|patch",
