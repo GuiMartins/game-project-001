@@ -17,6 +17,9 @@ signal obstaculo_quebrado(intensidade: float)
 
 enum State { RIDING, STAGGERED, CRASHED }
 
+## O script do autoload `Controls`, para a funcao estatica: pelo nome do
+## autoload o arquivo nao compila sem ele (ver `_analogico`).
+const CONTROLES := preload("res://scripts/controls.gd")
 const SIZE := Vector3(0.75, 1.75, 2.1)
 const GRAVITY: float = 26.0
 ## A cor do jogador: o vermelho da bag das T-poses e das folhas do sprite
@@ -246,11 +249,11 @@ func _physics_process(delta: float) -> void:
 			_pedido_de_inclinacao = 0.0
 			_ride(delta, 0.0, 0.0, 0.0)
 		State.RIDING:
-			var steer := Controls.steer_axis()
+			var steer := CONTROLES.steer_axis()
 			# A rampa e da arte, nao da curva: com ela na fisica a moto virava
 			# pouco e a direcao ficava dura. O analogico passa direto, porque o
 			# polegar ja dosa.
-			if Controls.analogico:
+			if _analogico():
 				_pedido_de_inclinacao = steer
 			else:
 				_pedido_de_inclinacao = rampa_do_pedido(
@@ -289,6 +292,15 @@ func _physics_process(delta: float) -> void:
 
 
 ## --- Nucleo do feel -------------------------------------------------------
+
+
+## Se o ultimo pedido veio do stick (`Controls.analogico`). Procurado pelo
+## caminho, e nao pelo nome do autoload: as ferramentas que rodam com
+## `--script` (`arte/boneco_flow.gd`) carregam a `Pessoa`, que puxa este
+## arquivo, sem autoload nenhum, e o nome solto nao compila.
+func _analogico() -> bool:
+	var controles := get_node_or_null(^"/root/Controls")
+	return controles != null and bool(controles.get(&"analogico"))
 
 
 func _ride(delta: float, steer: float, throttle: float, brake: float) -> void:
