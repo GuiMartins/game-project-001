@@ -966,6 +966,50 @@ def cmd_sprites_pedestres(_: argparse.Namespace) -> int:
     return _import_antes(binary)
 
 
+def cmd_sprites_ver(args: argparse.Namespace) -> int:
+    """Abre o testador de sprites: todas as folhas do projeto, em 2D e em cena.
+
+    Com tela, como o `run`. `--sprite` abre numa folha, `--cena` no modo 3D e
+    `--captura` salva a tela num PNG e sai, para conferir sem olhar.
+    """
+    binary = require_godot(godot_version())
+    code = _import_antes(binary)
+    if code != 0:
+        return code
+    extra: list[str] = []
+    if args.sprite:
+        extra.append(f"--sprite={args.sprite}")
+    if args.cena:
+        extra.append("--cena")
+    if args.jogar:
+        extra.append("--jogar")
+    if args.vista:
+        extra.append(f"--vista={args.vista}")
+    if args.quadro:
+        extra.append(f"--quadro={args.quadro}")
+    if args.linha:
+        extra.append(f"--linha={args.linha}")
+    if args.captura:
+        extra.append(f"--captura={pathlib.Path(args.captura).resolve()}")
+    return _godot(binary, "res://scenes/sprites.tscn", "--", *extra)
+
+
+def cmd_sprites_relatorio(_: argparse.Namespace) -> int:
+    """O relatorio dos sprites, sem janela: `.dev/sprites_relatorio/relatorio.md`.
+
+    Analisa cada folha (movimento, borda, comparacao com a referencia 3D) e
+    grava, para as que tem quadro marcado, a folha marcada e a comparacao em
+    imagem. Reprova (codigo 1) so por defeito de borda; pose e movimento
+    informam.
+    """
+    binary = require_godot(godot_version())
+    code = _import_antes(binary)
+    if code != 0:
+        return code
+    return _godot(binary, "--headless", "--script", "res://scripts/relatorio_sprites.gd",
+                  vigia_erros=True)
+
+
 def cmd_boneco(_: argparse.Namespace) -> int:
     """Gera as folhas de pose do boneco (`arte/flow/referencia/`) para o Flow.
 
@@ -1047,6 +1091,16 @@ def main() -> int:
     sub.add_parser("boneco", help="gera as folhas de pose do boneco, de referencia para o Flow")
     sub.add_parser("sprites-pedestres", help="recorta as folhas de pedestre do Flow em atlas por pessoa")
     sub.add_parser("sprites", help="recorta as folhas do Google Flow no atlas do ator")
+    sub.add_parser("sprites-relatorio", help="relatorio dos sprites em texto e imagem, sem janela")
+    p_ver = sub.add_parser("sprites-ver", help="abre o testador: todas as folhas, em 2D e em cena")
+    p_ver.add_argument("--sprite", help="id da folha para abrir (ex.: vovo_andando, moto)")
+    p_ver.add_argument("--cena", action="store_true", help="abre no modo 3D")
+    p_ver.add_argument("--jogar", action="store_true", help="abre no playground")
+    p_ver.add_argument("--vista", choices=["quadro", "folha", "referencia", "base", "duas"],
+                       help="vista da folha 2D")
+    p_ver.add_argument("--quadro", type=int, help="quadro para abrir (de 1)")
+    p_ver.add_argument("--linha", type=int, help="linha para abrir (de 1)")
+    p_ver.add_argument("--captura", help="salva a tela neste PNG e sai")
     p_versao = sub.add_parser("versao", help="mostra ou sobe a versao; o merge da versao nova publica")
     p_versao.add_argument("nova", nargs="?", metavar="X.Y.Z|patch",
                           help="a versao nova, ou `patch` para subir o ultimo numero")
@@ -1072,6 +1126,8 @@ def main() -> int:
         "boneco": cmd_boneco,
         "sprites-pedestres": cmd_sprites_pedestres,
         "sprites": cmd_sprites,
+        "sprites-ver": cmd_sprites_ver,
+        "sprites-relatorio": cmd_sprites_relatorio,
         "versao": cmd_versao,
         "changelog": cmd_changelog,
         "fps": cmd_fps,
