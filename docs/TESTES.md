@@ -362,18 +362,70 @@ headless não faz. O `selftest` segue determinístico, e é ele o portão. O que
 
 `python tools/dev.py sprites-ver` abre uma janela com todas as folhas de
 `assets/sprites/` (a lista nasce da varredura da pasta, então folha nova
-aparece sozinha). Cada uma abre em **Folha 2D** — pixel inteiro, com grade,
-linha do chão, ponto do pé, régua na altura da ficha e a caixa medida — ou em
-**Cena 3D**, com o `AtorSprite` e o `PedestreSprite` de verdade sobre asfalto,
-câmera orbitável, noite, elenco lado a lado e régua de 2 m. Atalhos: espaço
-toca, setas trocam o quadro, tab troca 2D/3D.
+aparece sozinha). Cada uma abre em **Folha 2D** ou em **Cena 3D**, e uma
+análise em segundo plano marca na lista as que têm aviso.
 
-A parte que não precisa de olho é o `CatalogoSprites`, e o
-`test_catalogo_sprites.gd` a guarda: toda ficha bate com a imagem, nenhum
-quadro está em branco e os avisos que aparecem na lista são só os conhecidos.
-Aviso novo é folha nova com defeito (ou limite que precisa de justificativa),
-e não ruído. O que o catálogo **não** vê é o movimento: se a passada parece
-errada, só o modo Cena mostra.
+**Folha 2D**, em pixel inteiro, com cinco vistas:
 
-`--sprite=<id> --cena --captura=arquivo.png` abre direto numa folha e salva a
-tela, para conferir sem abrir a janela na mão.
+- *Quadro*: grade, linha do chão, ponto do pé, régua na altura da ficha, caixa
+  medida e as notas que a análise deixou naquele quadro;
+- *Folha toda*: o atlas com os quadros problemáticos em vermelho (clique
+  escolhe o quadro);
+- *Referência 3D*: o quadro entregue ao lado do boneco 3D que foi ao Flow
+  (`arte/flow/referencia/`) e a sobreposição das duas silhuetas, com o IoU. Na
+  moto a referência é o próprio modelo 3D, fotografado ao vivo na mesma
+  inclinação e no mesmo soco;
+- *Antes e depois*: a base que se fixou (`fixar a folha de agora`, em
+  `user://sprites_base/`), a folha de agora e o que mudou em magenta. Fixe antes
+  de trocar o arquivo por uma leva nova do Flow;
+- *Duas folhas*: o mesmo quadro de duas folhas no mesmo chão e na mesma escala.
+
+**Cena 3D**: o `AtorSprite` e o `PedestreSprite` de verdade sobre asfalto, com
+câmera orbitável (a troca de ângulo dos pedestres) ou a câmera do jogo, elenco
+lado a lado, régua de 2 m, o chão correndo embaixo do sprite (`pista`), a
+cadência de pose do jogo (24, 15, 12 ou 8 Hz), a hora do `Relogio` (céu, sol,
+LUT), a paleta com dither e a resolução ÷3. Sem isso o sprite que parece bom
+parado treme ou desliza na estrada.
+
+O que a análise (`AnaliseSprites`) olha, por folha:
+
+| Aviso | O que significa |
+| --- | --- |
+| `borda:` | Meio-tom, franja verde do chroma key ou pixel solto. O shader corta o alfa em 0,5, então vira degrau ou halo no jogo. **Defeito sem discussão.** |
+| `referencia: pose longe` | O quadro parece muito menos com a referência que o resto da folha: o Flow não copiou a pose. |
+| `angulo:` | O quadro parece mais com uma linha **não vizinha** da referência que com a própria: um ângulo no lugar do outro. Frente e costas têm a mesma silhueta; o que as separa é o rosto, e isso a análise não vê. |
+| `escala:` | O quadro sai maior ou menor que a referência, em relação ao resto da linha. |
+| `movimento:` | Quadro igual ao anterior onde a referência muda, salto que muda mais (treme) ou menos (trava) que o da referência, ciclo que não emenda, corpo que pula de lado, perna que não abre no passo. |
+| `tamanho:` | A pessoa de pé não tem a altura da ficha. |
+
+Pose e movimento são **medidas contra a referência**, e não contra uma opinião:
+pessoa e boneco nunca têm a mesma silhueta (roupa, cabelo, bolsa), então os
+limites são folgados e o aviso diz o quanto passou. Aviso aqui pede um olhar,
+não prova defeito.
+
+**A referência também pode estar errada**, e esta é a parte que ninguém via. O
+`ReferenciaSprites` confere a própria referência (boneco colado na borda da
+célula, quadros iguais, perna que não abre no ciclo de andar), e o
+`CatalogoSprites.recorrentes` soma: o mesmo quadro marcado em três das cinco
+pessoas é suspeita da referência que elas dividem, não do Flow. Hoje a
+referência da queda (`caida.png`) é **cortada pela grade da própria folha**: o
+braço do boneco passa da célula, e é a hipótese mais forte de por que as folhas
+de queda saem diferentes dela.
+
+`python tools/dev.py sprites-relatorio` faz a mesma análise sem janela e grava,
+em `.dev/sprites_relatorio/`, o `relatorio.md`, a folha marcada e a comparação
+com a referência (referência, quadro e sobreposição empilhados por ângulo) das
+folhas com aviso. Sai com 1 só por defeito de `borda:`. No testador, os botões
+*Exportar* gravam o quadro ampliado, a folha marcada e a mesma comparação em
+`.dev/sprites_export/`, para mandar de volta ao Flow ou a quem desenha.
+
+Os testes (`test_silhueta`, `test_analise_sprites`, `test_referencia_sprites`,
+`test_base_sprites`, `test_exporta_sprites`, `test_catalogo_sprites`) guardam o
+que não depende de opinião: a conta da silhueta, a detecção de borda suja em
+imagens sintéticas, **nenhuma folha entregue com borda suja**, a referência
+carregando na grade dos atlas e o estado conhecido dela. O que o catálogo
+**não** vê é o movimento a olho: se a passada parece errada, só a Cena mostra.
+
+`sprites-ver` aceita `--sprite=<id>`, `--cena`, `--vista=<quadro|folha|
+referencia|base|duas>`, `--quadro=<n>`, `--linha=<n>` e `--captura=arquivo.png`,
+que abre direto naquela tela e salva, para conferir sem abrir a janela na mão.

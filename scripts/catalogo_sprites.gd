@@ -20,6 +20,12 @@ const PASTA_PEDESTRES: String = "res://assets/sprites/pedestres"
 const TOLERANCIA_PE_PX: int = 4
 const TOLERANCIA_VARIACAO_PE_PX: int = 3
 const TOLERANCIA_VARIACAO_ALTURA: float = 0.08
+## Notas de borda: sao do recorte, e nao da pose, e nao entram na conta de
+## "mesmo quadro marcado em varias pessoas".
+const NOTAS_DE_BORDA: Array[String] = ["meio transparente", "franja verde", "pixels soltos"]
+## A partir de quantas pessoas marcadas no mesmo quadro o problema deixa de ser
+## da pessoa e passa a ser suspeita da referencia que as cinco compartilham.
+const PESSOAS_PARA_SUSPEITAR: int = 3
 
 
 ## Uma folha: o que a ficha diz dela e o que se mediu na imagem.
@@ -48,12 +54,46 @@ class Item:
 	var caixas: Array[Rect2i] = []
 	var avisos: PackedStringArray = []
 	var tamanho_imagem := Vector2i.ZERO
+	## O que `AnaliseSprites` acha: o que se mede olhando o movimento, a borda
+	## e a referencia. Fica de fora de `avisos` de proposito: aquilo e instantaneo
+	## e este custa um segundo por folha, entao so aparece depois da analise.
+	var analisado: bool = false
+	var avisos_analise: PackedStringArray = []
+	## Aviso -> quadros que o disparam, antes de virarem uma linha so por tipo.
+	var grupos_analise: Dictionary = {}
+	## Notas de um quadro so, na ordem `linha * colunas + coluna`, para a folha
+	## marcar qual quadro e o problema.
+	var notas_quadro: Dictionary = {}
+	## A semelhanca de cada quadro com o da referencia (IoU de 0 a 1), ou vazio
+	## se a folha nao tem referencia.
+	var iou_referencia: PackedFloat32Array = []
+	var referencia: ReferenciaSprites
+	var silhuetas: Array[Silhueta] = []
+	## `AnaliseSprites` roda numa thread de fundo e o testador pode pedir a mesma
+	## folha ao mesmo tempo: quem chega depois espera, e nao analisa duas vezes.
+	var trava := Mutex.new()
 
 	func nome() -> String:
 		return "%s  %s" % [grupo, animacao]
 
 	func quadros() -> int:
 		return colunas * linhas
+
+	## Todo aviso da folha: o que se ve de cara e o que a analise achou.
+	func todos_os_avisos() -> PackedStringArray:
+		return avisos + avisos_analise
+
+	func tem_aviso() -> bool:
+		return not avisos.is_empty() or not avisos_analise.is_empty()
+
+	func nota_do_quadro(coluna: int, linha: int) -> PackedStringArray:
+		return notas_quadro.get(linha * colunas + coluna, PackedStringArray())
+
+	func anota(coluna: int, linha: int, texto: String) -> void:
+		var chave := linha * colunas + coluna
+		var notas: PackedStringArray = notas_quadro.get(chave, PackedStringArray())
+		notas.append(texto)
+		notas_quadro[chave] = notas
 
 	func caixa(coluna: int, linha: int) -> Rect2i:
 		var i := linha * colunas + coluna
@@ -247,3 +287,46 @@ static func _rotulo(item: Item, linha: int) -> String:
 	if item.linhas == 1:
 		return "folha"
 	return item.rotulos_linhas[linha] if linha < item.rotulos_linhas.size() else "linha %d" % linha
+
+
+## Os quadros marcados em varias pessoas da mesma animacao. As cinco folhas
+## partem da mesma referencia: quando a mesma celula sai errada em tres delas, o
+## defeito provavelmente nao e do Flow, e sim do boneco que lhe foi dado.
+## Devolve "animacao quadro/linha: N de M pessoas" por suspeita.
+static func recorrentes(itens: Array[Item]) -> PackedStringArray:
+	var contagem: Dictionary = {}
+	var total: Dictionary = {}
+	for item in itens:
+		if item.tipo != Tipo.PEDESTRE:
+			continue
+		total[item.animacao] = int(total.get(item.animacao, 0)) + 1
+		for chave: int in item.notas_quadro:
+			var de_pose := false
+			for nota: String in item.notas_quadro[chave]:
+				var de_borda := false
+				for trecho in NOTAS_DE_BORDA:
+					de_borda = de_borda or nota.contains(trecho)
+				de_pose = de_pose or not de_borda
+			if de_pose:
+				var id := "%s|%d|%d" % [item.animacao, chave % item.colunas, chave / item.colunas]
+				contagem[id] = int(contagem.get(id, 0)) + 1
+	var achados := PackedStringArray()
+	var ids: Array = contagem.keys()
+	ids.sort()
+	for id: String in ids:
+		if contagem[id] < PESSOAS_PARA_SUSPEITAR:
+			continue
+		var partes := id.split("|")
+		achados.append(
+			(
+				"%s, quadro %d/%d: marcado em %d de %d pessoas"
+				% [
+					partes[0],
+					int(partes[1]) + 1,
+					int(partes[2]) + 1,
+					contagem[id],
+					total[partes[0]]
+				]
+			)
+		)
+	return achados

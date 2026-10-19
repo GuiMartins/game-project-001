@@ -986,6 +986,22 @@ def cmd_sprites_ver(args: argparse.Namespace) -> int:
     return _godot(binary, "res://scenes/sprites.tscn", "--", *extra)
 
 
+def cmd_sprites_relatorio(_: argparse.Namespace) -> int:
+    """O relatorio dos sprites, sem janela: `.dev/sprites_relatorio/relatorio.md`.
+
+    Analisa cada folha (movimento, borda, comparacao com a referencia 3D) e
+    grava, para as que tem quadro marcado, a folha marcada e a comparacao em
+    imagem. Reprova (codigo 1) so por defeito de borda; pose e movimento
+    informam.
+    """
+    binary = require_godot(godot_version())
+    code = _import_antes(binary)
+    if code != 0:
+        return code
+    return _godot(binary, "--headless", "--script", "res://scripts/relatorio_sprites.gd",
+                  vigia_erros=True)
+
+
 def cmd_boneco(_: argparse.Namespace) -> int:
     """Gera as folhas de pose do boneco (`arte/flow/referencia/`) para o Flow.
 
@@ -1067,6 +1083,7 @@ def main() -> int:
     sub.add_parser("boneco", help="gera as folhas de pose do boneco, de referencia para o Flow")
     sub.add_parser("sprites-pedestres", help="recorta as folhas de pedestre do Flow em atlas por pessoa")
     sub.add_parser("sprites", help="recorta as folhas do Google Flow no atlas do ator")
+    sub.add_parser("sprites-relatorio", help="relatorio dos sprites em texto e imagem, sem janela")
     p_ver = sub.add_parser("sprites-ver", help="abre o testador: todas as folhas, em 2D e em cena")
     p_ver.add_argument("--sprite", help="id da folha para abrir (ex.: vovo_andando, moto)")
     p_ver.add_argument("--cena", action="store_true", help="abre no modo 3D")
@@ -1097,6 +1114,7 @@ def main() -> int:
         "sprites-pedestres": cmd_sprites_pedestres,
         "sprites": cmd_sprites,
         "sprites-ver": cmd_sprites_ver,
+        "sprites-relatorio": cmd_sprites_relatorio,
         "versao": cmd_versao,
         "changelog": cmd_changelog,
         "fps": cmd_fps,
