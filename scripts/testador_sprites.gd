@@ -12,10 +12,12 @@ extends Control
 ## conforme elas terminam.
 ##
 ## Argumentos (depois de `--`): `--sprite=<id>` abre naquela folha, `--cena`
-## abre no modo 3D (`--gira` ja com a camera girando), `--jogar` abre no playground, `--vista=<quadro|folha|referencia|base|duas>`,
-## `--quadro=<n>` e `--linha=<n>` (de 1), `--evento=<atropelar|susto|carro|carro_rua|
-## largada>` (com `--jogar`), `--espera=<s>` e `--captura=<arquivo.png>` salva a
-## tela e sai (para conferir sem olhar).
+## abre no modo 3D (`--gira` ja com a camera girando, `--yaw=<graus>` e
+## `--pista=<m/s>` a posicionam), `--jogar` abre no playground,
+## `--vista=<quadro|folha|referencia|base|duas>`, `--quadro=<n>` e
+## `--linha=<n>` (de 1), `--evento=<atropelar|susto|carro|carro_rua|largada>`
+## (com `--jogar`), `--espera=<s>` e `--captura=<arquivo.png>` salva a tela e sai
+## (para conferir sem olhar).
 
 enum Modo { FOLHA, CENA, JOGAR }
 
