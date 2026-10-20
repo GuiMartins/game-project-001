@@ -1,0 +1,40 @@
+RushFood Sprites - testador de sprites
+======================================
+
+Nao precisa instalar nada. Descompacte e rode.
+
+  Windows   RushFoodSprites.exe
+  Linux     ./RushFoodSprites.x86_64      (se preciso: chmod +x RushFoodSprites.x86_64)
+  macOS     RushFood Sprites.app
+
+Os binarios nao sao assinados. Na primeira abertura:
+
+  Windows  "O Windows protegeu o seu PC": Mais informacoes > Executar assim mesmo.
+  macOS    clique com o botao direito no .app > Abrir > Abrir. Se recusar:
+             xattr -dr com.apple.quarantine "RushFood Sprites.app"
+
+O QUE E
+-------
+O mesmo editor com que se confere as folhas do jogo: todas as folhas dos
+pedestres e da moto numa lista, e para cada uma tres jeitos de olhar.
+
+  Folha 2D   a folha inteira ou um quadro, com grade, linha do chao, ponto do
+             pe, regua de altura e caixa medida. Quadro a quadro ou tocando.
+  Cena 3D    o sprite dentro do jogo, sobre o asfalto, com camera orbitavel,
+             noite, a regua de 2 m e a resolucao do jogo.
+  Jogar      um trecho de pista onde se anda com a pessoa de verdade
+             (setas ou WASD, Shift corre) e se testa a troca de angulo.
+
+A lista marca com "!" as folhas com aviso (pe escorregando, altura mudando,
+quadro em branco ou cortado, borda meio transparente).
+
+O editor so le as folhas que vem dentro dele; ele nao altera o jogo. O que ele
+grava (os botoes "Exportar") vai para a pasta Documentos/RushFood Sprites.
+
+ATALHOS
+-------
+  espaco        tocar / pausar
+  setas         quadro e linha
+  tab           alterna Folha 2D / Cena 3D
+  botao direito numa miniatura: comparar
+  esc           sair

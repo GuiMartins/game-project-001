@@ -438,7 +438,20 @@ em `.dev/sprites_relatorio/`, o `relatorio.md`, a folha marcada e a comparação
 com a referência (referência, quadro e sobreposição empilhados por ângulo) das
 folhas com aviso. Sai com 1 só por defeito de `borda:`. No testador, os botões
 *Exportar* gravam o quadro ampliado, a folha marcada e a mesma comparação em
-`.dev/sprites_export/`, para mandar de volta ao Flow ou a quem desenha.
+`.dev/sprites_export/`, para mandar de volta ao Flow ou a quem desenha (no editor
+exportado, em `Documentos/RushFood Sprites`).
+
+### O editor como programa
+
+O testador também sai como executável, `RushFood Sprites`, junto com cada release
+(`RushFood-Sprites-windows|linux|macos.zip`). É o mesmo projeto: os três presets
+`Sprites - *` ligam a feature `sprites`, que troca a cena inicial e o nome
+(`run/main_scene.sprites` no `project.godot`), e a versão é a do jogo. Local:
+`python3 tools/dev.py export --so editor`. Dentro do pacote só existe o que o
+Godot empacota, então o que lê o PNG do disco passa por
+`CatalogoSprites.imagem_de` e a pasta é listada por `ResourceLoader`; a
+referência 3D (`arte/flow/referencia`) não vai no pacote e a comparação fica
+desligada.
 
 Os testes (`test_silhueta`, `test_analise_sprites`, `test_referencia_sprites`,
 `test_base_sprites`, `test_exporta_sprites`, `test_catalogo_sprites`,

@@ -71,7 +71,7 @@ static func _analisa(item: CatalogoSprites.Item) -> void:
 	item.analisado = true
 	if item.caixas.is_empty() or item.tamanho_imagem == Vector2i.ZERO:
 		return
-	var imagem := Image.load_from_file(ProjectSettings.globalize_path(item.caminho))
+	var imagem := CatalogoSprites.imagem_de(item.caminho)
 	if imagem == null or imagem.is_empty():
 		return
 	var celulas: Array[Image] = []
