@@ -32,10 +32,18 @@ como única referência, e baixados em 720p.
 - **Vídeo, não imagem.** O gerador de imagem desenha 8 poses independentes, erra
   a contagem e ignora o formato pedido (o Flow só faz proporções fixas, 16:9 no
   máximo). O vídeo dá o passo contínuo e o mesmo corpo do começo ao fim.
-- **Os `_esq` tocam ao contrário.** O Flow repete nos vídeos virados para a
-  esquerda o sentido da perna dos da direita, e a personagem faz moonwalk.
-  Medido pela assimetria da velocidade do pé (devagar para trás, rápido para a
-  frente), os três saíram com o sinal trocado.
+- **O Flow não vira para a esquerda.** Os três vídeos pedidos "virada para a
+  esquerda" saíram com a pessoa virada para a **direita** (o passo prova: o pé de
+  apoio desliza para a esquerda, como nos da direita). Usá-los nas linhas da
+  esquerda fez a personagem andar para a esquerda de frente para a direita, e
+  parecia moonwalk. Tocar o ciclo ao contrário (o primeiro conserto) escondia o
+  sintoma sem consertar a causa. Hoje as linhas da esquerda são o **espelho** de
+  vídeos virados para a direita (`LINHAS` em `montar_folha.py`). Para descobrir
+  para onde a pessoa olha, não confie no prompt: olhe o quadro.
+- **A bolsa só fica certa no perfil.** O `lado_esq` tem a bolsa no quadril longe
+  da câmera (só a alça aparece); espelhado, ela continua no mesmo quadril. Nos
+  três quartos da esquerda (espelho dos da direita) a bolsa troca de lado. Quem
+  quiser os três quartos certos precisa de vídeo novo, ou de personagem sem bolsa.
 - **8 linhas, não 5 espelhadas.** Com bolsa a tiracolo, o espelho trocava a
   bolsa de ombro a cada giro; a folha de 8 linhas desenha a esquerda de verdade
   (ver `PedestreSprite.LINHAS_DOIS_LADOS`).
