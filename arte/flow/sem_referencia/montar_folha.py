@@ -12,9 +12,21 @@ from PIL import Image
 
 AQUI = pathlib.Path(__file__).parent
 # linha -> video. A ordem e a das linhas da ficha (frente ... costas).
+# Linha -> (video, espelhado). O Flow ignorou o pedido de "virada para a esquerda":
+# os tres videos `_esq` saem com a pessoa virada para a DIREITA (o passo dela prova:
+# pe de apoio desliza para a esquerda). A esquerda e entao o espelho de um video
+# virado para a direita. O lado esquerdo sai do `lado_esq`, em que a bolsa fica no
+# lado longe da camera (so a alca aparece), e espelhado a bolsa continua no mesmo
+# quadril. Nos tres quartos a bolsa troca de lado no espelho: ver o README.
 LINHAS = [
-    "frente", "tres_quartos_frente", "lado", "tres_quartos_costas", "costas",
-    "tres_quartos_costas_esq", "lado_esq", "tres_quartos_frente_esq",
+    ("frente", False),
+    ("tres_quartos_frente", False),
+    ("lado", False),
+    ("tres_quartos_costas", False),
+    ("costas", False),
+    ("tres_quartos_costas", True),
+    ("lado_esq", True),
+    ("tres_quartos_frente", True),
 ]
 CW, CH, PE, ALT = 160, 200, (80, 196), 175  # celula, ponto do pe, altura em pixels
 N = 8
@@ -49,13 +61,6 @@ def linha(video: pathlib.Path, trabalho: pathlib.Path) -> list[Image.Image]:
                 melhor = (e, s, P)
     _, s, P = melhor
     idx = [int(round(s + k * P / N)) for k in range(N)]
-    if video.stem.endswith("_esq"):
-        # O Flow desenha a perna dos videos virados para a esquerda com o sentido
-        # do passo dos da direita: o pe de apoio desliza para a frente, e a pessoa
-        # faz moonwalk. Medido pela assimetria da velocidade do pe (devagar para
-        # tras, rapido para frente): os tres sairam com o sinal trocado. Tocar o
-        # ciclo ao contrario conserta, e o ciclo e simetrico no tempo.
-        idx = idx[::-1]
     print(f"{video.stem}: laco em {s}, periodo {P}, quadros {idx}")
     # escala e chao pela mediana do video inteiro, para o pe nao pular de quadro a quadro
     amostra = [caixa(alfa(np.asarray(Image.open(quadros[i]).convert("RGB")).astype(np.float32))) for i in range(0, len(quadros), 8)]
@@ -87,8 +92,10 @@ def linha(video: pathlib.Path, trabalho: pathlib.Path) -> list[Image.Image]:
 def main() -> None:
     trabalho, saida = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
     folha = Image.new("RGBA", (CW * N, CH * len(LINHAS)), (0, 0, 0, 0))
-    for r, nome in enumerate(LINHAS):
+    for r, (nome, espelha) in enumerate(LINHAS):
         for c, cel in enumerate(linha(AQUI / f"{nome}.mp4", trabalho)):
+            if espelha:
+                cel = cel.transpose(Image.FLIP_LEFT_RIGHT)  # o pe fica em PE[0] = meio da celula
             folha.paste(cel, (c * CW, r * CH))
     folha.save(saida)
 
