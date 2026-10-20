@@ -104,11 +104,34 @@ class Item:
 		return load(caminho) as Texture2D
 
 
+## Os pixels de uma folha. Do disco quando o arquivo existe (o editor do Godot e o
+## `dev.py`): o importado pode vir comprimido na GPU e nao devolver pixel. Num
+## build exportado o PNG nao vai no pacote, so o importado, e as folhas sao
+## importadas sem compressao (`compress/mode=0`), entao `get_image` serve.
+static func imagem_de(caminho: String) -> Image:
+	var disco := ProjectSettings.globalize_path(caminho)
+	if FileAccess.file_exists(disco):
+		return Image.load_from_file(disco)
+	var textura := load(caminho) as Texture2D
+	return textura.get_image() if textura != null else null
+
+
+## Os arquivos de uma pasta do projeto, pelos nomes de origem. Num build exportado
+## `DirAccess` lista `x.png.import` e `x.png.remap`, e nao `x.png`; o
+## `ResourceLoader` devolve o nome que o projeto conhece.
+static func _arquivos(pasta: String) -> PackedStringArray:
+	var nomes: PackedStringArray = []
+	for nome in ResourceLoader.list_directory(pasta):
+		if not nome.ends_with("/") and not nomes.has(nome):
+			nomes.append(nome)
+	return nomes
+
+
 ## Todas as folhas, a moto primeiro e depois os pedestres por nome.
 static func varrer() -> Array[Item]:
 	var itens: Array[Item] = []
 	itens.append(_moto())
-	var arquivos := DirAccess.get_files_at(PASTA_PEDESTRES)
+	var arquivos := _arquivos(PASTA_PEDESTRES)
 	var nomes: PackedStringArray = []
 	for arquivo in arquivos:
 		if arquivo.ends_with(".png"):
@@ -188,9 +211,7 @@ static func _ler_ficha(caminho: String) -> Dictionary:
 ## deitada a 28 graus ela desenha 104 px de altura contra 120 em pe, que e a
 ## geometria, e nao defeito.
 static func _medir(item: Item, anda: bool, confere_altura: bool) -> void:
-	# Do disco, e nao do recurso importado: o importado pode estar comprimido
-	# na GPU e nao devolver pixel.
-	var imagem := Image.load_from_file(ProjectSettings.globalize_path(item.caminho))
+	var imagem := imagem_de(item.caminho)
 	if imagem == null or imagem.is_empty():
 		item.avisos.append("a imagem nao abre: %s" % item.caminho)
 		return

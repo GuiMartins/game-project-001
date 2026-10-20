@@ -83,7 +83,9 @@ jobs:
         run: python tools/dev.py selftest
 
       # O mesmo comando que exporta na máquina de quem desenvolve, inclusive a
-      # injeção da versão no bundle do macOS.
+      # injeção da versão no bundle do macOS. Sai o jogo e o editor de sprites
+      # (RushFood Sprites), cada um nas três plataformas: o editor é o mesmo
+      # projeto com a feature `sprites`, então a versão é a mesma.
       - name: Exportar as três plataformas
         if: steps.versao.outputs.publicar == 'true'
         run: python tools/dev.py export
@@ -103,6 +105,15 @@ jobs:
           # acrescenta o LEIA-ME em vez de reempacotar.
           cp export/macos/RushFood.zip dist/RushFood-macos.zip
           zip -q -j dist/RushFood-macos.zip /tmp/LEIA-ME.txt
+
+          # O editor de sprites, com o próprio LEIA-ME.
+          cp docs/INSTALAR_EDITOR.txt /tmp/LEIA-ME-EDITOR.txt
+          (cd export/sprites/windows && zip -q -j ../../../dist/RushFood-Sprites-windows.zip \
+            RushFoodSprites.exe /tmp/LEIA-ME-EDITOR.txt)
+          (cd export/sprites/linux && zip -q -j ../../../dist/RushFood-Sprites-linux.zip \
+            RushFoodSprites.x86_64 /tmp/LEIA-ME-EDITOR.txt)
+          cp export/sprites/macos/RushFoodSprites.zip dist/RushFood-Sprites-macos.zip
+          zip -q -j dist/RushFood-Sprites-macos.zip /tmp/LEIA-ME-EDITOR.txt
 
           ls -lh dist/
 
@@ -129,6 +140,12 @@ jobs:
           | \`RushFood-windows.zip\` | Windows x86_64 |
           | \`RushFood-linux.zip\` | Linux x86_64 |
           | \`RushFood-macos.zip\` | macOS universal (Intel e Apple Silicon) |
+          | \`RushFood-Sprites-windows.zip\` | Editor de sprites, Windows x86_64 |
+          | \`RushFood-Sprites-linux.zip\` | Editor de sprites, Linux x86_64 |
+          | \`RushFood-Sprites-macos.zip\` | Editor de sprites, macOS universal |
+
+          O editor de sprites (\`RushFood-Sprites-*\`) é a ferramenta com que se
+          confere cada folha de pedestre e de moto; não é o jogo.
 
           Nenhum binário é assinado: o Windows mostra o aviso do SmartScreen e o
           macOS bloqueia na primeira abertura. O \`LEIA-ME.txt\` dentro de cada

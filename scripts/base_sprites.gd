@@ -28,7 +28,7 @@ static func existe(item: CatalogoSprites.Item) -> bool:
 ## Guarda a folha de agora como base. Devolve o erro do Godot.
 static func fixar(item: CatalogoSprites.Item) -> int:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(PASTA))
-	var atual := Image.load_from_file(ProjectSettings.globalize_path(item.caminho))
+	var atual := CatalogoSprites.imagem_de(item.caminho)
 	if atual == null or atual.is_empty():
 		return ERR_FILE_CANT_READ
 	return atual.save_png(caminho(item))
@@ -59,7 +59,7 @@ static func data(item: CatalogoSprites.Item) -> String:
 ## tem outro tamanho, todos diferem: a grade mudou.
 static func quadros_diferentes(item: CatalogoSprites.Item, base: Image) -> PackedInt32Array:
 	var diferentes := PackedInt32Array()
-	var atual := Image.load_from_file(ProjectSettings.globalize_path(item.caminho))
+	var atual := CatalogoSprites.imagem_de(item.caminho)
 	if atual == null or base == null or atual.get_size() != base.get_size():
 		for i in item.quadros():
 			diferentes.append(i)

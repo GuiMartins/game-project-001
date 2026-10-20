@@ -4,10 +4,12 @@ extends RefCounted
 ## problematicos marcados e a comparacao com a referencia, de pe e inteira.
 ##
 ## A comparacao e para devolver ao Flow ou mostrar a quem desenha: o boneco, a
-## pessoa e a sobreposicao, linha por linha, na mesma grade. Fica em
-## `.dev/sprites_export/`, fora do git.
+## pessoa e a sobreposicao, linha por linha, na mesma grade. No projeto fica em
+## `.dev/sprites_export/`, fora do git; no editor exportado, em `Documentos/RushFood
+## Sprites`, porque o pacote nao e gravavel.
 
 const PASTA: String = "res://.dev/sprites_export"
+const PASTA_DO_EDITOR_EXPORTADO: String = "RushFood Sprites"
 const COR_AVISO := Color(1.0, 0.25, 0.2)
 const COR_SO_REFERENCIA := Color(1.0, 0.3, 0.3)
 const COR_SO_FOLHA := Color(0.3, 0.8, 1.0)
@@ -20,12 +22,14 @@ const AUMENTO_DA_SILHUETA: int = 3
 
 static func pasta_absoluta() -> String:
 	var caminho := ProjectSettings.globalize_path(PASTA)
+	if not OS.has_feature("editor"):
+		caminho = OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS).path_join(PASTA_DO_EDITOR_EXPORTADO)
 	DirAccess.make_dir_recursive_absolute(caminho)
 	return caminho
 
 
 static func _imagem(item: CatalogoSprites.Item) -> Image:
-	return Image.load_from_file(ProjectSettings.globalize_path(item.caminho))
+	return CatalogoSprites.imagem_de(item.caminho)
 
 
 ## Um quadro, ampliado em pixel inteiro, sobre cinza.

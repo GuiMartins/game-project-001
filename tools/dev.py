@@ -1024,15 +1024,26 @@ def cmd_boneco(_: argparse.Namespace) -> int:
     return _godot(binary, "--script", "res://arte/boneco_flow.gd", vigia_erros=True)
 
 
-def cmd_export(_: argparse.Namespace) -> int:
+# Preset -> arquivo que ele tem de gerar. O jogo e o testador de sprites ("o
+# editor") saem do mesmo projeto: o do editor liga a feature `sprites`, que
+# troca a cena inicial e o nome (ver `run/main_scene.sprites` no project.godot).
+EXPORTS_JOGO = (("Windows Desktop", "export/windows/RushFood.exe"),
+                ("Linux", "export/linux/RushFood.x86_64"),
+                ("macOS", "export/macos/RushFood.zip"))
+EXPORTS_EDITOR = (("Sprites - Windows", "export/sprites/windows/RushFoodSprites.exe"),
+                  ("Sprites - Linux", "export/sprites/linux/RushFoodSprites.x86_64"),
+                  ("Sprites - macOS", "export/sprites/macos/RushFoodSprites.zip"))
+
+
+def cmd_export(args: argparse.Namespace) -> int:
     version = godot_version()
     binary = require_godot(version)
     if not (godot_data_dir() / "export_templates" / f"{version}.stable").is_dir():
         return _fail("export templates ausentes - rode `python tools/dev.py setup`")
     sync_preset_version()
-    for preset, out in (("Windows Desktop", "export/windows/RushFood.exe"),
-                        ("Linux", "export/linux/RushFood.x86_64"),
-                        ("macOS", "export/macos/RushFood.zip")):
+    alvos = {"jogo": EXPORTS_JOGO, "editor": EXPORTS_EDITOR,
+             "tudo": EXPORTS_JOGO + EXPORTS_EDITOR}[args.so]
+    for preset, out in alvos:
         artifact = PROJECT / out
         artifact.parent.mkdir(parents=True, exist_ok=True)
         _godot(binary, "--headless", "--export-release", preset)
@@ -1089,7 +1100,9 @@ def main() -> int:
     p_fps.add_argument("--queda", action="store_true",
                        help="derruba jogador e rivais a cada 4 s: o pior caso das particulas")
     sub.add_parser("run", help="abre o jogo")
-    sub.add_parser("export", help="exporta as tres plataformas")
+    p_exp = sub.add_parser("export", help="exporta as tres plataformas, do jogo e do editor de sprites")
+    p_exp.add_argument("--so", choices=("tudo", "jogo", "editor"), default="tudo",
+                       help="so o jogo, so o editor de sprites, ou os dois (padrao)")
     sub.add_parser("boneco", help="gera as folhas de pose do boneco, de referencia para o Flow")
     sub.add_parser("sprites-pedestres", help="recorta as folhas de pedestre do Flow em atlas por pessoa")
     sub.add_parser("sprites", help="recorta as folhas do Google Flow no atlas do ator")

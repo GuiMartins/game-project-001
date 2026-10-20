@@ -38,7 +38,8 @@ qual binário usar, e no Windows escolhe a variante que não engole a saída.
 | `python tools/dev.py fps` | Tempo de quadro da corrida solta, com tela e sem vsync. Compara a mesma máquina. `--hora 1` mede a noite, que tem uma luz por poste e por farol. |
 | `python tools/dev.py lint` / `format` | gdlint e gdformat. |
 | `python tools/dev.py run` | Abre o jogo. |
-| `python tools/dev.py export` | Exporta as três plataformas. |
+| `python tools/dev.py sprites-ver` | Abre o testador de sprites (`--sprite`, `--cena`, `--jogar`). |
+| `python tools/dev.py export` | Exporta as três plataformas, do jogo e do editor de sprites. `--so jogo` ou `--so editor` escolhe. |
 | `python tools/dev.py versao patch` | Sobe a versão. O merge disso na `master` publica a release. |
 
 Em muitas máquinas o executável é `python3`, e `python` simplesmente não
@@ -246,6 +247,7 @@ saber onde **não** há rede faz parte do contrato.
 | `scripts/road_track.gd` | Geometria da pista: curva, rampa, faixas. |
 | `scripts/race_flow.gd` | Menu, pausa e tela de resultado: o que existe em volta da corrida. |
 | `scripts/selftest.gd` | O banco de provas. |
+| `scripts/testador_sprites.gd` | O testador de sprites, que também sai como programa (`RushFood Sprites`) em cada release: mesmo projeto, feature `sprites`, versão do jogo. O que ele lê do disco passa por `CatalogoSprites.imagem_de`, porque o pacote só leva o importado. |
 | `scripts/bike_tuning.gd`, `world_tuning.gd` | Os sliders do F3. |
 | `scripts/entregador.gd` | O ator: moto e piloto, posados pelo estado da física. |
 | `arte/entregador.py` | Gera o modelo no Blender. É a fonte: o `.blend` e o `assets/entregador/` são build. |

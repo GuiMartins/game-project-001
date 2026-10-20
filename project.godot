@@ -12,6 +12,8 @@ config/name="RushFood - Prototipo"
 config/version="0.0.8"
 config/description="Prototipo greybox para validar os pilares: feel da moto, o corredor, combate lateral e o loop de entrega."
 run/main_scene="res://scenes/main.tscn"
+config/name.sprites="RushFood Sprites"
+run/main_scene.sprites="res://scenes/sprites.tscn"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://icon.svg"
 
