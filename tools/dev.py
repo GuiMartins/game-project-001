@@ -981,6 +981,8 @@ def cmd_sprites_ver(args: argparse.Namespace) -> int:
         extra.append(f"--sprite={args.sprite}")
     if args.cena:
         extra.append("--cena")
+    if args.gira:
+        extra.append("--gira")
     if args.jogar:
         extra.append("--jogar")
     if args.vista:
@@ -1095,6 +1097,7 @@ def main() -> int:
     p_ver = sub.add_parser("sprites-ver", help="abre o testador: todas as folhas, em 2D e em cena")
     p_ver.add_argument("--sprite", help="id da folha para abrir (ex.: vovo_andando, moto)")
     p_ver.add_argument("--cena", action="store_true", help="abre no modo 3D")
+    p_ver.add_argument("--gira", action="store_true", help="com a camera da cena girando sozinha")
     p_ver.add_argument("--jogar", action="store_true", help="abre no playground")
     p_ver.add_argument("--vista", choices=["quadro", "folha", "referencia", "base", "duas"],
                        help="vista da folha 2D")

@@ -12,7 +12,7 @@ extends Control
 ## conforme elas terminam.
 ##
 ## Argumentos (depois de `--`): `--sprite=<id>` abre naquela folha, `--cena`
-## abre no modo 3D, `--jogar` abre no playground, `--vista=<quadro|folha|referencia|base|duas>`,
+## abre no modo 3D (`--gira` ja com a camera girando), `--jogar` abre no playground, `--vista=<quadro|folha|referencia|base|duas>`,
 ## `--quadro=<n>` e `--linha=<n>` (de 1), `--evento=<atropelar|susto|carro|carro_rua|
 ## largada>` (com `--jogar`), `--espera=<s>` e `--captura=<arquivo.png>` salva a
 ## tela e sai (para conferir sem olhar).
@@ -88,6 +88,7 @@ func _ready() -> void:
 	var args := _argumentos()
 	if args.has("cena"):
 		_muda_modo(Modo.CENA)
+	_gira_sozinho = args.has("gira")
 	if args.has("jogar"):
 		_muda_modo(Modo.JOGAR)
 	var alvo := String(args.get("sprite", ""))
@@ -96,6 +97,10 @@ func _ready() -> void:
 		if _visiveis[i].id == alvo:
 			inicial = i
 	_escolhe(_visiveis[inicial])
+	if args.has("yaw"):
+		_cena.yaw_graus = float(args["yaw"])
+	if args.has("pista"):
+		_cena.velocidade_da_pista = float(args["pista"])
 	if args.has("vista"):
 		var vista := VISTAS.find(String(args["vista"]))
 		if vista >= 0:
