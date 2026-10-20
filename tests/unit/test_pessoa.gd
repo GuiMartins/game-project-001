@@ -310,13 +310,13 @@ func test_pessoa_em_sprite_tem_folha_para_todos_os_estados() -> void:
 			var esperado: Texture2D = PedestreSprite.ANDANDO[avatar]
 			match estado:
 				Pessoa.Estado.SUSTO:
-					esperado = PedestreSprite.SUSTO[avatar]
+					esperado = PedestreSprite.da_pose(PedestreSprite.SUSTO, avatar)
 				Pessoa.Estado.SENTADA, Pessoa.Estado.DESEMBARCANDO:
-					esperado = PedestreSprite.DESEMBARCANDO[avatar]
+					esperado = PedestreSprite.da_pose(PedestreSprite.DESEMBARCANDO, avatar)
 				Pessoa.Estado.VOANDO:
-					esperado = PedestreSprite.VOANDO[avatar]
+					esperado = PedestreSprite.da_pose(PedestreSprite.VOANDO, avatar)
 				Pessoa.Estado.CAIDA:
-					esperado = PedestreSprite.CAIDA[avatar]
+					esperado = PedestreSprite.da_pose(PedestreSprite.CAIDA, avatar)
 			assert_bool(desenho.visible).is_true()
 			(
 				assert_object(

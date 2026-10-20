@@ -30,7 +30,9 @@ func test_a_varredura_acha_a_moto_e_os_cinco_pedestres_em_cinco_animacoes() -> v
 	for pessoa: String in ["vovo", "obra", "praia", "adolescente", "escritorio"]:
 		for animacao: String in ["andando", "caida", "desembarcando", "susto", "voando"]:
 			assert_object(_item("%s_%s" % [pessoa, animacao])).is_not_null()
-	assert_int(_itens.size()).is_equal(26)
+	# A moca de moletom so tem a folha de andar.
+	assert_object(_item("moletom_andando")).is_not_null()
+	assert_int(_itens.size()).is_equal(27)
 
 
 func test_todo_pedestre_que_o_jogo_carrega_esta_no_catalogo() -> void:

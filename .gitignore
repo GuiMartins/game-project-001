@@ -22,3 +22,7 @@ __pycache__/
 # e regerado por arte/entregador.py, entao a copia nao guarda nada que o
 # script nao refaca.
 *.blend1
+
+# Videos de origem dos sprites (arte/flow/sem_referencia): 2 MB cada e fora do LFS.
+# Ficam no disco de quem gerou e no projeto do Flow; o PNG da folha e o que o jogo usa.
+arte/flow/sem_referencia/*.mp4
