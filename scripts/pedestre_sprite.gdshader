@@ -7,6 +7,8 @@ uniform int linhas = 5;
 uniform int quadro = 0;
 uniform int angulos = 0;
 uniform bool multidao = false;
+// Folha de 8 linhas: a esquerda tem linhas proprias (7, 6, 5), em vez de espelhar a direita.
+uniform bool dois_lados = false;
 uniform float giro = 0.0;
 uniform vec3 luz_da_noite : source_color = vec3(0.24, 0.25, 0.32);
 instance uniform float tempo = 0.0;
@@ -57,6 +59,12 @@ void vertex() {
 	if (angulos == 2) linha = faixa == 0 ? 3 : faixa == 1 ? 1 : faixa == 2 ? 0 : 2;
 	if (angulos == 3) linha = faixa == 4 ? 2 : faixa == 3 ? 1 : faixa == 2 ? 0 : 3;
 	bool espelha = dot(para_camera, direita_pessoa) < 0.0;
+	if (dois_lados) {
+		// Frente e costas ficam como foram desenhadas nos dois lados; so os tres
+		// quartos e o perfil trocam de linha.
+		if (espelha && faixa >= 1 && faixa <= 3) linha = 8 - faixa;
+		espelha = false;
+	}
 	vec3 direita_tela = normalize(cross(vec3(0.0, 1.0, 0.0), para_camera));
 	float c = cos(giro);
 	float s = sin(giro);

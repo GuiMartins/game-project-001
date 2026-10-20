@@ -10,8 +10,19 @@ const ANDANDO: Array[Texture2D] = [
 	preload("res://assets/sprites/pedestres/praia_andando.png"),
 	preload("res://assets/sprites/pedestres/adolescente_andando.png"),
 	preload("res://assets/sprites/pedestres/escritorio_andando.png"),
+	preload("res://assets/sprites/pedestres/moletom_andando.png"),
 ]
 const PRAIA: int = 2
+## A moca de moletom so tem a folha de andar por enquanto: nas outras poses ela
+## usa a ultima da lista (o escritorio) ate haver o susto, a queda, o voo e o
+## desembarque dela. Ver `da_pose`.
+## Altura da celula da folha de andar. Quantas linhas a folha tem sai da altura da
+## imagem: 5 (frente, 3/4, lado, 3/4 costas, costas, com o lado esquerdo
+## espelhado) ou 8, com o lado esquerdo desenhado de verdade. A de 8 existe para
+## quem tem algo de um lado so (uma bolsa a tiracolo), que trocaria de ombro no
+## espelho.
+const ALTURA_CELULA_ANDANDO: int = 200
+const LINHAS_DOIS_LADOS: int = 8
 const SUSTO: Array[Texture2D] = [
 	preload("res://assets/sprites/pedestres/vovo_susto.png"),
 	preload("res://assets/sprites/pedestres/obra_susto.png"),
@@ -57,12 +68,20 @@ func _init() -> void:
 
 
 ## Um material por atlas: todos os quads da mesma pessoa compartilham o desenho.
+## A folha da pose do `avatar`, ou a da ultima pessoa que tem uma, para quem
+## ainda so tem a de andar.
+static func da_pose(folhas: Array[Texture2D], avatar: int) -> Texture2D:
+	return folhas[mini(avatar, folhas.size() - 1)]
+
+
 static func material_do_atlas(atlas: Texture2D) -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
 	mat.shader = SHADER
 	mat.set_shader_parameter(&"atlas", atlas)
 	mat.set_shader_parameter(&"colunas", 8)
-	mat.set_shader_parameter(&"linhas", 5)
+	var linhas := atlas.get_height() / ALTURA_CELULA_ANDANDO
+	mat.set_shader_parameter(&"linhas", linhas)
+	mat.set_shader_parameter(&"dois_lados", linhas == LINHAS_DOIS_LADOS)
 	mat.set_shader_parameter(&"multidao", true)
 	return mat
 
@@ -81,10 +100,10 @@ func posar(
 	if not visible:
 		return
 	var atlas: Texture2D = ANDANDO[avatar]
-	var celula := Vector2i(160, 200)
+	var celula := Vector2i(160, ALTURA_CELULA_ANDANDO)
 	var pe := Vector2i(80, 196)
 	var colunas := 8
-	var linhas := 5
+	var linhas := atlas.get_height() / ALTURA_CELULA_ANDANDO
 	var angulos := 0
 	var quadro := 0
 	position.y = 0.0
@@ -92,7 +111,7 @@ func posar(
 		Pessoa.Estado.ANDANDO:
 			quadro = posmod(floori(fase / TAU * 8.0), 8)
 		Pessoa.Estado.SUSTO:
-			atlas = SUSTO[avatar]
+			atlas = da_pose(SUSTO, avatar)
 			celula = Vector2i(224, 224)
 			pe = Vector2i(112, 220)
 			colunas = 6
@@ -100,7 +119,7 @@ func posar(
 			angulos = 1
 			quadro = mini(floori(relogio / (Pessoa.SUSTO_DURA + Pessoa.SUSTO_OLHA) * 6.0), 5)
 		Pessoa.Estado.SENTADA, Pessoa.Estado.DESEMBARCANDO:
-			atlas = DESEMBARCANDO[avatar]
+			atlas = da_pose(DESEMBARCANDO, avatar)
 			celula = Vector2i(256, 208)
 			pe = Vector2i(128, 204)
 			linhas = 4
@@ -108,7 +127,7 @@ func posar(
 			if estado == Pessoa.Estado.DESEMBARCANDO:
 				quadro = mini(floori(relogio / 2.5 * 8.0), 7)
 		Pessoa.Estado.VOANDO:
-			atlas = VOANDO[avatar]
+			atlas = da_pose(VOANDO, avatar)
 			celula = Vector2i(240, 240)
 			pe = Vector2i(120, 120)
 			linhas = 4
@@ -116,7 +135,7 @@ func posar(
 			quadro = posmod(floori(relogio * 8.0), 8)
 			position.y = Pessoa.PIVO.y
 		Pessoa.Estado.CAIDA:
-			atlas = CAIDA[avatar]
+			atlas = da_pose(CAIDA, avatar)
 			celula = Vector2i(224, 112)
 			pe = Vector2i(112, 108)
 			colunas = 3
@@ -141,3 +160,4 @@ func _configurar(
 		_material.set_shader_parameter(&"colunas", colunas)
 		_material.set_shader_parameter(&"linhas", linhas)
 		_material.set_shader_parameter(&"angulos", angulos)
+		_material.set_shader_parameter(&"dois_lados", angulos == 0 and linhas == LINHAS_DOIS_LADOS)

@@ -75,7 +75,9 @@ func montar(gente: Array, andando: bool) -> void:
 	mm.use_custom_data = true
 	mm.mesh = Pedestres.malha()
 	mm.instance_count = gente.size()
-	var grupos: Array[Array] = [[], [], [], [], []]
+	var grupos: Array[Array] = []
+	for _pessoa in PedestreSprite.ANDANDO.size():
+		grupos.append([])
 	for i in gente.size():
 		var t: Transform3D = gente[i][0]
 		var camisa: Color = gente[i][1]
