@@ -271,7 +271,9 @@ const SAVE_PATH: String = "user://tuning.tres"
 ## inclinacao da ~11 de giro, os picos de 10-15 graus do video. E maior que o
 ## `cam_lean_follow` da perseguicao (zero): aqui a camera e de gente, e gira.
 @export_range(0.0, 0.6, 0.02) var garupa_giro: float = 0.3
-## Tremor eficaz, em graus, de banda (2-12 Hz). O video tem 0,5-0,8; a 0,6
+## Tremor eficaz, em graus, de banda (2-12 Hz), em TODA camera. Quando treme
+## quem diz e o `TremorDeCamera`: nada abaixo de 40% da `max_speed`, o valor
+## do slider na `max_speed` e mais no pico do boost. O video tem 0,5-0,8; a 0,6
 ## sao 2-3 pixels de tremor continuo, e isso cansa antes de vender numa
 ## corrida de minutos. O valor do video fica perto do teto do slider. Zero
 ## desliga, para quem enjoa.

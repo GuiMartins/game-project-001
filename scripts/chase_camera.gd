@@ -40,6 +40,11 @@ var _shake: float = 0.0
 var _tranco: Vector3 = Vector3.ZERO
 var _tranco_alvo: Vector3 = Vector3.ZERO
 var _tranco_relogio: float = 0.0
+## O tremor de velocidade (`TremorDeCamera`) deste quadro, em radianos, e o
+## relogio que o move. Fica aqui, e nao no `_aplica`, para a prova visual
+## congelada (`encaixar`) sair sem tremor.
+var _tremor: Vector3 = Vector3.ZERO
+var _tremor_relogio: float = 0.0
 var _rng := RandomNumberGenerator.new()
 ## O cinegrafista do modo GARUPA. Nasce na primeira vez que o modo roda: a
 ## pista so existe depois do `setup` da moto.
@@ -100,6 +105,7 @@ func _process(delta: float) -> void:
 	# Assim a distancia e a do slider em qualquer velocidade, e o atraso fica
 	# so onde ele serve: o deslocamento gira atrasado na curva, e a moto ainda
 	# "escapa" da camera na saida dela.
+	_treme(delta)
 	var t := 1.0 - exp(-tuning.cam_follow * delta)
 	var moto := target.global_position
 	_offset = _offset.lerp(alvo[0] - moto, t)
@@ -122,6 +128,7 @@ func _process(delta: float) -> void:
 func encaixar() -> void:
 	_shake = 0.0
 	_tranco = Vector3.ZERO
+	_tremor = Vector3.ZERO
 	if _na_garupa():
 		_aplica_garupa(_garupa.encaixar(CameraGarupa.ler(target, _transito())))
 		return
@@ -131,6 +138,22 @@ func encaixar() -> void:
 	_altura = target.global_position.y
 	_roll = -target.lean_visual * tuning.cam_lean_follow
 	_aplica(_base() + _offset)
+
+
+## O tremor de velocidade: a mesma regra e o mesmo slider da garupa, so que
+## sem o sobe-e-desce da lente (a perseguicao nao e uma mao segurando).
+func _treme(delta: float) -> void:
+	_tremor_relogio += delta
+	var caido := target.state == PlayerBike.State.CRASHED
+	var escala := tuning.garupa_tremor * TremorDeCamera.nivel(target.speed, tuning, caido)
+	_tremor = (
+		Vector3(
+			TremorDeCamera.banda(_tremor_relogio, 0.0),
+			TremorDeCamera.banda(_tremor_relogio, 0.618),
+			TremorDeCamera.banda(_tremor_relogio, 1.414),
+		)
+		* deg_to_rad(escala)
+	)
 
 
 ## O tranco de batida (`add_shake`): vale em todos os modos, por cima do resto.
@@ -218,6 +241,9 @@ func _aplica(pos: Vector3) -> void:
 	# Um pingo da inclinacao da moto na camera. Muito disso embrulha o estomago;
 	# nada disso deixa a curva sem peso.
 	rotate_object_local(Vector3.FORWARD, _roll)
+	rotate_object_local(Vector3.UP, _tremor.x)
+	rotate_object_local(Vector3.RIGHT, _tremor.y)
+	rotate_object_local(Vector3.FORWARD, _tremor.z)
 
 
 func _fracao_velocidade() -> float:
