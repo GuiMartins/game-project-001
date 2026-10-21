@@ -139,7 +139,7 @@ linha antes do jogador está na frente dele no resultado — se a ordenação do
 pelotão quebrar, o jogo continua rodando e o placar passa a mentir em silêncio.
 
 `batida` é a última de propósito: ela mexe no trânsito e nos rivais à mão, e
-depois dela não sobra corrida para contaminar. Monta quatro batidas a 15 m, uma
+depois dela não sobra corrida para contaminar. Monta quatro batidas a 15 m (mais o `preso`: encostada num carro, gás e guidão, tem de sair em até 1 s), uma
 de cada vez, com o resto do mundo longe, e confere o desfecho de cada uma —
 traseira de carro lento a 72 km/h **quica**, carro parado a 126 km/h
 **derruba**, quina a 126 km/h **desvia** e traseira de moto a 126 km/h

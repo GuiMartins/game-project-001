@@ -33,6 +33,15 @@ const QUIQUE: float = 0.3
 ## Segundos sem pilotar depois do quique. Curto: e o guidao que sacode na mao,
 ## nao a pancada de rival, que tira 0,7 s.
 const TEMPO_DO_QUIQUE: float = 0.25
+## Abaixo desta aproximacao (m/s) a batida e encostar, e nao bater. Ja nao havia
+## diferenca: encostar no para-choque zerava a velocidade e sacudia o guidao
+## 0,25 s, e a moto com o gas a fundo repetia isso para sempre. A agilidade
+## depende da velocidade, entao parada contra o carro ela nao virava nunca
+## (V31). Encostar tira o embalo, nao o controle.
+const ENCOSTO: float = 5.0
+## Metros por segundo que a moto escorrega ao longo do que a prendeu, no lado
+## em que o jogador esta guiando.
+const DESLIZE_PRESO: float = 4.5
 ## Segundos em que uma quina ou um quique nao se repete. O contato dura alguns
 ## passos de fisica, e cada um deles cobrava o tranco inteiro de novo.
 const RESPIRO_DO_IMPACTO: float = 0.3
@@ -118,6 +127,8 @@ var _giro_queda: float = 0.0
 ## contra a parede ja foi cortada, e e justamente ela que mede a batida.
 var _antes_da_batida: Vector3 = Vector3.ZERO
 var _respiro_do_impacto: float = 0.0
+## O guidao pedido neste passo, para o deslize de quem esta preso.
+var _guidao: float = 0.0
 var _rng_queda := RandomNumberGenerator.new()
 var _last_road_y: float = 0.0
 var _crash_recover_offset: float = 0.0
@@ -304,6 +315,7 @@ func _analogico() -> bool:
 
 
 func _ride(delta: float, steer: float, throttle: float, brake: float) -> void:
+	_guidao = steer
 	_update_lean(delta, steer)
 	_update_speed(delta, throttle, brake)
 	_update_heading(delta)
@@ -524,6 +536,8 @@ func _resolve_collisions() -> void:
 		var v_outro := _velocidade_de(outro)
 		var relativa := _antes_da_batida - v_outro
 		var chegada := maxf(-relativa.dot(normal), 0.0)
+		if chegada < ENCOSTO:
+			_desliza_preso(normal, get_physics_process_delta_time())
 		var head_on := clampf(chegada / maxf(relativa.length(), 0.01), 0.0, 1.0)
 		var incidence := rad_to_deg(asin(head_on))
 		if outro is TrafficCar:
@@ -549,6 +563,19 @@ func _resolve_collisions() -> void:
 		else:
 			_crash("bateu de frente", normal, chegada)
 		return
+
+
+## Preso encostado em carro, placa ou predio, a moto escorrega ao longo da face
+## para o lado em que o jogador guia. Ir "para o lado" de uma parede nao a
+## desvia: a guinada depende de velocidade, e a parede a zera (V31).
+func _desliza_preso(normal: Vector3, delta: float) -> void:
+	if absf(_guidao) < 0.1:
+		return
+	var direita := Vector3(-cos(heading), 0.0, sin(heading))
+	var tangente := Vector3.UP.cross(normal)
+	if tangente.dot(direita) * _guidao < 0.0:
+		tangente = -tangente
+	move_and_collide(tangente.normalized() * DESLIZE_PRESO * absf(_guidao) * delta)
 
 
 ## Raspada: perde velocidade, ganha um empurrao pro lado e vai embora.
@@ -618,6 +645,15 @@ func _ricocheteia(desvio: Vector3, chegada: float) -> void:
 ## Bateu de frente sem chegar rapido o bastante para cair: fica com a
 ## velocidade do que estava na frente, menos o tranco, e o guidao sacode.
 func _quica(normal: Vector3, v_outro: Vector3, chegada: float) -> void:
+	if chegada < ENCOSTO:
+		# Fica abaixo do limite de proposito: com o gas a fundo a velocidade
+		# volta a subir entre dois passos, e passar de `ENCOSTO` por pouco
+		# traria o quique inteiro de volta.
+		speed = minf(speed, ENCOSTO * 0.8)
+		var contra_leve := velocity.dot(normal)
+		if contra_leve < 0.0:
+			velocity -= normal * contra_leve
+		return
 	var frente := Vector3(sin(heading), 0.0, cos(heading))
 	speed = minf(speed, maxf(v_outro.dot(frente) - chegada * QUIQUE, 0.0))
 	var contra := velocity.dot(normal)

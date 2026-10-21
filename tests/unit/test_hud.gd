@@ -31,7 +31,7 @@ func test_tudo_que_a_hud_escreve_tem_glifo() -> void:
 		"ATRASADO",
 		"CONTRAMAO",
 		"CORREDOR x3",
-		"WASD  Q/E SOCO  SHIFT BOOST  R REINICIA  ESC MENU",
+		"WASD  Q/E SOCO  SHIFT BOOST  R CENTRALIZA  ESC MENU",
 		"capotou: parede",
 		"perdeu posicao - 3/6",
 		Hud.carimbo_versao(),

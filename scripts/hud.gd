@@ -322,7 +322,7 @@ func _desenha() -> void:
 		_centralizado(
 			fonte_miuda,
 			y_dica,
-			"WASD  Q/E SOCO  SHIFT BOOST  R REINICIA  ESC MENU",
+			"WASD  Q/E SOCO  SHIFT BOOST  R CENTRALIZA  ESC MENU",
 			Color(0.75, 0.8, 0.9)
 		)
 
