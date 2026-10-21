@@ -31,7 +31,7 @@ qual binário usar, e no Windows escolhe a variante que não engole a saída.
 | `python tools/dev.py test` | Testes unitários (GdUnit4). ~4 s. |
 | `python tools/dev.py selftest` | Banco de provas: roda a moto de verdade e compara com o baseline. ~110 s. |
 | `python tools/dev.py selftest --fase curva` | Só até aquela fase. ~32 s, para iterar. |
-| `python tools/dev.py shots` | Regressão visual: roda com tela e mede o frame. |
+| `python tools/dev.py shots` | Regressão visual: roda com tela e mede o frame. Desligada no CI desde 21/10/2026 (lenta demais); rode local ao mexer em visual. |
 | `python tools/dev.py shots --noite` | A mesma regressão visual de noite, contra o `baseline_visual_noite.json`. |
 | `python tools/dev.py prova` | Os mesmos cinco quadros congelados, em `.dev/prova/`, para comparar visual antes e depois. |
 | `python tools/dev.py prova --hora 1` | Os mesmos quadros em outra hora (0 meio-dia, 1 noite), em `.dev/prova/hora_X/`. |
