@@ -114,6 +114,7 @@ func _roda() -> void:
 		if v > 0.0 and velocidade.is_valid_float():
 			_world.player.speed = v
 		_world.camera.encaixar()
+		_world.borrao.encaixar()
 		for i in QUADROS_DE_ESPERA:
 			await RenderingServer.frame_post_draw
 		var imagem := _captura()
