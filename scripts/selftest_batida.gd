@@ -11,10 +11,17 @@ extends RefCounted
 ## Arquivo proprio porque o `Selftest` ja passava das mil linhas, e estas
 ## quatro montagens nao dividem nada com as outras fases alem do mundo.
 
-## Os quatro jeitos de bater, na ordem.
-const BATIDAS: PackedStringArray = ["traseira", "parado", "quina", "moto"]
+## Os jeitos de bater, na ordem. O ultimo nao e uma batida: e o que vem depois
+## dela, a moto encostada no carro e o jogador pedindo para sair.
+const BATIDAS: PackedStringArray = ["traseira", "parado", "quina", "moto", "preso"]
 ## Segundos de cada batida: chegar, bater e ver no que deu.
 const TEMPO_DA_BATIDA: float = 1.6
+## O `preso` ganha mais: o que se mede e quanto demora a sair, e a prova tem de
+## deixar a moto presa tempo bastante para reprovar.
+const TEMPO_DO_PRESO: float = 4.0
+## Quanto tempo, no maximo, a moto leva para deixar o carro depois de pedir o
+## desvio. O Arthur ficou parado ate desistir (V31); um segundo ainda e tranco.
+const SAIDA_MAXIMA: float = 1.0
 const KMH: float = 3.6
 
 var _mundo: World
@@ -25,6 +32,8 @@ var _batida_caiu: bool = false
 var _batida_v0: float = 0.0
 var _batida_lateral0: float = 0.0
 var _batida_obstaculo: Node3D
+## Segundos ate a moto sair do carro no `preso`; -1 enquanto nao saiu.
+var _preso_saiu_em: float = -1.0
 var _relato: PackedStringArray = []
 ## As medidas, falhas e linhas de relatorio do `Selftest`. Sao as dele, por
 ## referencia: a prova escreve direto, como qualquer outra fase.
@@ -64,8 +73,11 @@ func passo(delta: float) -> bool:
 
 	_batida_t += delta
 	_batida_caiu = _batida_caiu or _moto.state == PlayerBike.State.CRASHED
-	_segura_faixa()
-	if _batida_t < TEMPO_DA_BATIDA:
+	if BATIDAS[_batida] == "preso":
+		_pilota_o_preso()
+	else:
+		_segura_faixa()
+	if _batida_t < _tempo_da_batida():
 		return false
 
 	_confere_batida()
@@ -77,8 +89,13 @@ func passo(delta: float) -> bool:
 	return true
 
 
+func _tempo_da_batida() -> float:
+	return TEMPO_DO_PRESO if BATIDAS[_batida] == "preso" else TEMPO_DA_BATIDA
+
+
 func _monta_batida() -> void:
 	_batida_t = 0.0
+	_preso_saiu_em = -1.0
 	_batida_caiu = false
 	# Nada mais na pista: o que se mede e esta batida, e nao a de quem passou.
 	for car in _mundo.traffic:
@@ -114,6 +131,12 @@ func _monta_batida() -> void:
 			# Um quarto da moto em cima da lataria: o guidao pega o canto.
 			lateral = faixa + carro.meia_largura() + PlayerBike.SIZE.x * 0.25
 			_batida_obstaculo = carro
+		"preso":
+			# Parado e encostado na traseira: e o instante depois da batida, com
+			# o jogador de dedo no gas e no guidao. Sem velocidade nenhuma, o
+			# que se mede e a saida, e nao a batida.
+			velocidade = 0.0
+			_batida_obstaculo = carro
 		"moto":
 			# Rival parado no meio da faixa. Congelado: ele correria embora, e o
 			# que se mede e o pior caso, 126 km/h de aproximacao numa moto.
@@ -126,7 +149,10 @@ func _monta_batida() -> void:
 			t.origin += t.basis.y * (RivalBike.SIZE.y * 0.5)
 			rival.global_transform = t
 			_batida_obstaculo = rival
-	_moto.place_on_track(em, lateral, velocidade)
+	var posicao := em
+	if BATIDAS[_batida] == "preso":
+		posicao = carro.offset - carro.meio_comprimento() - PlayerBike.SIZE.z * 0.5 - 0.05
+	_moto.place_on_track(posicao, lateral, velocidade)
 	_batida_v0 = velocidade
 	_batida_lateral0 = lateral
 
@@ -149,8 +175,21 @@ func _segura_faixa() -> void:
 	_set_action("ride_left", steer < -0.02)
 
 
+## O jogador do `preso`: gas a fundo e guidao para a direita, o tempo todo.
+## Anota quando a moto deixou de estar na frente do carro, de lado ou por fora.
+func _pilota_o_preso() -> void:
+	_set_action("ride_throttle", true)
+	_set_action("ride_right", true)
+	var carro := _batida_obstaculo as TrafficCar
+	var fora := _moto.track_lateral - carro.lateral > carro.meia_largura() + PlayerBike.SIZE.x * 0.5
+	var passou := _moto.track_offset > carro.offset + carro.meio_comprimento()
+	if _preso_saiu_em < 0.0 and (fora or passou):
+		_preso_saiu_em = _batida_t
+
+
 func _confere_batida() -> void:
 	var nome := BATIDAS[_batida]
+	_set_action("ride_throttle", false)
 	var kmh := _batida_v0 * KMH
 	match nome:
 		"traseira":
@@ -206,6 +245,22 @@ func _confere_batida() -> void:
 						+ " de desviar"
 					)
 					% (_moto.track_lateral - _batida_lateral0)
+				)
+			)
+		"preso":
+			var saiu := _preso_saiu_em if _preso_saiu_em >= 0.0 else TEMPO_DO_PRESO
+			_medida("batida_preso_s", saiu)
+			_relato.append(
+				"preso %s" % ("saiu em %.2f s" % saiu if _preso_saiu_em >= 0.0 else "NAO SAIU")
+			)
+			_confere(
+				_preso_saiu_em >= 0.0 and _preso_saiu_em <= SAIDA_MAXIMA,
+				(
+					(
+						"encostada num carro, com gas e guidao pedindo o desvio, a moto levou %.2f s"
+						+ " para sair (maximo %.1f s): ela fica presa"
+					)
+					% [saiu, SAIDA_MAXIMA]
 				)
 			)
 		"moto":

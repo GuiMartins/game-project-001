@@ -380,7 +380,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action("debug_tuning_panel"):
 		tuning_panel.toggle()
 	elif event.is_action("debug_restart") and fluxo.tela == RaceFlow.Tela.CORRIDA:
-		_restart()
+		_centraliza_a_moto()
 
 
 func _on_run_finished() -> void:
@@ -536,6 +536,16 @@ func _physics_process(delta: float) -> void:
 	if _largada >= 4.0:
 		_largada = -1.0
 		hud.contagem_largada = ""
+
+
+## O R tira a moto de onde ela esta presa: mesmo ponto da pista, no vao livre
+## mais perto do meio. Reiniciar a corrida inteira por causa de um poste
+## custava a posicao, o relogio e o grid; recomecar do zero continua no menu.
+func _centraliza_a_moto() -> void:
+	var jogador := world.player
+	var lateral: float = jogador.find_clear_lateral.call(jogador.track_offset, 0.0)
+	jogador.place_on_track(jogador.track_offset, lateral, 12.0)
+	world.camera.encaixar()
 
 
 func _restart() -> void:

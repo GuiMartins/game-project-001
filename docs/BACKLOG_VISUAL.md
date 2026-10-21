@@ -1272,7 +1272,9 @@ lado da câmera a cada 0,3–0,5 s, de cada lado**. Hoje é um poste a cada
   fora da faixa, na avenida. Todo pedestre tem atropelo, com mancha de
   sangue (`Sangue`), e a calçada perdeu o teto de velocidade.
 
-- [ ] **V19a** — Pedestres com variedade e que combinam com o lugar
+- [~] **V19a** — Pedestres com variedade e que combinam com o lugar
+
+  **Cortado (21/10/2026), por decisão do Guilherme:** não fazer.
 
   O Arthur gostou do sprite ("melhores que os blocos 3D") e pediu duas
   coisas: **mais variedade**, e **ligar a gente à geografia da pista**: "o
@@ -1667,7 +1669,7 @@ refazer.
 Fica de fora, por decisão do Guilherme na própria conversa: as estrelas da
 HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
 
-- [ ] **V31** — Moto travada num carro sai sozinha
+- [x] **V31** — Moto travada num carro sai sozinha (21/10/2026)
 
   Bug. O Arthur ficou com a moto travada num carro, e acelerar para o lado
   travado não a desvia. É o tipo de preso que não aparece no console: o jogo
@@ -1684,7 +1686,24 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
   - **Aceite:** no cenário a moto deixa o carro em tempo curto e medido
     (proposta: 1 s), e o número entra em `baseline.json` com o motivo.
 
-- [ ] **V32** 👤 — A pergunta de produto: o que torna isto divertido?
+  **Resultado.** Reproduzido: parada contra a traseira de um carro, com gás e
+  guidao, a moto ficava ali para sempre. O quique zerava a velocidade e tirava
+  o guidao por 0,25 s, a guinada depende da velocidade, e o gás voltava a
+  bater antes de ela virar. Duas mudanças em `player_bike.gd`: encostar
+  (aproximação abaixo de `ENCOSTO`, 5 m/s) não zera nem sacode, e preso em
+  qualquer coisa (carro, placa, prédio) a moto **escorrega ao longo da face
+  para o lado em que o jogador guia** (`DESLIZE_PRESO`). O `R` deixou de
+  reiniciar a corrida: agora só põe a moto no vão livre mais perto do meio da
+  pista, no mesmo ponto (recomeçar do zero fica no menu). Fase `batida`
+  ganhou o cenário `preso`: saiu em 0,47 s (antes: nunca em 4 s; teto
+  1 s), `batida_preso_s` no baseline. A corrida solta andou (1 queda -> 0,
+  1408 -> 1378 m): o autopiloto também encosta em carro e agora sai, então a
+  trajetória muda; sem regressão de feel, e os valores novos entram aqui.
+
+- [~] **V32** 👤 — A pergunta de produto: o que torna isto divertido?
+
+  **Cortado (21/10/2026), por decisão do Guilherme:** não fazer. Sem resposta
+  escrita, o ciclo segue pela fila.
 
   O Arthur: "ainda não é um jogo divertido", "falta mais velocidade", "um
   pico mais". Você respondeu que as crianças gostaram de bater e atropelar.
