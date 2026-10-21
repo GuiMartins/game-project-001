@@ -102,21 +102,10 @@ const TAXA_GIRO: float = 2.0
 const DERIVA_HZ := Vector2(0.23, 0.41)
 const DERIVA_GRAUS := Vector2(1.5, 1.0)
 
-## O tremor de quem segura o celular: uma senoide por banda medida no video
-## (2-5, 5-10, 10-15 Hz), com frequencias que nao se repetem juntas. Ruido
-## branco - um sorteio por quadro - le como camera digital chacoalhando; isto
-## tem ritmo de braco e corpo em cima de uma moto.
-const TREMOR_HZ: Array[float] = [2.7, 4.3, 7.1, 11.9]
-## Amplitudes relativas de cada banda. Somam ~1 de valor eficaz
-## (sqrt(sum(a^2) / 2) = 0,995), entao `garupa_tremor` e o tremor eficaz em
-## graus - a mesma unidade dos 0,5-0,8 graus medidos no video.
-const TREMOR_PESO: Array[float] = [1.0, 0.8, 0.5, 0.3]
 ## O sobe-e-desce da lente, em metros por grau de `garupa_tremor`: 1 cm nos
-## 0,3 graus de partida. Zerar o tremor no F3 zera os dois.
+## 0,3 graus de partida. Zerar o tremor no F3 zera os dois. Quando e quanto
+## treme quem diz e o `TremorDeCamera`, igual em toda camera.
 const TREMOR_POSICAO: float = 0.01 / 0.3
-## Velocidade (m/s) em que o tremor e o do slider. Parado quase nao treme
-## (piso de 30%), no talo treme mais (teto de 130%).
-const TREMOR_VELOCIDADE: float = 30.0
 
 
 ## O que o cinegrafista enxerga do jogador num quadro.
@@ -275,21 +264,20 @@ func _treme(delta: float, leitura: Leitura) -> void:
 	_t += delta
 	giro = lerpf(giro, _giro_alvo(leitura), 1.0 - exp(-TAXA_GIRO * delta))
 	var escala := (
-		tuning.garupa_tremor * clampf(absf(leitura.velocidade) / TREMOR_VELOCIDADE, 0.3, 1.3)
+		tuning.garupa_tremor * TremorDeCamera.nivel(leitura.velocidade, tuning, leitura.caido)
 	)
 	# Fases diferentes por eixo, senao os tres tremem juntos e a imagem so
 	# anda na diagonal. Os passos de fase sao irracionais (razao aurea e raiz
 	# de 2) para nenhuma banda de um eixo cair em fase com a de outro.
-	tremor = (Vector3(_banda(0.0), _banda(0.618), _banda(1.414)) * deg_to_rad(escala))
-	_sobe_desce = _banda(2.236) * escala * TREMOR_POSICAO
-
-
-## A soma das bandas do tremor num eixo, com valor eficaz ~1.
-func _banda(fase: float) -> float:
-	var soma := 0.0
-	for i in TREMOR_HZ.size():
-		soma += TREMOR_PESO[i] * sin(TAU * (TREMOR_HZ[i] * _t + fase * float(i + 1)))
-	return soma
+	tremor = (
+		Vector3(
+			TremorDeCamera.banda(_t, 0.0),
+			TremorDeCamera.banda(_t, 0.618),
+			TremorDeCamera.banda(_t, 1.414),
+		)
+		* deg_to_rad(escala)
+	)
+	_sobe_desce = TremorDeCamera.banda(_t, 2.236) * escala * TREMOR_POSICAO
 
 
 ## Uma fracao da inclinacao do jogador: o horizonte gira, mas nao copia a moto.

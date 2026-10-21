@@ -400,7 +400,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
   Jogador e rival ganham os dois, nas três motos. Baseline sem variação; a
   prova de trás sai igual, porque dali a roda mal aparece.
 
-- [ ] **V06a** 👤 — Trepidação que se explica: só em alta e em todas as câmeras
+- [x] **V06a** 👤 — Trepidação que se explica: só em alta e em todas as câmeras (21/10/2026)
 
   O Arthur achou a trepidação "chata" e "aleatória". Sugeriu trepidar todas
   as câmeras, e só em alta velocidade. Hoje o tremor mora na `GARUPA`
@@ -419,6 +419,13 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     `GARUPA`, e a mesma curva em qualquer câmera que ganhe tremor.
   - **Aceite:** jogando, o tremor aparece quando a velocidade pede e não em
     corredor lento ou parado. Julgado **jogando**, com o Arthur se der.
+  - **Feito:** `TremorDeCamera` é a regra única (nada abaixo de 40% da
+    `max_speed`, o slider na `max_speed`, até 1,4× no boost, zero na queda).
+    Garupa e perseguição leem a mesma regra e o mesmo slider
+    `garupa_tremor`; a perseguição treme só a imagem, sem o sobe-e-desce da
+    lente. Decisão 👤 tomada por padrão (perseguição treme, como pediu o
+    Arthur): se jogando ficar ruim, é só zerar o `_treme` da `ChaseCamera`.
+    Falta julgar jogando.
 
 - [x] **V07** — Postura do vídeo: sentado e de cotovelo aberto (12/10/2026, #77)
 

@@ -294,14 +294,14 @@ func test_tremor_tem_banda() -> void:
 	tuning.garupa_tremor = 1.0
 	var garupa := CameraGarupa.new(tuning, _reta())
 	var s := 50.0
-	garupa.encaixar(_leitura(s, CameraGarupa.TREMOR_VELOCIDADE))
+	garupa.encaixar(_leitura(s, tuning.max_speed))
 	var antes := Vector3.ZERO
 	var soma := Vector3.ZERO
 	var soma_salto := Vector3.ZERO
 	var n := int(20.0 / PASSO)
 	for i in n:
-		s += CameraGarupa.TREMOR_VELOCIDADE * PASSO
-		garupa.passo(PASSO, _leitura(s, CameraGarupa.TREMOR_VELOCIDADE))
+		s += tuning.max_speed * PASSO
+		garupa.passo(PASSO, _leitura(s, tuning.max_speed))
 		var agora := garupa.tremor
 		soma += agora * agora
 		soma_salto += (agora - antes) * (agora - antes)
