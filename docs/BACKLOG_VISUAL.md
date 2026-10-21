@@ -567,7 +567,7 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
   nosso. `fps` p50 8,33 ms, preso no refresh de 120 Hz deste Mac, como na
   V08. Baseline sem variação.
 
-- [ ] **V08b** 👤 — Borrão que se ganha: tarde e crescendo, com pico no nitro
+- [x] **V08b** 👤 — Borrão que se ganha: tarde e crescendo, com pico no nitro (21/10/2026)
 
   O Arthur (áudio) acha que o borrão **entra cedo demais**: acelerou depois
   de uma batida e em instantes está tudo borrado, então "não funciona". A
@@ -594,6 +594,16 @@ depois de implementar. V05, V05a, V06, V11 e V12, nenhuma. A V09 fechou no
     do que tem depois de segurar velocidade; no boost chega ao máximo.
     `dev.py prova --kmh 128` e `--kmh 180` comparados antes e depois, `fps`
     medido, e o baseline visual com o motivo do número que andar.
+  - **Feito:** valeu o segundo caminho (recomendado). `Borrao` ganhou uma
+    carga por instância: sobe em `borrao_subida` segundos (4 s, F3) acima de
+    80% da `max_speed`, 4× mais rápido no boost, cai em 1,5 s abaixo disso e
+    zera na batida. Com carga zero o borrão vale 55% (`BASE`): o chão e a
+    periferia continuam riscando, só o forte vem depois. `encaixar` põe a
+    carga cheia nos quadros congelados (prova e selftest) quando a moto
+    está rápida, então a prova a 128 e 180 km/h sai igual a antes. Os quadros
+    do `shots` rodam a 90 km/h, abaixo do limiar, e saem com o borrão de
+    quem acabou de largar (luminância −0,7%, dentro do ruído do portão).
+    Falta julgar jogando, e o `fps` não foi medido (só um uniform a mais).
 
 ### A rua
 

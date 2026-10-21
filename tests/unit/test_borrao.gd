@@ -105,3 +105,43 @@ func test_rival_nasce_sem_a_marca() -> void:
 	var ator := _ator()
 	for malha: MeshInstance3D in ator.find_children("*", "MeshInstance3D", true, false):
 		assert_object(malha.material_overlay).is_null()
+
+
+## V08b: o borrao forte e premio. Logo depois de largar ou de bater, a tela
+## tem so a fracao `BASE` do que tem depois de segurar velocidade alta.
+func test_carga_sobe_segurando_velocidade_alta() -> void:
+	var carga := 0.0
+	for i in 60:
+		carga = Borrao.carga_depois(carga, 1.0 / 60.0, 0.95, false, false, 4.0)
+	# Um segundo de quatro: um quarto da carga, longe de cheia.
+	assert_float(carga).is_equal_approx(0.25, 0.01)
+	assert_float(Borrao.escala(carga)).is_less(0.75)
+	for i in 60 * 4:
+		carga = Borrao.carga_depois(carga, 1.0 / 60.0, 0.95, false, false, 4.0)
+	assert_float(carga).is_equal(1.0)
+	assert_float(Borrao.escala(carga)).is_equal(1.0)
+
+
+func test_cruzeiro_das_referencias_nao_carrega() -> void:
+	# 128 km/h na CG: o chao risca (V08a), mas o forte nao vem.
+	var fracao := 128.0 / 3.6 / BikeTuning.new().max_speed
+	assert_float(fracao).is_less(Borrao.LIMIAR)
+	assert_float(Borrao.carga_depois(0.0, 5.0, fracao, false, false, 4.0)).is_equal(0.0)
+
+
+func test_boost_carrega_mais_rapido_que_segurar() -> void:
+	var segurando := Borrao.carga_depois(0.0, 0.5, 0.95, false, false, 4.0)
+	var nitro := Borrao.carga_depois(0.0, 0.5, 0.95, true, false, 4.0)
+	assert_float(nitro).is_equal_approx(segurando * Borrao.PRESSA_DO_BOOST, 0.001)
+
+
+func test_batida_zera_e_freada_derruba_sem_sumir_no_quadro() -> void:
+	assert_float(Borrao.carga_depois(1.0, 0.016, 0.95, true, true, 4.0)).is_equal(0.0)
+	var freando := Borrao.carga_depois(1.0, 1.0 / 60.0, 0.5, false, false, 4.0)
+	assert_float(freando).is_between(0.9, 1.0)
+	assert_float(Borrao.carga_depois(1.0, Borrao.QUEDA, 0.5, false, false, 4.0)).is_equal(0.0)
+
+
+func test_sem_carga_ainda_borra_o_chao() -> void:
+	assert_float(Borrao.escala(0.0)).is_equal(Borrao.BASE)
+	assert_float(Borrao.BASE).is_between(0.3, 0.8)

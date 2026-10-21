@@ -219,6 +219,10 @@ const SAVE_PATH: String = "user://tuning.tres"
 ## em fracao da tela, de um ponto colado na camera a uma tela do ponto de fuga.
 ## Zero desliga. Ver `Borrao`.
 @export_range(0.0, 1.0, 0.01) var borrao: float = 0.2
+## Segundos segurando velocidade alta (acima de 80% da `max_speed`) para o
+## borrao chegar inteiro (V08b). Antes disso ele vale ~55% do `borrao`; o
+## boost carrega 4x mais rapido, e a batida zera. Ver `Borrao`.
+@export_range(0.5, 15.0, 0.5) var borrao_subida: float = 4.0
 
 ## --- Camera garupa --------------------------------------------------------
 ## O modo GARUPA do F2: um cinegrafista em outra moto, colado no jogador. Os

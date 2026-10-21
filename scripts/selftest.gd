@@ -845,6 +845,7 @@ func _capture(path: String) -> void:
 	_world.process_mode = Node.PROCESS_MODE_DISABLED
 	process_mode = Node.PROCESS_MODE_DISABLED
 	_world.camera.encaixar()
+	_world.borrao.encaixar()
 	# A medida e do mundo, sem a HUD. Com ela, todo pixel de HUD sai igual no
 	# quadro e no ceu de referencia, e conta como ceu: a HUD de arcade (V25)
 	# sozinha subiria a `fracao_ceu` sem o mundo mudar nada. O PNG salvo e o
