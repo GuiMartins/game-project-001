@@ -1,4 +1,88 @@
-# Folhas de pose para o Google Flow
+# Criação de personagens e sprites no Gemini / Google Flow
+
+## Regra principal: desenhar para espelhar
+
+Novos personagens e refações devem permitir reaproveitar uma animação para os
+dois lados por espelhamento horizontal. O pipeline de pedestres já faz isso:
+gera o lado direito e obtém o esquerdo por espelho. O desenho do personagem
+não pode exigir uma segunda geração só para preservar um detalhe lateral.
+
+Esta regra vale para o **design**, não para a pose: braços e pernas alternam
+normalmente na caminhada. Frente e costas continuam sendo vistas distintas;
+espelhar a frente não produz as costas. A simetria também não substitui poses
+ou ações diferentes.
+
+### O que pode e o que não pode
+
+| Elemento | Regra e motivo |
+| --- | --- |
+| Roupa | Mesma manga, cor, comprimento e acabamento nos dois lados. Proibidos camisa ou toalha num ombro, manga única e peça amarrada de lado: trocariam de lado no espelho. |
+| Bolsas e objetos | Sem bolsa lateral, sacola, ferramenta na mão ou alça diagonal. Se necessário à identidade, usar mochila centralizada, com duas alças iguais e desenho simples. |
+| Cabelo e cabeça | Cabelo curto ou preso ao centro; boné e capacete simples e centralizados. Sem trança lateral, franja marcadamente lateral ou enfeite de um lado só. |
+| Detalhes pessoais | Sem tatuagem, cicatriz, brinco, relógio, pulseira, bolso destacado ou joelheira exclusivos de um lado. Não estabelecer mão dominante como traço do personagem. |
+| Estampas | Preferir áreas grandes de cor lisa. Sem texto, números, letras, logos, símbolos direcionais ou estampas complexas: invertem no espelho ou variam entre quadros. |
+| Pontas e peças soltas | Sem lenço, cordão pendurado, corrente, franja de roupa ou cabelo longo solto. Cada peça móvel cria outra continuidade para a IA manter. |
+| Materiais | Preferir roupa opaca e fosca. Sem transparência, reflexos de espelho ou brilho forte que mude a aparência entre quadros. |
+| Luz | Frontal, difusa e neutra, sem destaque de um lado e sem sombra projetada incorporada ao sprite. O espelho não deve inverter uma luz lateral evidente. |
+
+A identidade vem da silhueta, idade aparente, porte, rosto, tom de pele,
+penteado simples e combinação de cores. Personagens podem ser diferentes sem
+acumular acessórios. Uma bolsa lateral indispensável exige redesenhar o
+conceito antes de produzir as animações; não abrir uma série extra de folhas
+para contornar o problema.
+
+### Processo obrigatório
+
+1. **Definir a identidade.** Descrever corpo, cabelo, roupas e cores de forma
+   curta e inequívoca. Remover tudo que viole a tabela antes de gerar imagens.
+2. **Gerar e aprovar o turnaround.** Frente, perfil direito e costas, mesma
+   pessoa, roupa, proporções, escala e iluminação. Inspecionar também uma
+   cópia espelhada do perfil: deve funcionar como o perfil esquerdo sem
+   corrigir acessórios, letras ou roupa.
+3. **Testar a caminhada.** Usar o turnaround aprovado e, no fluxo por folhas,
+   a folha de poses. No fluxo por vídeo, manter câmera fixa, caminhada no
+   lugar e um ângulo por vídeo, conforme a [receita do experimento](../sem_referencia/README.md).
+   Conferir o ciclo normal e espelhado antes de produzir as outras ações.
+   Reprovar mudança de identidade, escala, roupa, ângulo ou anatomia.
+4. **Produzir as demais ações.** Reutilizar o mesmo turnaround aprovado em
+   todas elas. Não pedir ao modelo que reinvente o personagem a cada folha.
+   Manter a grade e os ângulos previstos pelo pipeline; não gerar esquerda
+   adicional para resolver assimetria.
+5. **Validar a folha e o atlas.** Conferir contagem e ordem dos quadros,
+   silhuetas separadas e completas, fundo uniforme, continuidade das poses e
+   escala estável. A caminhada precisa fechar o ciclo; queda e voo precisam
+   mostrar o corpo deitado ou girando conforme a referência, não em pé.
+6. **Conferir no jogo.** Examinar animações nos dois sentidos e nas vistas de
+   frente, perfil e costas. Aprovar na escala de uso, não só no JPG ampliado.
+
+Fundo de recorte não pode aparecer na roupa ou nos acessórios. Usar verde
+puro só quando o personagem não tiver verde; caso contrário, escolher o fundo
+alternativo e conferir a compatibilidade com o recortador antes da produção.
+O recortador atual de pedestres remove verde: mudar apenas o prompt não basta.
+
+### Bloco obrigatório nos prompts de personagem e animação
+
+Somar ao pedido de identidade ou ao prompt de poses abaixo. Em refações,
+primeiro aprovar uma referência já simplificada: uma imagem antiga com bolsa
+lateral contradiz este bloco.
+
+```text
+Design for horizontal mirroring: the right-facing animation will also be
+used facing left by flipping the image. Keep the character's design
+bilaterally symmetric, while allowing natural asymmetric walking poses.
+Use simple solid-color opaque matte clothes, matching sleeves and shoes,
+and short or centrally tied hair. No one-sided accessories, shoulder-draped
+clothes, side bags, crossbody straps, handheld props, watches, unilateral
+markings, side ponytails, text, letters, numbers, logos or directional
+symbols. If a backpack is specified, keep it centered with two matching
+straps and no dangling parts. Use soft neutral frontal studio lighting,
+no strong side lighting, no cast or ground shadows. Preserve the approved
+character's face, proportions, clothes and colors in every frame and view.
+Front and back are distinct views; mirroring must only supply the opposite
+horizontal direction, never replace a required back view.
+```
+
+## Folhas de pose
 
 Geradas por `python tools/dev.py boneco` (`arte/boneco_flow.gd`): o `Pessoa` do
 jogo, posado pelo mesmo código que o anima, num manequim cinza. São referência
@@ -48,6 +132,12 @@ verde por `light flat gray (#C8C8C8)`.
 A linha de ângulos de cada folha está em `arte/boneco_flow.gd` (`FOLHAS`).
 
 ## Refação dos quatro NPCs
+
+Registro histórico das folhas existentes, anterior às regras acima. Bolsas,
+estampas e crachás descritos abaixo não são autorização para repeti-los em
+novas gerações. Ao refazer esses personagens, simplificar e aprovar primeiro
+o turnaround conforme o processo acima. As imagens existentes não foram
+alteradas por esta definição de regras.
 
 As 16 folhas de `vovo`, `obra`, `adolescente` e `escritorio` para `susto`,
 `desembarcando`, `voando` e `caida` foram refeitas por edição de imagem. Em cada
