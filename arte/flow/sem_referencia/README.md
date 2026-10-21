@@ -7,6 +7,13 @@ Prompts e receita: ver o histórico do commit que trouxe esta pasta.
 
 ## Personagem novo: mantenha simples e simétrico
 
+As regras completas para novas gerações e refações estão em
+[Criação de personagens e sprites no Gemini / Google Flow](../referencia/README.md).
+Elas valem também para este fluxo por vídeo: aprovar o personagem e seu
+espelho antes da caminhada, e a caminhada antes das demais ações. Os oito
+MP4 e as adaptações para a bolsa descritos abaixo são o histórico deste
+experimento, não o padrão a repetir em personagens novos.
+
 Evite o que complica o sprite. O que importa é o que **muda de um lado para o
 outro** ou **mexe sozinho**:
 
