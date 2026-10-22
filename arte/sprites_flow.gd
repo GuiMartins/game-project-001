@@ -81,6 +81,8 @@ const QUADROS: Array[Array] = [
 	["combate_b", 0, 2, 3, "altura"],
 	["combate_b", 0, 1, 3, "altura"],
 	["combate_b", 0, 2, 3, "altura"],
+	# A empinada, vista de tras: uma imagem so, e a area dela e a do reto.
+	["empinando", 0, 0, 0, "area"],
 ]
 
 const ORIGEM: String = "res://arte/flow/"

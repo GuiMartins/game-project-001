@@ -291,11 +291,11 @@ var _manoplas: Array[Vector3] = []
 var _pedaleiras: Array[Vector3] = []
 ## Pontos do corpo que nao podem entrar no asfalto, com o raio de cada um.
 var _contatos: Array[Array] = []
-
 var _esterco: float = 0.0
 var _aperto: float = 0.0
 var _deitado: float = 0.0
 var _inclinacao: float = 0.0
+var _empina: float = 0.0
 ## 1 = pe esquerdo no chao. Nasce 1: toda corrida comeca parada.
 var _pe: float = 1.0
 var _queda: float = 0.0
@@ -517,7 +517,8 @@ func atualizar(
 	lado_queda: float = 1.0,
 	inclinacao: float = 0.0,
 	giro_queda: float = 0.0,
-	freio: float = 0.0
+	freio: float = 0.0,
+	empina: float = 0.0
 ) -> void:
 	if delta <= 0.0:
 		return
@@ -528,6 +529,7 @@ func atualizar(
 		_giros[i] = wrapf(_giros[i] + velocidade / _raios[i] * delta, 0.0, TAU)
 	_rodado += v * delta
 	_inclinacao = inclinacao
+	_empina = empina
 	_treme = _tremor.passo(delta, v, caido)
 	_cotovelos.passo(delta, v, inclinacao, global_position)
 	for lisa in _lisas:
@@ -995,4 +997,4 @@ func _mostra_sprite() -> void:
 		_massa.x * 0.5,
 		(_susp.x + _susp.y + _treme.x + _treme.y) * 0.5 - _massa.y
 	)
-	_sprite.posar(_inclinacao, _soco_lado, fase, ginga)
+	_sprite.posar(_inclinacao, _soco_lado, fase, ginga, _empina)
