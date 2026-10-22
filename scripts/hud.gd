@@ -211,6 +211,8 @@ func _desenha() -> void:
 
 	if not contagem_largada.is_empty():
 		_centralizado(fonte_valor, 85, contagem_largada, Color(1.0, 0.9, 0.25))
+	if player.largada_travada:
+		_desenha_rpm_da_largada(tela)
 
 	# --- Topo esquerdo: POS e as estrelas.
 	var y := MARGEM.y
@@ -338,6 +340,31 @@ func _y_legenda_de_baixo(altura: int) -> int:
 func _topo_do_gps(altura: int) -> int:
 	var y_nome := _y_legenda_de_baixo(altura) - 5 - fonte_rua.altura
 	return y_nome - 5 - int(_gps.size.y)
+
+
+## O giro do motor na contagem: amarelo, verde e vermelho lado a lado, na
+## ordem em que o jogador vai atravessando. As faixas sao as da `PlayerBike`,
+## para a barra nunca mentir sobre o que cada cor faz na largada.
+func _desenha_rpm_da_largada(tela: Vector2i) -> void:
+	var largura := 120
+	var altura := 8
+	var x := (tela.x - largura) / 2
+	var y := 85 + fonte_valor.altura + 10
+	_painel.draw_rect(Rect2(x - 1, y - 1, largura + 2, altura + 2), COR_MOLDURA)
+	var faixas := [
+		[0.0, LargadaDaMoto.RPM_ZONA_VERDE, Color(1.0, 0.85, 0.15)],
+		[LargadaDaMoto.RPM_ZONA_VERDE, LargadaDaMoto.RPM_ZONA_VERMELHA, Color(0.2, 0.85, 0.3)],
+		[LargadaDaMoto.RPM_ZONA_VERMELHA, 1.0, Color(0.9, 0.15, 0.12)],
+	]
+	var cheio := int(round(largura * player.rpm_largada))
+	for faixa: Array in faixas:
+		var de := int(round(largura * float(faixa[0])))
+		var ate := int(round(largura * float(faixa[1])))
+		var cor: Color = faixa[2]
+		# Acima do ponteiro a faixa fica apagada: o preenchido e o giro.
+		_painel.draw_rect(Rect2(x + de, y, ate - de, altura), cor.darkened(0.7))
+		if cheio > de:
+			_painel.draw_rect(Rect2(x + de, y, mini(cheio, ate) - de, altura), cor)
 
 
 func _centralizado(fonte: FonteHud, y: int, texto: String, cor: Color) -> void:
