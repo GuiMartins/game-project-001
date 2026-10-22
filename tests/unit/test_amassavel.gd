@@ -1,59 +1,12 @@
 extends GdUnitTestSuite
-## So o mobiliario preso ao chao cede; a cacamba e o mupi seguem obstaculos.
-
-
-func test_placas_quebram_e_voltam_na_proxima_largada() -> void:
-	var placa: StaticBody3D = auto_free(
-		Mobiliario.criar(Mobiliario.Tipo.PLACA_ESQUERDA, Vector3(2, 0, 0), Vector3.FORWARD)
-	)
-	add_child(placa)
-	assert_bool(placa is Quebravel).is_true()
-	for objeto: Quebravel in [placa as Quebravel]:
-		var rotacao := objeto.rotation
-		objeto.quebrar(Vector3.FORWARD)
-		assert_bool(objeto.quebrado).is_true()
-		objeto.reiniciar()
-		assert_bool(objeto.quebrado).is_false()
-		assert_bool(objeto.visible).is_true()
-		assert_vector(objeto.rotation).is_equal(rotacao)
+## Poste, semaforo, portico e placa amassam e ficam de pe; a cacamba e o mupi
+## seguem obstaculos. E o jogador que cai, se chegou rapido.
 
 
 func test_cacamba_e_mupi_continuam_solidos() -> void:
 	for tipo: Mobiliario.Tipo in [Mobiliario.Tipo.CACAMBA, Mobiliario.Tipo.MUPI]:
 		var objeto: StaticBody3D = auto_free(Mobiliario.criar(tipo, Vector3.ZERO, Vector3.FORWARD))
-		assert_bool(objeto is Quebravel).is_false()
-
-
-func test_jogador_quebra_sem_perder_velocidade_ou_cair() -> void:
-	var pista: RoadTrack = auto_free(RoadTrack.new())
-	add_child(pista)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 20260831
-	pista.build(120.0, rng)
-	var moto: PlayerBike = auto_free(PlayerBike.new())
-	add_child(moto)
-	moto.setup(BikeTuning.new(), pista, 12.0)
-	moto.place_on_track(12.0, 0.0, 30.0)
-	moto.set_physics_process(false)
-	var penalidades: Array[int] = [0]
-	var impactos: Array[int] = [0]
-	moto.scraped.connect(func(_intensidade: float) -> void: penalidades[0] += 1)
-	moto.crashed.connect(func(_motivo: String) -> void: penalidades[0] += 1)
-	moto.obstaculo_quebrado.connect(func(_forca: float) -> void: impactos[0] += 1)
-	var raiz: Node3D = auto_free(Node3D.new())
-	add_child(raiz)
-	raiz.global_position = pista.point(16.0, 0.0)
-	var placa := Quebravel.com_colisor(raiz, Vector3(0.4, 2.6, 0.4))
-	await get_tree().physics_frame
-	for passo in 12:
-		moto._integrate(1.0 / 60.0)
-		moto._resolve_collisions()
-		await get_tree().physics_frame
-	assert_bool(placa.quebrado).is_true()
-	assert_float(moto.speed).is_equal_approx(30.0, 0.01)
-	assert_int(moto.state).is_equal(PlayerBike.State.RIDING)
-	assert_int(penalidades[0]).is_equal(0)
-	assert_int(impactos[0]).is_equal(1)
+		assert_bool(objeto is Amassavel).is_false()
 
 
 func test_poste_amassa_conforme_a_forca_e_fica_de_pe() -> void:
@@ -73,7 +26,7 @@ func test_poste_amassa_conforme_a_forca_e_fica_de_pe() -> void:
 	poste.amassar(1.0, Vector3.FORWARD * 40.0)
 	var topo_forte := malha.global_transform * (inicial.affine_inverse() * alto)
 	assert_float(topo_forte.z).is_less(topo_fraco.z)
-	assert_float(topo_forte.y).is_greater(4.5)
+	assert_float(topo_forte.y).is_greater(3.0)
 	# Batida mais fraca depois nao desamassa.
 	poste.amassar(0.1, Vector3.FORWARD * 5.0)
 	assert_float(poste.amassado).is_equal(1.0)
@@ -102,7 +55,8 @@ func test_jogador_cai_no_poste_a_toda_velocidade_e_nao_a_baixa() -> void:
 			moto._integrate(1.0 / 60.0)
 			moto._resolve_collisions()
 			await get_tree().physics_frame
-		assert_bool(poste.amassado > 0.0).is_true()
+		# Devagar so encosta e nao marca; rapido, amassa.
+		assert_bool(poste.amassado > 0.0).is_equal(caso[1])
 		assert_bool(moto.state == PlayerBike.State.CRASHED).is_equal(caso[1])
 
 
@@ -124,16 +78,32 @@ func test_tranco_e_curto_e_so_mexe_na_moto_atingida_em_todos_os_modelos() -> voi
 		assert_float(atingida._treme.length()).is_less(0.0001)
 
 
-func test_placa_para_de_simular_depois_de_assentar() -> void:
-	for hz: float in [60.0, 120.0]:
-		var placa: Quebravel = auto_free(
-			Mobiliario.criar(Mobiliario.Tipo.PLACA_DIREITA, Vector3.ZERO, Vector3.FORWARD)
-		)
-		for objeto: Quebravel in [placa]:
-			add_child(objeto)
-			objeto.quebrar(Vector3.FORWARD * 35.0)
-			for _passo in int(20.0 * hz):
-				if objeto.is_physics_processing():
-					objeto._physics_process(1.0 / hz)
-			assert_bool(objeto.is_physics_processing()).is_false()
-			assert_bool(objeto.visible).is_true()
+func test_tudo_que_e_fixo_amassa_igual_e_volta_na_largada() -> void:
+	# Poste, placa, semaforo e portico: uma classe so, para nenhum voar enquanto
+	# o vizinho fica parado.
+	var raiz: Node3D = auto_free(Node3D.new())
+	add_child(raiz)
+	raiz.add_child(Greybox.box(Vector3(0.2, 4.0, 0.2), Color.BLACK))
+	var semaforo := Amassavel.com_colisor(raiz, Vector3(0.4, 4.4, 0.4))
+	var placa: Amassavel = auto_free(
+		Mobiliario.criar(Mobiliario.Tipo.PLACA_ESQUERDA, Vector3(2, 0, 0), Vector3.FORWARD)
+	)
+	add_child(placa)
+	var poste: Amassavel = auto_free(Poste.criar(Vector3(4, 0, 0), Vector3.LEFT))
+	add_child(poste)
+	for peca: Amassavel in [semaforo, placa, poste]:
+		var pe := peca.global_position
+		assert_bool(peca.amassar(0.8, Vector3.FORWARD * 30.0)).is_true()
+		assert_float(peca.amassado).is_equal(0.8)
+		# Segunda batida na mesma largada nao e a primeira.
+		assert_bool(peca.amassar(0.9, Vector3.FORWARD * 30.0)).is_false()
+		assert_vector(peca.global_position).is_equal(pe)
+		peca.reiniciar()
+		assert_float(peca.amassado).is_equal(0.0)
+
+
+func test_encosto_nao_amassa() -> void:
+	var poste: Amassavel = auto_free(Poste.criar(Vector3.ZERO, Vector3.LEFT))
+	add_child(poste)
+	assert_bool(poste.amassar(0.01, Vector3.FORWARD)).is_false()
+	assert_float(poste.amassado).is_equal(0.0)

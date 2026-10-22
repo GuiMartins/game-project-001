@@ -26,7 +26,7 @@ static var _malhas: Array[Mesh] = []
 
 ## Uma peca com o pe em `pe` e a frente (-Z) apontando para `olha`.
 static func criar(tipo: Tipo, pe: Vector3, olha: Vector3) -> StaticBody3D:
-	var corpo: StaticBody3D = Quebravel.new() if tipo >= Tipo.PLACA_ESQUERDA else StaticBody3D.new()
+	var corpo: StaticBody3D = Amassavel.new() if tipo >= Tipo.PLACA_ESQUERDA else StaticBody3D.new()
 	corpo.name = NOS[tipo]
 	corpo.collision_layer = Layers.WORLD
 	corpo.collision_mask = 0
