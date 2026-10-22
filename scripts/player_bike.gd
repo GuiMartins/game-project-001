@@ -467,6 +467,7 @@ func _update_speed(delta: float, throttle: float, brake: float) -> void:
 		var power := tuning.accel * pow(headroom, tuning.accel_falloff)
 		if boosting:
 			power += tuning.boost_accel
+		power += LargadaDaMoto.EMPINA_ACEL * _empina
 		power *= 1.0 - LargadaDaMoto.PATINA_PERDA_DE_FORCA * _patina
 		speed += power * throttle * delta
 	else:

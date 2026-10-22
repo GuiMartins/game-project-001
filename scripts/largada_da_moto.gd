@@ -16,6 +16,9 @@ const RPM_ZONA_VERMELHA: float = 0.7
 ## em torno do eixo traseiro, que e onde a moto apoia.
 const EMPINA_GRAUS: float = 38.0
 const EMPINA_DURA: float = 2.2
+## m/s2 a mais de aceleracao com a frente no ar: a recompensa do verde, no
+## nivel do nitro (`boost_accel`), e some quando a empinada acaba.
+const EMPINA_ACEL: float = 12.0
 ## Patinada (`_patina`, 0..1): perde forca e aderencia lateral e rabeia, para
 ## o jogador perder tempo na saida. Recupera em ~2 s.
 const PATINA_RECUPERA: float = 0.5
