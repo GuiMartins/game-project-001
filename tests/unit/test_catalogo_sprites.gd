@@ -32,7 +32,8 @@ func test_a_varredura_acha_a_moto_e_os_cinco_pedestres_em_cinco_animacoes() -> v
 			assert_object(_item("%s_%s" % [pessoa, animacao])).is_not_null()
 	# A moca de moletom so tem a folha de andar.
 	assert_object(_item("moletom_andando")).is_not_null()
-	assert_int(_itens.size()).is_equal(27)
+	assert_object(_item("executivo_andando")).is_not_null()
+	assert_int(_itens.size()).is_equal(28)
 
 
 func test_todo_pedestre_que_o_jogo_carrega_esta_no_catalogo() -> void:

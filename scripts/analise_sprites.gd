@@ -82,7 +82,9 @@ static func _analisa(item: CatalogoSprites.Item) -> void:
 	for celula in celulas:
 		item.silhuetas.append(Silhueta.de_imagem(celula))
 	if item.tipo == CatalogoSprites.Tipo.PEDESTRE:
-		item.referencia = ReferenciaSprites.de(item.animacao, item.colunas, item.linhas)
+		# As quatro vistas de caminhada por video nao seguem a grade do manequim.
+		if item.animacao != "andando" or item.linhas != 4:
+			item.referencia = ReferenciaSprites.de(item.animacao, item.colunas, item.linhas)
 		_confere_a_referencia(item)
 		_confere_o_movimento(item, celulas)
 		_confere_a_altura(item)

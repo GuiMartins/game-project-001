@@ -350,7 +350,7 @@ func desembarcar(fecha_em: float, calcada_x: float) -> void:
 	_desceu = Pessoa.new()
 	_desceu.name = "Desceu"
 	add_child(_desceu)
-	_desceu.sortear(_rng)
+	_desceu.sortear(_rng, true)
 	_desceu.vestir(camisa, _pele)
 	_desceu.desembarcar(assento, lado, meia_largura, fecha_em, saida)
 

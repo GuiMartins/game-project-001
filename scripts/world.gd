@@ -119,6 +119,14 @@ var borrao: Borrao
 
 var traffic: Array[TrafficCar] = []
 var rivals: Array[RivalBike] = []
+## Contagem da largada: o mundo roda, mas as motos ficam no grid.
+var largada_travada: bool = false:
+	set(valor):
+		largada_travada = valor
+		if player != null:
+			player.largada_travada = valor
+		for rival in rivals:
+			rival.largada_travada = valor
 var travessia: Travessia
 ## A ultima densidade repassada a `Contramao`; 1 e o que ela nasce valendo.
 var _fracao_contramao: float = 1.0
@@ -237,8 +245,14 @@ func start_race(grid_offset: float = 0.0, at_speed: float = 0.0) -> void:
 func grid_slot(index: int, base: float) -> Vector2:
 	var row := index / 2
 	var column := index % 2
-	var forward := base + 26.0 - float(row) * 7.0
-	return Vector2(maxf(forward, 4.0), RoadTrack.corridor_center(0 if column == 0 else 2))
+	# Grid em zigue-zague, como o de moto de verdade: a coluna da direita larga
+	# 5 m atras, e cada fila se desloca 1,3 m para o lado oposto da
+	# anterior. Sem isso as motos largam emparelhadas e uma atras da outra em
+	# linha reta, e o que se ve e uma parede de traseiras.
+	var forward := base + 26.0 - float(row) * 7.0 - float(column) * 5.0
+	var lado := (1.3 if row % 2 == 0 else -1.3) * (1.0 if column == 0 else -1.0)
+	var lateral := RoadTrack.corridor_center(0 if column == 0 else 2) + lado
+	return Vector2(maxf(forward, 4.0), lateral)
 
 
 ## --- Construcao -----------------------------------------------------------
@@ -561,6 +575,7 @@ func _sync_rival_pool() -> void:
 		)
 		rival.went_down.connect(_on_rival_down.bind(rival))
 		rivals.append(rival)
+		rival.largada_travada = largada_travada
 
 
 ## --- Regras que precisam da visao geral -----------------------------------
@@ -620,7 +635,9 @@ func _physics_process(delta: float) -> void:
 	var recuo := Chegada.recuo_traseira(
 		player.global_basis, PlayerBike.SIZE, track.sample_basis(player_progress())
 	)
-	run.tick(delta, player_progress(), recuo)
+	# O relogio da entrega so corre depois do sinal.
+	if not largada_travada:
+		run.tick(delta, player_progress(), recuo)
 	_sync_traffic_pool()
 	_recycle_traffic()
 	_score_corridor()

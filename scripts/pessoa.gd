@@ -188,12 +188,17 @@ func usar_sprite(ligado: bool) -> void:
 
 ## Sorteia o que a deixa diferente das outras: o passo e o ritmo de quem
 ## espera. `rng` e de quem a criou, e nada daqui e medido pelo banco de provas.
-func sortear(rng: RandomNumberGenerator) -> void:
+func sortear(rng: RandomNumberGenerator, exige_desembarque: bool = false) -> void:
 	velocidade = rng.randf_range(1.1, 1.6)
 	_rng.seed = rng.randi()
 	# A semente ja sorteada decide a aparencia sem mudar a sequencia de
 	# pedestres, carros e obstaculos que compartilham o mesmo RNG.
-	avatar = int(_rng.seed % PedestreSprite.ANDANDO.size())
+	var opcoes: Array[int] = []
+	for id in PedestreSprite.ANDANDO.size():
+		# Quem sai do carro precisa de pose sentada e de desembarque.
+		if not exige_desembarque or id not in PedestreSprite.APENAS_CAMINHADA:
+			opcoes.append(id)
+	avatar = opcoes[int(_rng.seed % opcoes.size())]
 	_ritmo = rng.randf_range(2.5, 4.0)
 	_fase = rng.randf() * TAU
 

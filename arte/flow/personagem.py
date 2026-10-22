@@ -123,7 +123,13 @@ def validar_ficha(path: pathlib.Path, animacoes: list[str]) -> dict:
         cfg = ANIMACOES[nome]
         anim = ficha.get('animacoes', {}).get(nome, {})
         linhas = anim.get('linhas', [])
-        if [l.get('vista') for l in linhas] != cfg['vistas']:
+        vistas = anim.get('vistas', cfg['vistas'])
+        quatro = ['frente', 'tres_quartos_frente', 'lado', 'costas']
+        if vistas != cfg['vistas'] and not (nome == 'andando' and vistas == quatro):
+            raise ValueError(f'{nome}: conjunto de vistas nao suportado pelo ator.')
+        if anim.get('altura_estavel_px') is not None and (nome != 'andando' or anim['altura_estavel_px'] != round(ficha['altura_m'] * 100)):
+            raise ValueError('Altura estavel so se aplica ao andar, na altura fisica da ficha.')
+        if [l.get('vista') for l in linhas] != vistas:
             raise ValueError(f'{nome}: ordem ou quantidade de vistas incorreta.')
         for l in linhas:
             verificar_fonte(base, l)
@@ -223,6 +229,31 @@ def recortar(quadros: list[pathlib.Path], selecao: list[int], escala: int, cfg: 
             raise ValueError(f'Quadro {i} nao cabe na celula {w}x{h}; corrija enquadramento/pose, nao corte membros.')
         cel = Image.new('RGBA', (w, h))
         cel.paste(im, (x, y), im)
+        if cfg.get('altura_estavel_px'):
+            # Correcao optativa aprovada para videos que respiram de escala;
+            # conserva proporcoes e a ancora dos pes, sem esconder cortes.
+            b = cel.getbbox()
+            corpo = cel.crop(b)
+            h = cfg['altura_estavel_px']
+            largura = round(corpo.width * h / corpo.height)
+            corpo = corpo.resize((largura, h), Image.Resampling.LANCZOS)
+            x = round((b[0] + b[2]) * 0.5 - largura * 0.5)
+            y = cfg['pe'][1] - h
+            if x < 0 or x + largura > w or y < 0:
+                raise ValueError('Corpo estabilizado nao cabe na celula; nao corte membros.')
+            cel = Image.new('RGBA', (w, cfg['celula'][1]))
+            cel.alpha_composite(corpo, (x, y))
+            # O shader usa corte duro; o segundo resize nao deve reintroduzir
+            # meio-tom nem verde interpolado na silhueta ja recortada.
+            px = np.asarray(cel).copy()
+            mask = px[..., 3] > 128
+            px[..., 3] = np.where(mask, 255, 0)
+            pad = np.pad(mask, 1)
+            interior = (pad[1:-1, :-2] & pad[1:-1, 2:]
+                        & pad[:-2, 1:-1] & pad[2:, 1:-1])
+            limite = np.maximum(px[..., 0].astype(int), px[..., 2].astype(int)) + 8
+            px[..., 1] = np.where(mask & ~interior, np.minimum(px[..., 1], limite), px[..., 1])
+            cel = Image.fromarray(px, 'RGBA')
         celulas.append(cel)
     return celulas
 
@@ -234,6 +265,10 @@ def montar(path: pathlib.Path, nomes: list[str], destino: pathlib.Path, cache: p
     # Monta tudo antes de escrever para nao deixar metade de um lote que falhou.
     for nome in nomes:
         cfg = dict(ANIMACOES[nome])
+        anim = ficha['animacoes'][nome]
+        cfg['vistas'] = anim.get('vistas', cfg['vistas'])
+        if anim.get('altura_estavel_px'):
+            cfg['altura_estavel_px'] = anim['altura_estavel_px']
         if nome == 'caida':
             cfg['ancora'] = 'pes_caida'
         atlas = Image.new('RGBA', (cfg['celula'][0] * cfg['colunas'], cfg['celula'][1] * len(cfg['vistas'])))

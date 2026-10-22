@@ -19,7 +19,7 @@ const SHADER_FOCO: Shader = preload("res://scripts/ator_sprite_foco.gdshader")
 ## As medidas do atlas, as mesmas de `arte/sprites_flow.gd`: quantos quadros,
 ## o tamanho de cada celula, onde fica o pe do pneu traseiro nela e a altura
 ## do piloto que pilota reto, em pixels. Mudou la, muda aqui.
-const QUADROS: int = 11
+const QUADROS: int = 12
 const CELULA := Vector2(192.0, 160.0)
 const PE := Vector2(96.0, 156.0)
 const ALTURA_PX: float = 120.0
@@ -42,6 +42,14 @@ const INCLINACOES: Array[float] = [-27.8, -11.0, -1.0, 10.8, 27.6]
 ## inclinacao na tela continua a da moto.
 const FOLGA_DA_TROCA: float = 2.0
 ## Os tres quadros do soco por lado (arma, estica, recolhe), -1 esquerda.
+## O quadro da empinada, e a partir de quanta frente erguida (0..1) ele toma o
+## lugar do reto: no meio da subida o desenho ja le como empinada.
+const EMPINANDO: int = 11
+const EMPINA_DO_QUADRO: float = 0.5
+## Quanto o quadro da empinada desenha a moto deitada para a direita: a IA
+## nao a deixou reta, e o quad desfaz a diferenca girando em volta do pneu,
+## como na curva. Medido no eixo guidao-pneu do desenho.
+const EMPINANDO_GRAUS: float = 4.5
 const SOCO: Dictionary[int, Array] = {-1: [5, 6, 7], 1: [8, 9, 10]}
 ## Quanto o afundamento da suspensao e exagerado no sprite. Na escala real, os
 ## 4 cm de garfo da freada sao 3 px de piloto: existem, mas nao se veem, e o
@@ -131,13 +139,20 @@ func marcar_foco(sim: bool) -> void:
 ## `soco_fase` 0 armando, 1 esticado, 2 recolhendo, ou -1 sem soco. `ginga` e
 ## o que o corpo faz por cima da moto, do mesmo estado que posa o modelo 3D:
 ## rolagem em radianos (+ direita), deslize lateral e afundamento, em metros.
-func posar(inclinacao: float, soco_lado: int, soco_fase: int, ginga: Vector3) -> void:
+func posar(
+	inclinacao: float, soco_lado: int, soco_fase: int, ginga: Vector3, empina: float = 0.0
+) -> void:
 	if not _na_tela:
 		return
 	_curva = quadro_da_curva(rad_to_deg(inclinacao), _curva)
 	var quadro := _curva
 	var desenhado := deg_to_rad(INCLINACOES[_curva])
-	if soco_fase >= 0:
+	if empina >= EMPINA_DO_QUADRO:
+		# Frente no ar, vista de tras: um quadro so, reto, que a rolagem da
+		# curva ainda inclina por cima. Soco nao entra: ninguem soca empinado.
+		quadro = EMPINANDO
+		desenhado = deg_to_rad(EMPINANDO_GRAUS)
+	elif soco_fase >= 0:
 		# O soco e desenhado com a moto em pe; quem deita e o quad inteiro.
 		quadro = SOCO[-1 if soco_lado < 0 else 1][clampi(soco_fase, 0, 2)]
 		desenhado = 0.0
