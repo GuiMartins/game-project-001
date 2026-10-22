@@ -62,6 +62,8 @@ var player: PlayerBike
 var offset: float = 0.0
 var lateral: float = 0.0
 var speed: float = 0.0
+## Segurado no grid durante a contagem: acelera o motor, mas nao sai do lugar.
+var largada_travada: bool = false
 var state: State = State.RACING:
 	set(valor):
 		state = valor
@@ -262,9 +264,13 @@ func _physics_process(delta: float) -> void:
 			_advance(delta)
 			_check_wipeout()
 		State.RACING:
-			_drive(delta)
-			_advance(delta)
-			_check_wipeout()
+			if largada_travada:
+				speed = 0.0
+				_acelerador = 1.0
+			else:
+				_drive(delta)
+				_advance(delta)
+				_check_wipeout()
 
 	# O esterco do rival e a propria inclinacao: ele nao tem polegar, e a
 	# inclinacao ja e o que a IA decidiu fazer com a moto.

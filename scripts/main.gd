@@ -395,11 +395,9 @@ func _on_run_finished() -> void:
 ## o proprio menu e o painel de tuning.
 func _on_tela_mudou(tela: int) -> void:
 	var correndo := tela == RaceFlow.Tela.CORRIDA
-	world.process_mode = (
-		Node.PROCESS_MODE_INHERIT
-		if correndo and not (_largada >= 0.0 and _largada < 3.0)
-		else Node.PROCESS_MODE_DISABLED
-	)
+	# Na contagem o mundo roda (transito, camera, motor); so as motos ficam
+	# presas no grid, por `largada_travada`.
+	world.process_mode = (Node.PROCESS_MODE_INHERIT if correndo else Node.PROCESS_MODE_DISABLED)
 	# A Hud some em qualquer tela que nao seja a corrida, o resultado incluso.
 	# Deixa-la por baixo do placar parecia dar contexto e na pratica so
 	# embaralhou: sao dois textos claros, do mesmo tamanho, no mesmo lugar da
@@ -530,9 +528,7 @@ func _physics_process(delta: float) -> void:
 		_fiscal.set_physics_process(true)
 	hud.contagem_largada = str(ceili(3.0 - _largada)) if _largada < 3.0 else "VAI!"
 	if antes < 3.0 and _largada >= 3.0:
-		for corpo: AnimatableBody3D in world.find_children("*", "AnimatableBody3D", true, false):
-			corpo.sync_to_physics = true
-		_on_tela_mudou(fluxo.tela)
+		world.largada_travada = false
 	if _largada >= 4.0:
 		_largada = -1.0
 		hud.contagem_largada = ""
@@ -549,11 +545,9 @@ func _centraliza_a_moto() -> void:
 
 
 func _restart() -> void:
-	# O grid precisa aparecer antes do proximo passo: com sincronizacao os
-	# corpos parametricos guardam o teleporte ate a fisica voltar a rodar.
-	for corpo: AnimatableBody3D in world.find_children("*", "AnimatableBody3D", true, false):
-		corpo.sync_to_physics = false
+	# Travar antes do restart: a contagem comeca com as motos presas.
 	world.set_physics_process(true)
+	world.largada_travada = true
 	world.restart()
 	for rival in world.rivals:
 		rival.speed = 0.0

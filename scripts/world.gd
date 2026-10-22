@@ -119,6 +119,14 @@ var borrao: Borrao
 
 var traffic: Array[TrafficCar] = []
 var rivals: Array[RivalBike] = []
+## Contagem da largada: o mundo roda, mas as motos ficam no grid.
+var largada_travada: bool = false:
+	set(valor):
+		largada_travada = valor
+		if player != null:
+			player.largada_travada = valor
+		for rival in rivals:
+			rival.largada_travada = valor
 var travessia: Travessia
 ## A ultima densidade repassada a `Contramao`; 1 e o que ela nasce valendo.
 var _fracao_contramao: float = 1.0
@@ -550,6 +558,7 @@ func _sync_rival_pool() -> void:
 		)
 		rival.went_down.connect(_on_rival_down.bind(rival))
 		rivals.append(rival)
+		rival.largada_travada = largada_travada
 
 
 ## --- Regras que precisam da visao geral -----------------------------------
@@ -609,7 +618,9 @@ func _physics_process(delta: float) -> void:
 	var recuo := Chegada.recuo_traseira(
 		player.global_basis, PlayerBike.SIZE, track.sample_basis(player_progress())
 	)
-	run.tick(delta, player_progress(), recuo)
+	# O relogio da entrega so corre depois do sinal.
+	if not largada_travada:
+		run.tick(delta, player_progress(), recuo)
 	_sync_traffic_pool()
 	_recycle_traffic()
 	_score_corridor()

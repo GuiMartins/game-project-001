@@ -29,6 +29,20 @@ const COR := Color(0.82, 0.12, 0.10)
 ## Quanto da velocidade de aproximacao volta como tranco, numa batida que nao
 ## derruba. Na traseira de um carro voce fica com a velocidade dele menos isto:
 ## sem o tranco, encostar no para-choque so freava, e frear nao e bater.
+## Patinada da largada (`_patina`, 0..1). Cheia em ~1,5 s de gas aberto na
+## contagem; larga recuperando em ~1,3 s. Com tracao zerada a moto perde 60%
+## da forca e um terco da aderencia lateral: sai mole e rabeando, mas sai.
+const PATINA_SOBE: float = 0.65
+const PATINA_DESCE_PARADA: float = 1.6
+const PATINA_RECUPERA: float = 0.75
+const PATINA_PERDA_DE_FORCA: float = 0.6
+const PATINA_PERDA_DE_GRIP: float = 0.7
+## Guinada de rabeada em rad/s com a patina cheia, e a frequencia dela.
+const PATINA_RABEADA: float = 0.9
+const PATINA_RABEADA_HZ: float = 7.0
+## m/s de derrapada que a roda girando em falso mostra a patina cheia.
+const PATINA_FUMACA: float = 7.0
+
 const QUIQUE: float = 0.3
 ## Segundos sem pilotar depois do quique. Curto: e o guidao que sacode na mao,
 ## nao a pancada de rival, que tira 0,7 s.
@@ -82,6 +96,9 @@ var airborne: bool = false
 ## Quanto a roda escorrega de lado, em m/s: a diferenca entre para onde a moto
 ## aponta e para onde ela vai (`_integrate`). E o que acende a fumaca.
 var derrapada: float = 0.0
+## Moto segurada no grid durante a contagem: o motor responde ao gas e a roda
+## patina, mas ela nao sai do lugar. O mundo inteiro segue rodando.
+var largada_travada: bool = false
 ## True quando a moto aponta pro lado contrario da pista. Sem aviso, o jogador
 ## capota, se levanta virado e passa dez segundos sem entender o que houve.
 var wrong_way: bool = false
@@ -95,6 +112,10 @@ var slope_enabled: bool = true
 var find_clear_lateral: Callable = Callable()
 
 var _vertical_speed: float = 0.0
+## 0..1, o quanto a roda traseira perdeu tracao. Sobe com o gas aberto na
+## contagem e, solto o grid, decai sozinho: quem acelerou tudo sem parar larga
+## rabeando, quem esperou com o gas fechado larga limpo.
+var _patina: float = 0.0
 ## Velocidade angular da inclinacao, rad/s: a metade da mola que nao aparece.
 var _lean_vel: float = 0.0
 ## O pedido de inclinacao depois da rampa do teclado, -1 a 1. So o visual le.
@@ -277,7 +298,12 @@ func _physics_process(delta: float) -> void:
 				)
 			var throttle := Input.get_action_strength("ride_throttle")
 			var brake := Input.get_action_strength("ride_brake")
-			_ride(delta, steer, throttle, brake)
+			if largada_travada:
+				_segura_no_grid(delta, throttle)
+			else:
+				# Decai devagar: a tracao volta enquanto a moto ja anda.
+				_patina = move_toward(_patina, 0.0, PATINA_RECUPERA * delta)
+				_ride(delta, steer, throttle, brake)
 			_try_punch()
 			_acelerador = throttle
 			_freio = brake
@@ -328,6 +354,19 @@ func _ride(delta: float, steer: float, throttle: float, brake: float) -> void:
 	_integrate(delta)
 	_resolve_collisions()
 	_clamp_to_road()
+
+
+## Na contagem a moto fica parada, mas o gas conta: cada segundo de acelerador
+## aberto gasta tracao, e a patinada dura ate depois do sinal. Sem gas ela
+## recupera rapido, e esse e o incentivo para esperar o "VAI!".
+func _segura_no_grid(delta: float, throttle: float) -> void:
+	var taxa := PATINA_SOBE if throttle > 0.1 else -PATINA_DESCE_PARADA
+	_patina = clampf(_patina + taxa * delta, 0.0, 1.0)
+	speed = 0.0
+	velocity = Vector3.ZERO
+	boosting = false
+	# A fumaca da roda girando em falso: o `Derrapagem` le este numero.
+	derrapada = _patina * PATINA_FUMACA
 
 
 func _update_lean(delta: float, steer: float) -> void:
@@ -404,6 +443,7 @@ func _update_speed(delta: float, throttle: float, brake: float) -> void:
 		var power := tuning.accel * pow(headroom, tuning.accel_falloff)
 		if boosting:
 			power += tuning.boost_accel
+		power *= 1.0 - PATINA_PERDA_DE_FORCA * _patina
 		speed += power * throttle * delta
 	else:
 		speed -= (tuning.engine_brake + tuning.drag * speed * speed) * delta
@@ -439,6 +479,10 @@ func _update_heading(delta: float) -> void:
 	# MENOS: em Godot (Y pra cima, mao direita) guinada positiva gira pra
 	# esquerda. Com `forward = (sin h, 0, cos h)`, dforward/dh = -right.
 	heading -= deg_to_rad(tuning.turn_rate) * lean_frac * agility * delta
+	# A traseira sem tracao varre de um lado ao outro, e some com a patina.
+	if _patina > 0.0:
+		var tempo := Time.get_ticks_msec() * 0.001
+		heading += sin(tempo * PATINA_RABEADA_HZ * TAU) * PATINA_RABEADA * _patina * delta
 
 	var road_fwd := -track.sample_basis(track_offset).z
 	var road_heading := atan2(road_fwd.x, road_fwd.z)
@@ -447,7 +491,7 @@ func _update_heading(delta: float) -> void:
 
 	# Assistencia de alinhamento: puxa a moto pro sentido da pista.
 	if tuning.align_assist > 0.0 and speed > 1.0:
-		heading += diff * (1.0 - exp(-tuning.align_assist * delta))
+		heading += diff * (1.0 - exp(-tuning.align_assist * delta)) * (1.0 - 0.5 * _patina)
 
 	# O corpo fisico gira junto: a capsula de colisao e as hitboxes de soco sao
 	# filhas dele. Sem isso a moto colide como um bloco alinhado ao mundo e o
@@ -465,7 +509,9 @@ func _integrate(delta: float) -> void:
 	# So o de lado: o de frente e a moto ganhando embalo, nao escorregando.
 	var escorrega := desired - horizontal
 	derrapada = (escorrega - forward * escorrega.dot(forward)).length()
-	horizontal = horizontal.lerp(desired, 1.0 - exp(-tuning.grip * delta))
+	var grip := tuning.grip * (1.0 - PATINA_PERDA_DE_GRIP * _patina)
+	horizontal = horizontal.lerp(desired, 1.0 - exp(-grip * delta))
+	derrapada = maxf(derrapada, _patina * PATINA_FUMACA * clampf(speed / 6.0, 0.0, 1.0))
 
 	var projected := track.project(global_position, track_offset)
 	track_offset = projected.x
@@ -848,6 +894,7 @@ func _update_hitboxes(delta: float) -> void:
 
 ## Recoloca a moto na pista, parada e alinhada. Usado no respawn e no banco.
 func place_on_track(at_offset: float, at_lateral: float, at_speed: float) -> void:
+	_patina = 0.0
 	track_offset = clampf(at_offset, 0.0, track.length)
 	track_lateral = at_lateral
 	var t := track.transform_at(track_offset, track_lateral)
