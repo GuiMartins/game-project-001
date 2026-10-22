@@ -1,0 +1,375 @@
+{
+  "versao": 1,
+  "id": "executivo",
+  "descricao": "Homem brasileiro de aproximadamente 45 anos, pele morena clara, porte medio, cabelo curto grisalho penteado para tras de forma simetrica, rosto sem barba, terno azul-marinho fosco com calca da mesma cor, camisa branca, gravata vinho curta centralizada e sapatos sociais pretos iguais. Sem pasta, relogio, cracha, lenco no bolso, logos ou acessorios laterais.",
+  "altura_m": 1.75,
+  "geracao": {
+    "projeto_url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32",
+    "modelo_imagem": "Nano Banana 2.1",
+    "modelo_video": "Omni 1.1 Flash",
+    "orcamento_creditos": 175,
+    "creditos_submetidos": 70,
+    "creditos_usados_estimados": 63,
+    "reembolso_anunciado": 7
+  },
+  "turnaround": {
+    "arquivo": "originais/turnaround.jpg",
+    "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32/edit/1d26988f-d577-4130-afd8-255d6dc9e9f7",
+    "sha256": "67cd8b6f10afeed14fcee272af16ced614015154662ace0d28c9281a836bde94"
+  },
+  "animacoes": {
+    "andando": {
+      "aprovada": false,
+      "linhas": [
+        {
+          "vista": "frente",
+          "arquivo": "originais/andando_frente.mp4",
+          "prompt": "prompts/andando_frente.txt",
+          "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32/edit/c8218c01-eb7c-41fd-9d7d-c7c35059d844",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-22",
+            "resolucao": "1280x720",
+            "fps": 24,
+            "duracao_s": 4,
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "seed": "nao exposta",
+            "creditos": 7,
+            "referencia": "originais/ref_frente_zoomout.jpg"
+          },
+          "sha256": "3d87e1fd3ff33e3a11dee4b587b1820689e296a9a828c19ed50fed33021b4d10",
+          "quadros": [],
+          "quadro_escala": 0,
+          "aprovado": false
+        },
+        {
+          "vista": "tres_quartos_frente",
+          "arquivo": "originais/andando_tres_quartos_frente.mp4",
+          "prompt": "prompts/andando_tres_quartos_frente.txt",
+          "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32/edit/ae9849f4-1b97-47cd-8bf6-1b4eb39dd6a0",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-22",
+            "resolucao": "1280x720",
+            "fps": 24,
+            "duracao_s": 4,
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "seed": "nao exposta",
+            "creditos": 7,
+            "referencia": "originais/ref_tres_quartos_frente_zoomout.jpg"
+          },
+          "sha256": "1773e3cbd0db486e8e9167865edbc1929d610cdd6f0f50da219ef58f83c9fef3",
+          "quadros": [],
+          "quadro_escala": 0,
+          "aprovado": false
+        },
+        {
+          "vista": "lado",
+          "arquivo": "originais/andando_lado.mp4",
+          "prompt": "prompts/andando_lado.txt",
+          "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32/edit/03233bc8-e41a-4996-86e0-4cff253f1d9b",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-22",
+            "resolucao": "1280x720",
+            "fps": 24,
+            "duracao_s": 4,
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "seed": "nao exposta",
+            "creditos": 7,
+            "referencia": "originais/perfil.jpg"
+          },
+          "sha256": "863d2c626ec461850200f863772d87c9eb6925f50d7a32653d01111be9236af8",
+          "quadros": [
+            32,
+            36,
+            40,
+            44,
+            48,
+            52,
+            56,
+            60
+          ],
+          "quadro_escala": 0,
+          "aprovado": true
+        },
+        {
+          "vista": "tres_quartos_costas",
+          "arquivo": "originais/andando_tres_quartos_costas.mp4",
+          "prompt": "prompts/andando_tres_quartos_costas.txt",
+          "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32/edit/b8c6b3d6-d3ef-4959-8a94-f096bffcb7b6",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-22",
+            "resolucao": "1280x720",
+            "fps": 24,
+            "duracao_s": 4,
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "seed": "nao exposta",
+            "creditos": 7,
+            "referencia": "originais/ref_tres_quartos_costas.jpg"
+          },
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "costas",
+          "arquivo": "originais/andando_costas.mp4",
+          "prompt": "prompts/andando_costas.txt",
+          "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32/edit/71046a76-4b1e-4bd9-8adc-7a433f90830a",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-22",
+            "resolucao": "1280x720",
+            "fps": 24,
+            "duracao_s": 4,
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "seed": "nao exposta",
+            "creditos": 7,
+            "referencia": "originais/ref_costas_zoomout.jpg"
+          },
+          "sha256": "78e9c19dc22f7bb507d9ca0d72e56ca54d7d6aec1910550cbe2c59ce5c6f3763",
+          "quadros": [],
+          "quadro_escala": 0,
+          "aprovado": false
+        }
+      ]
+    }
+  },
+  "tentativas": [
+    {
+      "arquivo": "originais/andando_lado-tentativa-01.mp4",
+      "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32/edit/3c4f1ede-d689-4e45-a24c-50c69b9ec2fa",
+      "modelo": "Omni 1.1 Flash",
+      "sha256": "9d7b1f863b5e74a716564437f66d89270f9b6af45685779acfa571ad6c943b77",
+      "creditos": 7,
+      "aprovado": false,
+      "motivo": "Silhuetas verdes das outras vistas e sombra no fundo; tentar referencia isolada.",
+      "parametros": {
+        "resolucao": "1280x720",
+        "fps": 24,
+        "duracao_s": 4,
+        "proporcao": "16:9",
+        "quantidade": 1,
+        "seed": "nao exposta",
+        "data": "2026-10-22"
+      }
+    },
+    {
+      "vista": "frente",
+      "arquivo": "originais/andando_frente-tentativa-01.mp4",
+      "prompt": "prompts/andando_frente-tentativa-01.txt",
+      "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32/edit/bbabddd6-dafc-4268-a79b-638218f2f905",
+      "modelo": "Omni 1.1 Flash",
+      "parametros": {
+        "data": "2026-10-22",
+        "resolucao": "1280x720",
+        "fps": 24,
+        "duracao_s": 4,
+        "proporcao": "16:9",
+        "quantidade": 1,
+        "seed": "nao exposta",
+        "creditos": 7,
+        "referencia": "originais/ref_frente.jpg"
+      },
+      "sha256": "1674bd88e807c333bb5965625cf144980e92dcac9c095fb293f980dd53105bd7",
+      "quadros": [
+        24,
+        28,
+        32,
+        36,
+        40,
+        44,
+        48,
+        52
+      ],
+      "quadro_escala": 0,
+      "aprovado": false,
+      "motivo": "Pes cortados pela borda inferior durante o ciclo; referencia sem margem suficiente.",
+      "creditos": 7
+    },
+    {
+      "vista": "tres_quartos_frente",
+      "arquivo": "originais/andando_tres_quartos_frente-tentativa-01.mp4",
+      "prompt": "prompts/andando_tres_quartos_frente-tentativa-01.txt",
+      "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32/edit/3e9e7dea-dce0-41ca-a096-dc5d20fed21a",
+      "modelo": "Omni 1.1 Flash",
+      "parametros": {
+        "data": "2026-10-22",
+        "resolucao": "1280x720",
+        "fps": 24,
+        "duracao_s": 4,
+        "proporcao": "16:9",
+        "quantidade": 1,
+        "seed": "nao exposta",
+        "creditos": 7,
+        "referencia": "originais/ref_tres_quartos_frente.jpg"
+      },
+      "sha256": "359dfd5bf6ea4ffd568bb14e835a9d1812e2d27bf8bec729c5a5ff44e1bbc077",
+      "quadros": [
+        12,
+        16,
+        20,
+        24,
+        28,
+        32,
+        36,
+        40
+      ],
+      "quadro_escala": 0,
+      "aprovado": false,
+      "motivo": "Pes cortados pela borda inferior durante o ciclo; referencia sem margem suficiente.",
+      "creditos": 7
+    },
+    {
+      "vista": "tres_quartos_costas",
+      "arquivo": "originais/andando_tres_quartos_costas-tentativa-01.mp4",
+      "prompt": "prompts/andando_tres_quartos_costas-tentativa-01.txt",
+      "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32/edit/b8c6b3d6-d3ef-4959-8a94-f096bffcb7b6",
+      "modelo": "Omni 1.1 Flash",
+      "parametros": {
+        "data": "2026-10-22",
+        "resolucao": "1280x720",
+        "fps": 24,
+        "duracao_s": 4,
+        "proporcao": "16:9",
+        "quantidade": 1,
+        "seed": "nao exposta",
+        "creditos": 7,
+        "referencia": "originais/ref_tres_quartos_costas.jpg"
+      },
+      "sha256": "4f5c34b878c894ac5ee45e7b2ccf85c4adec5a6d9552881fd6da7f3cb10d58af",
+      "quadros": [
+        32,
+        36,
+        41,
+        45,
+        50,
+        54,
+        59,
+        63
+      ],
+      "quadro_escala": 0,
+      "aprovado": false,
+      "motivo": "Pes cortados pela borda inferior durante o ciclo; referencia sem margem suficiente.",
+      "creditos": 7
+    },
+    {
+      "vista": "costas",
+      "arquivo": "originais/andando_costas-tentativa-01.mp4",
+      "prompt": "prompts/andando_costas-tentativa-01.txt",
+      "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32/edit/419a71cd-4abd-46fc-ad8d-a318dd61a02f",
+      "modelo": "Omni 1.1 Flash",
+      "parametros": {
+        "data": "2026-10-22",
+        "resolucao": "1280x720",
+        "fps": 24,
+        "duracao_s": 4,
+        "proporcao": "16:9",
+        "quantidade": 1,
+        "seed": "nao exposta",
+        "creditos": 7,
+        "referencia": "originais/ref_costas.jpg"
+      },
+      "sha256": "9d95370365f198962cd75406b57ce737dacd9eecf405cf1245bee1802e3ef27f",
+      "quadros": [
+        24,
+        28,
+        32,
+        36,
+        40,
+        44,
+        48,
+        52
+      ],
+      "quadro_escala": 0,
+      "aprovado": false,
+      "motivo": "Pes cortados pela borda inferior durante o ciclo; referencia sem margem suficiente.",
+      "creditos": 7
+    },
+    {
+      "vista": "tres_quartos_costas",
+      "tentativa": 2,
+      "estado": "expirou",
+      "arquivo": null,
+      "modelo": "Omni 1.1 Flash",
+      "creditos": 7,
+      "reembolso_anunciado": true,
+      "motivo": "A geracao expirou no Flow; usuario pediu parar sem nova tentativa."
+    }
+  ],
+  "referencias_adicionais": [
+    {
+      "arquivo": "originais/perfil.jpg",
+      "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32/edit/aed86b1b-759f-4e43-99e9-9199f97a7015",
+      "sha256": "cf1e0f22eaeb8fef61cccc78dd6fcb983ab8904b542402a4848d516ef855f4c3",
+      "modelo": "Nano Banana 2.1",
+      "derivada_de": "originais/turnaround.jpg"
+    },
+    {
+      "arquivo": "originais/ref_frente.jpg",
+      "modelo": "Nano Banana 2.1",
+      "derivada_de": "originais/turnaround.jpg",
+      "sha256": "bd84fa93c8ca13f17c04206cb014eef2e99ed30137f118a11f33dd046548c403",
+      "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32"
+    },
+    {
+      "arquivo": "originais/ref_tres_quartos_frente.jpg",
+      "modelo": "Nano Banana 2.1",
+      "derivada_de": "originais/turnaround.jpg",
+      "sha256": "5456af35c2cc4e756dc4f25ec603b6502cbf913bbfff83c7e277f5d032fa4611",
+      "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32"
+    },
+    {
+      "arquivo": "originais/ref_tres_quartos_costas.jpg",
+      "modelo": "Nano Banana 2.1",
+      "derivada_de": "originais/turnaround.jpg",
+      "sha256": "970d88fa532a09d46eb2335af21456ad40ad0a3cac17e211bdb997610c982fd7",
+      "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32"
+    },
+    {
+      "arquivo": "originais/ref_costas.jpg",
+      "modelo": "Nano Banana 2.1",
+      "derivada_de": "originais/turnaround.jpg",
+      "sha256": "b3d17637ece5262cf82d11c5bce934d1cb6eca0bf47a4a31d74b6e5d5e0891ef",
+      "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32"
+    },
+    {
+      "arquivo": "originais/ref_frente_zoomout.jpg",
+      "modelo": "Nano Banana 2.1",
+      "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32",
+      "sha256": "e2d0d3b35d3a3d365fe0f338210bb00be25612e65e37bd3c419c59a21796e537",
+      "derivada_de": "originais/turnaround.jpg"
+    },
+    {
+      "arquivo": "originais/ref_tres_quartos_frente_zoomout.jpg",
+      "modelo": "Nano Banana 2.1",
+      "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32",
+      "sha256": "ca386cdd55e9746ce9a7ceb1562bccadf2baff2337bd38c0d1e29f6d5852f018",
+      "derivada_de": "originais/turnaround.jpg"
+    },
+    {
+      "arquivo": "originais/ref_costas_zoomout.jpg",
+      "modelo": "Nano Banana 2.1",
+      "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32",
+      "sha256": "1bd1935ee1b48153d90b70fc0e91a7d49779c7943fec95a8938b779e3858bf53",
+      "derivada_de": "originais/turnaround.jpg"
+    },
+    {
+      "arquivo": "originais/ref_tres_quartos_costas_zoomout.jpg",
+      "modelo": "Nano Banana 2.1",
+      "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32",
+      "sha256": "13e0b7a34ce690c82495248d8a431717788eef1e4745c67e45748c4719e87dab",
+      "derivada_de": "originais/turnaround.jpg"
+    }
+  ],
+  "escopo": "Somente andando, conforme pedido explicito em 22/10/2026. Sem integracao de outras acoes ou fallback de identidade.",
+  "estado": "Interrompido a pedido do usuario. Quatro vistas disponiveis; falta 3/4 costas com margem. Sem atlas final ou integracao."
+}
