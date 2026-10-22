@@ -292,6 +292,23 @@ func _pose(delta: float) -> void:
 func acertar_porta(forma: CollisionShape3D, chegada: float) -> Vector3:
 	if forma != _door_shape or _carro.porta_ativa() == null:
 		return Vector3.ZERO
+	return _dobra_porta(chegada)
+
+
+## O mesmo para quem nao tem fisica de contato (o rival): `onde` e o centro da
+## moto, e a porta so acerta quem esta em cima da folha aberta, com a folga de
+## meia moto.
+func porta_bate_em(onde: Vector3, chegada: float) -> Vector3:
+	if _door_shape.disabled or _carro.porta_ativa() == null:
+		return Vector3.ZERO
+	var local := _door_shape.global_transform.affine_inverse() * onde
+	var meia := (_door_shape.shape as BoxShape3D).size * 0.5
+	if absf(local.x) > meia.x + 0.4 or absf(local.z) > meia.z + 1.0:
+		return Vector3.ZERO
+	return _dobra_porta(chegada)
+
+
+func _dobra_porta(chegada: float) -> Vector3:
 	_carro.amassar_porta(chegada)
 	var fora := global_basis.x * float(_door_side)
 	fora.y = 0.0

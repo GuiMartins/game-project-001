@@ -142,6 +142,16 @@ jogo continua rodando, só errado. Estão explicados em `docs/PROTOTIPO.md`.
   que só vale para a CG do jogador vira rival andando diferente e moto nova
   nascendo pela metade — e ninguém nota, porque o jogo continua rodando.
 
+  **O rival tem tudo que o jogador tem** (amassar, raspar, quicar, cair, nitro,
+  porta de carro…), pelas mesmas regras: `ImpactoDeMoto` e as contas de nitro
+  em `FisicaDaMoto`. Capacidade nova do jogador nasce já nos dois, com a regra
+  numa função compartilhada; o `RivalBike` só troca *como mede* (sensor e
+  geometria, porque é paramétrico) e nunca *o que decide*. A trava é
+  `tests/unit/test_rival_capacidades.gd`: sinal novo no `PlayerBike` reprova
+  até ganhar equivalente no rival ou entrar em `SO_DO_JOGADOR` com o motivo.
+  *Por quê:* o poste amassava para o jogador e derrubava o rival, e o nitro
+  existia só para um dos lados, e nada reclamou.
+
 ## Branches e release
 
 Uma branch só de longa duração: `master`. Todo trabalho entra nela por PR, com
@@ -274,6 +284,7 @@ saber onde **não** há rede faz parte do contrato.
 | `arte/xre300.py` | Gera a XRE 300 com a mesma árvore de nós da CG, reaproveitando peças e piloto do `entregador.py`. Nó novo ou renomeado numa moto tem que existir em todas: o ator não tem `if` por modelo. |
 | `arte/pcx160.py` | Gera a PCX 160 do mesmo jeito. Na scooter a `Balanca` é o motor oscilante e a `Pedaleira` é o assoalho. |
 | `assets/entregador/` | O modelo e as texturas que o jogo carrega. Não edite à mão: regere pelo script. |
+| `scripts/impacto_de_moto.gd` | As regras de bater (raspa, quina, quique, queda, força no poste), iguais para jogador e rival. |
 | `scripts/ficha_da_moto.gd` | Ficha técnica real de cada moto. Moto nova começa por ela: as medidas guiam o modelo do Blender e a mola sai dela (`FisicaDaMoto`). Sem ficha, o teste reprova. |
 | `scripts/carro.gd` | Os carros do trânsito por dentro: roda, mola, porta, luz e quem dirige. |
 | `arte/carros.py` | Gera hatch, sedã, SUV, táxi, ônibus, baú e van no Blender. Fonte do `assets/carros/`, que é build. |

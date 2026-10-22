@@ -684,6 +684,7 @@ func _recycle_traffic() -> void:
 ## corredor esta puxando o jogador pra dentro do transito - se ela cai a zero,
 ## o jogador esta fugindo do jogo em vez de joga-lo.
 func _score_corridor() -> void:
+	_score_rivals()
 	if player.state != PlayerBike.State.RIDING or player.speed < NEAR_MISS_MIN_SPEED:
 		return
 	for car in traffic:
@@ -692,14 +693,42 @@ func _score_corridor() -> void:
 		if along < -(meio + 6.8):
 			car.near_missed = false
 			continue
-		if car.near_missed or absf(along) > meio + NEAR_MISS_ALONG:
+		if car.near_missed:
 			continue
-		var side := absf(car.lateral - player.track_lateral) - car.meia_largura()
-		# Perto o bastante pra assustar, longe o bastante pra nao ser colisao.
-		if side > NEAR_MISS_MIN_LATERAL and side < NEAR_MISS_LATERAL:
+		if raspando(car, player.track_offset, player.track_lateral):
 			car.near_missed = true
 			run.register_near_miss()
 			player.add_adrenaline(tuning.boost_gain_near_miss)
+
+
+## A mesma raspada, para cada rival: enche a adrenalina dele, que ele gasta no
+## nitro. O `near_missed` do carro e do jogador, entao o rival lembra os dele.
+func _score_rivals() -> void:
+	for rival in rivals:
+		if rival.state != RivalBike.State.RACING or rival.speed < NEAR_MISS_MIN_SPEED:
+			continue
+		for car in traffic:
+			if rival.raspados.has(car):
+				# Atras dele, ou reciclado la na frente: em qualquer dos dois
+				# o carro e outro para efeito de raspada.
+				var along := car.offset - rival.offset
+				if along < -(car.meio_comprimento() + 6.8) or along > 60.0:
+					rival.raspados.erase(car)
+				continue
+			if raspando(car, rival.offset, rival.lateral):
+				rival.raspados[car] = true
+				rival.ganhar_adrenalina(tuning.boost_gain_near_miss)
+
+
+## `offset` e `lateral` estao passando perto de `car`, sem encostar: o bastante
+## para assustar, longe o bastante para nao ser colisao. Vale para qualquer
+## corredor, jogador ou rival.
+static func raspando(car: TrafficCar, offset: float, lateral: float) -> bool:
+	var along := car.offset - offset
+	if absf(along) > car.meio_comprimento() + NEAR_MISS_ALONG:
+		return false
+	var side := absf(car.lateral - lateral) - car.meia_largura()
+	return side > NEAR_MISS_MIN_LATERAL and side < NEAR_MISS_LATERAL
 
 
 ## Distancia livre a frente numa dada lateral, a partir de `from_offset`.
