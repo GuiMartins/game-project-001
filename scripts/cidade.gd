@@ -900,7 +900,7 @@ func _semaforo(
 	poste.position = Vector3.UP * 2.2
 	# Um pouco mais grosso que o poste: a 50 m/s, 16 cm de colisor e o que um
 	# quadro de fisica atravessa de raspao.
-	Quebravel.com_colisor(raiz, Vector3(0.4, 4.4, 0.4))
+	Amassavel.com_colisor(raiz, Vector3(0.4, 4.4, 0.4))
 	frente_avenida.y = 0.0
 	_foco(raiz, mat, d, "vermelho", Vector3.UP * 3.6 + d * 0.15)
 	_foco(raiz, mat, frente_avenida.normalized(), "verde", Vector3.UP * 3.6 - d * 0.15)

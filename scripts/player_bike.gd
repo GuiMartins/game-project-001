@@ -529,21 +529,15 @@ func _resolve_collisions() -> void:
 
 		var outro := col.get_collider()
 		if outro is Amassavel:
-			# O poste fica de pe e leva a marca; quem cai, se chegou rapido, e o
-			# jogador, pelo caminho de batida de qualquer obstaculo fixo.
+			# Poste, semaforo e placa ficam de pe e levam a marca; quem cai, se
+			# chegou rapido, e o jogador, pelo caminho de batida de qualquer
+			# obstaculo fixo.
 			var de_frente := maxf(-_antes_da_batida.dot(normal), 0.0)
-			(outro as Amassavel).amassar(de_frente / tuning.max_speed, _antes_da_batida)
-		if outro is Quebravel:
-			var peca := outro as Quebravel
-			if not peca.quebrado:
-				peca.quebrar(_antes_da_batida)
-				var forca := clampf(_antes_da_batida.length() / tuning.max_speed, 0.25, 1.0)
-				_estrago.faisca(forca)
-				_ator.impacto(forca)
-				obstaculo_quebrado.emit(forca)
-			# O slide encurta este passo, mas nao tira embalo nem provoca queda.
-			velocity = _antes_da_batida
-			continue
+			var forca := clampf(de_frente / tuning.max_speed, 0.0, 1.0)
+			if (outro as Amassavel).amassar(forca, _antes_da_batida):
+				_estrago.faisca(maxf(forca, 0.25))
+				_ator.impacto(maxf(forca, 0.25))
+				obstaculo_quebrado.emit(maxf(forca, 0.25))
 		var v_outro := _velocidade_de(outro)
 		var relativa := _antes_da_batida - v_outro
 		var chegada := maxf(-relativa.dot(normal), 0.0)

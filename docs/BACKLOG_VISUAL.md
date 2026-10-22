@@ -1768,7 +1768,8 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
     batida, mais quanto mais forte ela foi (até 24°). Quem cai é o jogador, pelo
     caminho de batida de qualquer obstáculo fixo (`crash_min_speed`); devagar,
     quica. O rival é paramétrico e não bate no poste, então só o jogador amassa.
-    O semáforo e as placas seguem como `Quebravel`.
+    Semáforo, pórtico e placa também são `Amassavel` (a `Quebravel` morreu): peça
+    que umas voam e outras ficam lida como bug. Caçamba e mupi seguem sólidos.
 
 - [x] **V35** — Nitro com chama azul
 
