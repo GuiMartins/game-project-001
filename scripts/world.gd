@@ -246,11 +246,11 @@ func grid_slot(index: int, base: float) -> Vector2:
 	var row := index / 2
 	var column := index % 2
 	# Grid em zigue-zague, como o de moto de verdade: a coluna da direita larga
-	# 5,5 m atras, e cada fila se desloca 0,9 m para o lado oposto da
+	# 5 m atras, e cada fila se desloca 1,3 m para o lado oposto da
 	# anterior. Sem isso as motos largam emparelhadas e uma atras da outra em
 	# linha reta, e o que se ve e uma parede de traseiras.
-	var forward := base + 26.0 - float(row) * 7.0 - float(column) * 5.5
-	var lado := (0.9 if row % 2 == 0 else -0.9) * (1.0 if column == 0 else -1.0)
+	var forward := base + 26.0 - float(row) * 7.0 - float(column) * 5.0
+	var lado := (1.3 if row % 2 == 0 else -1.3) * (1.0 if column == 0 else -1.0)
 	var lateral := RoadTrack.corridor_center(0 if column == 0 else 2) + lado
 	return Vector2(maxf(forward, 4.0), lateral)
 
