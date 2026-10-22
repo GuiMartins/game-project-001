@@ -5,14 +5,14 @@
 	"tolerancia_padrao_pct": 2.0,
 	"tolerancias_pct": {
 		"_leia": "Contagens inteiras e pequenas: uma unidade ja e muito por cento. Colocacao e o caso extremo - entre 1o e 6o so existem seis valores, e uma posicao a mais ou a menos e disputa, nao regressao. O que segura estes numeros de verdade sao as asercoes da fase: quem cruzou antes tem que estar na frente no placar. corrida_rivais_derrubados fica de FORA desta lista de proposito: ele vale zero e tem que continuar valendo - o piloto automatico nao da um soco, entao qualquer rival creditado a ele e a queda alheia voltando a pagar estilo.",
-		"corrida_quedas": 30.0,
+		"corrida_quedas": 1.0,
 		"corrida_raspadas": 20.0,
 		"corrida_posicao": 50.0,
-		"corrida_atras_do_lider_m": 60.0,
+		"corrida_atras_do_lider_m": 139.325785400264,
 		"disputa_posicao": 50.0,
 		"disputa_rivais_na_linha": 40.0,
-		"corrida_ritmo_lider_kmh": 12.0,
-		"corrida_rivais_caidos": 100.0
+		"corrida_ritmo_lider_kmh": 112.229759926149,
+		"corrida_rivais_caidos": 2.0
 	},
 	"valores": {
 		"aceleracao_0_100_s": 2.75,
@@ -24,8 +24,8 @@
 		"calcada_velocidade_calcada_ms": 43.4499969558539,
 		"combate_empurrao_m": 2.1,
 		"corrida_atras_do_lider_m": 106.386497387262,
-		"corrida_distancia_m": 1339.2490234375,
-		"corrida_pancadas_tomadas": 2.0,
+		"corrida_distancia_m": 1289.45263671875,
+		"corrida_pancadas_tomadas": 0.0,
 		"corrida_posicao": 6.0,
 		"corrida_quedas": 0.0,
 		"corrida_raspadas": 27.0,
