@@ -43,10 +43,17 @@ static func criar(tipo: Tipo, pe: Vector3, _olha: Vector3) -> StaticBody3D:
 	# no meio do desenho: nos cinco sprites ele passa por menos de 2% da largura.
 	var ancora: Array = ficha["pe"]
 	sprite.position.y = (float(ancora[1]) - sprite.texture.get_height() * 0.5) * sprite.pixel_size
+	# Espelha metade das arvores, para a avenida nao repetir a mesma silhueta. Sai
+	# da posicao, e nao de um sorteio: um `randf` aqui deslocaria a sequencia do
+	# gerador da cidade e mudaria o mundo inteiro por causa de um espelho.
+	sprite.flip_h = (int(floorf(pe.x * 7.0)) + int(floorf(pe.z * 13.0))) % 2 == 0
+	# `Sprite3D` nasce sem sombreamento: sem isto ele ignora o sol, a sombra dos
+	# predios e os faroes, e fica um recorte chapado no meio da cena.
+	sprite.shaded = true
 	sprite.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 	sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
 	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
-	sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	corpo.add_child(sprite)
 	var forma := Greybox.box_shape(COLISOR)
 	forma.position = Vector3.UP * COLISOR.y * 0.5
