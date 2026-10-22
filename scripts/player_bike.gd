@@ -26,25 +26,15 @@ const GRAVITY: float = 26.0
 ## (`Entregador.BAG_FABRICA`), e nenhum rival de `World.RIVAL_COLORS` chega
 ## perto dela. Foi laranja do primeiro cubo de greybox ate a roupa da V21.
 const COR := Color(0.82, 0.12, 0.10)
-## Quanto da velocidade de aproximacao volta como tranco, numa batida que nao
-## derruba. Na traseira de um carro voce fica com a velocidade dele menos isto:
-## sem o tranco, encostar no para-choque so freava, e frear nao e bater.
-const QUIQUE: float = 0.3
-## Segundos sem pilotar depois do quique. Curto: e o guidao que sacode na mao,
-## nao a pancada de rival, que tira 0,7 s.
-const TEMPO_DO_QUIQUE: float = 0.25
-## Abaixo desta aproximacao (m/s) a batida e encostar, e nao bater. Ja nao havia
-## diferenca: encostar no para-choque zerava a velocidade e sacudia o guidao
-## 0,25 s, e a moto com o gas a fundo repetia isso para sempre. A agilidade
-## depende da velocidade, entao parada contra o carro ela nao virava nunca
-## (V31). Encostar tira o embalo, nao o controle.
-const ENCOSTO: float = 5.0
+## As regras de bater (quique, encosto, respiro, forca no poste) sao as de
+## `ImpactoDeMoto`: o rival bate pelas mesmas.
+const QUIQUE: float = ImpactoDeMoto.QUIQUE
+const TEMPO_DO_QUIQUE: float = ImpactoDeMoto.TEMPO_DO_QUIQUE
+const ENCOSTO: float = ImpactoDeMoto.ENCOSTO
 ## Metros por segundo que a moto escorrega ao longo do que a prendeu, no lado
 ## em que o jogador esta guiando.
 const DESLIZE_PRESO: float = 4.5
-## Segundos em que uma quina ou um quique nao se repete. O contato dura alguns
-## passos de fisica, e cada um deles cobrava o tranco inteiro de novo.
-const RESPIRO_DO_IMPACTO: float = 0.3
+const RESPIRO_DO_IMPACTO: float = ImpactoDeMoto.RESPIRO
 ## Desaceleracao da moto deitada arrastando no asfalto, em m/s^2. Mais que o
 ## atrito de verdade de proposito: deslizar 40 m numa queda a 100 km/h e fiel,
 ## e e tambem a camera indo embora com a moto enquanto o jogador espera.
@@ -392,18 +382,17 @@ static func passo_da_inclinacao(
 
 func _update_speed(delta: float, throttle: float, brake: float) -> void:
 	boosting = Input.is_action_pressed("ride_boost") and adrenaline > 0.0 and state == State.RIDING
-	var top := tuning.max_speed * (tuning.boost_speed_mult if boosting else 1.0)
+	var top := FisicaDaMoto.teto_de_velocidade(tuning, boosting)
 
 	if boosting:
-		adrenaline = maxf(adrenaline - tuning.boost_drain * delta, 0.0)
+		adrenaline = FisicaDaMoto.carga_apos_nitro(tuning, adrenaline, delta)
 
 	if throttle > 0.0:
 		# Aceleracao cai conforme se aproxima do teto: empurrao forte na saida,
 		# ultimos 20 km/h custam caro. E o que faz o boost valer alguma coisa.
 		var headroom := clampf(1.0 - speed / maxf(top, 0.01), 0.0, 1.0)
 		var power := tuning.accel * pow(headroom, tuning.accel_falloff)
-		if boosting:
-			power += tuning.boost_accel
+		power += FisicaDaMoto.aceleracao_do_nitro(tuning, boosting)
 		speed += power * throttle * delta
 	else:
 		speed -= (tuning.engine_brake + tuning.drag * speed * speed) * delta
@@ -532,13 +521,9 @@ func _resolve_collisions() -> void:
 			# Poste, semaforo e placa ficam de pe e levam a marca; quem cai, se
 			# chegou rapido, e o jogador, pelo caminho de batida de qualquer
 			# obstaculo fixo.
-			var rapidez := _antes_da_batida.length()
-			var de_frente := maxf(-_antes_da_batida.dot(normal), 0.0)
-			# A velocidade toda conta, e nao so a componente contra a face: o
-			# poste e fino, e quem o pega de raspao a 140 km/h o amassa do mesmo
-			# jeito. De frente vale o dobro de uma raspada.
-			var cheia := de_frente / maxf(rapidez, 0.01)
-			var forca := clampf(rapidez / tuning.max_speed * lerpf(0.4, 1.0, cheia), 0.0, 1.0)
+			var forca := ImpactoDeMoto.forca_no_amassavel(
+				_antes_da_batida, normal, tuning.max_speed
+			)
 			if (outro as Amassavel).amassar(forca, _antes_da_batida):
 				_estrago.faisca(maxf(forca, 0.25))
 				_ator.impacto(maxf(forca, 0.25))
@@ -548,8 +533,7 @@ func _resolve_collisions() -> void:
 		var chegada := maxf(-relativa.dot(normal), 0.0)
 		if chegada < ENCOSTO:
 			_desliza_preso(normal, get_physics_process_delta_time())
-		var head_on := clampf(chegada / maxf(relativa.length(), 0.01), 0.0, 1.0)
-		var incidence := rad_to_deg(asin(head_on))
+		var head_on := ImpactoDeMoto.de_frente(chegada, relativa)
 		if outro is TrafficCar:
 			var desvio_porta := (outro as TrafficCar).acertar_porta(
 				col.get_collider_shape() as CollisionShape3D, chegada
@@ -559,14 +543,14 @@ func _resolve_collisions() -> void:
 					_ricocheteia(desvio_porta, chegada)
 				return
 
-		if incidence <= tuning.crash_angle or _respiro_do_impacto > 0.0:
+		if ImpactoDeMoto.raspou(head_on, tuning, _respiro_do_impacto > 0.0):
 			_raspa(normal, head_on)
 			continue
 
 		var desvio := _quina(col, normal)
 		if desvio != Vector3.ZERO:
 			_ricocheteia(desvio, chegada)
-		elif outro is RivalBike or chegada < tuning.crash_min_speed or _crash_grace > 0.0:
+		elif not ImpactoDeMoto.derruba(chegada, tuning, outro is RivalBike or _crash_grace > 0.0):
 			# Moto nao derruba moto: o rival e da mesma altura, e na traseira
 			# dele quem leva a pior e o seu guidao, nao o seu corpo.
 			_quica(normal, v_outro, chegada)
@@ -632,10 +616,7 @@ func _quina(col: KinematicCollision3D, normal: Vector3) -> Vector3:
 		absf(global_basis.x.dot(ao_longo)) * SIZE.x * 0.5
 		+ absf(global_basis.z.dot(ao_longo)) * SIZE.z * 0.5
 	)
-	var em_cima := minf(centro + minha, meia_face) - maxf(centro - minha, -meia_face)
-	if em_cima >= tuning.corner_fraction * 2.0 * minf(minha, meia_face):
-		return Vector3.ZERO
-	return ao_longo * (1.0 if centro >= 0.0 else -1.0)
+	return ao_longo * ImpactoDeMoto.lado_da_quina(centro, minha, meia_face, tuning)
 
 
 ## Pegou a quina: a moto desvia para fora dela e segue, mais lenta.
