@@ -1,0 +1,257 @@
+{
+  "projeto": "https://flow.google.com/project/3352bd67-4bd7-4758-9981-18be32310d75",
+  "recuperado_em": "2026-10-21",
+  "recursos": [
+    {
+      "nome": "turnaround",
+      "url": "https://flow.google.com/project/3352bd67-4bd7-4758-9981-18be32310d75/edit/720f76df-0465-410e-8382-32ab71e67b7a",
+      "arquivo": "originais/turnaround.jpg",
+      "bytes": 612046,
+      "sha256": "c76f4138db0a71beefb4d243c336ee41c3de1172b2b1cc4feb6f5565e5bb9319"
+    },
+    {
+      "nome": "turnaround_alternativo",
+      "url": "https://flow.google.com/project/3352bd67-4bd7-4758-9981-18be32310d75/edit/6f26e4a5-d7f8-4a00-abf6-d36f4af4f2f7",
+      "arquivo": "originais/turnaround_alternativo.jpg",
+      "bytes": 587376,
+      "sha256": "9fbae126766323913e612058303073be8be30d2632ad750f1267e433a69edbf2"
+    },
+    {
+      "nome": "lado",
+      "url": "https://flow.google.com/project/3352bd67-4bd7-4758-9981-18be32310d75/edit/e823b015-26f0-48fd-917c-725b57233b00",
+      "arquivo": "originais/lado.mp4",
+      "bytes": 2584047,
+      "sha256": "b1cf7b6c86fbaddfb5dedad4614d1230dd583d7cc2accad2b30ddbfa7ce8da36",
+      "midia": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 720,
+            "r_frame_rate": "24/1",
+            "nb_frames": "240"
+          },
+          {
+            "codec_name": "aac",
+            "r_frame_rate": "0/0",
+            "nb_frames": "470"
+          }
+        ],
+        "format": {
+          "duration": "10.005000"
+        }
+      }
+    },
+    {
+      "nome": "frente",
+      "url": "https://flow.google.com/project/3352bd67-4bd7-4758-9981-18be32310d75/edit/1b887547-aa1e-45df-bca1-8b9ecff3f961",
+      "arquivo": "originais/frente.mp4",
+      "bytes": 2322149,
+      "sha256": "3e7461bfd54661cb77871bf41a9c54579bfafe8758146848cb74512348741335",
+      "midia": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 720,
+            "r_frame_rate": "24/1",
+            "nb_frames": "240"
+          },
+          {
+            "codec_name": "aac",
+            "r_frame_rate": "0/0",
+            "nb_frames": "470"
+          }
+        ],
+        "format": {
+          "duration": "10.005000"
+        }
+      }
+    },
+    {
+      "nome": "costas",
+      "url": "https://flow.google.com/project/3352bd67-4bd7-4758-9981-18be32310d75/edit/1bc66f27-d7d6-4541-b484-133873218f71",
+      "arquivo": "originais/costas.mp4",
+      "bytes": 2097626,
+      "sha256": "ec43936e990462e8a65f442610da60c10a93d3f66a372a6c002626ee84d3e41a",
+      "midia": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 720,
+            "r_frame_rate": "24/1",
+            "nb_frames": "240"
+          },
+          {
+            "codec_name": "aac",
+            "r_frame_rate": "0/0",
+            "nb_frames": "470"
+          }
+        ],
+        "format": {
+          "duration": "10.005000"
+        }
+      }
+    },
+    {
+      "nome": "tres_quartos_frente",
+      "url": "https://flow.google.com/project/3352bd67-4bd7-4758-9981-18be32310d75/edit/7aef8f1c-4f62-4b0c-827d-dc3d765941ee",
+      "arquivo": "originais/tres_quartos_frente.mp4",
+      "bytes": 2031749,
+      "sha256": "f5b97117b10f398edaa7e848ec77415ec9724d96af207c39f56f2b3a2100d94c",
+      "midia": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 720,
+            "r_frame_rate": "24/1",
+            "nb_frames": "240"
+          },
+          {
+            "codec_name": "aac",
+            "r_frame_rate": "0/0",
+            "nb_frames": "470"
+          }
+        ],
+        "format": {
+          "duration": "10.005000"
+        }
+      }
+    },
+    {
+      "nome": "tres_quartos_costas",
+      "url": "https://flow.google.com/project/3352bd67-4bd7-4758-9981-18be32310d75/edit/3f63235c-67ba-474d-9fec-2f1f3449f130",
+      "arquivo": "originais/tres_quartos_costas.mp4",
+      "bytes": 2317934,
+      "sha256": "9fb60eef40567b27a857dfb7ad5c786c212ea681630c34bd5eec1bc37f25486c",
+      "midia": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 720,
+            "r_frame_rate": "24/1",
+            "nb_frames": "240"
+          },
+          {
+            "codec_name": "aac",
+            "r_frame_rate": "0/0",
+            "nb_frames": "470"
+          }
+        ],
+        "format": {
+          "duration": "10.005000"
+        }
+      }
+    },
+    {
+      "nome": "tres_quartos_frente_esq",
+      "url": "https://flow.google.com/project/3352bd67-4bd7-4758-9981-18be32310d75/edit/24472699-8e59-4101-bdde-609ea51cb9ff",
+      "arquivo": "originais/tres_quartos_frente_esq.mp4",
+      "bytes": 2289608,
+      "sha256": "4e349142e8910a658fbe224a620ffca7945f5fa4cfccf751c5269ee242c8a5a2",
+      "midia": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 720,
+            "r_frame_rate": "24/1",
+            "nb_frames": "240"
+          },
+          {
+            "codec_name": "aac",
+            "r_frame_rate": "0/0",
+            "nb_frames": "470"
+          }
+        ],
+        "format": {
+          "duration": "10.005000"
+        }
+      }
+    },
+    {
+      "nome": "tres_quartos_costas_esq",
+      "url": "https://flow.google.com/project/3352bd67-4bd7-4758-9981-18be32310d75/edit/42c6b8c4-e776-4679-a348-4deae0c61c14",
+      "arquivo": "originais/tres_quartos_costas_esq.mp4",
+      "bytes": 2427666,
+      "sha256": "d963646107e784d25f8a1c7d2cba378cdb775536f548a2bc490b2f95fa1ef3c8",
+      "midia": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 720,
+            "r_frame_rate": "24/1",
+            "nb_frames": "240"
+          },
+          {
+            "codec_name": "aac",
+            "r_frame_rate": "0/0",
+            "nb_frames": "470"
+          }
+        ],
+        "format": {
+          "duration": "10.005000"
+        }
+      }
+    },
+    {
+      "nome": "lado_esq",
+      "url": "https://flow.google.com/project/3352bd67-4bd7-4758-9981-18be32310d75/edit/a0155fcc-4287-476f-9aaf-a7d0d901a3b9",
+      "arquivo": "originais/lado_esq.mp4",
+      "bytes": 2632130,
+      "sha256": "0c2f629c2f33249ecd275b55743bcdf3f6aa673ebc15d80bb1767242f02b61f0",
+      "midia": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 720,
+            "r_frame_rate": "24/1",
+            "nb_frames": "240"
+          },
+          {
+            "codec_name": "aac",
+            "r_frame_rate": "0/0",
+            "nb_frames": "470"
+          }
+        ],
+        "format": {
+          "duration": "10.005000"
+        }
+      }
+    }
+  ],
+  "atlas": {
+    "arquivo": "assets/sprites/pedestres/moletom_andando.png",
+    "dimensoes": [
+      1280,
+      1600
+    ],
+    "sha256_rgba": "55103c8c74f0b8de218c845b7a03ab8b03d786454b813ada8606d9b5ad458097",
+    "pixels_diferentes_na_reproducao": 0,
+    "python": "3.12",
+    "pillow": "12.3.0",
+    "numpy": "2.3.5",
+    "ffmpeg": "9.0.2"
+  }
+}

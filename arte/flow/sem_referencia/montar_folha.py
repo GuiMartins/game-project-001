@@ -1,12 +1,15 @@
-"""Monta a folha de andar (8 linhas x 8 quadros: 5 angulos e o lado esquerdo desenhado de verdade) a partir dos videos do Flow.
+"""Monta a folha de andar (8 linhas x 8 quadros) a partir dos videos do Flow.
 
-Uso: python montar_folha.py <pasta de trabalho> <saida.png>
+Uso: python3 montar_folha.py <pasta dos videos> <saida.png> [--cache <pasta>]
 Precisa de Pillow, numpy e ffmpeg. Cada video e a mesma pessoa andando no lugar,
 camera fixa, fundo verde. Por video: tira o verde, acha o ciclo (o trecho em que
 a pose se repete), pega 8 quadros igualmente espacados dentro dele e alinha pelo
 pe e pelo centro do tronco. A ordem das linhas e a do `PedestreSprite`.
 """
-import subprocess, sys, pathlib
+import argparse
+import hashlib
+import pathlib
+import subprocess
 import numpy as np
 from PIL import Image
 
@@ -50,7 +53,10 @@ def caixa(al: np.ndarray) -> tuple[int, int, int, int]:
 
 
 def linha(video: pathlib.Path, trabalho: pathlib.Path) -> list[Image.Image]:
-    quadros = extrai(video, trabalho / video.stem)
+    # O mesmo nome pode receber outro download: o cache pertence ao conteudo,
+    # para nunca montar a folha nova com quadros de uma tentativa antiga.
+    resumo = hashlib.sha256(video.read_bytes()).hexdigest()
+    quadros = extrai(video, trabalho / f"{video.stem}-{resumo}")
     pequenos = [np.asarray(Image.open(p).convert("RGB").resize((160, 90))).astype(np.float32) for p in quadros]
     # laco: o par (s, s+P) mais parecido. P e o ciclo de dois passos, ~1,4 s a 24 fps.
     melhor = None
@@ -59,6 +65,8 @@ def linha(video: pathlib.Path, trabalho: pathlib.Path) -> list[Image.Image]:
             e = np.abs(pequenos[s] - pequenos[s + P]).mean()
             if melhor is None or e < melhor[0]:
                 melhor = (e, s, P)
+    if melhor is None:
+        raise ValueError(f"Video curto demais para localizar um ciclo: {video}")
     _, s, P = melhor
     idx = [int(round(s + k * P / N)) for k in range(N)]
     print(f"{video.stem}: laco em {s}, periodo {P}, quadros {idx}")
@@ -90,14 +98,27 @@ def linha(video: pathlib.Path, trabalho: pathlib.Path) -> list[Image.Image]:
 
 
 def main() -> None:
-    trabalho, saida = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("videos", type=pathlib.Path, help="pasta com os MP4 originais")
+    parser.add_argument("saida", type=pathlib.Path, help="atlas PNG de destino")
+    parser.add_argument(
+        "--cache", type=pathlib.Path,
+        default=AQUI.parents[2] / ".dev" / "flow-moletom",
+        help="cache de quadros extraidos; padrao: .dev/flow-moletom no repositorio",
+    )
+    args = parser.parse_args()
+    faltando = sorted({f"{nome}.mp4" for nome, _ in LINHAS if not (args.videos / f"{nome}.mp4").is_file()})
+    if faltando:
+        parser.error(f"Videos ausentes em {args.videos}: {', '.join(faltando)}")
     folha = Image.new("RGBA", (CW * N, CH * len(LINHAS)), (0, 0, 0, 0))
     for r, (nome, espelha) in enumerate(LINHAS):
-        for c, cel in enumerate(linha(AQUI / f"{nome}.mp4", trabalho)):
+        for c, cel in enumerate(linha(args.videos / f"{nome}.mp4", args.cache)):
             if espelha:
                 cel = cel.transpose(Image.FLIP_LEFT_RIGHT)  # o pe fica em PE[0] = meio da celula
             folha.paste(cel, (c * CW, r * CH))
-    folha.save(saida)
+    args.saida.parent.mkdir(parents=True, exist_ok=True)
+    folha.save(args.saida)
 
 
-main()
+if __name__ == "__main__":
+    main()
