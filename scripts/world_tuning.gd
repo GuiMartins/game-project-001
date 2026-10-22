@@ -8,6 +8,8 @@ extends Resource
 ## a outra.
 
 const SAVE_PATH: String = "user://world_tuning.tres"
+## O `traffic_count` de fábrica: a mão contrária está cheia nele.
+const TRAFFIC_COUNT_CHEIO: int = 25
 
 @export_group("Transito")
 
@@ -27,7 +29,7 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## Subiu de 10 pra 25 na V20, junto com a velocidade: carro que anda quase
 ## junto com a moto demora a ficar para tras, e o video mostra 8 a 15 na tela
 ## e 2 a 4 nos primeiros 20 m.
-@export_range(0, 120, 1) var traffic_count: int = 25
+@export_range(0, 120, 1) var traffic_count: int = TRAFFIC_COUNT_CHEIO
 
 ## Espacamento minimo entre carros na largada, em metros.
 @export_range(3.0, 60.0, 0.5) var traffic_gap_min: float = 5.0
@@ -262,6 +264,15 @@ const SAVE_PATH: String = "user://world_tuning.tres"
 ## o liso era o que os videos de referencia tem, e o travado foi o que leu
 ## melhor na tela de pixel.
 @export_range(0, 30, 1) var ator_cadencia: int = 12
+
+
+## Quanto do trânsito cheio o slider deixa, de 0 a 1. A mão contrária da via
+## expressa (`Contramao`) não tem frota própria no slider: ela é povoada por
+## inteiro e aparada por esta fração, que chega ao cheio no valor de fábrica
+## (`TRAFFIC_COUNT_CHEIO`). Acima dele a mão contrária não enche mais, porque
+## a rua dela tem lugar para uns oito carros por faixa e mais que isso é fila.
+func fracao_do_transito() -> float:
+	return clampf(float(traffic_count) / float(TRAFFIC_COUNT_CHEIO), 0.0, 1.0)
 
 
 static func load_or_default() -> WorldTuning:

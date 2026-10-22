@@ -2,15 +2,13 @@ extends GdUnitTestSuite
 ## So o mobiliario preso ao chao cede; a cacamba e o mupi seguem obstaculos.
 
 
-func test_poste_e_placas_quebram_e_voltam_na_proxima_largada() -> void:
-	var poste: Quebravel = auto_free(Poste.criar(Vector3.ZERO, Vector3.FORWARD))
-	add_child(poste)
+func test_placas_quebram_e_voltam_na_proxima_largada() -> void:
 	var placa: StaticBody3D = auto_free(
 		Mobiliario.criar(Mobiliario.Tipo.PLACA_ESQUERDA, Vector3(2, 0, 0), Vector3.FORWARD)
 	)
 	add_child(placa)
 	assert_bool(placa is Quebravel).is_true()
-	for objeto: Quebravel in [poste, placa as Quebravel]:
+	for objeto: Quebravel in [placa as Quebravel]:
 		var rotacao := objeto.rotation
 		objeto.quebrar(Vector3.FORWARD)
 		assert_bool(objeto.quebrado).is_true()
@@ -58,32 +56,54 @@ func test_jogador_quebra_sem_perder_velocidade_ou_cair() -> void:
 	assert_int(impactos[0]).is_equal(1)
 
 
-func test_poste_voa_para_frente_quica_e_fica_acima_do_chao() -> void:
-	var poste: Quebravel = auto_free(Poste.criar(Vector3.ZERO, Vector3.FORWARD))
+func test_poste_amassa_conforme_a_forca_e_fica_de_pe() -> void:
+	# V34: o poste nao sai do lugar. A batida o amassa, mais forte quanto mais
+	# forte ela for, e a largada nova o desamassa.
+	var poste: Amassavel = auto_free(Poste.criar(Vector3(4.0, 0.0, 9.0), Vector3.LEFT))
 	add_child(poste)
-	var inicial := poste.transform
-	poste.quebrar(Vector3.FORWARD * 35.0)
-	poste.set_physics_process(false)
-	for _passo in 24:
-		poste._physics_process(1.0 / 120.0)
-	assert_float(poste._centro.z).is_less(-7.0)
-	assert_bool(poste.visible).is_true()
-	var subiu := false
-	var caiu := false
-	for _passo in 960:
-		var antes := poste._vel.y
-		poste._physics_process(1.0 / 120.0)
-		if antes < -2.0:
-			caiu = true
-		if caiu and poste._vel.y > 0.5:
-			subiu = true
-		var caixa := (poste.get_child(0) as MeshInstance3D).get_aabb()
-		for i in 8:
-			assert_float(poste.to_global(caixa.get_endpoint(i)).y).is_greater_equal(-0.01)
-	assert_bool(subiu).is_true()
-	assert_bool(poste.visible).is_true()
+	var malha := poste.get_child(0) as MeshInstance3D
+	var inicial := malha.transform
+	var pe := poste.global_position
+	var alto := inicial.origin + Vector3.UP * 6.0
+	poste.amassar(0.3, Vector3.FORWARD * 20.0)
+	assert_bool(malha.transform.is_equal_approx(inicial)).is_false()
+	# O topo (6 m acima do pe) foi para onde a moto ia (-Z) e continua alto.
+	var topo_fraco := malha.global_transform * (inicial.affine_inverse() * alto)
+	assert_float(topo_fraco.z).is_less(pe.z - 0.5)
+	poste.amassar(1.0, Vector3.FORWARD * 40.0)
+	var topo_forte := malha.global_transform * (inicial.affine_inverse() * alto)
+	assert_float(topo_forte.z).is_less(topo_fraco.z)
+	assert_float(topo_forte.y).is_greater(4.5)
+	# Batida mais fraca depois nao desamassa.
+	poste.amassar(0.1, Vector3.FORWARD * 5.0)
+	assert_float(poste.amassado).is_equal(1.0)
+	assert_vector(poste.global_position).is_equal(pe)
 	poste.reiniciar()
-	assert_that(poste.transform).is_equal(inicial)
+	assert_bool(malha.transform.is_equal_approx(inicial)).is_true()
+	assert_float(poste.amassado).is_equal(0.0)
+
+
+func test_jogador_cai_no_poste_a_toda_velocidade_e_nao_a_baixa() -> void:
+	var pista: RoadTrack = auto_free(RoadTrack.new())
+	add_child(pista)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20260831
+	pista.build(120.0, rng)
+	for caso: Array in [[40.0, true], [6.0, false]]:
+		var moto: PlayerBike = auto_free(PlayerBike.new())
+		add_child(moto)
+		moto.setup(BikeTuning.new(), pista, 12.0)
+		moto.place_on_track(12.0, 0.0, caso[0])
+		moto.set_physics_process(false)
+		var poste: Amassavel = auto_free(Poste.criar(pista.point(16.0, 0.0), Vector3.LEFT))
+		add_child(poste)
+		await get_tree().physics_frame
+		for passo in 40:
+			moto._integrate(1.0 / 60.0)
+			moto._resolve_collisions()
+			await get_tree().physics_frame
+		assert_bool(poste.amassado > 0.0).is_true()
+		assert_bool(moto.state == PlayerBike.State.CRASHED).is_equal(caso[1])
 
 
 func test_tranco_e_curto_e_so_mexe_na_moto_atingida_em_todos_os_modelos() -> void:
@@ -104,13 +124,12 @@ func test_tranco_e_curto_e_so_mexe_na_moto_atingida_em_todos_os_modelos() -> voi
 		assert_float(atingida._treme.length()).is_less(0.0001)
 
 
-func test_poste_e_placa_param_de_simular_depois_de_assentar() -> void:
+func test_placa_para_de_simular_depois_de_assentar() -> void:
 	for hz: float in [60.0, 120.0]:
-		var poste: Quebravel = auto_free(Poste.criar(Vector3.ZERO, Vector3.FORWARD))
 		var placa: Quebravel = auto_free(
 			Mobiliario.criar(Mobiliario.Tipo.PLACA_DIREITA, Vector3.ZERO, Vector3.FORWARD)
 		)
-		for objeto: Quebravel in [poste, placa]:
+		for objeto: Quebravel in [placa]:
 			add_child(objeto)
 			objeto.quebrar(Vector3.FORWARD * 35.0)
 			for _passo in int(20.0 * hz):

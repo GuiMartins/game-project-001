@@ -120,6 +120,8 @@ var borrao: Borrao
 var traffic: Array[TrafficCar] = []
 var rivals: Array[RivalBike] = []
 var travessia: Travessia
+## A ultima densidade repassada a `Contramao`; 1 e o que ela nasce valendo.
+var _fracao_contramao: float = 1.0
 var _sangue: Node3D
 var _rng := RandomNumberGenerator.new()
 var _spawn_cursor: float = 0.0
@@ -643,6 +645,12 @@ func _update_standings() -> void:
 ## exatamente o tipo de coisa que voce precisa sentir com a moto andando -
 ## que e a razao do painel F3 existir.
 func _sync_traffic_pool() -> void:
+	# A mao contraria da expressa nao esta em `traffic`: segue o slider por
+	# aqui, so quando ele anda.
+	var fracao := world_tuning.fracao_do_transito()
+	if not is_equal_approx(fracao, _fracao_contramao):
+		_fracao_contramao = fracao
+		get_tree().call_group(&"contramao", &"ajustar_densidade", fracao)
 	var want: int = world_tuning.traffic_count
 	var flow: Array[TrafficCar] = traffic.duplicate()
 	if flow.size() == want:
