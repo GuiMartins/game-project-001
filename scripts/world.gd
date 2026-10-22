@@ -401,14 +401,18 @@ func _build_scenery() -> void:
 		var at := track.point(o, Poste.LATERAL * side)
 		var para_a_pista := track.sample_basis(o).x * -side
 		var na_rua := Cidade.na_boca(track.cruzamentos, o, side)
-		# Embaixo do viaduto o poste de 10 m fura o tabuleiro de 7.
+		# Embaixo do viaduto o poste de 10 m fura o tabuleiro de 7: ali vai o
+		# poste baixo.
 		var fura := Cidade.sob_viaduto(track, o, side)
 		# O lado fechado da expressa ganhou asfalto: o poste ficaria no meio dele.
 		var no_asfalto := track.alarga_do_lado(o, side) > 1.0
 		o += gerador.randf_range(18.0, 34.0)
-		if na_rua or fura or no_asfalto:
+		if na_rua or no_asfalto:
 			continue
-		props.add_child(Poste.criar(at, para_a_pista))
+		if fura:
+			props.add_child(Poste.criar_baixo(at, para_a_pista))
+		else:
+			props.add_child(Poste.criar(at, para_a_pista))
 
 	# Os sorteios dos predios do greybox continuam saindo do gerador do mundo,
 	# na mesma quantidade e na mesma ordem, e vao fora. Transito e rivais vem

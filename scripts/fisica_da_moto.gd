@@ -126,3 +126,15 @@ static func aceleracao_do_nitro(t: BikeTuning, nitro: bool) -> float:
 ## A carga (0 a 100) que sobra depois de `delta` segundos de nitro ligado.
 static func carga_apos_nitro(t: BikeTuning, carga: float, delta: float) -> float:
 	return maxf(carga - t.boost_drain * delta, 0.0)
+
+
+## A velocidade (modulo) de quem esta de re. Apertar o freio acelera para tras
+## ate `RE_MAXIMA`; o gas freia forte, e soltar o freio deixa a re morrer.
+static func velocidade_de_re(
+	t: BikeTuning, velocidade: float, gas: float, freio: float, delta: float
+) -> float:
+	if gas > 0.0:
+		return maxf(velocidade - t.brake * gas * delta, 0.0)
+	if freio > 0.0:
+		return minf(velocidade + PlayerBike.RE_ACEL * freio * delta, PlayerBike.RE_MAXIMA)
+	return maxf(velocidade - t.engine_brake * delta, 0.0)
