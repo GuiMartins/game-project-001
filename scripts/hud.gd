@@ -49,6 +49,10 @@ const CORES_BARRA: Array[Color] = [
 const LARGURA_BOOST: int = 62
 const ALTURA_BOOST: int = 9
 const SEGMENTOS_BOOST: int = 8
+const SEGMENTOS_GIRO: int = 20
+const COR_GIRO_AMARELO := Color(1.0, 0.85, 0.15)
+const COR_GIRO_VERDE := Color(0.2, 0.85, 0.3)
+const COR_GIRO_VERMELHO := Color(0.9, 0.15, 0.12)
 const COR_BOOST: Color = Color(0.3, 0.85, 1.0)
 const COR_BOOST_QUEIMANDO: Color = Color(1.0, 0.88, 0.25)
 const COR_APAGADO: Color = Color(0.2, 0.21, 0.25)
@@ -342,29 +346,34 @@ func _topo_do_gps(altura: int) -> int:
 	return y_nome - 5 - int(_gps.size.y)
 
 
-## O giro do motor na contagem: amarelo, verde e vermelho lado a lado, na
-## ordem em que o jogador vai atravessando. As faixas sao as da `PlayerBike`,
-## para a barra nunca mentir sobre o que cada cor faz na largada.
+## O giro do motor na contagem, na mesma barra segmentada das outras, com a
+## legenda "GIRO" e as faixas da `LargadaDaMoto` em amarelo, verde e vermelho:
+## a cor de cada segmento e a da faixa em que ele cai, para a barra nunca
+## mentir sobre o que cada cor faz no sinal.
 func _desenha_rpm_da_largada(tela: Vector2i) -> void:
-	var largura := 120
-	var altura := 8
+	var cores: Array = []
+	for i in SEGMENTOS_GIRO:
+		var f := (i + 0.5) / SEGMENTOS_GIRO
+		var cor := COR_GIRO_AMARELO
+		if f >= LargadaDaMoto.RPM_ZONA_VERMELHA:
+			cor = COR_GIRO_VERMELHO
+		elif f >= LargadaDaMoto.RPM_ZONA_VERDE:
+			cor = COR_GIRO_VERDE
+		cores.append(cor)
+	var legenda := "GIRO"
+	var y := 85 + fonte_valor.altura + 12
+	var largura := fonte_legenda.largura(legenda) + 6 + LARGURA_BARRA
 	var x := (tela.x - largura) / 2
-	var y := 85 + fonte_valor.altura + 10
-	_painel.draw_rect(Rect2(x - 1, y - 1, largura + 2, altura + 2), COR_MOLDURA)
-	var faixas := [
-		[0.0, LargadaDaMoto.RPM_ZONA_VERDE, Color(1.0, 0.85, 0.15)],
-		[LargadaDaMoto.RPM_ZONA_VERDE, LargadaDaMoto.RPM_ZONA_VERMELHA, Color(0.2, 0.85, 0.3)],
-		[LargadaDaMoto.RPM_ZONA_VERMELHA, 1.0, Color(0.9, 0.15, 0.12)],
-	]
-	var cheio := int(round(largura * player.rpm_largada))
-	for faixa: Array in faixas:
-		var de := int(round(largura * float(faixa[0])))
-		var ate := int(round(largura * float(faixa[1])))
-		var cor: Color = faixa[2]
-		# Acima do ponteiro a faixa fica apagada: o preenchido e o giro.
-		_painel.draw_rect(Rect2(x + de, y, ate - de, altura), cor.darkened(0.7))
-		if cheio > de:
-			_painel.draw_rect(Rect2(x + de, y, mini(cheio, ate) - de, altura), cor)
+	fonte_legenda.desenhar(_painel, Vector2i(x, y), legenda)
+	# Uma cor por segmento: `_barra` escolhe o degrau por posicao, entao uma
+	# lista com um degrau por segmento acende cada um na sua faixa.
+	_barra(
+		Vector2i(x + fonte_legenda.largura(legenda) + 6, y - 2),
+		Vector2i(LARGURA_BARRA, ALTURA_BARRA),
+		SEGMENTOS_GIRO,
+		player.rpm_largada,
+		cores
+	)
 
 
 func _centralizado(fonte: FonteHud, y: int, texto: String, cor: Color) -> void:

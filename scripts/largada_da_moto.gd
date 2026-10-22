@@ -11,7 +11,7 @@ extends RefCounted
 const RPM_SOBE: float = 0.7
 const RPM_DESCE: float = 0.9
 const RPM_ZONA_VERDE: float = 0.55
-const RPM_ZONA_VERMELHA: float = 0.85
+const RPM_ZONA_VERMELHA: float = 0.7
 ## Empinada: o angulo da frente erguida e quanto ela dura, em segundos. Gira
 ## em torno do eixo traseiro, que e onde a moto apoia.
 const EMPINA_GRAUS: float = 38.0

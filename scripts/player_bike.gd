@@ -322,7 +322,8 @@ func _physics_process(delta: float) -> void:
 		_lado_queda,
 		lean_visual,
 		_giro_queda,
-		_freio
+		_freio,
+		_empina
 	)
 	# No ar e caida a roda nao esta no asfalto: o que desliza no tombo e a
 	# carenagem, e isso e faisca (V24), nao fumaca.

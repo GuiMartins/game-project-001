@@ -21,6 +21,10 @@ uniform int quadros = 11;
 uniform float rolagem = 0.0;
 uniform float desvio = 0.0;
 uniform float afunda = 0.0;
+// A empinada (0..1), vista de tras: com a frente no ar o corpo da moto sobe
+// em cima da roda traseira e o piloto se estica para tras. O atlas nao tem
+// quadro disso, entao o quad estica na vertical a partir do pe do pneu.
+uniform float empina = 0.0;
 // A cor do corredor. A camiseta e a bag das folhas sao vermelhas, e e nelas
 // que a cor entra, como no modelo 3D.
 uniform vec3 cor : source_color = vec3(0.82, 0.12, 0.10);
@@ -43,6 +47,7 @@ void vertex() {
 	// O vertice ja vem com o pe do pneu na origem (`center_offset`): girar em
 	// volta dela deixa a roda no asfalto.
 	vec2 p = VERTEX.xy;
+	p.y *= 1.0 + 0.22 * empina;
 	float c = cos(rolagem);
 	float s = sin(rolagem);
 	p = vec2(p.x * c + p.y * s, -p.x * s + p.y * c);

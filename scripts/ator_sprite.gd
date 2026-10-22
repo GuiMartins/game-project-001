@@ -131,7 +131,9 @@ func marcar_foco(sim: bool) -> void:
 ## `soco_fase` 0 armando, 1 esticado, 2 recolhendo, ou -1 sem soco. `ginga` e
 ## o que o corpo faz por cima da moto, do mesmo estado que posa o modelo 3D:
 ## rolagem em radianos (+ direita), deslize lateral e afundamento, em metros.
-func posar(inclinacao: float, soco_lado: int, soco_fase: int, ginga: Vector3) -> void:
+func posar(
+	inclinacao: float, soco_lado: int, soco_fase: int, ginga: Vector3, empina: float = 0.0
+) -> void:
 	if not _na_tela:
 		return
 	_curva = quadro_da_curva(rad_to_deg(inclinacao), _curva)
@@ -148,6 +150,7 @@ func posar(inclinacao: float, soco_lado: int, soco_fase: int, ginga: Vector3) ->
 	_material.set_shader_parameter("rolagem", inclinacao - desenhado + ginga.x)
 	_material.set_shader_parameter("desvio", ginga.y)
 	_material.set_shader_parameter("afunda", ginga.z * GINGA)
+	_material.set_shader_parameter("empina", empina)
 
 
 ## O quadro da curva para `graus` de inclinacao (+ direita), saindo de `atual`:

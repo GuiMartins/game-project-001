@@ -381,6 +381,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		tuning_panel.toggle()
 	elif event.is_action("debug_restart") and fluxo.tela == RaceFlow.Tela.CORRIDA:
 		_centraliza_a_moto()
+	elif event.is_action("debug_reiniciar_corrida") and fluxo.tela == RaceFlow.Tela.CORRIDA:
+		_restart()
 
 
 func _on_run_finished() -> void:
