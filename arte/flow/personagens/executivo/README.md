@@ -1,15 +1,34 @@
-# Executivo de terno — caminhada em produção
+# Executivo de terno — caminhada integrada
 
-Escopo limitado ao andar por pedido do Guilherme em 22/10/2026. Gerações encerradas por pedido dele após a expiração da segunda tentativa de 3/4 costas.
+Caminhada aprovada pelo Guilherme em 22/10/2026, com altura corrigida de 175 pixels (1,75 m) e pés na linha 196 em todos os 32 quadros. O atlas tem quatro vistas reais: frente, 3/4 frente, perfil direito e costas.
 
-## Material preservado
+## No jogo
 
-Turnaround, referências individuais, cinco vídeos rejeitados e quatro vistas aproveitáveis: frente, 3/4 frente, perfil direito e costas. Fontes e hashes em `personagem.json`; contatos em `conferencia/`. A prévia parcial usa quadros para inspeção e não é um atlas aprovado.
+`assets/sprites/pedestres/executivo_andando.png` e sua ficha entram no elenco de `PedestreSprite`, nas calçadas, travessias e testador. O shader espelha a esquerda e usa a própria vista traseira no ângulo de 3/4 costas, cuja geração expirou. Não foi gerada arte nova nem gasto crédito nesta integração.
 
-Falta uma caminhada de 3/4 costas sem pés cortados. Não foi criado atlas final nem alterado o elenco do jogo. Não há outras ações, fallback de outra pessoa ou geração pendente.
+O escopo continua sendo apenas andar: reações sem atlas mantêm um quadro do próprio executivo; no voo e no chão, esse quadro acompanha o giro e a posição do ator. Isso é uma representação provisória, não animação de susto/queda. Ele não é sorteado para desembarcar de carros. A moça de moletom mantém seu comportamento histórico.
 
-## Créditos e validação
+## Reprodução e evidências
 
-Teto autorizado: 175 créditos. Foram submetidas dez gerações de 7 créditos (70); uma expirou e anunciou reembolso de 7, resultando em 63 estimados. O saldo/reembolso final não foi auditado. Imagens foram informadas como gratuitas pelo Flow.
+```bash
+python3 tools/dev.py personagem montar arte/flow/personagens/executivo/personagem.json --animacao andando --saida assets/sprites/pedestres
+python3 tools/dev.py sprites-ver --sprite executivo_andando
+```
 
-`test`, `selftest` (14 verificações), `lint` e `personagem testar` (10 testes) passaram. A montagem bloqueou corretamente os vídeos com pés cortados. Três vídeos corrigidos passaram pelo recorte dos quadros de prévia; aprovação completa dos ciclos, espelhos e testador fica pendente junto da vista ausente.
+A ficha registra as fases selecionadas, quatro vistas e `altura_estavel_px: 175`. A estabilização é optativa e preserva proporções e pés; outras animações e personagens continuam usando escala constante por clipe. Fontes com membros cortados continuam rejeitadas. O recorte final usa alfa binário e remove franja verde das bordas após o redimensionamento.
+
+- `conferencia/andando-altura-estavel.gif`: prévia com altura corrigida aprovada pelo usuário.
+- `conferencia/andando-integrado.gif`: mesmos quadros do atlas integrado, com bordas limpas para o shader.
+- `conferencia/integrado-cena.png`: executivo no testador com câmera e escala do jogo.
+- `conferencia/integrado-playground.png`: caminhada na pista do playground.
+- Originais, hashes e tentativas rejeitadas em `personagem.json` e `originais/`.
+
+O movimento aprovado mantém suas fases originais; a análise automática ainda aponta abertura das pernas e transição entre alguns quadros. Os limites dos diagnósticos não foram afrouxados. Não se trata de personagem completo com cinco ações.
+
+## Créditos
+
+Teto autorizado: 175 créditos. Foram submetidas dez gerações de 7 créditos (70); uma expirou e anunciou reembolso de 7, resultando em 63 estimados. O reembolso final não foi auditado. Imagens foram informadas como gratuitas pelo Flow. Gerações encerradas a pedido do usuário.
+
+## Validação da integração
+
+358 testes unitários passaram, sem erros, falhas ou nós órfãos. O selftest passou nas 14 verificações, com todas as medidas dentro do baseline. Lint, 11 testes do montador e regressão visual diurna (`shots`, 19 quadros) passaram. Conferidos o atlas no catálogo, a cena e o playground; os 32 quadros têm 175 px de altura, pés em y=196 e alfa binário.

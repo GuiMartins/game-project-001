@@ -326,6 +326,41 @@ func test_pessoa_em_sprite_tem_folha_para_todos_os_estados() -> void:
 			)
 
 
+func test_caminhada_parcial_conserva_identidade_e_recupera_ancora_depois_da_queda() -> void:
+	var desenho: PedestreSprite = auto_free(PedestreSprite.new())
+	add_child(desenho)
+	desenho.visible = true
+	for avatar in PedestreSprite.APENAS_CAMINHADA:
+		for estado: int in Pessoa.Estado.values():
+			desenho.posar(estado, PI, 0.8, 0.5, 1.0, avatar)
+			var mat := desenho.material_override as ShaderMaterial
+			assert_object(mat.get_shader_parameter(&"atlas")).is_equal(
+				PedestreSprite.ANDANDO[avatar]
+			)
+			assert_int(int(mat.get_shader_parameter(&"linhas"))).is_equal(4)
+			assert_int(int(mat.get_shader_parameter(&"colunas"))).is_equal(8)
+		desenho.posar(Pessoa.Estado.CAIDA, 0.0, 1.0, 0.0, 0.0, avatar)
+		desenho.posar(Pessoa.Estado.ANDANDO, PI, 0.0, 0.0, 1.0, avatar)
+		assert_float((desenho.mesh as QuadMesh).center_offset.y).is_equal_approx(0.96, 0.001)
+		assert_float(desenho.position.y).is_equal(0.0)
+		(
+			assert_float(
+				float((desenho.material_override as ShaderMaterial).get_shader_parameter(&"giro"))
+			)
+			. is_equal(0.0)
+		)
+
+
+func test_quem_desembarca_nao_sorteia_personagem_com_apenas_caminhada() -> void:
+	var pessoa: Pessoa = auto_free(Pessoa.new())
+	add_child(pessoa)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20261022
+	for i in 100:
+		pessoa.sortear(rng, true)
+		assert_bool(pessoa.avatar in PedestreSprite.APENAS_CAMINHADA).is_false()
+
+
 func test_fiscal_ergue_um_braco_depois_outro_e_baixa_os_dois() -> void:
 	var pessoa: Pessoa = auto_free(Pessoa.new())
 	pessoa.cena_articulada = preload("res://assets/pedestres/fiscal.glb")

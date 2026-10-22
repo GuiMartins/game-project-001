@@ -81,6 +81,22 @@ class PersonagemTest(unittest.TestCase):
         celulas = p.recortar(imgs, list(range(8)), 0, p.ANIMACOES['andando'], 1.75)
         self.assertEqual(len({im.getbbox()[3] for im in celulas}), 1)
 
+    def test_altura_estavel_corrige_escala_e_preserva_pes(self):
+        imgs = self.frames()
+        im = Image.new('RGB', (400, 300), '#00ff00')
+        ImageDraw.Draw(im).rectangle((175, 40, 225, 225), fill='#204090')
+        im.save(imgs[2])
+        cfg = dict(p.ANIMACOES['andando'], altura_estavel_px=175)
+        cells = p.recortar(imgs, list(range(8)), 0, cfg, 1.75)
+        self.assertEqual({im.getbbox()[3] - im.getbbox()[1] for im in cells}, {175})
+        self.assertEqual({im.getbbox()[3] for im in cells}, {196})
+        # Normalizacao nao transforma membros fora do enquadramento em fonte valida.
+        im = Image.new('RGB', (400, 300), '#00ff00')
+        ImageDraw.Draw(im).rectangle((175, 40, 225, 299), fill='#204090')
+        im.save(imgs[2])
+        with self.assertRaisesRegex(ValueError, 'cortado'):
+            p.recortar(imgs, list(range(8)), 0, cfg, 1.75)
+
     def test_voo_centra_corpo_e_caida_cabe_deitada(self):
         imgs = self.frames()
         celulas = p.recortar(imgs, list(range(8)), 0, p.ANIMACOES['voando'], 1.75)

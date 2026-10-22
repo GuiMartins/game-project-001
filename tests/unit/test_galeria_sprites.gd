@@ -23,7 +23,7 @@ func _visiveis(galeria: GaleriaSprites) -> int:
 
 func test_ha_uma_miniatura_por_folha() -> void:
 	var galeria := _galeria()
-	assert_int(galeria.find_children("*", "Button", true, false).size()).is_equal(27)
+	assert_int(galeria.find_children("*", "Button", true, false).size()).is_equal(_itens.size())
 
 
 func test_mostrar_esconde_o_resto_e_a_pessoa_sem_folha() -> void:
