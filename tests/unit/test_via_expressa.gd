@@ -125,13 +125,18 @@ func test_metade_da_pista_e_mao_contraria() -> void:
 
 func test_muro_e_mureta_seguram_a_moto() -> void:
 	# Do acostamento para fora, na altura da moto, tem parede dos dois lados
-	# no meio de cada expressa.
+	# no meio de cada expressa. O lado fechado tem as faixas a mais (V37): o
+	# muro dele esta `EXPRESSA_EXTRA` mais para fora.
 	var espaco := _track.get_world_3d().direct_space_state
 	for e in _track.expressas:
 		var o := (e.x + e.y) * 0.5
 		for side: float in [-1.0, 1.0]:
 			var de := _track.point(o, side * RoadTrack.half_width()) + Vector3.UP * 0.5
-			var ate := _track.point(o, side * (RoadTrack.sidewalk_limit() + 3.0)) + Vector3.UP * 0.5
+			var extra := RoadTrack.EXPRESSA_EXTRA if side == -e.z else 0.0
+			var ate := (
+				_track.point(o, side * (RoadTrack.sidewalk_limit() + extra + 3.0))
+				+ Vector3.UP * 0.5
+			)
 			var raio := PhysicsRayQueryParameters3D.create(de, ate, Layers.WORLD)
 			await get_tree().physics_frame
 			assert_bool(espaco.intersect_ray(raio).is_empty()).is_false()

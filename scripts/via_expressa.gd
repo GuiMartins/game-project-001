@@ -136,10 +136,17 @@ static func montar(
 
 	var edge := RoadTrack.sidewalk_limit()
 	var fechado := -lado
-	# Lado fechado: grama, muro alto, alambrado.
-	_chao(chao["acostamento"], track, de, ate, fechado, RoadTrack.half_width(), edge)
-	_chao(chao["grama"], track, de, ate, fechado, edge, edge + MURO_ALTO.x)
-	var x_alto := edge + MURO_ALTO.x
+	# Lado fechado: asfalto a mais (V37), acostamento, grama, muro alto,
+	# alambrado. O acostamento, a grama e o muro ficam `EXPRESSA_EXTRA` mais
+	# para fora no trecho todo; so o asfalto afunila nas pontas, por cima da
+	# calcada de sempre.
+	var extra := RoadTrack.EXPRESSA_EXTRA
+	_alarga(chao["asfalto"], track, de, ate, fechado)
+	_chao(
+		chao["acostamento"], track, de, ate, fechado, RoadTrack.half_width() + extra, edge + extra
+	)
+	_chao(chao["grama"], track, de, ate, fechado, edge + extra, edge + extra + MURO_ALTO.x)
+	var x_alto := edge + extra + MURO_ALTO.x
 	_muro(mural, concreto, corpo, track, de, ate, fechado, x_alto, MURO_ALTO, rng)
 	_cerca(tela, ferro, track, de, ate, fechado, x_alto + MURO_ALTO.z * 0.5, MURO_ALTO.y)
 	# Lado aberto: mureta, canteiro dos pilares e muro baixo. A mao contraria
@@ -632,6 +639,34 @@ static func _chao(
 			uvs,
 			Vector3.UP
 		)
+		o0 = o1
+
+
+## O asfalto das faixas a mais do lado `lado`: da pista de sempre ate o
+## `RoadTrack.alargamento` de cada ponto, em trapezios que afunilam nas pontas.
+## 1,5 cm acima do chao: sobre a calcada da pista, e abaixo da tinta (3 cm).
+static func _alarga(st: SurfaceTool, track: RoadTrack, de: float, ate: float, lado: float) -> void:
+	var hw := RoadTrack.half_width()
+	var lift := 0.015
+	var o0 := de
+	while o0 < ate - 0.01:
+		var o1 := minf(o0 + 2.0, ate)
+		var e0 := RoadTrack.alargamento(o0, de, ate)
+		var e1 := RoadTrack.alargamento(o1, de, ate)
+		if e0 > 0.0 or e1 > 0.0:
+			var cantos: Array[Vector3] = [
+				_p(track, o0, hw * lado, lift),
+				_p(track, o1, hw * lado, lift),
+				_p(track, o1, (hw + e1) * lado, lift),
+				_p(track, o0, (hw + e0) * lado, lift),
+			]
+			var uvs: Array[Vector2] = [
+				Vector2(hw / RoadTrack.LANE_WIDTH, o0 / RoadTrack.ASFALTO_TILE),
+				Vector2(hw / RoadTrack.LANE_WIDTH, o1 / RoadTrack.ASFALTO_TILE),
+				Vector2((hw + e1) / RoadTrack.LANE_WIDTH, o1 / RoadTrack.ASFALTO_TILE),
+				Vector2((hw + e0) / RoadTrack.LANE_WIDTH, o0 / RoadTrack.ASFALTO_TILE),
+			]
+			_quad(st, cantos, uvs, Vector3.UP)
 		o0 = o1
 
 
