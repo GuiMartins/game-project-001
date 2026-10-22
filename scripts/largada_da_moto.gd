@@ -4,6 +4,8 @@ extends RefCounted
 ## cor faz quando o sinal abre. Moram aqui porque a `PlayerBike` e a `Hud`
 ## precisam concordar, e a barra nao pode mentir sobre a faixa.
 
+enum Resultado { NORMAL, EMPINA, PATINA }
+
 ## Giro do motor na contagem (`rpm_largada`, 0..1). Sobe com o gas aberto e
 ## cai sem ele: em ~1,4 s de gas cheio chega ao teto, entao segurar o
 ## acelerador a contagem inteira e o jeito de errar. A faixa na hora do sinal
@@ -29,3 +31,39 @@ const PATINA_RABEADA: float = 0.9
 const PATINA_RABEADA_HZ: float = 7.0
 ## m/s de derrapada que a roda girando em falso mostra a patina cheia.
 const PATINA_FUMACA: float = 7.0
+
+## Chance de um rival empinar, e a base e a parte por agressividade da chance
+## de patinar: quem e mais agressivo abusa do gas, e erra mais.
+const RIVAL_CHANCE_DE_EMPINAR: float = 0.3
+const RIVAL_CHANCE_DE_PATINAR: float = 0.15
+const RIVAL_PATINAR_POR_AGRESSIVIDADE: float = 0.3
+
+
+## O que o rival faz no sinal, de um sorteio `sorte` em 0..1 e da agressividade
+## dele. O jogador nao sorteia: o resultado dele e a faixa do medidor.
+static func resultado_do_rival(sorte: float, agressividade: float) -> Resultado:
+	var patina := RIVAL_CHANCE_DE_PATINAR + RIVAL_PATINAR_POR_AGRESSIVIDADE * agressividade
+	if sorte < patina:
+		return Resultado.PATINA
+	if sorte < patina + RIVAL_CHANCE_DE_EMPINAR:
+		return Resultado.EMPINA
+	return Resultado.NORMAL
+
+
+## Poe `visual` inclinado de `rolagem` e, com `empina` (0..1), erguido em torno
+## do eixo traseiro, que e onde a moto apoia. `meia_altura` e metade da altura
+## da capsula: o `visual` mora no chao, abaixo do centro dela.
+static func posa_o_visual(
+	visual: Node3D, empina: float, rolagem: float, meia_altura: float, eixo_traseiro: float
+) -> void:
+	var base := Basis(Vector3.BACK, rolagem)
+	if empina <= 0.0:
+		visual.basis = base
+		visual.position = Vector3(0.0, -meia_altura, 0.0)
+		return
+	# +X ergue o nariz (-Z).
+	var erguida := Basis(Vector3.RIGHT, deg_to_rad(EMPINA_GRAUS) * smoothstep(0.0, 1.0, empina))
+	visual.basis = erguida * base
+	visual.position = (
+		Vector3(0.0, -meia_altura, eixo_traseiro) - erguida * Vector3(0.0, 0.0, eixo_traseiro)
+	)

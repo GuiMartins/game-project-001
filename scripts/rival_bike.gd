@@ -63,7 +63,15 @@ var offset: float = 0.0
 var lateral: float = 0.0
 var speed: float = 0.0
 ## Segurado no grid durante a contagem: acelera o motor, mas nao sai do lugar.
-var largada_travada: bool = false
+## O que ele faz no sinal e sorteado ao travar, para a fumaca da patinada
+## aparecer ja na contagem.
+var largada_travada: bool = false:
+	set(valor):
+		if valor:
+			_largada = LargadaDaMoto.resultado_do_rival(_rng.randf(), _aggression)
+		elif largada_travada:
+			_solta_o_grid()
+		largada_travada = valor
 var state: State = State.RACING:
 	set(valor):
 		state = valor
@@ -96,6 +104,12 @@ var _aggression: float = 0.5
 ## Segundos que faltam pro soco do jogador parar de responder pela queda.
 var _credito_jogador: float = 0.0
 var _rng := RandomNumberGenerator.new()
+var _largada: LargadaDaMoto.Resultado = LargadaDaMoto.Resultado.NORMAL
+## Como no jogador: segundos de empinada que faltam, a frente erguida (0..1) e
+## a tracao perdida (0..1).
+var _empina_t: float = 0.0
+var _empina: float = 0.0
+var _patina: float = 0.0
 var _visual: Node3D
 var _ator: Entregador
 var _derrapagem: Derrapagem
@@ -208,6 +222,9 @@ func setup(
 func reset_race(at_offset: float, at_lateral: float, a_finish_offset: float) -> void:
 	offset = at_offset
 	lateral = at_lateral
+	_empina_t = 0.0
+	_empina = 0.0
+	_patina = 0.0
 	_target_lateral = at_lateral
 	finish_offset = a_finish_offset
 	finish_time = -1.0
@@ -239,6 +256,7 @@ func _physics_process(delta: float) -> void:
 
 	_acelerador = 0.0
 	_freio = 0.0
+	_passo_da_largada(delta)
 	_update_hitbox(delta)
 	_punch_cooldown = maxf(_punch_cooldown - delta, 0.0)
 	# Corre em qualquer estado: o rival socado passa o cambaleio inteiro sem
@@ -287,10 +305,33 @@ func _physics_process(delta: float) -> void:
 	)
 	# Parametrico na curva, o rival nao escorrega: a roda vai sempre para onde
 	# a moto aponta.
-	_derrapagem.atualizar(delta, 0.0)
+	# Parado na contagem o vermelho ja gira a roda em falso; depois do sinal a
+	# fumaca dura enquanto a tracao volta.
+	var fumaca := _patina
+	if largada_travada and _largada == LargadaDaMoto.Resultado.PATINA:
+		fumaca = 1.0
+	_derrapagem.atualizar(delta, fumaca * LargadaDaMoto.PATINA_FUMACA)
 	_chama_do_nitro.atualizar(delta, boosting and state != State.DOWN)
 	var caido := state == State.DOWN
 	_estrago.atualizar(delta, caido, speed if caido else 0.0)
+
+
+## O sinal abriu: aplica o resultado sorteado ao travar.
+func _solta_o_grid() -> void:
+	match _largada:
+		LargadaDaMoto.Resultado.EMPINA:
+			_empina_t = LargadaDaMoto.EMPINA_DURA
+		LargadaDaMoto.Resultado.PATINA:
+			_patina = 1.0
+
+
+## Acaba sozinha, e uma queda ou pancada derruba a empinada na hora.
+func _passo_da_largada(delta: float) -> void:
+	if state != State.RACING:
+		_empina_t = 0.0
+	_empina_t = maxf(_empina_t - delta, 0.0)
+	_empina = move_toward(_empina, 1.0 if _empina_t > 0.0 else 0.0, delta / 0.35)
+	_patina = move_toward(_patina, 0.0, LargadaDaMoto.PATINA_RECUPERA * delta)
 
 
 func _drive(delta: float) -> void:
@@ -328,7 +369,9 @@ func _drive(delta: float) -> void:
 	var falta := target_speed - speed
 	_acelerador = 1.0 if falta > 0.5 else (0.4 if falta > -0.5 else 0.0)
 	_freio = clampf(-falta / 3.0, 0.0, 1.0)
-	speed = move_toward(speed, target_speed, 18.0 * delta)
+	var forca := 18.0 + LargadaDaMoto.EMPINA_ACEL * _empina
+	forca *= 1.0 - LargadaDaMoto.PATINA_PERDA_DE_FORCA * _patina
+	speed = move_toward(speed, target_speed, forca * delta)
 
 	# Pra onde ir depende da intencao, mas o filtro do transito vale pra todas:
 	# rival que entra debaixo de um carro parado pra brigar nao e agressivo, e
@@ -500,7 +543,9 @@ func _apply_transform() -> void:
 	t.origin += t.basis.y * (SIZE.y * 0.5) + Vector3.UP * _altura_rampa
 	global_transform = t
 	if state != State.DOWN:
-		_visual.rotation = Vector3(0.0, 0.0, -_lean)
+		LargadaDaMoto.posa_o_visual(
+			_visual, _empina, -_lean, SIZE.y * 0.5, Derrapagem.EIXO_TRASEIRO
+		)
 
 
 func _update_hitbox(delta: float) -> void:

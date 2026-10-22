@@ -586,18 +586,9 @@ func _integrate(delta: float) -> void:
 
 
 func _posa_o_visual() -> void:
-	var base := Basis(Vector3.BACK, -lean_visual)
-	if _empina <= 0.0:
-		_visual.basis = base
-		_visual.position = Vector3(0.0, -SIZE.y * 0.5, 0.0)
-		return
-	# +X ergue o nariz (-Z); o pivo e o eixo traseiro, a altura do chao.
-	var eixo := Vector3(0.0, SIZE.y * -0.5, Derrapagem.EIXO_TRASEIRO)
-	var empinada := Basis(
-		Vector3.RIGHT, deg_to_rad(LargadaDaMoto.EMPINA_GRAUS) * smoothstep(0.0, 1.0, _empina)
+	LargadaDaMoto.posa_o_visual(
+		_visual, _empina, -lean_visual, SIZE.y * 0.5, Derrapagem.EIXO_TRASEIRO
 	)
-	_visual.basis = empinada * base
-	_visual.position = eixo - empinada * Vector3(0.0, 0.0, Derrapagem.EIXO_TRASEIRO)
 
 
 ## --- Impacto --------------------------------------------------------------
