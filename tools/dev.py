@@ -983,6 +983,23 @@ def cmd_sprites_props(_: argparse.Namespace) -> int:
     return _import_antes(binary)
 
 
+def cmd_recortar(args: argparse.Namespace) -> int:
+    """Recorta as folhas do Flow pela ficha delas (`arte/flow/fichas/<nome>.json`).
+
+    Sem nome recorta todas. Folha nova entra com uma ficha, e nao com um script;
+    ver `arte/recortar.gd`. Roda no Godot, pelo mesmo motivo do `sprites-pedestres`.
+    """
+    binary = require_godot(godot_version())
+    code = _import_antes(binary)
+    if code != 0:
+        return code
+    code = _godot(binary, "--headless", "--script", "res://arte/recortar.gd",
+                  *(["--", *args.fichas] if args.fichas else []), vigia_erros=True)
+    if code != 0:
+        return code
+    return _import_antes(binary)
+
+
 def cmd_personagem(args: argparse.Namespace) -> int:
     """O fluxo por video usa um ambiente isolado, sem depender do Python da maquina."""
     ambiente = DEV_DIR / "venv-flow"
@@ -1160,6 +1177,8 @@ def main() -> int:
     p_boneco.add_argument("alvo", nargs="?", default="pessoa", choices=(*BONECOS, "tudo"),
                           help="o que posar (padrao: pessoa)")
     sub.add_parser("sprites-pedestres", help="recorta as folhas de pedestre do Flow em atlas por pessoa")
+    p_recortar = sub.add_parser("recortar", help="recorta as folhas do Flow pela ficha (arte/flow/fichas/)")
+    p_recortar.add_argument("fichas", nargs="*", metavar="ficha", help="nome da ficha (padrao: todas)")
     sub.add_parser("sprites-props", help="recorta os props do Flow (arvore, poste, placa) em sprites com ancora")
     sub.add_parser("sprites", help="recorta as folhas do Google Flow no atlas do ator")
     p_personagem = sub.add_parser("personagem", help="prepara, inspeciona e monta NPCs por video; ver docs/PERSONAGENS.md")
@@ -1199,6 +1218,7 @@ def main() -> int:
         "prova": cmd_prova,
         "boneco": cmd_boneco,
         "sprites-pedestres": cmd_sprites_pedestres,
+        "recortar": cmd_recortar,
         "sprites-props": cmd_sprites_props,
         "sprites": cmd_sprites,
         "personagem": cmd_personagem,
