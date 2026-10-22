@@ -337,7 +337,7 @@ func test_caminhada_parcial_conserva_identidade_e_recupera_ancora_depois_da_qued
 			assert_object(mat.get_shader_parameter(&"atlas")).is_equal(
 				PedestreSprite.ANDANDO[avatar]
 			)
-			assert_int(int(mat.get_shader_parameter(&"linhas"))).is_equal(4)
+			assert_int(int(mat.get_shader_parameter(&"linhas"))).is_equal(5)
 			assert_int(int(mat.get_shader_parameter(&"colunas"))).is_equal(8)
 		desenho.posar(Pessoa.Estado.CAIDA, 0.0, 1.0, 0.0, 0.0, avatar)
 		desenho.posar(Pessoa.Estado.ANDANDO, PI, 0.0, 0.0, 1.0, avatar)

@@ -8,8 +8,8 @@
     "modelo_imagem": "Nano Banana 2.1",
     "modelo_video": "Omni 1.1 Flash",
     "orcamento_creditos": 175,
-    "creditos_submetidos": 70,
-    "creditos_usados_estimados": 63,
+    "creditos_submetidos": 77,
+    "creditos_usados_estimados": 70,
     "reembolso_anunciado": 7
   },
   "turnaround": {
@@ -115,6 +115,38 @@
           "aprovado": true
         },
         {
+          "vista": "tres_quartos_costas",
+          "arquivo": "originais/andando_tres_quartos_costas.mp4",
+          "prompt": "prompts/andando_tres_quartos_costas.txt",
+          "url": "https://flow.google.com/project/5b7e7aea-5b10-46f3-b4f2-b66a09ed8e32/edit/d8ea64ee-6db6-48a5-ab06-334a75b5247d",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-22",
+            "resolucao": "1280x720",
+            "fps": 24,
+            "duracao_s": 4,
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "seed": "nao exposta",
+            "creditos": 7,
+            "referencia": "originais/ref_tres_quartos_costas_zoomout.jpg",
+            "tentativa": 3
+          },
+          "sha256": "88b240622ece4b098b44ee794d2ab4fc17e581459f2bba7c06dee19fa90e52dd",
+          "quadros": [
+            24,
+            28,
+            32,
+            36,
+            40,
+            44,
+            48,
+            52
+          ],
+          "quadro_escala": 0,
+          "aprovado": true
+        },
+        {
           "vista": "costas",
           "arquivo": "originais/andando_costas.mp4",
           "prompt": "prompts/andando_costas.txt",
@@ -150,10 +182,11 @@
         "frente",
         "tres_quartos_frente",
         "lado",
+        "tres_quartos_costas",
         "costas"
       ],
       "altura_estavel_px": 175,
-      "atlas_sha256": "076be926458eb18e4d99466402c0961aa20bf88b9c33c33549b8f1abc3898c69"
+      "atlas_sha256": "c1aea69c96c897fce008deb751cb9f29ef6cf0685cb625995cecce8c78c8d4a8"
     }
   },
   "tentativas": [
@@ -315,7 +348,8 @@
       "modelo": "Omni 1.1 Flash",
       "creditos": 7,
       "reembolso_anunciado": true,
-      "motivo": "A geracao expirou no Flow; usuario pediu parar sem nova tentativa."
+      "motivo": "A geracao expirou no Flow; usuario pediu parar sem nova tentativa.",
+      "prompt": "prompts/andando_tres_quartos_costas-tentativa-02.txt"
     }
   ],
   "referencias_adicionais": [
@@ -384,5 +418,5 @@
     }
   ],
   "escopo": "Somente andando, conforme pedido explicito em 22/10/2026. Sem integracao de outras acoes ou fallback de identidade.",
-  "estado": "Caminhada de quatro vistas com altura estabilizada aprovada e integrada no elenco. Reacoes sem atlas mantem quadro do proprio personagem."
+  "estado": "Caminhada integrada com cinco vistas reais e altura estabilizada em 175 px. Somente andar; reacoes sem atlas conservam quadro do proprio personagem."
 }
