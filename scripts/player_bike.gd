@@ -81,6 +81,18 @@ var airborne: bool = false
 ## Quanto a roda escorrega de lado, em m/s: a diferenca entre para onde a moto
 ## aponta e para onde ela vai (`_integrate`). E o que acende a fumaca.
 var derrapada: float = 0.0
+## Moto segurada no grid durante a contagem: o motor responde ao gas e a roda
+## patina, mas ela nao sai do lugar. O mundo inteiro segue rodando.
+var largada_travada: bool = false:
+	set(valor):
+		if largada_travada and not valor:
+			_solta_o_grid()
+		largada_travada = valor
+		if valor:
+			rpm_largada = 0.0
+			_empina_t = 0.0
+## 0..1, giro do motor na contagem. Quem desenha a faixa e a Hud.
+var rpm_largada: float = 0.0
 ## True quando a moto aponta pro lado contrario da pista. Sem aviso, o jogador
 ## capota, se levanta virado e passa dez segundos sem entender o que houve.
 var wrong_way: bool = false
@@ -94,6 +106,13 @@ var slope_enabled: bool = true
 var find_clear_lateral: Callable = Callable()
 
 var _vertical_speed: float = 0.0
+## 0..1, o quanto a roda traseira perdeu tracao. Sobe com o gas aberto na
+## contagem e, solto o grid, decai sozinho: quem acelerou tudo sem parar larga
+## rabeando, quem esperou com o gas fechado larga limpo.
+var _patina: float = 0.0
+## Segundos que faltam de empinada, e o quanto a frente esta erguida (0..1).
+var _empina_t: float = 0.0
+var _empina: float = 0.0
 ## Velocidade angular da inclinacao, rad/s: a metade da mola que nao aparece.
 var _lean_vel: float = 0.0
 ## O pedido de inclinacao depois da rampa do teclado, -1 a 1. So o visual le.
@@ -277,7 +296,13 @@ func _physics_process(delta: float) -> void:
 				)
 			var throttle := Input.get_action_strength("ride_throttle")
 			var brake := Input.get_action_strength("ride_brake")
-			_ride(delta, steer, throttle, brake)
+			_passo_da_empinada(delta, brake)
+			if largada_travada:
+				_segura_no_grid(delta, throttle)
+			else:
+				# Decai devagar: a tracao volta enquanto a moto ja anda.
+				_patina = move_toward(_patina, 0.0, LargadaDaMoto.PATINA_RECUPERA * delta)
+				_ride(delta, steer, throttle, brake)
 			_try_punch()
 			_acelerador = throttle
 			_freio = brake
@@ -297,7 +322,8 @@ func _physics_process(delta: float) -> void:
 		_lado_queda,
 		lean_visual,
 		_giro_queda,
-		_freio
+		_freio,
+		_empina
 	)
 	# No ar e caida a roda nao esta no asfalto: o que desliza no tombo e a
 	# carenagem, e isso e faisca (V24), nao fumaca.
@@ -328,6 +354,43 @@ func _ride(delta: float, steer: float, throttle: float, brake: float) -> void:
 	_integrate(delta)
 	_resolve_collisions()
 	_clamp_to_road()
+
+
+## Na contagem a moto fica parada, mas o motor gira: o gas sobe o giro, soltar
+## desce, e a faixa em que ele estiver no sinal decide a largada
+## (`_solta_o_grid`). Fumaca so na faixa vermelha, onde a roda ja patina.
+func _segura_no_grid(delta: float, throttle: float) -> void:
+	var alvo := 1.0 if throttle > 0.1 else 0.0
+	var passo := (LargadaDaMoto.RPM_SOBE if alvo > 0.0 else LargadaDaMoto.RPM_DESCE) * delta
+	rpm_largada = move_toward(rpm_largada, alvo, passo)
+	speed = 0.0
+	velocity = Vector3.ZERO
+	boosting = false
+	var vermelho := clampf(
+		(rpm_largada - LargadaDaMoto.RPM_ZONA_VERMELHA) / (1.0 - LargadaDaMoto.RPM_ZONA_VERMELHA),
+		0.0,
+		1.0
+	)
+	derrapada = vermelho * LargadaDaMoto.PATINA_FUMACA
+
+
+## O sinal abriu. Amarelo nao faz nada; verde levanta a frente; vermelho solta
+## a traseira. Quanto mais fundo na faixa, mais forte.
+func _solta_o_grid() -> void:
+	if rpm_largada >= LargadaDaMoto.RPM_ZONA_VERMELHA:
+		_patina = remap(rpm_largada, LargadaDaMoto.RPM_ZONA_VERMELHA, 1.0, 0.7, 1.0)
+	elif rpm_largada >= LargadaDaMoto.RPM_ZONA_VERDE:
+		_empina_t = LargadaDaMoto.EMPINA_DURA
+	rpm_largada = 0.0
+
+
+## Levanta e abaixa a frente em torno do eixo traseiro. Acaba sozinha, e o
+## freio ou uma queda a derrubam na hora: ninguem freia empinado.
+func _passo_da_empinada(delta: float, freio: float) -> void:
+	if state != State.RIDING or freio > 0.3:
+		_empina_t = 0.0
+	_empina_t = maxf(_empina_t - delta, 0.0)
+	_empina = move_toward(_empina, 1.0 if _empina_t > 0.0 else 0.0, delta / 0.35)
 
 
 func _update_lean(delta: float, steer: float) -> void:
@@ -405,6 +468,8 @@ func _update_speed(delta: float, throttle: float, brake: float) -> void:
 		var headroom := clampf(1.0 - speed / maxf(top, 0.01), 0.0, 1.0)
 		var power := tuning.accel * pow(headroom, tuning.accel_falloff)
 		power += FisicaDaMoto.aceleracao_do_nitro(tuning, boosting)
+		power += LargadaDaMoto.EMPINA_ACEL * _empina
+		power *= 1.0 - LargadaDaMoto.PATINA_PERDA_DE_FORCA * _patina
 		speed += power * throttle * delta
 	else:
 		speed -= (tuning.engine_brake + tuning.drag * speed * speed) * delta
@@ -468,6 +533,15 @@ func _update_heading(delta: float) -> void:
 	# esquerda. Com `forward = (sin h, 0, cos h)`, dforward/dh = -right.
 	# De re o guidao inverte: a traseira vai para onde a moto olha.
 	heading -= deg_to_rad(tuning.turn_rate) * lean_frac * agility * delta * (-1.0 if em_re else 1.0)
+	# A traseira sem tracao varre de um lado ao outro, e some com a patina.
+	if _patina > 0.0:
+		var tempo := Time.get_ticks_msec() * 0.001
+		heading += (
+			sin(tempo * LargadaDaMoto.PATINA_RABEADA_HZ * TAU)
+			* LargadaDaMoto.PATINA_RABEADA
+			* _patina
+			* delta
+		)
 
 	var road_fwd := -track.sample_basis(track_offset).z
 	var road_heading := atan2(road_fwd.x, road_fwd.z)
@@ -476,7 +550,7 @@ func _update_heading(delta: float) -> void:
 
 	# Assistencia de alinhamento: puxa a moto pro sentido da pista.
 	if tuning.align_assist > 0.0 and speed > 1.0 and not em_re:
-		heading += diff * (1.0 - exp(-tuning.align_assist * delta))
+		heading += diff * (1.0 - exp(-tuning.align_assist * delta)) * (1.0 - 0.5 * _patina)
 
 	# O corpo fisico gira junto: a capsula de colisao e as hitboxes de soco sao
 	# filhas dele. Sem isso a moto colide como um bloco alinhado ao mundo e o
@@ -494,7 +568,11 @@ func _integrate(delta: float) -> void:
 	# So o de lado: o de frente e a moto ganhando embalo, nao escorregando.
 	var escorrega := desired - horizontal
 	derrapada = (escorrega - forward * escorrega.dot(forward)).length()
-	horizontal = horizontal.lerp(desired, 1.0 - exp(-tuning.grip * delta))
+	var grip := tuning.grip * (1.0 - LargadaDaMoto.PATINA_PERDA_DE_GRIP * _patina)
+	horizontal = horizontal.lerp(desired, 1.0 - exp(-grip * delta))
+	derrapada = maxf(
+		derrapada, _patina * LargadaDaMoto.PATINA_FUMACA * clampf(speed / 6.0, 0.0, 1.0)
+	)
 
 	var projected := track.project(global_position, track_offset)
 	track_offset = projected.x
@@ -533,7 +611,13 @@ func _integrate(delta: float) -> void:
 	move_and_slide()
 	velocity.y = 0.0
 
-	_visual.rotation = Vector3(0.0, 0.0, -lean_visual)
+	_posa_o_visual()
+
+
+func _posa_o_visual() -> void:
+	LargadaDaMoto.posa_o_visual(
+		_visual, _empina, -lean_visual, SIZE.y * 0.5, Derrapagem.EIXO_TRASEIRO
+	)
 
 
 ## --- Impacto --------------------------------------------------------------
@@ -739,6 +823,9 @@ func _clamp_to_road() -> void:
 func _crash(reason: String, normal: Vector3 = Vector3.ZERO, chegada: float = 0.0) -> void:
 	state = State.CRASHED
 	state_timer = tuning.crash_recover_time
+	_empina_t = 0.0
+	_empina = 0.0
+	_posa_o_visual()
 	speed = 0.0
 	adrenaline = 0.0
 
@@ -869,6 +956,7 @@ func _update_hitboxes(delta: float) -> void:
 
 ## Recoloca a moto na pista, parada e alinhada. Usado no respawn e no banco.
 func place_on_track(at_offset: float, at_lateral: float, at_speed: float) -> void:
+	_patina = 0.0
 	track_offset = clampf(at_offset, 0.0, track.length)
 	track_lateral = at_lateral
 	var t := track.transform_at(track_offset, track_lateral)

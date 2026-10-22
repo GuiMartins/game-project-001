@@ -25,6 +25,7 @@ const ACTIONS: Dictionary = {
 	# 1/2/3 pelo mesmo motivo do macOS.
 	"tela_cheia": [KEY_F11, KEY_4],
 	"debug_restart": [KEY_R],
+	"debug_reiniciar_corrida": [KEY_T],
 }
 
 const JOY_ACTIONS: Dictionary = {
