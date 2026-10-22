@@ -82,8 +82,6 @@ const CURVA_LIMIAR: float = 0.2
 const CURVA_AVISO: float = 50.0
 ## Quanto antes do semaforo suspenso fica o portico da placa verde.
 const PORTICO_ANTES: float = 30.0
-## Entre uma palmeira e a do lado, no grupo.
-const PALMEIRA_PASSO: float = 4.0
 ## A via expressa (V11b): quantas por corrida, de que tamanho, e depois de qual
 ## corredor (contando do zero) cada uma entra. Duas de 320 a 480 m somam uns
 ## 800 m aos 3,2 km da avenida, uns 25 s a mais de corrida a 120 km/h: o
@@ -532,21 +530,23 @@ func _monta_faixa_de_servico(
 		(RoadTrack.half_width() + RoadTrack.SHOULDER + RoadTrack.FAIXA_SERVICO * 0.5) * side
 	)
 	var o := rua.randf_range(20.0, 60.0)
+	var humor := HumorDaFaixa.new()
 	while o < track.length - 20.0:
+		humor.avanca(o, rua)
 		var sorteio := rua.randf()
-		var quantas := rua.randi_range(2, 3)
 		var para_a_pista := track.sample_basis(o).x * -side
 		var ao_longo := -track.sample_basis(o).z
-		if Cidade.na_boca(cruzamentos, o, side) or _perto_de_expressa(o):
+		var arvore := sorteio < ARVORE_COPA + PALMEIRAS
+		if (
+			Cidade.na_boca(cruzamentos, o, side)
+			or _perto_de_expressa(o)
+			or (humor.deserto and arvore)
+		):
 			pass
 		elif sorteio < ARVORE_COPA:
 			props.add_child(Arvore.criar(Arvore.Tipo.COPA, track.point(o, lateral), para_a_pista))
-		elif sorteio < ARVORE_COPA + PALMEIRAS:
-			for i in quantas:
-				var aqui := o + i * PALMEIRA_PASSO
-				if not Cidade.na_boca(cruzamentos, aqui, side):
-					var pe := track.point(aqui, lateral)
-					props.add_child(Arvore.criar(Arvore.Tipo.PALMEIRA, pe, para_a_pista))
+		elif arvore:
+			Arvore.grupo_de_palmeiras(track, o, lateral, side, cruzamentos, rua, props)
 		elif sorteio < ARVORE_COPA + PALMEIRAS + CACAMBA:
 			var tipo := Mobiliario.Tipo.CACAMBA
 			props.add_child(Mobiliario.criar(tipo, track.point(o, lateral), para_a_pista))
@@ -554,7 +554,7 @@ func _monta_faixa_de_servico(
 			# O mupi encara quem vem: a foto acesa e para o transito ler.
 			var tipo := Mobiliario.Tipo.MUPI
 			props.add_child(Mobiliario.criar(tipo, track.point(o, lateral), -ao_longo))
-		o += rua.randf_range(SERVICO_PASSO.x, SERVICO_PASSO.y)
+		o += humor.passo(rua.randf_range(SERVICO_PASSO.x, SERVICO_PASSO.y))
 
 
 ## O losango amarelo antes de cada curva (V17), do lado direito, encarando

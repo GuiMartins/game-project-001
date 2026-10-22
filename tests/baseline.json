@@ -28,7 +28,7 @@
 		"corrida_pancadas_tomadas": 0.0,
 		"corrida_posicao": 6.0,
 		"corrida_quedas": 1.0,
-		"corrida_raspadas": 19.0,
+		"corrida_raspadas": 15.0,
 		"corrida_ritmo_lider_kmh": 113.285130536714,
 		"corrida_rivais_caidos": 0.0,
 		"corrida_rivais_derrubados": 0.0,
@@ -46,8 +46,10 @@
 	},
 	"valores_por_sistema": {
 		"linux": {
-			"corrida_atras_do_lider_m": 225.994678977517,
-			"corrida_distancia_m": 1216.59399414062
+			"corrida_atras_do_lider_m": 120.508238942161,
+			"corrida_distancia_m": 1321.45727539062,
+			"corrida_pancadas_tomadas": 1.0,
+			"corrida_raspadas": 19.0
 		}
 	}
 }

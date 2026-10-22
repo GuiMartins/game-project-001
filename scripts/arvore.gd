@@ -20,6 +20,12 @@ const PASTA: String = "res://assets/sprites/props/"
 ## qualquer cabeca, e bater em folha seria parede invisivel.
 const COLISOR := Vector3(0.5, 3.0, 0.5)
 
+## Palmeiras do grupo: passo sorteado a cada uma (fileira de compasso nao
+## existe), quantas por grupo e quanto fogem do eixo da faixa de servico.
+const PALMEIRA_PASSO := Vector2(1.5, 6.0)
+const PALMEIRA_GRUPO := Vector2i(1, 7)
+const PALMEIRA_FOLGA: float = 0.5
+
 static var _fichas: Array[Dictionary] = []
 static var _texturas: Array[Texture2D] = []
 
@@ -73,3 +79,22 @@ static func _carregar() -> void:
 		_texturas.append(load(PASTA + nome + ".png") as Texture2D)
 		var texto := FileAccess.get_file_as_string(PASTA + nome + ".json")
 		_fichas.append(JSON.parse_string(texto) as Dictionary)
+
+
+## Um grupo de palmeiras a partir de `o`, na faixa de servico a `lateral`.
+static func grupo_de_palmeiras(
+	track: RoadTrack,
+	o: float,
+	lateral: float,
+	side: float,
+	cruzamentos: Array[Vector2],
+	rua: RandomNumberGenerator,
+	props: Node3D
+) -> void:
+	var para_a_pista := track.sample_basis(o).x * -side
+	var aqui := o
+	for i in rua.randi_range(PALMEIRA_GRUPO.x, PALMEIRA_GRUPO.y):
+		if not Cidade.na_boca(cruzamentos, aqui, side):
+			var fora := lateral + rua.randf_range(-PALMEIRA_FOLGA, PALMEIRA_FOLGA) * side
+			props.add_child(criar(Tipo.PALMEIRA, track.point(aqui, fora), para_a_pista))
+		aqui += rua.randf_range(PALMEIRA_PASSO.x, PALMEIRA_PASSO.y)
