@@ -1,30 +1,29 @@
 extends GdUnitTestSuite
-## As arvores da avenida: a copa tem de se debrucar para a pista, e o pe tem de
-## ficar no chao. Os dois ja inverteram uma vez em outro modelo (o predio e o
-## poste olham para -Z pelo mesmo motivo), e nenhum dos dois da erro.
+## As arvores da avenida em sprite (2D51): o pe tem de ficar no chao e a altura
+## tem de ser a da ficha. Pe errado afunda ou levita a arvore, e nada da erro:
+## foi assim que a primeira versao nasceu enterrada e o jogo ficou sem arvore.
 
 
-func test_a_copa_se_debruca_para_menos_z() -> void:
-	# O meio da copa fica para o lado de -Z, que quem planta aponta para a
-	# pista: e o que poe a copa por cima da camera.
-	var caixa := Arvore.malha(Arvore.Tipo.COPA).get_aabb()
-	assert_float(caixa.get_center().z).is_less(-1.0)
+func _sprite(tipo: Arvore.Tipo) -> Sprite3D:
+	var corpo: StaticBody3D = auto_free(Arvore.criar(tipo, Vector3.ZERO, Vector3.FORWARD))
+	return corpo.get_child(0) as Sprite3D
+
+
+## Altura do desenho em metros.
+func _altura(sprite: Sprite3D) -> float:
+	return sprite.texture.get_height() * sprite.pixel_size
 
 
 func test_o_pe_fica_no_chao() -> void:
+	# Centrado: o meio do desenho sobe meia altura e o pe fica na origem.
 	for tipo: int in Arvore.Tipo.values():
-		var caixa := Arvore.malha(tipo).get_aabb()
-		assert_float(caixa.position.y).is_between(-0.6, 0.0)
+		var sprite := _sprite(tipo as Arvore.Tipo)
+		assert_bool(sprite.centered).is_true()
+		assert_float(sprite.position.y).is_equal_approx(_altura(sprite) * 0.5, 0.05)
 
 
-func test_a_copa_passa_acima_da_camera() -> void:
-	# A camera fica a 2,25 m e o onibus tem 3,2 m: abaixo disso a copa batia
-	# no teto do onibus que passa embaixo dela.
-	var malha := Arvore.malha(Arvore.Tipo.COPA)
-	var mais_baixo_fora_do_tronco := INF
-	for superficie in malha.get_surface_count():
-		var arrays := malha.surface_get_arrays(superficie)
-		for v: Vector3 in arrays[Mesh.ARRAY_VERTEX]:
-			if v.z < -2.0:
-				mais_baixo_fora_do_tronco = minf(mais_baixo_fora_do_tronco, v.y)
-	assert_float(mais_baixo_fora_do_tronco).is_greater(3.5)
+func test_a_altura_e_a_da_ficha() -> void:
+	var copa := _altura(_sprite(Arvore.Tipo.COPA))
+	var palmeira := _altura(_sprite(Arvore.Tipo.PALMEIRA))
+	assert_float(copa).is_between(7.5, 8.5)
+	assert_float(palmeira).is_between(10.5, 11.5)
