@@ -127,7 +127,7 @@ func test_nitro_do_rival_acelera_mais_e_gasta_a_carga() -> void:
 	var com := _rival()
 	var sem := _rival()
 	# Os dois no mesmo ritmo; so um tem carga. O jogador esta longe a frente.
-	com.world = _MundoFalso.new(com.offset + 80.0)
+	com.world = auto_free(_MundoFalso.new(com.offset + 80.0))
 	sem.world = com.world
 	com.ganhar_adrenalina(100.0)
 	for i in 60:
@@ -157,16 +157,9 @@ func test_toda_capacidade_do_jogador_tem_dono_no_rival() -> void:
 	for sinal: Dictionary in jogador.get_script().get_script_signal_list():
 		var nome: String = sinal["name"]
 		var no_rival := rival.has_signal(nome)
-		(
-			assert_bool(no_rival or SO_DO_JOGADOR.has(nome))
-			. override_failure_message(
-				(
-					"PlayerBike.%s e uma capacidade nova: ou o RivalBike a tem tambem, "
-					+ "ou ela entra em SO_DO_JOGADOR com o motivo" % nome
-				)
-			)
-			. is_true()
-		)
+		var recado := "PlayerBike.%s e uma capacidade nova: o RivalBike a tem tambem? " % nome
+		recado += "Se nao, ela entra em SO_DO_JOGADOR com o motivo."
+		assert_bool(no_rival or SO_DO_JOGADOR.has(nome)).override_failure_message(recado).is_true()
 	for nome in IGUAIS:
 		var existe := nome in rival or rival.has_method(nome)
 		assert_bool(existe).override_failure_message("RivalBike sem %s" % nome).is_true()
