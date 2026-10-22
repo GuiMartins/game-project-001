@@ -492,7 +492,9 @@ quadro.
 
 O que o sprite mostra sai do mesmo estado do ator 3D, e por isso mora dentro
 do `Entregador` ([`scripts/ator_sprite.gd`](../scripts/ator_sprite.gd)):
-cinco quadros de inclinação, de 15 em 15 graus, e três de soco para cada lado.
+cinco quadros de inclinação, de 15 em 15 graus, e três de soco para cada lado,
+mais um da empinada da largada, vista de trás (`arte/flow/empinando.jpg`, gerado
+no Flow a partir do quadro reto: nano banana 2.1, duas edições de imagem).
 A cor do corredor entra no vermelho da bag e da camiseta. O modelo continua
 posado embaixo, sem aparecer na câmera e lançando a sombra, que um quad não
 tem como projetar direito.
