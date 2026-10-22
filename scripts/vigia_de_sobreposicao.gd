@@ -24,3 +24,11 @@ func conta(carros: Array[TrafficCar]) -> void:
 			elif not _sobrepostos.has(chave):
 				_sobrepostos[chave] = true
 				total += 1
+				print(
+					"DIAG sobreposicao: off %.1f/%.1f lat %.2f/%.2f vel %.1f/%.1f alvo %.2f/%.2f parked %s/%s"
+					% [
+						carros[i].offset, carros[j].offset, carros[i].lateral, carros[j].lateral,
+						carros[i].speed, carros[j].speed, carros[i].destino(), carros[j].destino(),
+						carros[i].parked, carros[j].parked,
+					]
+				)
