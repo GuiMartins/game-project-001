@@ -1789,7 +1789,7 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
     noite. O rival tem `boosting` (hoje sempre falso): quando ele usar nitro, é
     ligar o campo. A posição do escape foi estimada, não conferida no modelo.
 
-- [ ] **V36** — Neblina só no horizonte
+- [x] **V36** — Neblina só no horizonte
 
   Áudio do Arthur: a neblina "parece muito presente na câmera, perto da
   câmera", e deixa as cores dos carros e da cidade "lavadas e
@@ -1808,6 +1808,15 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
     (`--hora 1`).
   - **Aceite:** na folha, a cor do carro a 15 m é a da textura (sem véu
     branco), e o fundo continua se dissolvendo. Baseline visual com o motivo.
+  - **Feito:** a neblina passou de exponencial para **profundidade**
+    (`FOG_MODE_DEPTH`): começa em 40 m (`Relogio.NEBLINA_COMECA`) e fecha em
+    1,4 / `neblina_densidade` da hora (~310 m ao meio-dia, `NEBLINA_ALCANCE`),
+    então a densidade de cada hora continua mandando. A 15 m o véu é zero; a
+    250 m cobre 77% (era 67%). No quadro congelado, luminância -13% e
+    famílias de cor +18%: carro e fachada de perto ganham cor. Baseline visual
+    do dia atualizado; o da noite ficou dentro da tolerância (luminância -8%).
+    A 70 m o véu cai de 27% para 13%, e a sombra de 250 m segue dissolvendo
+    antes do fim da neblina.
 
 - [ ] **V37** — Variação de faixas na pista
 
@@ -1827,18 +1836,18 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
     trânsito e a pintura acompanham. Semente fixa, então o `selftest` não
     anda, ou anda com motivo no baseline.
 
-- [ ] **V38** 👤 — "Não entendi a cor do dia"
+- [x] **V38** — "Não entendi a cor do dia"
 
-  O Arthur escreveu "não entendi o cor do dia" (às 14:54), e a conversa
-  seguiu sem explicação. A corrida larga ao meio-dia e anoitece pelo **progresso do jogador na
-  rota**, não pelo cronômetro, e só anda para a frente (`Relogio`, `Hora`);
-  a cor da tela muda sozinha, sem nada que avise. É a explicação provável
-  da dúvida, e a hipótese mais forte. 👤 Perguntar a ele qual momento foi: o que
-  viu, e em que ponto da corrida. Sem isso o item é palpite.
+  O Arthur escreveu "não entendi o cor do dia". Era a opção **COR DO DIA** da
+  coluna VISUAL do menu (SIM/NAO): ela liga e desliga o
+  `adjustment_enabled` do ambiente, a correção de cor (LUT, contraste,
+  saturação) da hora. Não tem a ver com o dia anoitecer, e o nome levava a
+  achar que tinha.
 
-  - **Referências:** nenhuma; o item é a pergunta.
-  - **Aceite:** o que ele quis dizer, escrito aqui. Se for a transição, o
-    item vira "aviso de que a corrida anoitece" ou "transição mais lenta".
+  - **Feito:** a opção virou **FILTRO DE COR** (`NOMES_VISUAL` em `main.gd`).
+    Confirmado pelo Guilherme: ele também não sabia o que a opção mudava.
+  - **Sobra:** a corrida anoitece sozinha pelo progresso, sem aviso. Se o
+    Arthur reclamar disso, vira item próprio ("aviso de que anoitece").
 
 - [ ] **V39** — Atalhos de depuração e câmera achável
 

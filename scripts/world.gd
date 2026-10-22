@@ -110,7 +110,7 @@ var camera: ChaseCamera
 var run := RaceRun.new()
 ## A hora da corrida: o mundo larga ao meio-dia e anoitece (ver `Relogio`).
 var relogio := Relogio.new()
-## O que o menu liga e desliga no visual: o ambiente (cor do dia, neblina,
+## O que o menu liga e desliga no visual: o ambiente (filtro de cor, neblina,
 ## brilho), o sol (sombra) e o borrao de velocidade. Liga e desliga so: os
 ## valores de cada um sao da hora, e quem poe e o `relogio`.
 var ambiente: Environment
@@ -270,6 +270,11 @@ func _build_environment() -> void:
 	# Neblina segurando o horizonte: em pixel grosso o fade e o que da
 	# profundidade, e de quebra esconde o fim do mundo sem precisar de LOD.
 	env.fog_enabled = true
+	# Em profundidade, e nao exponencial: so ela tem ponto de partida, e o
+	# veu perto da camera lavava as cores do carro (V36). O fim vem da hora.
+	env.fog_mode = Environment.FOG_MODE_DEPTH
+	env.fog_depth_begin = Relogio.NEBLINA_COMECA
+	env.fog_depth_curve = 1.0
 	env.fog_aerial_perspective = 0.5
 	env.fog_sky_affect = 0.0
 	# Glow so no que e luz: lanterna de freio, seta e, depois, outdoor e faisca.
