@@ -503,17 +503,10 @@ func _update_re(delta: float, throttle: float, brake: float) -> bool:
 			return false
 		em_re = true
 		speed = 0.0
-	if throttle > 0.0 or (brake <= 0.0 and speed <= 0.0):
-		# Soltar o freio na re deixa ela morrer sozinha; o gas freia mais forte.
-		speed = maxf(speed - tuning.brake * (throttle if throttle > 0.0 else 0.3) * delta, 0.0)
-		if speed <= 0.0:
-			em_re = false
-			_parado_freando = 0.0
-		return true
-	if brake > 0.0:
-		speed = minf(speed + RE_ACEL * brake * delta, RE_MAXIMA)
-	else:
-		speed = maxf(speed - tuning.engine_brake * delta, 0.0)
+	speed = FisicaDaMoto.velocidade_de_re(tuning, speed, throttle, brake, delta)
+	if speed <= 0.0 and (throttle > 0.0 or brake <= 0.0):
+		em_re = false
+		_parado_freando = 0.0
 	return true
 
 
