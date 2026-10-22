@@ -46,9 +46,8 @@
 	},
 	"valores_por_sistema": {
 		"linux": {
-			"corrida_atras_do_lider_m": 81.005723709186,
-			"corrida_distancia_m": 1378.18896484375,
-			"corrida_quedas": 0.0
+			"corrida_atras_do_lider_m": 225.994678977517,
+			"corrida_distancia_m": 1216.59399414062
 		}
 	}
 }
