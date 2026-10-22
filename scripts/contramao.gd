@@ -57,6 +57,11 @@ var track: RoadTrack
 ## `[de, ate, lado]`, como o `RoadTrack.expressas`.
 var expressa: Vector3
 var semente: int = 0
+## Quanto do transito cheio vale agora, de 0 a 1: o slider de trafego do F3
+## (`WorldTuning.fracao_do_transito`), que o `World` repassa ao vivo. A pista
+## e povoada por inteiro e depois aparada, e nao povoada por menos: o sorteio
+## da largada gasta o mesmo qualquer que seja o slider.
+var densidade: float = 1.0
 
 var _rng := RandomNumberGenerator.new()
 var _caminhos: Array[Caminho] = []
@@ -72,6 +77,8 @@ var _perto: bool = true
 ## Sem ninguem: o banco de provas mede uma batida de cada vez, e ate a
 ## proxima largada nao nasce carro.
 var _vazia: bool = false
+## Quantos carros a largada deixou na pista, com o slider no cheio.
+var _pleno: int = 0
 
 
 ## Um caminho, de uma garagem a outra, pela faixa `faixa` da mao contraria.
@@ -173,7 +180,28 @@ func reiniciar() -> void:
 			_solta(faixa, s)
 			s += _rng.randf_range(ESPACO.x, ESPACO.y)
 	_proximo = _rng.randf_range(ESPACO.x, ESPACO.y)
+	_pleno = _carros.size()
+	_apara()
 	_posa(0.0)
+
+
+## Muda a densidade ao vivo, sem reiniciar a corrida.
+func ajustar_densidade(fracao: float) -> void:
+	densidade = clampf(fracao, 0.0, 1.0)
+	_apara()
+
+
+## Quantos carros cabem na pista com a densidade de agora. Arredonda para
+## cima: qualquer valor acima de zero deixa ao menos um carro, e so o zero
+## esvazia a mao contraria.
+func limite_de_carros() -> int:
+	return ceili(_pleno * densidade)
+
+
+## Tira o que passa do limite, os ultimos a nascer primeiro.
+func _apara() -> void:
+	while _carros.size() > limite_de_carros():
+		_guarda(_carros.pop_back())
 
 
 ## Tira todo mundo da pista ate a proxima largada.
@@ -203,7 +231,7 @@ func _physics_process(delta: float) -> void:
 	var ultimo := INF
 	for v in _carros:
 		ultimo = minf(ultimo, v.s)
-	if ultimo > _proximo and not _vazia:
+	if ultimo > _proximo and not _vazia and _carros.size() < limite_de_carros():
 		_solta(_rng.randi_range(0, _caminhos.size() - 1), 0.0)
 		_proximo = _rng.randf_range(ESPACO.x, ESPACO.y)
 	_posa(delta)

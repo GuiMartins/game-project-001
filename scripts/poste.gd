@@ -51,8 +51,8 @@ static var _lente: ShaderMaterial
 
 
 ## Um poste com o pe em `pe` e o braco da pista apontando para `olha`.
-static func criar(pe: Vector3, olha: Vector3) -> Quebravel:
-	var corpo := Quebravel.new()
+static func criar(pe: Vector3, olha: Vector3) -> Amassavel:
+	var corpo := Amassavel.new()
 	corpo.name = "Poste"
 	corpo.collision_layer = Layers.WORLD
 	corpo.collision_mask = 0

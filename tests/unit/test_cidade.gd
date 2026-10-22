@@ -105,12 +105,13 @@ func test_no_largo_so_predio_baixo() -> void:
 ## porque o Godot troca nome repetido por `@StaticBody3D@12`.
 func _peca(no: Node) -> String:
 	for filho in no.get_children():
+		if filho is Sprite3D:
+			for tipo: int in Arvore.Tipo.values():
+				if (filho as Sprite3D).texture == Arvore.textura(tipo):
+					return Arvore.NOS[tipo]
 		if not (filho is MeshInstance3D):
 			continue
 		var malha := (filho as MeshInstance3D).mesh
-		for tipo: int in Arvore.Tipo.values():
-			if malha == Arvore.malha(tipo):
-				return Arvore.NOS[tipo]
 		for tipo: int in Mobiliario.Tipo.values():
 			if malha == Mobiliario.malha(tipo):
 				return Mobiliario.NOS[tipo]

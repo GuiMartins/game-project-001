@@ -1728,7 +1728,7 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
   - **Aceite:** a resposta escrita aqui, com a data. Sim ou não, as duas são
     resultado.
 
-- [ ] **V33** — O trânsito contrário obedece ao slider de tráfego
+- [x] **V33** — O trânsito contrário obedece ao slider de tráfego
 
   O Arthur pôs o tráfego em 0 e o lado contrário continuou com carros: "o
   sentido contrário não é afetado". Os carros do sentido contrário são do `Contramao` (`contramao.gd`), que
@@ -1742,8 +1742,11 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
     faz. Estado por instância.
   - **Aceite:** com tráfego 0 não há carro em nenhum sentido, e a mudança no
     slider vale sem reiniciar a corrida. Teste unitário da densidade.
+  - **Feito:** `WorldTuning.fracao_do_transito` (cheia no valor de fábrica, 25)
+    chega ao `Contramao.ajustar_densidade` pelo `World`, ao vivo. A pista
+    nasce povoada por inteiro e é aparada, para o sorteio da largada não mudar.
 
-- [ ] **V34** 👤 — Poste que tomba, e não que sai arrancado
+- [x] **V34** 👤 — Poste que amassa, e o jogador que cai
 
   O Arthur viu os postes "arrancados" e achou que deveriam **derrubar**,
   "como qualquer outro item" (o resto da frase, "poderíamos ter re...",
@@ -1759,8 +1762,16 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
     mesma peça serve ao poste de dois braços (V15) e ao do portal.
   - **Aceite:** o poste atingido cai para o lado da batida e não some. Os
     números de combate do `baseline.json` não andam, ou andam com motivo.
+  - **Feito, com a resposta do Arthur:** o que ele queria era **o jogador
+    tombar em alta velocidade**, e não o poste. O poste (`Amassavel`) deixou de
+    voar: fica de pé, com o mesmo colisor, e a malha envergada para longe da
+    batida, mais quanto mais forte ela foi (até 24°). Quem cai é o jogador, pelo
+    caminho de batida de qualquer obstáculo fixo (`crash_min_speed`); devagar,
+    quica. O rival é paramétrico e não bate no poste, então só o jogador amassa.
+    Semáforo, pórtico e placa também são `Amassavel` (a `Quebravel` morreu): peça
+    que umas voam e outras ficam lida como bug. Caçamba e mupi seguem sólidos.
 
-- [ ] **V35** — Nitro com chama azul
+- [x] **V35** — Nitro com chama azul
 
   O Arthur: "o nitro poderia soltar fogo azul, como uma indicação do uso".
   Não achei partícula de escape ligada ao boost; só a velocidade e o
@@ -1773,8 +1784,12 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
     curta sob a moto de noite, como o fogo da V24.
   - **Aceite:** a chama aparece só durante o boost, em todas as motos e em
     rival que usa boost; `fps` medido.
+  - **Feito:** `ChamaDoNitro`, no corpo da moto como a `Derrapagem`; posição do
+    escape e escala vêm da `FichaDaMoto` (`escape`, `chama`). Luz azul só de
+    noite. O rival tem `boosting` (hoje sempre falso): quando ele usar nitro, é
+    ligar o campo. A posição do escape foi estimada, não conferida no modelo.
 
-- [ ] **V36** — Neblina só no horizonte
+- [x] **V36** — Neblina só no horizonte
 
   Áudio do Arthur: a neblina "parece muito presente na câmera, perto da
   câmera", e deixa as cores dos carros e da cidade "lavadas e
@@ -1793,8 +1808,17 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
     (`--hora 1`).
   - **Aceite:** na folha, a cor do carro a 15 m é a da textura (sem véu
     branco), e o fundo continua se dissolvendo. Baseline visual com o motivo.
+  - **Feito:** a neblina passou de exponencial para **profundidade**
+    (`FOG_MODE_DEPTH`): começa em 40 m (`Relogio.NEBLINA_COMECA`) e fecha em
+    1,4 / `neblina_densidade` da hora (~310 m ao meio-dia, `NEBLINA_ALCANCE`),
+    então a densidade de cada hora continua mandando. A 15 m o véu é zero; a
+    250 m cobre 77% (era 67%). No quadro congelado, luminância -13% e
+    famílias de cor +18%: carro e fachada de perto ganham cor. Baseline visual
+    do dia atualizado; o da noite ficou dentro da tolerância (luminância -8%).
+    A 70 m o véu cai de 27% para 13%, e a sombra de 250 m segue dissolvendo
+    antes do fim da neblina.
 
-- [ ] **V37** — Variação de faixas na pista
+- [x] **V37** — Variação de faixas na pista
 
   O Arthur: "hoje o jogo tem a mesma quantidade de faixas no jogo inteiro".
   Quer variação. Hoje são `LANE_COUNT` faixas
@@ -1812,18 +1836,37 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
     trânsito e a pintura acompanham. Semente fixa, então o `selftest` não
     anda, ou anda com motivo no baseline.
 
-- [ ] **V38** 👤 — "Não entendi a cor do dia"
+  - **Escopo decidido pelo Guilherme:** só na via expressa, trecho mais largo,
+    e o resto da pista intacto (a avenida de 4 faixas e o lado da mão contrária
+    não mudam). Nada de nº de faixas por trecho em toda a `RoadTrack`: seria
+    refatorar ~20 arquivos que leem `LANE_COUNT` como constante.
+  - **Feito:** o lado fechado da expressa ganha 2 faixas (6 no total,
+    `RoadTrack.EXPRESSA_FAIXAS_EXTRA`), com rampa de 60 m em cada ponta
+    (`alargamento`, em S). As faixas de antes não saem do lugar. Muro, grama
+    e acostamento do lado fechado andam `EXPRESSA_EXTRA` para fora; o asfalto
+    afunila por cima da calçada. Meio-fio, linha de bordo e divisórias
+    tracejadas seguem o alargamento (`_pinta_alargamento`). O trânsito usa as
+    faixas novas por conta própria, só com a janela inteira no miolo
+    (`mao_entre`), e volta para a pista antes da rampa; o carro estacionado
+    encosta no meio-fio novo; poste e placa verde acompanham.
+  - **Não feito:** rival e `free_lateral` do mundo só conhecem as 4 faixas
+    de sempre, então os rivais não usam as novas; é o próximo passo se
+    a expressa ficar vazia demais.
+  - **Baseline:** `corrida_raspadas` 30 → 23 (o muro e os postes do lado
+    fechado estão 8,6 m mais longe, então a moto raspa menos).
 
-  O Arthur escreveu "não entendi o cor do dia" (às 14:54), e a conversa
-  seguiu sem explicação. A corrida larga ao meio-dia e anoitece pelo **progresso do jogador na
-  rota**, não pelo cronômetro, e só anda para a frente (`Relogio`, `Hora`);
-  a cor da tela muda sozinha, sem nada que avise. É a explicação provável
-  da dúvida, e a hipótese mais forte. 👤 Perguntar a ele qual momento foi: o que
-  viu, e em que ponto da corrida. Sem isso o item é palpite.
+- [x] **V38** — "Não entendi a cor do dia"
 
-  - **Referências:** nenhuma; o item é a pergunta.
-  - **Aceite:** o que ele quis dizer, escrito aqui. Se for a transição, o
-    item vira "aviso de que a corrida anoitece" ou "transição mais lenta".
+  O Arthur escreveu "não entendi o cor do dia". Era a opção **COR DO DIA** da
+  coluna VISUAL do menu (SIM/NAO): ela liga e desliga o
+  `adjustment_enabled` do ambiente, a correção de cor (LUT, contraste,
+  saturação) da hora. Não tem a ver com o dia anoitecer, e o nome levava a
+  achar que tinha.
+
+  - **Feito:** a opção virou **FILTRO DE COR** (`NOMES_VISUAL` em `main.gd`).
+    Confirmado pelo Guilherme: ele também não sabia o que a opção mudava.
+  - **Sobra:** a corrida anoitece sozinha pelo progresso, sem aviso. Se o
+    Arthur reclamar disso, vira item próprio ("aviso de que anoitece").
 
 - [ ] **V39** — Atalhos de depuração e câmera achável
 

@@ -110,7 +110,7 @@ var camera: ChaseCamera
 var run := RaceRun.new()
 ## A hora da corrida: o mundo larga ao meio-dia e anoitece (ver `Relogio`).
 var relogio := Relogio.new()
-## O que o menu liga e desliga no visual: o ambiente (cor do dia, neblina,
+## O que o menu liga e desliga no visual: o ambiente (filtro de cor, neblina,
 ## brilho), o sol (sombra) e o borrao de velocidade. Liga e desliga so: os
 ## valores de cada um sao da hora, e quem poe e o `relogio`.
 var ambiente: Environment
@@ -120,6 +120,8 @@ var borrao: Borrao
 var traffic: Array[TrafficCar] = []
 var rivals: Array[RivalBike] = []
 var travessia: Travessia
+## A ultima densidade repassada a `Contramao`; 1 e o que ela nasce valendo.
+var _fracao_contramao: float = 1.0
 var _sangue: Node3D
 var _rng := RandomNumberGenerator.new()
 var _spawn_cursor: float = 0.0
@@ -268,6 +270,11 @@ func _build_environment() -> void:
 	# Neblina segurando o horizonte: em pixel grosso o fade e o que da
 	# profundidade, e de quebra esconde o fim do mundo sem precisar de LOD.
 	env.fog_enabled = true
+	# Em profundidade, e nao exponencial: so ela tem ponto de partida, e o
+	# veu perto da camera lavava as cores do carro (V36). O fim vem da hora.
+	env.fog_mode = Environment.FOG_MODE_DEPTH
+	env.fog_depth_begin = Relogio.NEBLINA_COMECA
+	env.fog_depth_curve = 1.0
 	env.fog_aerial_perspective = 0.5
 	env.fog_sky_affect = 0.0
 	# Glow so no que e luz: lanterna de freio, seta e, depois, outdoor e faisca.
@@ -382,8 +389,10 @@ func _build_scenery() -> void:
 		var na_rua := Cidade.na_boca(track.cruzamentos, o, side)
 		# Embaixo do viaduto o poste de 10 m fura o tabuleiro de 7.
 		var fura := Cidade.sob_viaduto(track, o, side)
+		# O lado fechado da expressa ganhou asfalto: o poste ficaria no meio dele.
+		var no_asfalto := track.alarga_do_lado(o, side) > 1.0
 		o += gerador.randf_range(18.0, 34.0)
-		if na_rua or fura:
+		if na_rua or fura or no_asfalto:
 			continue
 		props.add_child(Poste.criar(at, para_a_pista))
 
@@ -459,7 +468,11 @@ func _place_car(car: TrafficCar, at_offset: float) -> void:
 			porta = TrafficCar.Porta.ABERTA
 		elif sorteio < world_tuning.door_open_chance + world_tuning.door_ambush_chance:
 			porta = TrafficCar.Porta.NA_CARA
-		car.recycle(at_offset, _na_mao(at_offset, RoadTrack.lane_center(curb)), true, porta)
+		# O meio-fio da expressa alargada esta mais para fora: o carro encosta
+		# nele, e nao no meio da pista.
+		var lateral := _na_mao(at_offset, RoadTrack.lane_center(curb))
+		lateral += signf(lateral) * track.alarga_do_lado(at_offset, signf(lateral))
+		car.recycle(at_offset, lateral, true, porta)
 	else:
 		car.recycle(at_offset, _na_mao(at_offset, _pick_lane()), false)
 	_desencosta(car)
@@ -643,6 +656,12 @@ func _update_standings() -> void:
 ## exatamente o tipo de coisa que voce precisa sentir com a moto andando -
 ## que e a razao do painel F3 existir.
 func _sync_traffic_pool() -> void:
+	# A mao contraria da expressa nao esta em `traffic`: segue o slider por
+	# aqui, so quando ele anda.
+	var fracao := world_tuning.fracao_do_transito()
+	if not is_equal_approx(fracao, _fracao_contramao):
+		_fracao_contramao = fracao
+		get_tree().call_group(&"contramao", &"ajustar_densidade", fracao)
 	var want: int = world_tuning.traffic_count
 	var flow: Array[TrafficCar] = traffic.duplicate()
 	if flow.size() == want:
@@ -676,6 +695,7 @@ func _recycle_traffic() -> void:
 ## corredor esta puxando o jogador pra dentro do transito - se ela cai a zero,
 ## o jogador esta fugindo do jogo em vez de joga-lo.
 func _score_corridor() -> void:
+	_score_rivals()
 	if player.state != PlayerBike.State.RIDING or player.speed < NEAR_MISS_MIN_SPEED:
 		return
 	for car in traffic:
@@ -684,14 +704,42 @@ func _score_corridor() -> void:
 		if along < -(meio + 6.8):
 			car.near_missed = false
 			continue
-		if car.near_missed or absf(along) > meio + NEAR_MISS_ALONG:
+		if car.near_missed:
 			continue
-		var side := absf(car.lateral - player.track_lateral) - car.meia_largura()
-		# Perto o bastante pra assustar, longe o bastante pra nao ser colisao.
-		if side > NEAR_MISS_MIN_LATERAL and side < NEAR_MISS_LATERAL:
+		if raspando(car, player.track_offset, player.track_lateral):
 			car.near_missed = true
 			run.register_near_miss()
 			player.add_adrenaline(tuning.boost_gain_near_miss)
+
+
+## A mesma raspada, para cada rival: enche a adrenalina dele, que ele gasta no
+## nitro. O `near_missed` do carro e do jogador, entao o rival lembra os dele.
+func _score_rivals() -> void:
+	for rival in rivals:
+		if rival.state != RivalBike.State.RACING or rival.speed < NEAR_MISS_MIN_SPEED:
+			continue
+		for car in traffic:
+			if rival.raspados.has(car):
+				# Atras dele, ou reciclado la na frente: em qualquer dos dois
+				# o carro e outro para efeito de raspada.
+				var along := car.offset - rival.offset
+				if along < -(car.meio_comprimento() + 6.8) or along > 60.0:
+					rival.raspados.erase(car)
+				continue
+			if raspando(car, rival.offset, rival.lateral):
+				rival.raspados[car] = true
+				rival.ganhar_adrenalina(tuning.boost_gain_near_miss)
+
+
+## `offset` e `lateral` estao passando perto de `car`, sem encostar: o bastante
+## para assustar, longe o bastante para nao ser colisao. Vale para qualquer
+## corredor, jogador ou rival.
+static func raspando(car: TrafficCar, offset: float, lateral: float) -> bool:
+	var along := car.offset - offset
+	if absf(along) > car.meio_comprimento() + NEAR_MISS_ALONG:
+		return false
+	var side := absf(car.lateral - lateral) - car.meia_largura()
+	return side > NEAR_MISS_MIN_LATERAL and side < NEAR_MISS_LATERAL
 
 
 ## Distancia livre a frente numa dada lateral, a partir de `from_offset`.
