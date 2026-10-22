@@ -68,6 +68,8 @@ const NEAR_MISS_ALONG: float = 0.40
 ## ate a lataria chegar na faixa nova.
 const FOLGA_TROCA: float = 2.0
 const FOLGA_TROCA_TEMPO: float = 1.5
+## Sobra sobre a frenagem no talo, porque o carro da frente tambem freia.
+const FREADA_MARGEM: float = 1.25
 ## O carro do greybox: 4,4 x 1,8 m. As distancias de `path_clearance` - o vao
 ## de seguir (`traffic_follow_gap`), os 4 m de emparelhado e os 1,6 m de faixa
 ## - foram afinadas com ele. O que um modelo tem a mais ou a menos que isso
@@ -876,11 +878,16 @@ func faixa_livre(car: TrafficCar, lateral: float) -> bool:
 			continue
 		var frente := outro.offset - car.offset
 		var fecha := car.speed - outro.speed if frente > 0.0 else outro.speed - car.speed
+		# Fechar a 21 m/s num carro que freia ate parar pede a distancia de
+		# frenagem inteira (v^2 / 2a), e o tempo de reacao sozinho dava menos:
+		# o carro entrava na faixa de um parado 35 m a frente e nao parava.
+		var fechando := maxf(fecha, 0.0)
+		var freada := fechando * fechando / (2.0 * world_tuning.traffic_brake) * FREADA_MARGEM
 		var folga := (
 			outro.meio_comprimento()
 			+ car.meio_comprimento()
 			+ FOLGA_TROCA
-			+ maxf(fecha, 0.0) * FOLGA_TROCA_TEMPO
+			+ maxf(fechando * FOLGA_TROCA_TEMPO, freada)
 		)
 		if absf(frente) < folga:
 			return false
