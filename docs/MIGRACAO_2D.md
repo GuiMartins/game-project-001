@@ -53,11 +53,18 @@ Decisões tomadas com o Guilherme:
 
 ### Ferramenta
 
-- [ ] **2D01** — **Referência para qualquer modelo.** O `dev.py boneco` só
+- [x] **2D01** — **Referência para qualquer modelo.** O `dev.py boneco` só
   posa o `Pessoa`. Generalizar para a moto (três ângulos, cada pose da
   tabela), o carro (modelo × ângulo × porta), o prop (um ângulo) e a fachada
   (ortográfica, de frente e de lado), em manequim cinza sobre verde,
-  determinístico como a S01.
+  determinístico como a S01. (22/10/2026: `dev.py boneco [moto|carro|prop|
+  fachada|tudo]`, todos pela bancada `arte/boneco_cena.gd`; a da pessoa saiu
+  byte a byte igual. Cada folha sai com um `.json` do lado, com grade, célula,
+  `pixels_por_metro` e o ponto do pé, que é o que o 2D02 vai ler. A
+  "empinada" do 2D10 é a moto inteira girada 30° em volta do pneu de trás: o
+  modelo 3D não tem empinada, só o sprite. Hatch, SUV, baú e van não têm
+  passageiro no modelo e saem com uma coluna na base; o ônibus ganha as duas
+  linhas do lado da porta e, nas folhas, só os quadros de abertura.)
 - [ ] **2D02** — **Um recorte para todas as folhas.** Juntar o
   `sprites_flow.gd` e o `sprites_pedestres.gd` num recorte guiado por ficha:
   grade, âncora, `pixels_por_metro`, espelho, cor-chave e coordenadas de luz.

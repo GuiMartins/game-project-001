@@ -26,7 +26,6 @@ extends SceneTree
 const PPM: float = 192.0
 ## Metros abaixo dos pes que a celula guarda, para o chao nao ser a borda.
 const FOLGA_PES: float = 0.12
-const VERDE := Color(0.0, 1.0, 0.0)
 const PASTA: String = "res://arte/flow/referencia/"
 ## A pessoa em pe, em quadros de movimento: um ciclo de dois passos em oito
 ## poses, uma a cada 45 graus da fase. E o que o Flow aguenta numa tira sem
@@ -125,55 +124,27 @@ const FECHA_EM: float = 2.0
 ## sacudir dos membros pelo relogio do voo.
 const QUADROS_VOO: int = 8
 
-var _vp: SubViewport
-var _cam: Camera3D
+const Cena := preload("res://arte/boneco_cena.gd")
+
+var _cena := Cena.new()
 var _pessoa: Pessoa
 var _banco: Node3D
 
 
 func _initialize() -> void:
-	_vp = SubViewport.new()
-	_vp.own_world_3d = true
-	# Sem MSAA e sem suavizacao: a borda do boneco e o que o Flow vai ler, e
-	# meio-tom no contorno vira halo na folha dele.
-	_vp.msaa_3d = Viewport.MSAA_DISABLED
-	_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	root.add_child(_vp)
-
-	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = VERDE
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.72, 0.74, 0.78)
-	env.ambient_light_energy = 0.55
-	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
-	var we := WorldEnvironment.new()
-	we.environment = env
-	_vp.add_child(we)
-
-	# Luz de frente e de cima, a mesma de qualquer angulo: a folha de personagem
-	# pede "luz chapada", e o boneco que muda de sombra a cada angulo ensina o
-	# Flow a mudar tambem.
-	var sol := DirectionalLight3D.new()
-	sol.rotation_degrees = Vector3(-40.0, 0.0, 0.0)
-	sol.light_energy = 0.9
-	_vp.add_child(sol)
-
-	_cam = Camera3D.new()
-	_cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-	_vp.add_child(_cam)
+	root.add_child(_cena)
+	_cena.monta(root)
 
 	_banco = _monta_banco()
-	_vp.add_child(_banco)
+	_cena.vp.add_child(_banco)
 
 	_pessoa = Pessoa.new()
-	_vp.add_child(_pessoa)
+	_cena.vp.add_child(_pessoa)
 
 	_roda.call_deferred()
 
 
 func _roda() -> void:
-	DirAccess.make_dir_recursive_absolute(PASTA)
 	# O `_ready` da pessoa, que monta as malhas, so roda depois do `_initialize`.
 	await process_frame
 	# A pose e do script, nao do relogio do jogo: sem isto o `_physics_process`
@@ -191,25 +162,21 @@ func _roda() -> void:
 
 
 func _faz_folha(folha: Dictionary) -> void:
-	var celula_m: Vector2 = folha["celula"]
-	var celula := Vector2i(roundi(celula_m.x * PPM), roundi(celula_m.y * PPM))
-	var colunas: int = folha["colunas"]
 	var angulos: Array = folha["angulos"]
-	_vp.size = celula
-	_cam.size = celula_m.y
-	_cam.position = Vector3(0.0, folha["centro"], 6.0)
-	var img := Image.create(colunas * celula.x, angulos.size() * celula.y, false, Image.FORMAT_RGB8)
-	img.fill(VERDE)
-	for linha in angulos.size():
-		for coluna in colunas:
-			_zera()
-			_posa(folha["nome"], coluna, colunas, angulos[linha])
-			_pessoa._aplica()
-			await _quadro(img, coluna, linha, celula)
-	var caminho: String = PASTA + folha["nome"] + ".png"
-	var erro := img.save_png(caminho)
-	assert(erro == OK, "nao salvou " + caminho)
-	print("+ ", ProjectSettings.globalize_path(caminho), "  ", img.get_size())
+	var posa := func(linha: int, coluna: int) -> void:
+		_zera()
+		_posa(folha["nome"], coluna, folha["colunas"], angulos[linha])
+		_pessoa._aplica()
+	await _cena.faz_folha(
+		folha["nome"],
+		PASTA,
+		folha["colunas"],
+		angulos.size(),
+		folha["celula"],
+		folha["centro"],
+		PPM,
+		posa
+	)
 
 
 ## Pessoa de pe, parada, no meio da cena, antes de cada quadro: o que o quadro
@@ -345,20 +312,6 @@ func _monta_banco() -> Node3D:
 	encosto.position = Vector3(0.0, 0.7, 0.22)
 	banco.add_child(encosto)
 	return banco
-
-
-## Pinta o quadro atual e cola na folha.
-func _quadro(folha: Image, coluna: int, linha: int, celula: Vector2i) -> void:
-	# Espera o desenho, e nao o quadro: com a janela atras de outra o macOS
-	# segura o desenho e o `process_frame` continua chegando, e a folha saia
-	# com a pose de outra coluna. Foi assim que o ciclo de andar e o susto das
-	# folhas do Flow sairam embaralhados. O primeiro desenho depois de mexer
-	# na cena pode ainda ser o da pose antiga; o segundo e o dela.
-	for i in 2:
-		await RenderingServer.frame_post_draw
-	var img := _vp.get_texture().get_image()
-	img.convert(Image.FORMAT_RGB8)
-	folha.blit_rect(img, Rect2i(Vector2i.ZERO, celula), Vector2i(coluna, linha) * celula)
 
 
 ## Cinza liso, sem roupa nem pele: um manequim. Tres tons, e nao um, para o

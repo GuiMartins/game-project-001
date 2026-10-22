@@ -1047,16 +1047,34 @@ def cmd_sprites_relatorio(_: argparse.Namespace) -> int:
                   vigia_erros=True)
 
 
-def cmd_boneco(_: argparse.Namespace) -> int:
-    """Gera as folhas de pose do boneco (`arte/flow/referencia/`) para o Flow.
+# Alvo do `boneco` -> script que gera as folhas. Todos passam pela bancada de
+# `arte/boneco_cena.gd` e saem em `arte/flow/referencia/`.
+BONECOS = {
+    "pessoa": "boneco_flow.gd",
+    "moto": "boneco_moto.gd",
+    "carro": "boneco_carro.gd",
+    "prop": "boneco_prop.gd",
+    "fachada": "boneco_fachada.gd",
+}
 
+
+def cmd_boneco(args: argparse.Namespace) -> int:
+    """Gera as folhas de pose de referencia (`arte/flow/referencia/`) para o Flow.
+
+    Cada alvo posa o modelo do proprio jogo em manequim cinza sobre verde:
+    `pessoa` (o padrao), `moto`, `carro`, `prop` e `fachada`, ou `tudo`.
     Precisa de tela: o renderizador do `--headless` e um dummy e sai tudo preto.
     """
     binary = require_godot(godot_version())
     code = _import_antes(binary)
     if code != 0:
         return code
-    return _godot(binary, "--script", "res://arte/boneco_flow.gd", vigia_erros=True)
+    alvos = list(BONECOS) if args.alvo == "tudo" else [args.alvo]
+    for alvo in alvos:
+        code = _godot(binary, "--script", f"res://arte/{BONECOS[alvo]}", vigia_erros=True)
+        if code != 0:
+            return code
+    return 0
 
 
 # Preset -> arquivo que ele tem de gerar. O jogo e o testador de sprites ("o
@@ -1138,7 +1156,9 @@ def main() -> int:
     p_exp = sub.add_parser("export", help="exporta as tres plataformas, do jogo e do editor de sprites")
     p_exp.add_argument("--so", choices=("tudo", "jogo", "editor"), default="tudo",
                        help="so o jogo, so o editor de sprites, ou os dois (padrao)")
-    sub.add_parser("boneco", help="gera as folhas de pose do boneco, de referencia para o Flow")
+    p_boneco = sub.add_parser("boneco", help="gera as folhas de pose de referencia para o Flow")
+    p_boneco.add_argument("alvo", nargs="?", default="pessoa", choices=(*BONECOS, "tudo"),
+                          help="o que posar (padrao: pessoa)")
     sub.add_parser("sprites-pedestres", help="recorta as folhas de pedestre do Flow em atlas por pessoa")
     sub.add_parser("sprites-props", help="recorta os props do Flow (arvore, poste, placa) em sprites com ancora")
     sub.add_parser("sprites", help="recorta as folhas do Google Flow no atlas do ator")
