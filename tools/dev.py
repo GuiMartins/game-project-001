@@ -966,6 +966,23 @@ def cmd_sprites_pedestres(_: argparse.Namespace) -> int:
     return _import_antes(binary)
 
 
+def cmd_sprites_props(_: argparse.Namespace) -> int:
+    """Recorta os props do Google Flow (`arte/flow/props/`): arvore, poste e placa.
+
+    Gera `assets/sprites/props/<prop>.png` e `.json`. Roda no Godot, pelo mesmo
+    motivo do `sprites-pedestres`.
+    """
+    binary = require_godot(godot_version())
+    code = _import_antes(binary)
+    if code != 0:
+        return code
+    code = _godot(binary, "--headless", "--script", "res://arte/sprites_props.gd",
+                  vigia_erros=True)
+    if code != 0:
+        return code
+    return _import_antes(binary)
+
+
 def cmd_personagem(args: argparse.Namespace) -> int:
     """O fluxo por video usa um ambiente isolado, sem depender do Python da maquina."""
     ambiente = DEV_DIR / "venv-flow"
@@ -1123,6 +1140,7 @@ def main() -> int:
                        help="so o jogo, so o editor de sprites, ou os dois (padrao)")
     sub.add_parser("boneco", help="gera as folhas de pose do boneco, de referencia para o Flow")
     sub.add_parser("sprites-pedestres", help="recorta as folhas de pedestre do Flow em atlas por pessoa")
+    sub.add_parser("sprites-props", help="recorta os props do Flow (arvore, poste, placa) em sprites com ancora")
     sub.add_parser("sprites", help="recorta as folhas do Google Flow no atlas do ator")
     p_personagem = sub.add_parser("personagem", help="prepara, inspeciona e monta NPCs por video; ver docs/PERSONAGENS.md")
     p_personagem.add_argument("argumentos", nargs=argparse.REMAINDER)
@@ -1161,6 +1179,7 @@ def main() -> int:
         "prova": cmd_prova,
         "boneco": cmd_boneco,
         "sprites-pedestres": cmd_sprites_pedestres,
+        "sprites-props": cmd_sprites_props,
         "sprites": cmd_sprites,
         "personagem": cmd_personagem,
         "sprites-ver": cmd_sprites_ver,
