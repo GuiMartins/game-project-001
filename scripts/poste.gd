@@ -46,6 +46,13 @@ const ENERGIA: float = 10.0
 const ACENDE_DE: float = 0.3
 const ACENDE_ATE: float = 0.55
 
+## Altura do poste baixo de baixo do viaduto: o tabuleiro fica a 7 m, e a
+## luminaria precisa caber embaixo dele com folga.
+const ALTURA_BAIXO: float = 5.0
+const BRACO_BAIXO: float = 1.6
+const ALCANCE_BAIXO: float = 12.0
+const ENERGIA_BAIXO: float = 7.0
+
 static var _malha: Mesh
 static var _lente: ShaderMaterial
 
@@ -76,6 +83,46 @@ static func criar(pe: Vector3, olha: Vector3) -> Amassavel:
 		mi.add_child(luz)
 	var forma := Greybox.box_shape(COLISOR)
 	forma.position = Vector3.UP * COLISOR.y * 0.5
+	corpo.add_child(forma)
+	return corpo
+
+
+## O poste de embaixo do viaduto: fuste fino, um braco curto para a pista e uma
+## luminaria so. O alto de 10 m furaria o tabuleiro, e sem ele o trecho de
+## concreto ficava um tunel preto de noite. Mesmo colisor do outro, so mais
+## baixo, e a mesma lampada: acende no mesmo limiar.
+static func criar_baixo(pe: Vector3, olha: Vector3) -> Amassavel:
+	var corpo := Amassavel.new()
+	corpo.name = "PosteBaixo"
+	corpo.collision_layer = Layers.WORLD
+	corpo.collision_mask = 0
+	corpo.position = pe
+	olha.y = 0.0
+	var para_a_pista := olha.normalized()
+	var ferro := Greybox.material(Color(0.22, 0.23, 0.22))
+	var fuste := Greybox.box(Vector3(0.16, ALTURA_BAIXO, 0.16), Color.BLACK)
+	fuste.material_override = ferro
+	fuste.position = Vector3.UP * ALTURA_BAIXO * 0.5
+	corpo.add_child(fuste)
+	var braco := Greybox.box(Vector3(0.12, 0.12, BRACO_BAIXO), Color.BLACK)
+	braco.material_override = ferro
+	braco.position = Vector3(0.0, ALTURA_BAIXO, 0.0) + para_a_pista * BRACO_BAIXO * 0.5
+	braco.basis = Basis.looking_at(para_a_pista, Vector3.UP)
+	corpo.add_child(braco)
+	var ponta := Vector3(0.0, ALTURA_BAIXO - 0.1, 0.0) + para_a_pista * BRACO_BAIXO
+	var lente_malha := Greybox.box(Vector3(0.7, 0.1, 0.35), Color.BLACK)
+	lente_malha.material_override = lente()
+	lente_malha.position = ponta
+	lente_malha.basis = Basis.looking_at(para_a_pista, Vector3.UP)
+	var quando := Relogio.limiar(pe, ACENDE_DE, ACENDE_ATE)
+	lente_malha.set_instance_shader_parameter(&"limiar", quando)
+	corpo.add_child(lente_malha)
+	var luz := LuzDaNoite.spot(COR_DA_LUZ, ENERGIA_BAIXO, ALCANCE_BAIXO, ANGULO, quando)
+	luz.position = ponta - Vector3.UP * 0.1
+	luz.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
+	corpo.add_child(luz)
+	var forma := Greybox.box_shape(Vector3(0.35, ALTURA_BAIXO, 0.35))
+	forma.position = Vector3.UP * ALTURA_BAIXO * 0.5
 	corpo.add_child(forma)
 	return corpo
 

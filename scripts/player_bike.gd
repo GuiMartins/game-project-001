@@ -21,6 +21,12 @@ enum State { RIDING, STAGGERED, CRASHED }
 ## autoload o arquivo nao compila sem ele (ver `_analogico`).
 const CONTROLES := preload("res://scripts/controls.gd")
 const SIZE := Vector3(0.75, 1.75, 2.1)
+## Velocidade maxima de re, m/s (~14 km/h) e quanto a moto parada espera o freio
+## apertado antes de engatar: sem a espera, frear ate parar ja sairia dando re.
+const RE_MAXIMA: float = 4.0
+const RE_ACEL: float = 3.0
+const RE_ESPERA: float = 0.35
+
 const GRAVITY: float = 26.0
 ## A cor do jogador: o vermelho da bag das T-poses e das folhas do sprite
 ## (`Entregador.BAG_FABRICA`), e nenhum rival de `World.RIVAL_COLORS` chega
@@ -57,6 +63,9 @@ var state: State = State.RIDING:
 var state_timer: float = 0.0
 
 var speed: float = 0.0  ## Escalar, m/s, sempre >= 0.
+## Andando de re: `speed` continua sendo o modulo, so o sentido inverte. Assim
+## HUD, batida e camera, que leem `speed >= 0`, nao precisam saber da re.
+var em_re: bool = false
 var heading: float = 0.0  ## Guinada no mundo, radianos.
 var lean: float = 0.0  ## Inclinacao atual, radianos. + = direita.
 ## A inclinacao que aparece: moto, piloto e camera (V05b). A `lean` e a da
@@ -108,6 +117,7 @@ var _estrago: Estrago
 ## direto em `_ride`.
 var _acelerador: float = 0.0
 var _freio: float = 0.0
+var _parado_freando: float = 0.0
 var _esterco: float = 0.0
 ## Para que lado a moto tomba na queda: -1 esquerda, 1 direita.
 var _lado_queda: float = 1.0
@@ -381,6 +391,8 @@ static func passo_da_inclinacao(
 
 
 func _update_speed(delta: float, throttle: float, brake: float) -> void:
+	if _update_re(delta, throttle, brake):
+		return
 	boosting = Input.is_action_pressed("ride_boost") and adrenaline > 0.0 and state == State.RIDING
 	var top := FisicaDaMoto.teto_de_velocidade(tuning, boosting)
 
@@ -413,6 +425,33 @@ func _update_speed(delta: float, throttle: float, brake: float) -> void:
 		speed = maxf(speed - 14.0 * delta, top)
 
 
+## A re: parado com o freio apertado por `RE_ESPERA`, a moto engata e anda para
+## tras ate `RE_MAXIMA`. Acelerar tira da re (freia ate parar e volta a andar
+## para a frente). Devolve se a re tratou a velocidade neste passo.
+func _update_re(delta: float, throttle: float, brake: float) -> bool:
+	if not em_re:
+		if speed < 0.1 and brake > 0.0 and throttle <= 0.0 and not airborne:
+			_parado_freando += delta
+		else:
+			_parado_freando = 0.0
+		if _parado_freando < RE_ESPERA:
+			return false
+		em_re = true
+		speed = 0.0
+	if throttle > 0.0 or (brake <= 0.0 and speed <= 0.0):
+		# Soltar o freio na re deixa ela morrer sozinha; o gas freia mais forte.
+		speed = maxf(speed - tuning.brake * (throttle if throttle > 0.0 else 0.3) * delta, 0.0)
+		if speed <= 0.0:
+			em_re = false
+			_parado_freando = 0.0
+		return true
+	if brake > 0.0:
+		speed = minf(speed + RE_ACEL * brake * delta, RE_MAXIMA)
+	else:
+		speed = maxf(speed - tuning.engine_brake * delta, 0.0)
+	return true
+
+
 func _update_heading(delta: float) -> void:
 	# A guinada vem da INCLINACAO, nunca do input direto.
 	var lean_frac := lean / deg_to_rad(tuning.max_lean)
@@ -427,7 +466,8 @@ func _update_heading(delta: float) -> void:
 
 	# MENOS: em Godot (Y pra cima, mao direita) guinada positiva gira pra
 	# esquerda. Com `forward = (sin h, 0, cos h)`, dforward/dh = -right.
-	heading -= deg_to_rad(tuning.turn_rate) * lean_frac * agility * delta
+	# De re o guidao inverte: a traseira vai para onde a moto olha.
+	heading -= deg_to_rad(tuning.turn_rate) * lean_frac * agility * delta * (-1.0 if em_re else 1.0)
 
 	var road_fwd := -track.sample_basis(track_offset).z
 	var road_heading := atan2(road_fwd.x, road_fwd.z)
@@ -435,7 +475,7 @@ func _update_heading(delta: float) -> void:
 	wrong_way = absf(diff) > deg_to_rad(105.0)
 
 	# Assistencia de alinhamento: puxa a moto pro sentido da pista.
-	if tuning.align_assist > 0.0 and speed > 1.0:
+	if tuning.align_assist > 0.0 and speed > 1.0 and not em_re:
 		heading += diff * (1.0 - exp(-tuning.align_assist * delta))
 
 	# O corpo fisico gira junto: a capsula de colisao e as hitboxes de soco sao
@@ -446,7 +486,7 @@ func _update_heading(delta: float) -> void:
 
 func _integrate(delta: float) -> void:
 	var forward := Vector3(sin(heading), 0.0, cos(heading))
-	var desired := forward * speed
+	var desired := forward * speed * (-1.0 if em_re else 1.0)
 
 	# A velocidade real persegue a desejada em vez de virar ela. A diferenca e
 	# a derrapada: quanto menor a aderencia, mais a moto escorrega pra fora.
@@ -841,6 +881,7 @@ func place_on_track(at_offset: float, at_lateral: float, at_speed: float) -> voi
 	_lean_visual_vel = 0.0
 	_pedido_de_inclinacao = 0.0
 	speed = at_speed
+	em_re = false
 	velocity = Vector3(sin(heading), 0.0, cos(heading)) * at_speed
 	_vertical_speed = 0.0
 	_last_road_y = global_position.y
