@@ -41,7 +41,7 @@ const VISUAL: Array[String] = [
 ]
 ## Os nomes delas no menu, na mesma ordem.
 const NOMES_VISUAL: Array[String] = [
-	"PIXEL", "PALETA", "ANTISSERRILHO", "COR DO DIA", "SOMBRA", "NEBLINA", "BRILHO", "BORRAO"
+	"PIXEL", "PALETA", "ANTISSERRILHO", "FILTRO DE COR", "SOMBRA", "NEBLINA", "BRILHO", "BORRAO"
 ]
 ## As cadencias que as setas do menu percorrem, em poses por segundo; 0 e liso.
 ## O F3 chega em qualquer uma de 0 a 30; o menu fica nas que valem comparar.

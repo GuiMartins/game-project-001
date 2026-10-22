@@ -66,3 +66,39 @@ func test_rampa_maxima_e_jogavel() -> void:
 	# empinada e desce voando, e a ladeira deixa de ser tempero.
 	assert_float(RoadTrack.MAX_GRADE).is_greater(0.05)
 	assert_float(RoadTrack.MAX_GRADE).is_less_equal(0.2)
+
+
+## As faixas a mais da via expressa (V37). A avenida de quatro e as faixas que
+## ja existiam tem que ficar onde estavam: o alargamento so soma do lado de
+## fora, e some nas pontas.
+func test_alargamento_zero_nas_pontas_e_cheio_no_miolo() -> void:
+	var de := 1000.0
+	var ate := 1600.0
+	assert_float(RoadTrack.alargamento(de, de, ate)).is_equal(0.0)
+	assert_float(RoadTrack.alargamento(ate, de, ate)).is_equal(0.0)
+	var meio := RoadTrack.alargamento((de + ate) * 0.5, de, ate)
+	assert_float(meio).is_equal(RoadTrack.EXPRESSA_EXTRA)
+	# Sem degrau: cresce sem nunca andar mais que uma faixa em 10 m.
+	var o := de
+	while o < de + RoadTrack.EXPRESSA_RAMPA:
+		var passo := RoadTrack.alargamento(o + 1.0, de, ate) - RoadTrack.alargamento(o, de, ate)
+		assert_float(passo).is_between(0.0, RoadTrack.LANE_WIDTH * 0.1)
+		o += 1.0
+
+
+func test_expressa_so_aumenta_o_limite_do_lado_fechado_e_so_no_miolo() -> void:
+	var pista := RoadTrack.new()
+	pista.expressas = [Vector3(1000.0, 1600.0, -1.0)]
+	pista.boca = 5.0
+	var hw := RoadTrack.half_width()
+	var miolo := pista.mao_entre(1200.0, 1300.0)
+	assert_float(miolo.y).is_equal_approx(hw + RoadTrack.EXPRESSA_EXTRA, 0.001)
+	# O lado da mao contraria e as faixas de dentro nao se mexem.
+	assert_float(miolo.x).is_equal_approx(RoadTrack.FOLGA_DA_DUPLA, 0.001)
+	# Janela que pega a rampa: de volta a pista de quatro.
+	assert_float(pista.mao_entre(1000.0, 1100.0).y).is_equal_approx(hw, 0.001)
+	# Fora da expressa nada muda.
+	var fora := pista.mao_entre(100.0, 200.0)
+	assert_float(fora.y).is_equal_approx(hw, 0.001)
+	assert_float(fora.x).is_equal_approx(-hw, 0.001)
+	pista.free()

@@ -1,0 +1,14 @@
+{
+	"altura_m": 11.0,
+	"angulo": "frente",
+	"largura_m": 6.19,
+	"pe": [
+		198,
+		703
+	],
+	"pixels_por_metro": 64.0,
+	"tamanho": [
+		396,
+		704
+	]
+}

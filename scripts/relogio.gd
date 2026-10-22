@@ -30,6 +30,16 @@ const RAMPA: float = 0.04
 ## para o outro fica abaixo de um degrau da paleta; menor que isso seria
 ## refazer LUT e luz todo quadro por nada.
 const PASSO: float = 1.0 / 256.0
+## Onde a neblina comeca, em metros. Ate aqui a cor do carro e a da textura:
+## na exponencial o veu comecava em zero e, a 15 m, ja lavava o carro de perto
+## (V36). Na reta de profundidade o terço proximo fica limpo e o fundo ainda
+## se dissolve.
+const NEBLINA_COMECA: float = 40.0
+## Onde a neblina fecha, em multiplos de `1 / neblina_densidade` da hora: a
+## densidade de cada hora continua mandando em quao curto e o horizonte, so
+## que agora como alcance. 1,4 x 222 m = ~310 m no meio-dia; a 250 m cobre
+## 77%, perto dos dois terços da exponencial que a sombra de 250 m supunha.
+const NEBLINA_ALCANCE: float = 1.4
 
 ## Os sliders do ceu que sao da hora, e nao do F3.
 const CEU_DA_HORA: Dictionary = {
@@ -140,7 +150,7 @@ func aplicar(t: float) -> void:
 	_env.ambient_light_color = h.ambiente_cor
 	_env.ambient_light_sky_contribution = h.ambiente_ceu
 	_env.fog_light_color = h.neblina_cor
-	_env.fog_density = h.neblina_densidade
+	_env.fog_depth_end = NEBLINA_ALCANCE / h.neblina_densidade
 	_env.tonemap_exposure = h.exposicao
 	_env.adjustment_color_correction = _lut(t)
 	escuro = h.escuro

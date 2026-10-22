@@ -191,10 +191,14 @@ por código, sem arte.
 Um ângulo só, de 3/4 de frente para quem vem, como no Road Rash. Quando um
 prop quebra e voa, quem gira é o sprite inteiro.
 
-- [ ] **2D50** — Poste, com a lente acesa por coordenada.
-- [ ] **2D51** — Árvore de copa e palmeira, com uma variação de cada.
+- [x] **2D50** — Poste, com a lente acesa por coordenada. (22/10/2026: sprite em
+  `assets/sprites/props/poste.png`, lente apagada; a coordenada da lente para o
+  shader ainda falta, entra com o 2D03.)
+- [x] **2D51** — Árvore de copa e palmeira, com uma variação de cada. (22/10/2026:
+  uma de cada, em `assets/sprites/props/`; a segunda variação fica para depois.)
 - [ ] **2D52** — Caçamba e mupi, com o painel do mupi aceso por coordenada.
-- [ ] **2D53** — Placas: curva à esquerda, curva à direita, mão dupla.
+- [x] **2D53** — Placas: curva à esquerda, curva à direita (espelho), mão dupla.
+  (22/10/2026, receita em `arte/flow/props/README.md`.)
 - [ ] **2D54** — Semáforo de esquina, vermelho e verde por coordenada.
 - [ ] **2D55** — Pórticos: semáforo suspenso, placa de destino (sem texto,
   que sai por código) e mão dupla.

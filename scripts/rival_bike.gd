@@ -53,6 +53,17 @@ const CREDITO_DO_SOCO: float = 1.5
 ## rival atravessava a traseira do onibus sem cair.
 const WIPEOUT_ALCANCE: float = 4.5
 
+## Quanto o jogador precisa estar a frente (m) para o rival abrir o nitro, e
+## quanto ele sobra para fechar. A histerese evita ligar e desligar a cada
+## metro em volta do limite. O nitro e do rival que ficou para tras: quem vai
+## na frente gastando carga na reta so tornaria a ordem de chegada previsivel.
+const NITRO_ATRAS: float = 25.0
+const NITRO_ALCANCOU: float = 5.0
+## Por segundo, quanto o empurrao lateral de uma batida (m/s) perde de si. Na
+## moto de verdade quem devolve a moto a pista e a assistencia de alinhamento;
+## aqui, como o rival e parametrico, e este decaimento.
+const AMORTECE_EMPURRAO: float = 4.0
+
 var track: RoadTrack
 var tuning: BikeTuning
 var world_tuning: WorldTuning
@@ -88,6 +99,11 @@ var finish_time: float = -1.0  ## Segundos ate cruzar, -1 enquanto corre.
 var race_time: float = 0.0
 ## O rival ainda nao usa nitro; quando usar, e so ligar isto e a chama acende.
 var boosting: bool = false
+## 0..100, como a do jogador: enche com raspada no transito, gasta com o nitro.
+var adrenaline: float = 0.0
+## Carros que ele ja raspou, para cada um pagar uma vez so (como o
+## `TrafficCar.near_missed` do jogador, que o rival nao pode dividir com ele).
+var raspados: Dictionary = {}
 
 var _target_lateral: float = 0.0
 var _punch_cooldown: float = 0.0
@@ -129,6 +145,10 @@ var _vertical_rampa: float = 0.0
 ## A mola da inclinacao da moto sorteada: rival de PCX troca de lado mais
 ## nervoso que rival de XRE, como o jogador.
 var _fisica := FisicaDaMoto.new()
+## Segundos em que uma raspada ou um quique nao se repete (`ImpactoDeMoto.RESPIRO`).
+var _respiro_do_impacto: float = 0.0
+## Velocidade lateral que a batida deu e o rival ainda carrega, m/s (+ = direita).
+var _empurrao: float = 0.0
 
 
 func _ready() -> void:
@@ -241,6 +261,11 @@ func reset_race(at_offset: float, at_lateral: float, a_finish_offset: float) -> 
 	_hitbox.monitoring = false
 	_lean = 0.0
 	_lean_vel = 0.0
+	adrenaline = 0.0
+	boosting = false
+	raspados.clear()
+	_respiro_do_impacto = 0.0
+	_empurrao = 0.0
 	pace = _rng.randf_range(world_tuning.rival_pace_min, world_tuning.rival_pace_max)
 	speed = tuning.max_speed * pace * 0.6
 	_aggression = _rng.randf_range(
@@ -259,6 +284,7 @@ func _physics_process(delta: float) -> void:
 	_passo_da_largada(delta)
 	_update_hitbox(delta)
 	_punch_cooldown = maxf(_punch_cooldown - delta, 0.0)
+	_respiro_do_impacto = maxf(_respiro_do_impacto - delta, 0.0)
 	# Corre em qualquer estado: o rival socado passa o cambaleio inteiro sem
 	# governar a moto, e e justamente ai que ele bate.
 	_credito_jogador = maxf(_credito_jogador - delta, 0.0)
@@ -280,7 +306,7 @@ func _physics_process(delta: float) -> void:
 			if state_timer <= 0.0:
 				state = State.RACING
 			_advance(delta)
-			_check_wipeout()
+			_check_contacts()
 		State.RACING:
 			if largada_travada:
 				speed = 0.0
@@ -288,7 +314,7 @@ func _physics_process(delta: float) -> void:
 			else:
 				_drive(delta)
 				_advance(delta)
-				_check_wipeout()
+				_check_contacts()
 
 	# O esterco do rival e a propria inclinacao: ele nao tem polegar, e a
 	# inclinacao ja e o que a IA decidiu fazer com a moto.
@@ -363,14 +389,23 @@ func _drive(delta: float) -> void:
 	if mode == Mode.OVERTAKE:
 		pace_speed *= 1.06  # o arranque de quem esta saindo de tras do carro
 	var band := clampf(gap * world_tuning.rival_rubber_band, -6.0, 12.0)
-	var target_speed := clampf(pace_speed + band, tuning.max_speed * 0.35, tuning.max_speed * 1.08)
+	boosting = _quer_nitro(gap)
+	if boosting:
+		adrenaline = FisicaDaMoto.carga_apos_nitro(tuning, adrenaline, delta)
+		pace_speed *= tuning.boost_speed_mult
+	var target_speed := clampf(
+		pace_speed + band,
+		tuning.max_speed * 0.35,
+		FisicaDaMoto.teto_de_velocidade(tuning, boosting) * 1.08
+	)
 	# A pose le gas e freio daqui. Acima do alvo o rival perde ate 18 m/s2,
 	# e isso e freio, nao embalo; no alvo ele segura meio gas, como quem
 	# mantem a velocidade, e nao o pulso fechado de quem solta.
 	var falta := target_speed - speed
 	_acelerador = 1.0 if falta > 0.5 else (0.4 if falta > -0.5 else 0.0)
 	_freio = clampf(-falta / 3.0, 0.0, 1.0)
-	var forca := 18.0 + LargadaDaMoto.EMPINA_ACEL * _empina
+	var forca := 18.0 + FisicaDaMoto.aceleracao_do_nitro(tuning, boosting)
+	forca += LargadaDaMoto.EMPINA_ACEL * _empina
 	forca *= 1.0 - LargadaDaMoto.PATINA_PERDA_DE_FORCA * _patina
 	speed = move_toward(speed, target_speed, forca * delta)
 
@@ -428,6 +463,17 @@ func _drive(delta: float) -> void:
 		# Saiu do duelo: a mira zera. Guardar o cronometro de um duelo antigo
 		# faz o rival socar no instante em que voce reencosta, meia volta depois.
 		_punch_delay = -1.0
+
+
+## Se o rival quer o nitro neste passo: com carga, para quem ficou para tras.
+func _quer_nitro(gap: float) -> bool:
+	if adrenaline <= 0.0 or state != State.RACING or finish_time >= 0.0:
+		return false
+	return gap > (NITRO_ALCANCOU if boosting else NITRO_ATRAS)
+
+
+func ganhar_adrenalina(quanto: float) -> void:
+	adrenaline = clampf(adrenaline + quanto, 0.0, 100.0)
 
 
 ## Mira do soco: o rival mede o jogador antes de bater.
@@ -530,6 +576,13 @@ func _advance(delta: float) -> void:
 		_vertical_rampa -= PlayerBike.GRAVITY * delta
 		_altura_rampa = maxf(_altura_rampa + _vertical_rampa * delta, 0.0)
 	offset += speed * delta
+	if absf(_empurrao) > 0.01:
+		lateral += _empurrao * delta
+		if finish_time < 0.0:
+			var borda := RoadTrack.half_width() - 0.5
+			lateral = clampf(lateral, -borda, borda)
+		_target_lateral = lateral
+		_empurrao *= exp(-AMORTECE_EMPURRAO * delta)
 	# O tempo de chegada e o que ordena quem ja cruzou a linha. Sem ele, dois
 	# rivais que terminaram ficariam empatados pelo offset e a ordem de chegada
 	# passaria a depender da ordem da lista.
@@ -575,12 +628,15 @@ func _update_hitbox(delta: float) -> void:
 			return
 
 
-func _check_wipeout() -> void:
+## Tudo que o sensor encostou, resolvido pelas mesmas regras do jogador
+## (`ImpactoDeMoto`): amassa o que amassa, raspa, desvia na quina, quica ou cai.
+func _check_contacts() -> void:
 	if state == State.DOWN:
 		return
 	for body: Node3D in _sensor.get_overlapping_bodies():
-		if global_position.distance_to(body.global_position) <= _alcance(body):
-			_go_down()
+		if global_position.distance_to(body.global_position) > _alcance(body):
+			continue
+		if _bate(body):
 			return
 
 
@@ -588,6 +644,157 @@ func _alcance(body: Node3D) -> float:
 	if body is TrafficCar:
 		return WIPEOUT_ALCANCE + (body as TrafficCar).meio_comprimento() - World.MEIO_CARRO
 	return WIPEOUT_ALCANCE
+
+
+## O que acontece quando o rival encosta em `body`. Devolve se a batida foi
+## resolvida e a varredura pode parar.
+##
+## O jogador mede a batida no `move_and_slide`; o rival, que anda na curva, nao
+## tem normal de contato, entao a tira da geometria de quem encostou.
+func _bate(body: Node3D) -> bool:
+	var normal := _normal_contra(body)
+	var frente := -global_basis.z
+	frente.y = 0.0
+	frente = frente.normalized()
+	var antes := frente * speed
+	if body is Amassavel:
+		# Poste, semaforo e placa ficam de pe e levam a marca; quem cai, se
+		# chegou rapido, e o rival, pelo caminho de batida de qualquer obstaculo.
+		var forca := ImpactoDeMoto.forca_no_amassavel(antes, normal, tuning.max_speed)
+		if (body as Amassavel).amassar(forca, antes):
+			_estrago.faisca(maxf(forca, 0.25))
+			_ator.impacto(maxf(forca, 0.25))
+	var v_outro := _velocidade_de(body)
+	var relativa := antes - v_outro
+	var chegada := maxf(-relativa.dot(normal), 0.0)
+	var de_frente := ImpactoDeMoto.de_frente(chegada, relativa)
+	if body is TrafficCar:
+		var desvio_porta := (body as TrafficCar).porta_bate_em(global_position, chegada)
+		if desvio_porta != Vector3.ZERO:
+			if _respiro_do_impacto <= 0.0:
+				_ricocheteia(desvio_porta, chegada)
+			return true
+	# Empurrado por um soco para dentro da lataria: e a queda que o combate
+	# promete (`CREDITO_DO_SOCO`). O empurrao e um salto de posicao, nao uma
+	# velocidade, entao a conta de aproximacao nao o enxerga.
+	if derrubado_pelo_jogador():
+		_go_down()
+		return true
+	if ImpactoDeMoto.raspou(de_frente, tuning, _respiro_do_impacto > 0.0):
+		_raspa(normal, de_frente)
+		return false
+	var desvio := _quina(body, normal)
+	if desvio != Vector3.ZERO:
+		_ricocheteia(desvio, chegada)
+	elif not ImpactoDeMoto.derruba(chegada, tuning, false):
+		_quica(frente, v_outro, chegada)
+	else:
+		_go_down()
+	return true
+
+
+## Do que foi batido para o rival, no plano. Carro tem a face do modelo; o
+## resto (poste, predio, placa), a direcao do centro.
+func _normal_contra(body: Node3D) -> Vector3:
+	var rel := global_position - _centro_de(body)
+	rel.y = 0.0
+	if body is TrafficCar:
+		var car := body as TrafficCar
+		var x := car.global_basis.x
+		var z := car.global_basis.z
+		x.y = 0.0
+		z.y = 0.0
+		x = x.normalized()
+		z = z.normalized()
+		var em_x := absf(rel.dot(x)) / maxf(car.meia_largura(), 0.01)
+		var em_z := absf(rel.dot(z)) / maxf(car.meio_comprimento(), 0.01)
+		if em_x > em_z:
+			return x * signf(rel.dot(x))
+		return z * signf(rel.dot(z))
+	if rel.length_squared() < 1e-6:
+		return global_basis.z
+	return rel.normalized()
+
+
+func _centro_de(body: Node3D) -> Vector3:
+	if not (body is TrafficCar):
+		for filho in body.get_children():
+			if filho is CollisionShape3D:
+				return (filho as CollisionShape3D).global_position
+	return body.global_position
+
+
+## A velocidade do que foi batido, no mundo (ver `PlayerBike._velocidade_de`).
+func _velocidade_de(outro: Node3D) -> Vector3:
+	if not ("speed" in outro):
+		return Vector3.ZERO
+	var frente := -outro.global_basis.z
+	frente.y = 0.0
+	return frente.normalized() * float(outro.get("speed"))
+
+
+## Para que lado a quina joga o rival, ou zero se pegou a face cheia. So carro
+## tem face medida; o resto e batida cheia.
+func _quina(body: Node3D, normal: Vector3) -> Vector3:
+	if not (body is TrafficCar):
+		return Vector3.ZERO
+	var car := body as TrafficCar
+	var x := car.global_basis.x
+	var z := car.global_basis.z
+	x.y = 0.0
+	z.y = 0.0
+	x = x.normalized()
+	z = z.normalized()
+	var ao_longo := x
+	var meia_face := car.meia_largura()
+	if absf(normal.dot(x)) > absf(normal.dot(z)):
+		ao_longo = z
+		meia_face = car.meio_comprimento()
+	var centro := (global_position - car.global_position).dot(ao_longo)
+	var minha := (
+		absf(global_basis.x.dot(ao_longo)) * SIZE.x * 0.5
+		+ absf(global_basis.z.dot(ao_longo)) * SIZE.z * 0.5
+	)
+	return ao_longo * ImpactoDeMoto.lado_da_quina(centro, minha, meia_face, tuning)
+
+
+## Raspada: perde velocidade, ganha um empurrao pro lado e vai embora.
+func _raspa(normal: Vector3, de_frente: float) -> void:
+	speed *= 1.0 - tuning.scrape_speed_loss * maxf(de_frente, 0.25)
+	_empurrao += _lateral_de(normal) * 2.0
+	_respiro_do_impacto = ImpactoDeMoto.RESPIRO
+	_estrago.faisca(de_frente)
+
+
+## Pegou a quina (ou a porta): desvia para fora dela e segue, mais lento.
+func _ricocheteia(desvio: Vector3, chegada: float) -> void:
+	var forca := clampf(chegada / tuning.crash_min_speed, 0.25, 1.0)
+	speed *= 1.0 - tuning.scrape_speed_loss * (1.0 + forca)
+	# A moto do jogador gira a guinada para fora da quina e ganha um empurrao;
+	# parametrico, o rival soma os dois no deslocamento lateral.
+	var lado := _lateral_de(desvio)
+	_empurrao += lado * (speed * tan(deg_to_rad(tuning.corner_deflect * forca)) + 1.0 + 1.5 * forca)
+	_respiro_do_impacto = ImpactoDeMoto.RESPIRO
+	_estrago.faisca(forca)
+
+
+## Bateu sem chegar rapido o bastante para cair: fica com a velocidade do que
+## estava na frente, menos o tranco, e perde o comando por um instante.
+func _quica(frente: Vector3, v_outro: Vector3, chegada: float) -> void:
+	if chegada < ImpactoDeMoto.ENCOSTO:
+		# Encostar tira o embalo, nao o controle (V31): sem quique.
+		speed = minf(speed, maxf(v_outro.dot(frente), ImpactoDeMoto.ENCOSTO * 0.8))
+		return
+	speed = minf(speed, maxf(v_outro.dot(frente) - chegada * ImpactoDeMoto.QUIQUE, 0.0))
+	state = State.STAGGERED
+	state_timer = ImpactoDeMoto.TEMPO_DO_QUIQUE
+	_respiro_do_impacto = ImpactoDeMoto.RESPIRO
+	_estrago.faisca(clampf(chegada / tuning.crash_min_speed, 0.2, 1.0))
+
+
+## A componente lateral (+ = direita da pista) de uma direcao no mundo.
+func _lateral_de(direcao: Vector3) -> float:
+	return direcao.dot(track.sample_basis(offset).x)
 
 
 func _go_down() -> void:
@@ -634,4 +841,4 @@ func receive_hit(from_side: int, shove: float, stagger: float) -> void:
 	_lean = deg_to_rad(tuning.max_lean) * float(from_side) * 0.9
 	_lean_vel = 0.0
 	_apply_transform()
-	_check_wipeout()
+	_check_contacts()

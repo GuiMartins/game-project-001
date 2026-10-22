@@ -184,11 +184,13 @@ func _physics_process(delta: float) -> void:
 			# Muda de faixa: o corredor que estava aberto fecha, outro abre.
 			var dir := 1.0 if _rng.randf() < 0.5 else -1.0
 			var candidate := _target_lateral + RoadTrack.LANE_WIDTH * dir
-			var limit := RoadTrack.half_width() - RoadTrack.LANE_WIDTH * 0.5
+			# Quem manda no limite e a `mao_entre`, que e a pista inteira (ou a
+			# pista mais as faixas a mais da expressa) fora da expressa.
+			var mao := track.mao_entre(offset, offset + _antevisao())
+			var limit := (mao.y if candidate > 0.0 else -mao.x) - RoadTrack.LANE_WIDTH * 0.5
 			# Sem olhar para a moto, que e o susto do corredor; olhando para os
 			# outros carros, que e o que impede um de entrar no outro. Faixa
 			# ocupada e troca cancelada, e o sorteio da proxima ja saiu acima.
-			var mao := track.mao_entre(offset, offset + _antevisao())
 			var na_mao := candidate >= mao.x and candidate <= mao.y
 			if absf(candidate) <= limit and na_mao and _faixa_livre(candidate):
 				_target_lateral = candidate
@@ -292,6 +294,23 @@ func _pose(delta: float) -> void:
 func acertar_porta(forma: CollisionShape3D, chegada: float) -> Vector3:
 	if forma != _door_shape or _carro.porta_ativa() == null:
 		return Vector3.ZERO
+	return _dobra_porta(chegada)
+
+
+## O mesmo para quem nao tem fisica de contato (o rival): `onde` e o centro da
+## moto, e a porta so acerta quem esta em cima da folha aberta, com a folga de
+## meia moto.
+func porta_bate_em(onde: Vector3, chegada: float) -> Vector3:
+	if _door_shape.disabled or _carro.porta_ativa() == null:
+		return Vector3.ZERO
+	var local := _door_shape.global_transform.affine_inverse() * onde
+	var meia := (_door_shape.shape as BoxShape3D).size * 0.5
+	if absf(local.x) > meia.x + 0.4 or absf(local.z) > meia.z + 1.0:
+		return Vector3.ZERO
+	return _dobra_porta(chegada)
+
+
+func _dobra_porta(chegada: float) -> Vector3:
 	_carro.amassar_porta(chegada)
 	var fora := global_basis.x * float(_door_side)
 	fora.y = 0.0
@@ -390,7 +409,8 @@ func _set_door(open: bool) -> void:
 		# a mao de quem desceu chega nela nessa hora. A `ABERTA` fica aberta
 		# de vez, longe de quem olha, e nao tem ninguem saindo.
 		if _porta == Porta.NA_CARA and track != null:
-			var meio_fio := RoadTrack.half_width() * signf(lateral)
+			var lado := signf(lateral)
+			var meio_fio := (RoadTrack.half_width() + track.alarga_do_lado(offset, lado)) * lado
 			# O meio da calcada andavel, no X do carro.
 			var calcada_x := meio_fio - lateral + signf(lateral) * RoadTrack.SHOULDER * 0.5
 			_carro.desembarcar(_door_timer, calcada_x)

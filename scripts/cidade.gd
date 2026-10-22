@@ -339,7 +339,9 @@ func _monta_expressas(semente: int, props: Node3D) -> void:
 		var no_meio := track.pilares_no_meio[i]
 		ViaExpressa.montar(track, e.x, e.y, e.z, viaduto_de(e), paineis, props, no_meio)
 		var destinos: Array = Portal.DESTINOS[i % Portal.DESTINOS.size()]
-		var onde := track.transform_at(e.x + EXPRESSA_PLACA, Portal.LATERAL)
+		# A placa fica no andavel, e ali o asfalto ja alargou: acompanha.
+		var lateral_da_placa := Portal.LATERAL + track.alarga_em(e.x + EXPRESSA_PLACA)
+		var onde := track.transform_at(e.x + EXPRESSA_PLACA, lateral_da_placa)
 		props.add_child(Portal.placa(onde, mat, destinos))
 		_guindaste_atras_do_muro(e, i, props)
 		props.add_child(Contramao.criar(track, e, hash([semente, i, 7])))
@@ -350,9 +352,8 @@ func _monta_expressas(semente: int, props: Node3D) -> void:
 ## colisor: esta alem do muro e do alambrado.
 func _guindaste_atras_do_muro(e: Vector3, i: int, props: Node3D) -> void:
 	var fechado := -e.z
-	var lateral := (
-		(RoadTrack.sidewalk_limit() + ViaExpressa.MURO_ALTO.x + EXPRESSA_GUINDASTE_ATRAS) * fechado
-	)
+	var muro := RoadTrack.sidewalk_limit() + RoadTrack.EXPRESSA_EXTRA + ViaExpressa.MURO_ALTO.x
+	var lateral := (muro + EXPRESSA_GUINDASTE_ATRAS) * fechado
 	var base := track.transform_at(lerpf(e.x, e.y, EXPRESSA_GUINDASTE_EM), lateral)
 	var g := Guindaste.criar(
 		EXPRESSA_GUINDASTE_MASTRO, EXPRESSA_GUINDASTE_LANCA, _giro(hash([track.length, i]))

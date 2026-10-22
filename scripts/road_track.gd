@@ -28,6 +28,16 @@ const GRADE_BLEND: float = 0.3
 const LANE_WIDTH: float = 4.3
 const LANE_COUNT: int = 4
 const SHOULDER: float = 2.2
+## A via expressa ganha faixas do lado fechado (V37): duas, entre a pista de
+## sempre e o muro, o que a faz de seis. So la, e so do lado que a mao contraria
+## nao ocupa: a avenida de quatro e a metade do lado do viaduto ficam como
+## estavam, e as faixas de dentro nao saem do lugar.
+const EXPRESSA_FAIXAS_EXTRA: int = 2
+const EXPRESSA_EXTRA: float = LANE_WIDTH * EXPRESSA_FAIXAS_EXTRA
+## Em quantos metros, a partir de cada ponta, a pista vai de quatro a seis
+## faixas. Longo: a 180 km/h sao 1,2 s, e o transito que esta na faixa de
+## fora precisa de tempo para voltar (1,6 m/s de lado, uma faixa por vez).
+const EXPRESSA_RAMPA: float = 60.0
 ## Terreno plano de cada lado. Sem ele o mundo vira uma fita flutuando no
 ## vazio - a pista some contra o fundo e o jogador perde a nocao de onde esta.
 const GROUND: float = 34.0
@@ -361,10 +371,40 @@ func mao_entre(de: float, ate: float) -> Vector2:
 		var e := expressas[i]
 		if ate >= e.x - 2.0 * boca - ZEBRADO and de <= e.y + 2.0 * boca:
 			var folga := FOLGA_DOS_PILARES if _com_pilares(i) else FOLGA_DA_DUPLA
+			# As faixas a mais so valem com a janela inteira no miolo da
+			# expressa: quem olha uma ponta a frente ja volta para a pista.
+			var extra := 0.0
+			if de >= e.x + EXPRESSA_RAMPA and ate <= e.y - EXPRESSA_RAMPA:
+				extra = EXPRESSA_EXTRA
 			if e.z < 0.0:
-				return Vector2(folga, hw)
-			return Vector2(-hw, -folga)
+				return Vector2(folga, hw + extra)
+			return Vector2(-hw - extra, -folga)
 	return Vector2(-hw, hw)
+
+
+## Quanto a pista tem de largura a mais, do lado fechado, em `o` de uma expressa
+## que vai de `de` a `ate`: zero nas pontas, `EXPRESSA_EXTRA` do meio.
+static func alargamento(o: float, de: float, ate: float) -> float:
+	var t := clampf(minf(o - de, ate - o) / EXPRESSA_RAMPA, 0.0, 1.0)
+	return EXPRESSA_EXTRA * smoothstep(0.0, 1.0, t)
+
+
+## O alargamento do lado fechado em `o`, de qualquer expressa.
+func alarga_em(o: float) -> float:
+	for e in expressas:
+		if o >= e.x and o <= e.y:
+			return alargamento(o, e.x, e.y)
+	return 0.0
+
+
+## Quanto o meio-fio do lado `side` esta mais para fora em `o`: o alargamento do
+## lado fechado da expressa, e zero no outro. E o deslocamento de quem mora no
+## meio-fio (carro estacionado, poste).
+func alarga_do_lado(o: float, side: float) -> float:
+	for e in expressas:
+		if o >= e.x and o <= e.y:
+			return alargamento(o, e.x, e.y) if side == -e.z else 0.0
+	return 0.0
 
 
 func _com_pilares(i: int) -> bool:
@@ -570,6 +610,10 @@ func pintar(a_cruzamentos: Array[Vector2], a_boca: float) -> void:
 		sem_divisoria[lado_dela].append(Vector2(zebrado, e.x))
 		sem_divisoria[lado_dela].append(Vector2(e.y, boca_saida))
 		_zebrado(tinta, zebrado, boca_entrada, e.z)
+		# No lado fechado o meio-fio e a linha de bordo seguem o alargamento,
+		# num passo mais fino, abaixo.
+		sem_meio_fio[1 - k].append(Vector2(e.x, e.y))
+		sem_bordo[1 - k].append(Vector2(e.x, e.y))
 
 	var steps := int(length / MESH_STEP)
 	for i in range(steps):
@@ -594,6 +638,7 @@ func pintar(a_cruzamentos: Array[Vector2], a_boca: float) -> void:
 				var x := DUPLA_VAO * 0.5
 				_quad(amarela, a, b, x, x + DUPLA_LARGURA, 0.03)
 				_quad(amarela, a, b, -x - DUPLA_LARGURA, -x, 0.03)
+		_pinta_alargamento(tinta, curb, face, o0, o1, i % 3 != 2)
 		var dentro := road_w - BORDO_RECUO
 		for t in _recorta(o0, o1, sem_bordo[0]):
 			_quad(tinta, t.x, t.y, -dentro, -dentro + BORDO_LARGURA, 0.03)
@@ -619,6 +664,41 @@ func pintar(a_cruzamentos: Array[Vector2], a_boca: float) -> void:
 	_pintura.mesh = mesh
 	_pintura.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_pintura)
+
+
+## A tinta e o meio-fio do lado fechado das expressas entre `o0` e `o1`: a borda
+## acompanha o alargamento em passos de 1 m, e as divisorias das faixas a mais
+## so existem onde ja ha asfalto para elas. `tracejada` e a vez do traco.
+func _pinta_alargamento(
+	tinta: SurfaceTool, curb: SurfaceTool, face: SurfaceTool, o0: float, o1: float, tracejada: bool
+) -> void:
+	for e in expressas:
+		var a := maxf(o0, e.x)
+		var b := minf(o1, e.y)
+		if a >= b:
+			continue
+		var side := -e.z
+		var o := a
+		while o < b - 0.001:
+			var p := minf(o + 1.0, b)
+			var extra := alargamento((o + p) * 0.5, e.x, e.y)
+			var borda := half_width() + extra
+			var x0 := minf(side * borda, side * (borda + MEIO_FIO))
+			_quad(curb, o, p, x0, x0 + MEIO_FIO, ALTURA_MEIO_FIO)
+			_face(face, o, p, side * borda, ALTURA_MEIO_FIO)
+			var dentro := borda - BORDO_RECUO
+			var t0 := minf(side * dentro, side * (dentro - BORDO_LARGURA))
+			_quad(tinta, o, p, t0, t0 + BORDO_LARGURA, 0.03)
+			o = p
+		if not tracejada:
+			continue
+		for j in EXPRESSA_FAIXAS_EXTRA:
+			var x := side * (half_width() + LANE_WIDTH * j)
+			if (
+				alargamento(a, e.x, e.y) >= LANE_WIDTH * j + 1.0
+				and alargamento(b - 1.2, e.x, e.y) >= LANE_WIDTH * j + 1.0
+			):
+				_quad(tinta, a, b - 1.2, x - 0.16, x + 0.16, 0.03)
 
 
 ## O zebrado em cunha de `de` a `ate`, do lado `lado`: a linha que sai do

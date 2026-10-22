@@ -107,3 +107,22 @@ static func impulso_de_rampa(moto: Node3D, deslocamento: Vector3, velocidade: fl
 		# Com g=26, o teto de 5 m/s sobe menos de meio metro.
 		return minf(velocidade * 0.12, 5.0)
 	return 0.0
+
+
+## --- Nitro ----------------------------------------------------------------
+## Jogador e rival gastam e aceleram pelas mesmas contas.
+
+
+## O teto de velocidade, com o nitro ligado ou nao.
+static func teto_de_velocidade(t: BikeTuning, nitro: bool) -> float:
+	return t.max_speed * (t.boost_speed_mult if nitro else 1.0)
+
+
+## A aceleracao que o nitro soma, em m/s^2; zero desligado.
+static func aceleracao_do_nitro(t: BikeTuning, nitro: bool) -> float:
+	return t.boost_accel if nitro else 0.0
+
+
+## A carga (0 a 100) que sobra depois de `delta` segundos de nitro ligado.
+static func carga_apos_nitro(t: BikeTuning, carga: float, delta: float) -> float:
+	return maxf(carga - t.boost_drain * delta, 0.0)
