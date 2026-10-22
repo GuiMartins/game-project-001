@@ -64,7 +64,6 @@ static func criar(pe: Vector3, olha: Vector3) -> Amassavel:
 	olha.y = 0.0
 	mi.basis = Basis.looking_at(olha.normalized(), Vector3.UP)
 	corpo.add_child(mi)
-	corpo.usar_malha(mi)
 	# De noite: as duas lentes acendem e cada uma joga a sua poca, a da pista e
 	# a da calcada. O mesmo limiar para lente e luz, que e a mesma lampada.
 	var quando := Relogio.limiar(pe, ACENDE_DE, ACENDE_ATE)

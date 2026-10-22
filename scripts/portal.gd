@@ -120,7 +120,7 @@ static func _poste(onde: Transform3D, altura: float, mat: Dictionary) -> Node3D:
 	braco.material_override = mat["poste"]
 	raiz.add_child(braco)
 	braco.position = Vector3(-BRACO_COMPRIMENTO * 0.5, altura, 0.0)
-	Quebravel.com_colisor(raiz, COLISOR)
+	Amassavel.com_colisor(raiz, COLISOR)
 	return raiz
 
 
