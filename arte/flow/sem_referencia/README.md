@@ -1,5 +1,9 @@
 # NPC por vídeo no Flow: moça de moletom
 
+Para **criar outro personagem**, use [docs/PERSONAGENS.md](../../../docs/PERSONAGENS.md)
+e `python3 tools/dev.py personagem`. Esta pasta preserva a receita histórica
+da moça, incluindo seu formato de oito linhas e suas limitações.
+
 Receita do experimento de 19–20/10/2026, recuperada do Flow em 21/10/2026.
 A sexta pessoa do jogo foi gerada sem manequim 3D: turnaround por texto,
 um vídeo de caminhada por ângulo e montagem local do atlas.
