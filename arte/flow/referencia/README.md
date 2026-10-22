@@ -1,5 +1,9 @@
 # Criação de personagens e sprites no Gemini / Google Flow
 
+Para criar outro personagem do início à integração no jogo, siga primeiro o
+[procedimento de produção](../../../docs/PERSONAGENS.md). As regras de design
+abaixo valem tanto para esse fluxo por vídeo quanto para refações por folha.
+
 ## Regra principal: desenhar para espelhar
 
 Novos personagens e refações devem permitir reaproveitar uma animação para os

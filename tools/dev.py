@@ -966,6 +966,24 @@ def cmd_sprites_pedestres(_: argparse.Namespace) -> int:
     return _import_antes(binary)
 
 
+def cmd_personagem(args: argparse.Namespace) -> int:
+    """O fluxo por video usa um ambiente isolado, sem depender do Python da maquina."""
+    ambiente = DEV_DIR / "venv-flow"
+    python = ambiente / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python3")
+    if args.argumentos == ["setup"]:
+        code = subprocess.call([sys.executable, "-m", "venv", str(ambiente)])
+        if code != 0:
+            return code
+        return subprocess.call([str(python), "-m", "pip", "install", "Pillow==12.3.0", "numpy==2.3.5"])
+    if args.argumentos == ["testar"]:
+        if not python.exists():
+            return _fail("rode primeiro: python3 tools/dev.py personagem setup")
+        return subprocess.call([str(python), "-m", "unittest", "discover", "-s", str(PROJECT / "tools"),
+                                "-p", "test_personagem.py", "-v"])
+    return subprocess.call([str(python) if python.exists() else sys.executable,
+                            str(PROJECT / "arte/flow/personagem.py"), *args.argumentos])
+
+
 def cmd_sprites_ver(args: argparse.Namespace) -> int:
     """Abre o testador de sprites: todas as folhas do projeto, em 2D e em cena.
 
@@ -1106,6 +1124,8 @@ def main() -> int:
     sub.add_parser("boneco", help="gera as folhas de pose do boneco, de referencia para o Flow")
     sub.add_parser("sprites-pedestres", help="recorta as folhas de pedestre do Flow em atlas por pessoa")
     sub.add_parser("sprites", help="recorta as folhas do Google Flow no atlas do ator")
+    p_personagem = sub.add_parser("personagem", help="prepara, inspeciona e monta NPCs por video; ver docs/PERSONAGENS.md")
+    p_personagem.add_argument("argumentos", nargs=argparse.REMAINDER)
     sub.add_parser("sprites-relatorio", help="relatorio dos sprites em texto e imagem, sem janela")
     p_ver = sub.add_parser("sprites-ver", help="abre o testador: todas as folhas, em 2D e em cena")
     p_ver.add_argument("--sprite", help="id da folha para abrir (ex.: vovo_andando, moto)")
@@ -1142,6 +1162,7 @@ def main() -> int:
         "boneco": cmd_boneco,
         "sprites-pedestres": cmd_sprites_pedestres,
         "sprites": cmd_sprites,
+        "personagem": cmd_personagem,
         "sprites-ver": cmd_sprites_ver,
         "sprites-relatorio": cmd_sprites_relatorio,
         "versao": cmd_versao,

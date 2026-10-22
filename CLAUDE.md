@@ -76,6 +76,26 @@ coisa aqui que transforma a rede de proteção em enfeite.
 Detalhes de teste em [docs/TESTES.md](docs/TESTES.md); de ambiente e toolchain
 em [docs/AMBIENTE.md](docs/AMBIENTE.md).
 
+## Criar personagens e sprites no Gemini / Flow
+
+Ao receber "cria outro personagem", "mais um NPC" ou pedido equivalente,
+leia **[docs/PERSONAGENS.md](docs/PERSONAGENS.md)** antes de gerar arte. Esse
+é o procedimento de ponta a ponta: design espelhável, modelo e créditos,
+turnaround, prompts das cinco animações, fontes, montagem, conferência e
+integração. O agente executa e escolhe os detalhes técnicos; o usuário não
+precisa explicar o pipeline de novo nem editar código, prompts ou fichas.
+
+O padrão é um pedestre completo com andar, susto, desembarque, voo e caída,
+salvo escopo menor explicitamente pedido. Use `python3 tools/dev.py personagem`
+(`setup`, `preparar`, `inspecionar`, `validar`, `montar`, `concluir`, `testar`).
+Não entregue só a caminhada como personagem completo nem use fallback de
+outra pessoa para esconder ação faltando. O guia distingue a reprodução
+histórica validada das novas gerações que ainda precisam de inspeção visual.
+
+Por quê: a moça de moletom exigiu recuperar prompts e vídeos no Flow e ainda
+tinha animações de outra pessoa; uma sessão nova deve encontrar a receita e
+as condições de entrega neste repo, sem depender do histórico do chat.
+
 ## Invariantes que não se quebram sem conversa
 
 Cada um destes já custou um bug caro, e a maioria não dá erro no console — o
@@ -281,3 +301,4 @@ saber onde **não** há rede faz parte do contrato.
 | `docs/DIRECAO_VISUAL.md` | Como sair do greybox: resolução, sprite, luz, partícula. Leia antes de mexer no visual. |
 | `docs/BACKLOG_VISUAL.md` | A fila do que falta para chegar nas referências visuais. "Próxima tarefa" é o primeiro item aberto; ao fechar, marca-se no mesmo PR. |
 | `docs/MIGRACAO_2D.md` | O levantamento para tirar o 3D do jogo: cada folha do Flow, cada ângulo e o que vira código. |
+| `docs/PERSONAGENS.md` | Procedimento obrigatório para criar outro personagem no Gemini / Flow; comandos, modelos, fontes, animações e validação. |
