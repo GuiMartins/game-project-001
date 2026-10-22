@@ -11,13 +11,16 @@ const ANDANDO: Array[Texture2D] = [
 	preload("res://assets/sprites/pedestres/adolescente_andando.png"),
 	preload("res://assets/sprites/pedestres/escritorio_andando.png"),
 	preload("res://assets/sprites/pedestres/moletom_andando.png"),
+	preload("res://assets/sprites/pedestres/executivo_andando.png"),
 ]
 const PRAIA: int = 2
+## Elenco aprovado apenas para andar: outras poses conservam a propria identidade.
+const APENAS_CAMINHADA: Array[int] = [6]
 ## A moca de moletom so tem a folha de andar por enquanto: nas outras poses ela
 ## usa a ultima da lista (o escritorio) ate haver o susto, a queda, o voo e o
 ## desembarque dela. Ver `da_pose`.
 ## Altura da celula da folha de andar. Quantas linhas a folha tem sai da altura da
-## imagem: 5 (frente, 3/4, lado, 3/4 costas, costas, com o lado esquerdo
+## imagem: 4 (sem 3/4 costas), 5 (frente, 3/4, lado, 3/4 costas, costas, com o lado esquerdo
 ## espelhado) ou 8, com o lado esquerdo desenhado de verdade. A de 8 existe para
 ## quem tem algo de um lado so (uma bolsa a tiracolo), que trocaria de ombro no
 ## espelho.
@@ -68,9 +71,11 @@ func _init() -> void:
 
 
 ## Um material por atlas: todos os quads da mesma pessoa compartilham o desenho.
-## A folha da pose do `avatar`, ou a da ultima pessoa que tem uma, para quem
-## ainda so tem a de andar.
+## A folha da pose do `avatar`. Caminhadas parciais conservam a propria arte;
+## o fallback historico da moca de moletom continua sendo o escritorio.
 static func da_pose(folhas: Array[Texture2D], avatar: int) -> Texture2D:
+	if avatar in APENAS_CAMINHADA:
+		return ANDANDO[avatar]
 	return folhas[mini(avatar, folhas.size() - 1)]
 
 
@@ -107,6 +112,20 @@ func posar(
 	var angulos := 0
 	var quadro := 0
 	position.y = 0.0
+	if avatar in APENAS_CAMINHADA:
+		# A caminhada parcial nao empresta as reacoes de outro personagem.
+		# O corpo continua na fisica; a arte fica num quadro da propria folha.
+		if estado == Pessoa.Estado.ANDANDO:
+			quadro = posmod(floori(fase / TAU * 8.0), 8)
+		var no_ar := estado == Pessoa.Estado.VOANDO
+		var no_chao := estado == Pessoa.Estado.CAIDA
+		if no_ar or no_chao:
+			pe = Vector2i(80, 100)
+			position.y = Pessoa.PIVO.y
+		_configurar(atlas, celula, pe, colunas, linhas, angulos)
+		_material.set_shader_parameter(&"quadro", quadro)
+		_material.set_shader_parameter(&"giro", giro if no_ar else PI / 2.0 if no_chao else 0.0)
+		return
 	match estado:
 		Pessoa.Estado.ANDANDO:
 			quadro = posmod(floori(fase / TAU * 8.0), 8)
@@ -151,7 +170,10 @@ func posar(
 func _configurar(
 	atlas: Texture2D, celula: Vector2i, pe: Vector2i, colunas: int, linhas: int, angulos: int
 ) -> void:
-	if _material.get_shader_parameter(&"atlas") != atlas:
+	if (
+		_material.get_shader_parameter(&"atlas") != atlas
+		or _quadro.center_offset.y != (pe.y - float(celula.y) * 0.5) / PPM
+	):
 		_material.set_shader_parameter(&"atlas", atlas)
 		_quadro.size = Vector2(celula) / PPM
 		_quadro.center_offset = Vector3(

@@ -55,6 +55,8 @@ void vertex() {
 	float a = acos(clamp(dot(para_camera, frente), -1.0, 1.0));
 	int faixa = clamp(int(round(a * 4.0 / PI)), 0, 4);
 	int linha = faixa;
+	// Quatro vistas reais: os tres quartos traseiros usam as costas.
+	if (angulos == 0 && linhas == 4) linha = min(faixa, 3);
 	if (angulos == 1) linha = min(faixa, 2);
 	if (angulos == 2) linha = faixa == 0 ? 3 : faixa == 1 ? 1 : faixa == 2 ? 0 : 2;
 	if (angulos == 3) linha = faixa == 4 ? 2 : faixa == 3 ? 1 : faixa == 2 ? 0 : 3;

@@ -89,8 +89,13 @@ func test_cada_folha_de_pedestre_ganha_a_nota_de_semelhanca_com_a_referencia() -
 		if item.tipo != CatalogoSprites.Tipo.PEDESTRE:
 			continue
 		AnaliseSprites.analisar(item)
-		assert_int(item.iou_referencia.size()).is_equal(item.quadros())
-		assert_object(item.referencia).is_not_null()
+		if item.animacao == "andando" and item.linhas == 4:
+			# Dividir a referencia de cinco angulos em quatro compara vistas erradas.
+			assert_int(item.iou_referencia.size()).is_equal(0)
+			assert_object(item.referencia).is_null()
+		else:
+			assert_int(item.iou_referencia.size()).is_equal(item.quadros())
+			assert_object(item.referencia).is_not_null()
 
 
 func test_o_mesmo_quadro_em_tres_pessoas_vira_suspeita_da_referencia() -> void:
