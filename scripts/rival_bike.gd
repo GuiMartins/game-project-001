@@ -301,7 +301,8 @@ func _physics_process(delta: float) -> void:
 		_lado_queda,
 		_lean,
 		0.0,
-		_freio
+		_freio,
+		_empina
 	)
 	# Parametrico na curva, o rival nao escorrega: a roda vai sempre para onde
 	# a moto aponta.
