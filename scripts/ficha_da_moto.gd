@@ -29,6 +29,12 @@ var torque_kgfm: float
 ## Marchas do cambio; 0 e automatico (CVT). Nao entra na fisica: e o ator que
 ## troca de marcha pela velocidade, com a mao na embreagem e o pe na alavanca.
 var marchas: int
+## Onde sai a chama do nitro (`ChamaDoNitro`), no corpo da moto: x para o
+## lado do escape, y de altura sobre o chao, z para tras do centro. Nao e dado
+## de fabrica: e medido no modelo, da ponteira que cada moto tem.
+var escape: Vector3
+## Quanto a chama cresce em relacao a de uma CG: moto maior solta chama maior.
+var chama: float
 
 
 func _init(
@@ -39,7 +45,9 @@ func _init(
 	a_cilindrada: float,
 	a_potencia: float,
 	a_torque: float,
-	a_marchas: int
+	a_marchas: int,
+	a_escape := Vector3(0.18, 0.3, 0.95),
+	a_chama: float = 1.0
 ) -> void:
 	peso_kg = a_peso
 	entre_eixos_mm = a_entre_eixos
@@ -49,6 +57,8 @@ func _init(
 	potencia_cv = a_potencia
 	torque_kgfm = a_torque
 	marchas = a_marchas
+	escape = a_escape
+	chama = a_chama
 
 
 ## A ficha do `modelo` (um `Entregador.Modelo`), ou null se a moto nao tem.
@@ -62,11 +72,29 @@ static func de(modelo: int) -> FichaDaMoto:
 		Entregador.Modelo.XRE_300:
 			# A XRE 300 de cinco marchas; a Sahara, que veio depois, tem seis.
 			return FichaDaMoto.new(
-				148.0, 1417.0, 860.0, ["90/90-21", "120/80-18"], 291.6, 25.6, 2.8, 5
+				148.0,
+				1417.0,
+				860.0,
+				["90/90-21", "120/80-18"],
+				291.6,
+				25.6,
+				2.8,
+				5,
+				Vector3(0.2, 0.45, 0.95),
+				1.25
 			)
 		Entregador.Modelo.PCX_160:
 			return FichaDaMoto.new(
-				124.0, 1313.0, 764.0, ["110/70-14", "130/70-13"], 156.9, 16.0, 1.5, 0
+				124.0,
+				1313.0,
+				764.0,
+				["110/70-14", "130/70-13"],
+				156.9,
+				16.0,
+				1.5,
+				0,
+				Vector3(0.2, 0.32, 0.9),
+				0.9
 			)
 	return null
 

@@ -112,6 +112,7 @@ var _hitboxes: Dictionary = {}
 var _visual: Node3D
 var _ator: Entregador
 var _derrapagem: Derrapagem
+var _chama_do_nitro: ChamaDoNitro
 var _estrago: Estrago
 ## O que o polegar pediu neste passo. So a pose le: a fisica recebe o input
 ## direto em `_ride`.
@@ -159,6 +160,9 @@ func _ready() -> void:
 	_derrapagem = Derrapagem.new()
 	_derrapagem.position = Vector3(0.0, -SIZE.y * 0.5, Derrapagem.EIXO_TRASEIRO)
 	add_child(_derrapagem)
+	_chama_do_nitro = ChamaDoNitro.new()
+	add_child(_chama_do_nitro)
+	_chama_do_nitro.usar_modelo(_ator.modelo, -SIZE.y * 0.5)
 	_estrago = Estrago.new()
 	_estrago.position = Vector3(0.0, -SIZE.y * 0.5, 0.0)
 	add_child(_estrago)
@@ -182,6 +186,7 @@ func marcar_foco() -> void:
 func usar_modelo(modelo: int) -> void:
 	_ator.trocar_modelo(modelo)
 	_fisica = FisicaDaMoto.de(modelo)
+	_chama_do_nitro.usar_modelo(modelo, -SIZE.y * 0.5)
 
 
 func modelo() -> int:
@@ -298,6 +303,7 @@ func _physics_process(delta: float) -> void:
 	# carenagem, e isso e faisca (V24), nao fumaca.
 	var no_asfalto := state != State.CRASHED and not airborne
 	_derrapagem.atualizar(delta, derrapada if no_asfalto else 0.0)
+	_chama_do_nitro.atualizar(delta, boosting)
 	var caida := state == State.CRASHED
 	_estrago.atualizar(delta, caida, Vector2(velocity.x, velocity.z).length() if caida else 0.0)
 
@@ -522,6 +528,11 @@ func _resolve_collisions() -> void:
 		normal = normal.normalized()
 
 		var outro := col.get_collider()
+		if outro is Amassavel:
+			# O poste fica de pe e leva a marca; quem cai, se chegou rapido, e o
+			# jogador, pelo caminho de batida de qualquer obstaculo fixo.
+			var de_frente := maxf(-_antes_da_batida.dot(normal), 0.0)
+			(outro as Amassavel).amassar(de_frente / tuning.max_speed, _antes_da_batida)
 		if outro is Quebravel:
 			var peca := outro as Quebravel
 			if not peca.quebrado:

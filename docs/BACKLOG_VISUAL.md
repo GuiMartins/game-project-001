@@ -1728,7 +1728,7 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
   - **Aceite:** a resposta escrita aqui, com a data. Sim ou não, as duas são
     resultado.
 
-- [ ] **V33** — O trânsito contrário obedece ao slider de tráfego
+- [x] **V33** — O trânsito contrário obedece ao slider de tráfego
 
   O Arthur pôs o tráfego em 0 e o lado contrário continuou com carros: "o
   sentido contrário não é afetado". Os carros do sentido contrário são do `Contramao` (`contramao.gd`), que
@@ -1742,8 +1742,11 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
     faz. Estado por instância.
   - **Aceite:** com tráfego 0 não há carro em nenhum sentido, e a mudança no
     slider vale sem reiniciar a corrida. Teste unitário da densidade.
+  - **Feito:** `WorldTuning.fracao_do_transito` (cheia no valor de fábrica, 25)
+    chega ao `Contramao.ajustar_densidade` pelo `World`, ao vivo. A pista
+    nasce povoada por inteiro e é aparada, para o sorteio da largada não mudar.
 
-- [ ] **V34** 👤 — Poste que tomba, e não que sai arrancado
+- [x] **V34** 👤 — Poste que amassa, e o jogador que cai
 
   O Arthur viu os postes "arrancados" e achou que deveriam **derrubar**,
   "como qualquer outro item" (o resto da frase, "poderíamos ter re...",
@@ -1759,8 +1762,15 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
     mesma peça serve ao poste de dois braços (V15) e ao do portal.
   - **Aceite:** o poste atingido cai para o lado da batida e não some. Os
     números de combate do `baseline.json` não andam, ou andam com motivo.
+  - **Feito, com a resposta do Arthur:** o que ele queria era **o jogador
+    tombar em alta velocidade**, e não o poste. O poste (`Amassavel`) deixou de
+    voar: fica de pé, com o mesmo colisor, e a malha envergada para longe da
+    batida, mais quanto mais forte ela foi (até 24°). Quem cai é o jogador, pelo
+    caminho de batida de qualquer obstáculo fixo (`crash_min_speed`); devagar,
+    quica. O rival é paramétrico e não bate no poste, então só o jogador amassa.
+    O semáforo e as placas seguem como `Quebravel`.
 
-- [ ] **V35** — Nitro com chama azul
+- [x] **V35** — Nitro com chama azul
 
   O Arthur: "o nitro poderia soltar fogo azul, como uma indicação do uso".
   Não achei partícula de escape ligada ao boost; só a velocidade e o
@@ -1773,6 +1783,10 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
     curta sob a moto de noite, como o fogo da V24.
   - **Aceite:** a chama aparece só durante o boost, em todas as motos e em
     rival que usa boost; `fps` medido.
+  - **Feito:** `ChamaDoNitro`, no corpo da moto como a `Derrapagem`; posição do
+    escape e escala vêm da `FichaDaMoto` (`escape`, `chama`). Luz azul só de
+    noite. O rival tem `boosting` (hoje sempre falso): quando ele usar nitro, é
+    ligar o campo. A posição do escape foi estimada, não conferida no modelo.
 
 - [ ] **V36** — Neblina só no horizonte
 

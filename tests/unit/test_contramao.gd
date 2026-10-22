@@ -119,3 +119,42 @@ func test_a_largada_repete_o_transito() -> void:
 	assert_int(c._carros.size()).is_equal(antes.size())
 	for i in antes.size():
 		assert_vector(_onde(c, c._carros[i]).origin).is_equal_approx(antes[i], Vector3.ONE * 0.01)
+
+
+func test_trafego_zero_esvazia_e_a_mudanca_vale_ao_vivo() -> void:
+	# O slider de trafego do F3 manda na mao contraria tambem, e sem reiniciar:
+	# o Arthur pos 0 e o sentido contrario seguiu cheio.
+	var c := _contramao(Cidade.LADO_ESQUERDA)
+	var cheio := c._carros.size()
+	assert_int(cheio).is_greater(0)
+	c.ajustar_densidade(0.0)
+	assert_int(c._carros.size()).is_equal(0)
+	# Nem nasce carro novo enquanto o slider esta em zero.
+	for i in 1200:
+		c._physics_process(PASSO)
+	assert_int(c._carros.size()).is_equal(0)
+	c.ajustar_densidade(1.0)
+	for i in 1200:
+		c._physics_process(PASSO)
+	assert_int(c._carros.size()).is_greater(0)
+
+
+func test_metade_do_slider_deixa_metade_dos_carros() -> void:
+	var c := _contramao(Cidade.LADO_DIREITA)
+	var cheio := c._carros.size()
+	c.ajustar_densidade(0.5)
+	assert_int(c._carros.size()).is_equal(ceili(cheio * 0.5))
+	# E a largada nova respeita o slider em vez de voltar ao cheio.
+	c.reiniciar()
+	assert_int(c._carros.size()).is_equal(ceili(cheio * 0.5))
+
+
+func test_fracao_do_transito_chega_ao_cheio_no_valor_de_fabrica() -> void:
+	var t := WorldTuning.new()
+	assert_float(t.fracao_do_transito()).is_equal(1.0)
+	t.traffic_count = 0
+	assert_float(t.fracao_do_transito()).is_equal(0.0)
+	t.traffic_count = 120
+	assert_float(t.fracao_do_transito()).is_equal(1.0)
+	t.traffic_count = WorldTuning.TRAFFIC_COUNT_CHEIO / 2
+	assert_float(t.fracao_do_transito()).is_between(0.4, 0.6)
