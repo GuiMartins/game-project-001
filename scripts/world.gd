@@ -245,8 +245,14 @@ func start_race(grid_offset: float = 0.0, at_speed: float = 0.0) -> void:
 func grid_slot(index: int, base: float) -> Vector2:
 	var row := index / 2
 	var column := index % 2
-	var forward := base + 26.0 - float(row) * 7.0
-	return Vector2(maxf(forward, 4.0), RoadTrack.corridor_center(0 if column == 0 else 2))
+	# Grid em zigue-zague, como o de moto de verdade: a coluna da direita larga
+	# 3,5 m atras, e cada fila se desloca meio metro para o lado oposto da
+	# anterior. Sem isso as motos largam emparelhadas e uma atras da outra em
+	# linha reta, e o que se ve e uma parede de traseiras.
+	var forward := base + 26.0 - float(row) * 7.0 - float(column) * 3.5
+	var lado := (0.5 if row % 2 == 0 else -0.5) * (1.0 if column == 0 else -1.0)
+	var lateral := RoadTrack.corridor_center(0 if column == 0 else 2) + lado
+	return Vector2(maxf(forward, 4.0), lateral)
 
 
 ## --- Construcao -----------------------------------------------------------
