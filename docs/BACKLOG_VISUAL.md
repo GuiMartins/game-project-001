@@ -1818,7 +1818,7 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
     A 70 m o véu cai de 27% para 13%, e a sombra de 250 m segue dissolvendo
     antes do fim da neblina.
 
-- [ ] **V37** — Variação de faixas na pista
+- [x] **V37** — Variação de faixas na pista
 
   O Arthur: "hoje o jogo tem a mesma quantidade de faixas no jogo inteiro".
   Quer variação. Hoje são `LANE_COUNT` faixas
@@ -1835,6 +1835,25 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
   - **Aceite:** a pista muda de 2 para 4 faixas e de volta sem degrau; o
     trânsito e a pintura acompanham. Semente fixa, então o `selftest` não
     anda, ou anda com motivo no baseline.
+
+  - **Escopo decidido pelo Guilherme:** só na via expressa, trecho mais largo,
+    e o resto da pista intacto (a avenida de 4 faixas e o lado da mão contrária
+    não mudam). Nada de nº de faixas por trecho em toda a `RoadTrack`: seria
+    refatorar ~20 arquivos que leem `LANE_COUNT` como constante.
+  - **Feito:** o lado fechado da expressa ganha 2 faixas (6 no total,
+    `RoadTrack.EXPRESSA_FAIXAS_EXTRA`), com rampa de 60 m em cada ponta
+    (`alargamento`, em S). As faixas de antes não saem do lugar. Muro, grama
+    e acostamento do lado fechado andam `EXPRESSA_EXTRA` para fora; o asfalto
+    afunila por cima da calçada. Meio-fio, linha de bordo e divisórias
+    tracejadas seguem o alargamento (`_pinta_alargamento`). O trânsito usa as
+    faixas novas por conta própria, só com a janela inteira no miolo
+    (`mao_entre`), e volta para a pista antes da rampa; o carro estacionado
+    encosta no meio-fio novo; poste e placa verde acompanham.
+  - **Não feito:** rival e `free_lateral` do mundo só conhecem as 4 faixas
+    de sempre, então os rivais não usam as novas; é o próximo passo se
+    a expressa ficar vazia demais.
+  - **Baseline:** `corrida_raspadas` 30 → 23 (o muro e os postes do lado
+    fechado estão 8,6 m mais longe, então a moto raspa menos).
 
 - [x] **V38** — "Não entendi a cor do dia"
 

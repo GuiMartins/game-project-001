@@ -389,8 +389,10 @@ func _build_scenery() -> void:
 		var na_rua := Cidade.na_boca(track.cruzamentos, o, side)
 		# Embaixo do viaduto o poste de 10 m fura o tabuleiro de 7.
 		var fura := Cidade.sob_viaduto(track, o, side)
+		# O lado fechado da expressa ganhou asfalto: o poste ficaria no meio dele.
+		var no_asfalto := track.alarga_do_lado(o, side) > 1.0
 		o += gerador.randf_range(18.0, 34.0)
-		if na_rua or fura:
+		if na_rua or fura or no_asfalto:
 			continue
 		props.add_child(Poste.criar(at, para_a_pista))
 
@@ -466,7 +468,11 @@ func _place_car(car: TrafficCar, at_offset: float) -> void:
 			porta = TrafficCar.Porta.ABERTA
 		elif sorteio < world_tuning.door_open_chance + world_tuning.door_ambush_chance:
 			porta = TrafficCar.Porta.NA_CARA
-		car.recycle(at_offset, _na_mao(at_offset, RoadTrack.lane_center(curb)), true, porta)
+		# O meio-fio da expressa alargada esta mais para fora: o carro encosta
+		# nele, e nao no meio da pista.
+		var lateral := _na_mao(at_offset, RoadTrack.lane_center(curb))
+		lateral += signf(lateral) * track.alarga_do_lado(at_offset, signf(lateral))
+		car.recycle(at_offset, lateral, true, porta)
 	else:
 		car.recycle(at_offset, _na_mao(at_offset, _pick_lane()), false)
 	_desencosta(car)
