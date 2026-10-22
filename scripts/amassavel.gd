@@ -12,9 +12,9 @@ extends StaticBody3D
 ## corrida mudaria a quina que o rival pega.
 
 ## O topo envergado na batida mais forte (a 100% da `max_speed`).
-const ENVERGA_MAX: float = 24.0
+const ENVERGA_MAX: float = 40.0
 ## Quanto o desenho encolhe na batida mais forte, por causa da dobra.
-const ENCOLHE_MAX: float = 0.1
+const ENCOLHE_MAX: float = 0.2
 ## Abaixo disto a marca nao e batida, e encosto: nao amassa nem avisa.
 const FORCA_MINIMA: float = 0.05
 

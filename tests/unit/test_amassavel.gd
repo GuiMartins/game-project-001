@@ -26,7 +26,7 @@ func test_poste_amassa_conforme_a_forca_e_fica_de_pe() -> void:
 	poste.amassar(1.0, Vector3.FORWARD * 40.0)
 	var topo_forte := malha.global_transform * (inicial.affine_inverse() * alto)
 	assert_float(topo_forte.z).is_less(topo_fraco.z)
-	assert_float(topo_forte.y).is_greater(4.5)
+	assert_float(topo_forte.y).is_greater(3.0)
 	# Batida mais fraca depois nao desamassa.
 	poste.amassar(0.1, Vector3.FORWARD * 5.0)
 	assert_float(poste.amassado).is_equal(1.0)
