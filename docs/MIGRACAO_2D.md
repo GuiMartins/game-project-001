@@ -94,9 +94,18 @@ mesmo PR da tarefa, com uma linha de resultado. A V27 (o veredito) espera a
   o brilho por cima, e só o freio acende de dia. Provado numa folha de teste,
   de dia e de noite. A lente do poste (2D50) já está na ficha dele; ligar o
   poste em sprite no mundo é outro passo.)
-- [ ] **2D04** — **O testador vê tudo.** `CatalogoSprites.Tipo` ganha carro,
+- [x] **2D04** — **O testador vê tudo.** `CatalogoSprites.Tipo` ganha carro,
   prop e fachada, e a análise mede pé, altura e ângulo deles como já mede os
   da moto e do pedestre.
+  (23/10/2026: o catálogo varre também `assets/sprites/carros`, `props` e
+  `fachadas` (pasta que ainda não existe não atrapalha). Carro e fachada leem a
+  ficha de grade do recorte; o prop lê `tamanho` e `angulo`. Cada um é medido
+  em pé constante por linha, altura desenhada contra `altura_m × px/m` (10%) e
+  rótulo de ângulo conhecido. O prop não acusa "encosta na borda", porque a
+  célula dele é a caixa do desenho. Os seis props de hoje passam limpos; carro
+  e fachada ficaram provados com folha sintética, já que ainda não há arte. A
+  cena do testador mostra os três parados, na escala da ficha, com o pé no
+  chão.)
 - [ ] **2D05** 👤 — **Prova do projetor antes da arte.** Um pseudo-3D mínimo
   com a pista atual (curva e rampa do `RoadTrack` como dado), o asfalto e a
   calçada que já existem, e os sprites que já existem (CG e as cinco

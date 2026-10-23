@@ -118,7 +118,7 @@ func _ready() -> void:
 	_posiciona_camera()
 
 
-## Poe `item` em cena. Folha que nao e de pedestre nem de moto fica vazia.
+## Poe `item` em cena: a moto e o pedestre animados, o resto parado.
 func mostrar(item: CatalogoSprites.Item) -> void:
 	_item = item
 	_avatar = _avatar_do(item)
@@ -190,6 +190,9 @@ func _monta() -> void:
 		_moto.sprite = true
 		_moto.cadencia.hz = cadencia_hz
 		return
+	if _item.tipo != CatalogoSprites.Tipo.PEDESTRE:
+		_sujeitos.add_child(_sprite_parado(_item))
+		return
 	var quantos := PedestreSprite.ANDANDO.size() if elenco else 1
 	for i in quantos:
 		var pessoa := PedestreSprite.new()
@@ -200,7 +203,29 @@ func _monta() -> void:
 	_posa_pessoas()
 
 
+## Carro, prop e fachada: o primeiro quadro da folha num plano de frente para a
+## camera, na escala real da ficha (`pixels_por_metro`) e com o pe da ficha em
+## cima do chao. E o que o testador consegue mostrar antes de o jogo ter
+## projetor 2D: o tamanho ao lado da regua e dos postes.
+static func _sprite_parado(item: CatalogoSprites.Item) -> Sprite3D:
+	var sprite := Sprite3D.new()
+	var textura := item.textura()
+	if textura != null and item.celula != Vector2i.ZERO:
+		var recorte := AtlasTexture.new()
+		recorte.atlas = textura
+		recorte.region = Rect2(Vector2.ZERO, item.celula)
+		sprite.texture = recorte
+	sprite.pixel_size = 1.0 / item.pixels_por_metro
+	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_OPAQUE_PREPASS
+	sprite.centered = false
+	sprite.offset = Vector2(-item.pe.x, -item.pe.y)
+	return sprite
+
+
 func _posa_pessoas() -> void:
+	if _item == null or _item.tipo != CatalogoSprites.Tipo.PEDESTRE:
+		return
 	var estado := _estado_de(_item)
 	var rapidez := 1.0 if movendo else 0.0
 	# A pose pula na cadencia e o relogio anda liso, como o `Pessoa` faz: a
