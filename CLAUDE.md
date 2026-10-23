@@ -310,6 +310,6 @@ saber onde **não** há rede faz parte do contrato.
 | `docs/PROTOTIPO.md` | Por que o jogo é assim. Leia antes de mexer no feel. |
 | `docs/GDD.md` | O briefing original, congelado. O que o jogo queria ser. |
 | `docs/DIRECAO_VISUAL.md` | Como sair do greybox: resolução, sprite, luz, partícula. Leia antes de mexer no visual. |
-| `docs/BACKLOG_VISUAL.md` | A fila do que falta para chegar nas referências visuais. "Próxima tarefa" é o primeiro item aberto; ao fechar, marca-se no mesmo PR. |
-| `docs/MIGRACAO_2D.md` | O levantamento para tirar o 3D do jogo: cada folha do Flow, cada ângulo e o que vira código. |
+| `docs/BACKLOG_VISUAL.md` | A fila visual antiga (V01–V40), encerrada: histórico e régua de aceite. A V27 espera a migração 2D. |
+| `docs/MIGRACAO_2D.md` | A fila ativa: tirar o 3D do jogo, folha do Flow por folha. "Próxima tarefa" é o primeiro item `[ ]` dele; ao fechar, marca-se no mesmo PR. |
 | `docs/PERSONAGENS.md` | Procedimento obrigatório para criar outro personagem no Gemini / Flow; comandos, modelos, fontes, animações e validação. |

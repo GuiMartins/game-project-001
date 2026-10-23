@@ -51,6 +51,12 @@ Decisões tomadas com o Guilherme:
 
 ## Fila
 
+**"Faz a próxima tarefa" = o primeiro item `[ ]` desta fila**, de cima para
+baixo (👤 pergunta ao Guilherme antes). Desde 23/10/2026 ela substitui a
+`BACKLOG_VISUAL.md` nessa função. Ao fechar, marca `[x]` com data e PR no
+mesmo PR da tarefa, com uma linha de resultado. A V27 (o veredito) espera a
+2D93.
+
 ### Ferramenta
 
 - [x] **2D01** — **Referência para qualquer modelo.** O `dev.py boneco` só

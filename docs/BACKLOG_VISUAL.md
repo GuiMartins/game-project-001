@@ -19,8 +19,18 @@ repete as contas deles, só aponta:
 
 ## Como usar
 
-**"Faz a próxima tarefa" = o primeiro item `[ ]` desta lista**, de cima para
-baixo. Item marcado 👤 depende do Guilherme (decisão de produto ou arquivo que
+**Esta fila está encerrada para fins de "próxima tarefa" (23/10/2026).** O
+jogo vai sair do 3D e virar sprites 2D (pseudo-3D em `Node2D`), e a fila
+ativa passou para [MIGRACAO_2D.md](MIGRACAO_2D.md): **"faz a próxima tarefa"
+= o primeiro item `[ ]` de lá**, de cima para baixo. Os únicos `[ ]` que
+sobram aqui são a **V27**, que espera a migração acabar (ver o item), e o
+que for ressuscitado de propósito. Tudo o que vem abaixo vale como histórico
+e como régua de aceite (referências, `prova --referencia`), mas não se pega
+item daqui.
+
+Nas regras abaixo, "esta lista" e "o primeiro `[ ]`" valem para a fila da
+`MIGRACAO_2D.md` na hora de escolher; o resto (branch, PR, marcar `[x]` no
+mesmo PR) é igual nas duas. Item marcado 👤 depende do Guilherme (decisão de produto ou arquivo que
 só ele tem): quem for implementar pergunta na hora, com a recomendação que o
 item já traz, e não pula para o seguinte sem a resposta.
 
@@ -1868,7 +1878,7 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
   - **Sobra:** a corrida anoitece sozinha pelo progresso, sem aviso. Se o
     Arthur reclamar disso, vira item próprio ("aviso de que anoitece").
 
-- [ ] **V39** — Atalhos de depuração e câmera achável
+- [~] **V39** — Atalhos de depuração e câmera achável (cancelada em 23/10/2026: decisão do Guilherme; o remake 2D troca câmera e render, então os toggles seriam refeitos)
 
   Áudio do Arthur: pôr em F1 a F12 as características que se quer mudar
   jogando, em toggle: sombra, neblina, brilho, borrão, mais e menos trânsito.
@@ -1887,7 +1897,7 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
   - **Aceite:** o Arthur troca de câmera e liga e desliga cada efeito sem
     perguntar. Cobertura em `docs/TESTES.md` se o painel entrar sem teste.
 
-- [ ] **V40** 👤 — Câmera do capacete que inclina nas curvas
+- [~] **V40** 👤 — Câmera do capacete que inclina nas curvas (cancelada em 23/10/2026: decisão do Guilherme; as câmeras passam a ser as do projetor 2D)
 
   O Arthur: "a câmera do capacete deveria inclinar nas curvas", e a da
   `GARUPA` "parece aleatória", sem lógica. A lógica existe e está no
@@ -1927,7 +1937,12 @@ HUD (o Arthur não entendeu; vêm da referência, ficam como estão).
   piloto 15% maior): não compensei com `garupa_fov`, para não mexer na câmera
   que já foi ajustada à mão; se pesar, é o `garupa_fov` ou o `k`.
 
-- [ ] **V27** — O veredito
+- [ ] **V27** — O veredito (adiado em 23/10/2026: só depois da migração 2D, a partir da 2D93)
+
+  **Depende da migração para 2D** ([MIGRACAO_2D.md](MIGRACAO_2D.md)): o
+  estado final é o jogo em sprite, não o 3D de hoje, então o veredito sobre o
+  3D não vale. Só se pega depois que a 2D92 e a 2D93 fecharem; até lá não
+  entra em "próxima tarefa".
 
   A P9. A folha da V02 com o estado final, e a pergunta "isso é o mesmo
   jogo?" feita a alguém que não trabalhou no protótipo.
