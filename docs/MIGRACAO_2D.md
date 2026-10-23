@@ -197,8 +197,16 @@ moto: `cg`, `xre`, `pcx`.
   parado sai do assoalho no desenho, como pediu o item; no catálogo o parado
   segue sem a conferência de pé constante. A caída repete a fraqueza da CG e da
   XRE: a linha 3/4 de frente sai quase de lado.)
-- [ ] **2D15** — **O piloto solto**, igual nas três motos: voando (4 × 8) e
+- [x] **2D15** — **O piloto solto**, igual nas três motos: voando (4 × 8) e
   caído (4 × 3), como as folhas do pedestre.
+  (23/10/2026: `piloto_voando` (4 × 8, linhas lado, 3/4 de costas, costas e 3/4
+  de frente) e `piloto_caido` (4 × 3, de bruços), em `assets/sprites/moto/`, sem
+  moto nenhuma e com o capacete e a bag, uma vez só para as três motos. Cada uma
+  saiu de uma geração e recortou de primeira, pelo `por_manchas: "folha"`: as
+  linhas do voo se encostam na vertical. O voo escala pelo primeiro quadro (o
+  piloto ainda de pé, 1,7 m), e o caído pelo comprimento da linha do lado. Os
+  quadros do voo são julgados pelo giro: confira jogando se o quadro 3 da linha
+  de costas (o piloto visto de cima, pequeno) lê como queda, e não como corte.)
 - [ ] **2D16** — **Placa por código.** O texto Mercosul de cada moto
   (`placa.gd`) desenhado sobre um retângulo da ficha, e não na folha.
 
