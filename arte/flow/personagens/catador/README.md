@@ -107,3 +107,30 @@ Validação do efeito: **396 testes unitários**, **14 verificações do selftes
 lint e `shots` (**19 quadros**, comparação visual aprovada), todos com saída 0.
 Nenhum baseline alterado. O efeito foi conferido em render nativo 2D e a
 bancada também foi capturada; integração com o catador continua pendente.
+
+## Checklist para concluir o personagem
+
+- [ ] Com saldo disponível no Flow, gerar referências dedicadas de 3/4 frente
+  e 3/4 costas e refazer as duas caminhadas reprovadas, sem giro de câmera.
+- [ ] Gerar a caída 3/4 frontal que foi recusada por falta de créditos.
+- [ ] Conferir todos os clipes e escolher fases coerentes: caminhada de dois
+  passos, rotação completa do voo e impacto/deslize/repouso de bruços.
+- [ ] Preencher índices, quadro de escala e aprovações na ficha, preservando
+  as tentativas e os prompts reais de novas gerações.
+- [ ] Montar os três atlas, conferir espelho, escala, chão, loop e ausência de
+  membros ou saco cortados; registrar hashes e concluir o escopo reduzido.
+- [ ] Fazer o ator e a multidão respeitarem a caminhada com célula de 256 px,
+  mantendo o corpo na escala correta e a âncora estável apesar do saco.
+- [ ] Incluir o catador no elenco e no testador com identidade própria em
+  caminhada, voo e caída; não habilitar desembarque nem emprestar susto de
+  outro personagem.
+- [ ] No impacto, retirar o saco fechado e disparar `SacoReciclaveis` na
+  posição projetada correta. Acompanhar o movimento da câmera/pista em 2D,
+  acertar escala/profundidade e liberar o emissor após `terminou`.
+- [ ] Conferir caminhada e atropelamento integrados nos dois sentidos, com
+  o saco estourando no momento do impacto e lixo legível na resolução do jogo.
+- [ ] Repetir `personagem testar`, `test`, `selftest`, `lint` e `shots` após a
+  integração, salvar evidências e atualizar este estado para concluído.
+
+O efeito 2D e a bancada já estão prontos e testados. A falta de créditos
+bloqueia a geração dos clipes restantes; nenhum processo fica aguardando saldo.
