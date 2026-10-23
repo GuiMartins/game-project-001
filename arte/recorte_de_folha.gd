@@ -110,9 +110,14 @@ static func acha_desenhos(
 	vao: int,
 	area_minima: int,
 	medidor: Callable,
-	manchas_ate: int = 0
+	manchas_ate: int = 0,
+	linhas_n: int = 0
 ) -> Array:
 	var desenhos: Array = []
+	if manchas_ate > 0 and linhas_n > 0:
+		return _por_manchas_na_folha(
+			cheio, largura, altura, area_minima, manchas_ate, linhas_n, medidor
+		)
 	for faixa in faixas(soma_linhas(cheio, largura, altura), vao):
 		var linha: Array = []
 		if manchas_ate > 0:
@@ -235,6 +240,47 @@ static func por_manchas(
 			)
 	)
 	return achados
+
+
+## `por_manchas` na folha inteira, para quando as linhas tambem se encostam (a
+## roda de uma toca a cabeca da de baixo, e nenhuma faixa de linha separa as
+## duas): acha as `colunas * linhas_n` maiores manchas, ordena pelo centro
+## vertical, corta em `linhas_n` linhas de `colunas` e ordena cada uma pelo
+## centro horizontal. Serve enquanto as linhas ficarem mais afastadas entre si
+## do que as figuras de uma mesma linha ficam umas das outras na vertical.
+static func _por_manchas_na_folha(
+	cheio: PackedByteArray,
+	largura: int,
+	altura: int,
+	area_minima: int,
+	colunas: int,
+	linhas_n: int,
+	medidor: Callable
+) -> Array:
+	var todas := por_manchas(
+		cheio, largura, Vector2i(0, altura), area_minima, colunas * linhas_n, medidor
+	)
+	if todas.size() != colunas * linhas_n:
+		return [todas]
+	todas.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			return (
+				(a["retangulo"] as Rect2i).get_center().y
+				< (b["retangulo"] as Rect2i).get_center().y
+			)
+	)
+	var linhas: Array = []
+	for l in linhas_n:
+		var linha: Array = todas.slice(l * colunas, (l + 1) * colunas)
+		linha.sort_custom(
+			func(a: Dictionary, b: Dictionary) -> bool:
+				return (
+					(a["retangulo"] as Rect2i).get_center().x
+					< (b["retangulo"] as Rect2i).get_center().x
+				)
+		)
+		linhas.append(linha)
+	return linhas
 
 
 ## Quantos desenhos ha em cada linha achada.
@@ -465,7 +511,8 @@ static func atlas_da_ficha(ficha: Dictionary, imagem: Image) -> Dictionary:
 		int(ficha["vao"]),
 		int(ficha["area_minima"]),
 		caixa_do_desenho,
-		colunas if ficha.get("por_manchas", false) else 0
+		colunas if ficha.get("por_manchas", false) else 0,
+		linhas.size() if str(ficha.get("por_manchas", false)) == "folha" else 0
 	)
 	var achados := contagem(desenhos)
 	if desenhos.size() != linhas.size() or achados.any(func(n: int) -> bool: return n != colunas):

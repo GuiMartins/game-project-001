@@ -278,3 +278,15 @@ Como a CG pilotando e parado foram feitas (23/10/2026), com Nano Banana 2.1,
 - **Folha alta (moto caída):** 9:16 no seletor de proporção, 5 linhas × 1 coluna;
   a ficha mede a escala pelo comprimento da linha do lado (`escala:
   comprimento`, `medir_linhas: [2]`).
+- **Moto diferente (XRE, 2D13):** o turnaround é o mesmo, e a moto vai descrita
+  no prompt (modelo, suspensão, rodas, cores). Mesmo com `no red parts` o
+  prompt precisa dizer a cor, ou a moto herda a do entregador.
+- **Download 2K pode vazar:** o "Aprimorada" refez o tombo da XRE com o
+  turnaround em fantasma atrás das figuras, e a prévia no navegador estava
+  limpa. Se a imagem baixada não bate com a prévia, baixe o 1K ("Tamanho
+  original"), que só tem o nome sem o `_2K_`. Para achar o arquivo certo na
+  pasta de Downloads, use `find -newer` contra a folha anterior: o nome de
+  duas gerações diferentes pode ser igual.
+- **Linhas que se encostam na vertical (golpe, caída):** `por_manchas: "folha"`
+  na ficha acha as figuras na folha toda e as agrupa em linhas pelo centro
+  vertical.
