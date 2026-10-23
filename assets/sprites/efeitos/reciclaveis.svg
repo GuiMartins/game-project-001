@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="48" viewBox="0 0 256 48">
+<defs>
+ <linearGradient id="alu"><stop stop-color="#505965"/><stop offset=".3" stop-color="#e0e5e7"/><stop offset=".58" stop-color="#a1aeb7"/><stop offset=".8" stop-color="#f3f0de"/><stop offset="1" stop-color="#535d65"/></linearGradient>
+ <linearGradient id="pet"><stop stop-color="#315b69"/><stop offset=".25" stop-color="#a5d6d8"/><stop offset=".6" stop-color="#749caa"/><stop offset="1" stop-color="#244652"/></linearGradient>
+ <linearGradient id="verde"><stop stop-color="#153c2c"/><stop offset=".35" stop-color="#5b9b71"/><stop offset=".7" stop-color="#37624c"/><stop offset="1" stop-color="#122b25"/></linearGradient>
+ <linearGradient id="saco"><stop stop-color="#090d10"/><stop offset=".38" stop-color="#3c4348"/><stop offset=".6" stop-color="#141b20"/><stop offset="1" stop-color="#05080b"/></linearGradient>
+</defs>
+<!-- Cores sem marca: a silhueta e os aros leem como lata mesmo girando. -->
+<g stroke="#303a43" stroke-width="1">
+ <path d="M8 12Q15 9 23 12L24 36Q16 40 7 36Z" fill="url(#alu)"/>
+ <path d="M8 18Q16 20 23 18L24 31Q16 34 7 31Z" fill="#ac332d" stroke="none"/>
+ <path d="M10 19L11 31" stroke="#ee8c71"/><ellipse cx="15.5" cy="12" rx="7.5" ry="2.5" fill="url(#alu)"/>
+ <ellipse cx="15.5" cy="12" rx="2" ry=".8" fill="#59616a"/><path d="M8 35Q16 38 24 35" fill="none" stroke="#e1e5e3"/>
+ <g transform="translate(32)"><path d="M8 12Q16 9 23 12L24 36Q16 40 7 36Z" fill="url(#alu)"/><path d="M8 22L23 21L23 29L8 31Z" fill="#cda52e" stroke="none"/><ellipse cx="15.5" cy="12" rx="7.5" ry="2.5" fill="url(#alu)"/><ellipse cx="16" cy="12" rx="2" ry=".8" fill="#59616a"/><path d="M8 35Q16 38 24 35" fill="none" stroke="#e1e5e3"/></g>
+</g>
+<!-- PET com gargalo, tampa, ombros e nervuras; opaco para sobreviver a 640x360. -->
+<g transform="translate(64)">
+ <path d="M13 7L19 7L19 13Q20 16 24 20L25 39Q23 44 16 42Q9 44 7 39L8 20Q12 16 13 13Z" fill="url(#pet)" stroke="#293f49"/>
+ <path d="M12 5L20 5L20 10L12 10Z" fill="#286aa0" stroke="#1d354f"/>
+ <path d="M8 24Q16 26 24 24L24 32Q16 34 8 32Z" fill="#d2ceaf"/>
+ <path d="M10 20L10 23M10 34L10 38M9 35Q16 37 24 35M9 38Q16 40 24 38" stroke="#c2e3df" fill="none"/>
+</g>
+<g transform="translate(96)">
+ <path d="M13 7L19 7L19 13Q20 16 24 20L25 39Q23 44 16 42Q9 44 7 39L8 20Q12 16 13 13Z" fill="url(#verde)" stroke="#142e25"/>
+ <path d="M12 5L20 5L20 10L12 10Z" fill="#d9b82c" stroke="#695b21"/>
+ <path d="M8 24Q16 26 24 24L24 32Q16 34 8 32Z" fill="#bdbda4"/>
+ <path d="M10 20L10 23M10 34L10 38M9 35Q16 37 24 35M9 38Q16 40 24 38" stroke="#85b991" fill="none"/>
+</g>
+<g transform="translate(128)"><path d="M5 9L20 15L28 36L13 31L7 40L10 20Z" fill="url(#saco)" stroke="#070b0d"/><path d="M9 15L19 26L23 34M11 19L13 30" stroke="#59636a" fill="none"/></g>
+<g transform="translate(160)"><path d="M13 8L11 3L19 5L22 3L20 10L24 18L29 33L27 43Q16 47 4 42L3 32L8 17Z" fill="url(#saco)" stroke="#030609"/><path d="M15 11L8 35L14 40M18 12L22 35L27 40M14 14L15 36M9 20L6 32" stroke="#525b63" fill="none"/><path d="M12 10L21 10" stroke="#07090b" stroke-width="2"/></g>
+<g transform="translate(192)"><path d="M16 9L12 5L10 16L3 32L5 42L16 44L18 35L14 31L19 24L14 20L18 15Z" fill="url(#saco)" stroke="#080c0e"/><path d="M14 14L7 34L13 39" fill="none" stroke="#59626a"/></g>
+<g transform="translate(224)"><path d="M16 9L21 5L23 18L29 34L26 42L16 44L18 35L14 31L19 24L14 20L18 15Z" fill="url(#saco)" stroke="#080c0e"/><path d="M21 15L24 36L19 40" fill="none" stroke="#59626a"/></g>
+</svg>
