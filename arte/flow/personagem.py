@@ -56,6 +56,21 @@ def gravar(path: pathlib.Path, data: dict) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
 
+def configuracao(nome: str, anim: dict) -> dict:
+    cfg = dict(ANIMACOES[nome])
+    largura = anim.get('largura_celula', cfg['celula'][0])
+    # Acessorios pedidos podem ultrapassar a largura do corpo, sem diminuir
+    # sua escala fisica nem cortar o saco nas bordas da caminhada.
+    if (type(largura) is not int
+            or (nome != 'andando' and largura != cfg['celula'][0])
+            or not cfg['celula'][0] <= largura <= 320):
+        raise ValueError('Largura de celula invalida para esta animacao.')
+    cfg['celula'] = [largura, cfg['celula'][1]]
+    cfg['pe'] = [largura // 2, cfg['pe'][1]]
+    cfg['vistas'] = anim.get('vistas', cfg['vistas'])
+    return cfg
+
+
 def preparar(pasta: pathlib.Path, identificador: str, descricao: str, altura: float) -> pathlib.Path:
     if not re.fullmatch(r'[a-z][a-z0-9]*', identificador):
         raise ValueError('ID deve ter somente letras minusculas e numeros, iniciando com letra (sem sublinhado: o catalogo separa ID e animacao por ele).')
@@ -120,12 +135,12 @@ def validar_ficha(path: pathlib.Path, animacoes: list[str]) -> dict:
         raise ValueError('Registre projeto_url, modelo_imagem e modelo_video observados no Flow antes da montagem.')
     verificar_fonte(base, ficha['turnaround'])
     for nome in animacoes:
-        cfg = ANIMACOES[nome]
         anim = ficha.get('animacoes', {}).get(nome, {})
+        cfg = configuracao(nome, anim)
         linhas = anim.get('linhas', [])
         vistas = anim.get('vistas', cfg['vistas'])
         quatro = ['frente', 'tres_quartos_frente', 'lado', 'costas']
-        if vistas != cfg['vistas'] and not (nome == 'andando' and vistas == quatro):
+        if vistas != ANIMACOES[nome]['vistas'] and not (nome == 'andando' and vistas == quatro):
             raise ValueError(f'{nome}: conjunto de vistas nao suportado pelo ator.')
         if anim.get('altura_estavel_px') is not None and (nome != 'andando' or anim['altura_estavel_px'] != round(ficha['altura_m'] * 100)):
             raise ValueError('Altura estavel so se aplica ao andar, na altura fisica da ficha.')
@@ -265,9 +280,8 @@ def montar(path: pathlib.Path, nomes: list[str], destino: pathlib.Path, cache: p
     produtos = []
     # Monta tudo antes de escrever para nao deixar metade de um lote que falhou.
     for nome in nomes:
-        cfg = dict(ANIMACOES[nome])
         anim = ficha['animacoes'][nome]
-        cfg['vistas'] = anim.get('vistas', cfg['vistas'])
+        cfg = configuracao(nome, anim)
         if anim.get('altura_estavel_px'):
             cfg['altura_estavel_px'] = anim['altura_estavel_px']
         if nome == 'caida':
@@ -294,9 +308,14 @@ def montar(path: pathlib.Path, nomes: list[str], destino: pathlib.Path, cache: p
 
 def concluir(path: pathlib.Path, atlas: pathlib.Path) -> None:
     from PIL import Image
-    ficha = validar_ficha(path, list(ANIMACOES))
-    for nome, cfg in ANIMACOES.items():
+    dados = ler(path)
+    nomes = dados.get('escopo', list(ANIMACOES))
+    if nomes not in [list(ANIMACOES), ['andando'], ['andando', 'voando', 'caida']]:
+        raise ValueError('Escopo deve ser completo, caminhada ou caminhada e atropelamento.')
+    ficha = validar_ficha(path, nomes)
+    for nome in nomes:
         anim = ficha['animacoes'][nome]
+        cfg = configuracao(nome, anim)
         png = atlas / f'{ficha["id"]}_{nome}.png'
         if not anim.get('aprovada') or not png.is_file() or anim.get('atlas_sha256') != hashlib.sha256(png.read_bytes()).hexdigest():
             raise ValueError(f'{nome}: falta atlas aprovado e seu hash depois da conferencia visual.')
@@ -340,9 +359,9 @@ def main(argv=None) -> int:
             print(args.saida)
         elif args.comando == 'concluir':
             concluir(args.ficha, args.atlas)
-            print('Cinco animacoes e fichas aprovadas, fontes e hashes conferidos. Confira tambem a integracao no jogo.')
+            print('Animacoes do escopo aprovadas, fontes e hashes conferidos. Confira tambem a integracao no jogo.')
         else:
-            nomes = [args.animacao] if args.animacao else list(ANIMACOES)
+            nomes = [args.animacao] if args.animacao else ler(args.ficha).get('escopo', list(ANIMACOES))
             if args.comando == 'validar':
                 validar_ficha(args.ficha, nomes)
                 print('Fontes, prompts, metadados e selecao de quadros conferidos. A aprovacao visual do atlas ainda e necessaria.')

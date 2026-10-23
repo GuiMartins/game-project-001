@@ -115,6 +115,23 @@ class PersonagemTest(unittest.TestCase):
             self.assertTrue(np.all(cel[..., 1][borda] <= limite[borda]))
             self.assertTrue(set(np.unique(cel[..., 3])).issubset({0, 255}))
 
+    def test_acessorio_largo_cabe_sem_diminuir_a_pessoa(self):
+        imgs = self.frames()
+        original = p.recortar(imgs, [0], 0, p.ANIMACOES['andando'], 1.75)[0].getbbox()
+        im = Image.open(imgs[0])
+        ImageDraw.Draw(im).rectangle((100, 150, 180, 225), fill='#202020')
+        im.save(imgs[0])
+        with self.assertRaisesRegex(ValueError, 'nao cabe'):
+            p.recortar(imgs, [0], 0, p.ANIMACOES['andando'], 1.75)
+        cfg = p.configuracao('andando', {'largura_celula': 256})
+        cel = p.recortar(imgs, [0], 0, cfg, 1.75)[0]
+        self.assertEqual(cel.size, (256, 200))
+        self.assertEqual(cel.getbbox()[3] - cel.getbbox()[1], original[3] - original[1])
+        self.assertGreater(cel.getbbox()[0], 0)
+        for largura in [0, 500, True]:
+            with self.assertRaisesRegex(ValueError, 'Largura'):
+                p.configuracao('andando', {'largura_celula': largura})
+
     def test_voo_centra_corpo_e_caida_cabe_deitada(self):
         imgs = self.frames()
         celulas = p.recortar(imgs, list(range(8)), 0, p.ANIMACOES['voando'], 1.75)
@@ -181,6 +198,19 @@ class PersonagemTest(unittest.TestCase):
             ficha['animacoes'][nome].update(aprovada=True, atlas_sha256=hashlib.sha256(png.read_bytes()).hexdigest())
         p.gravar(path, ficha)
         p.concluir(path, self.base / 'atlas')
+        # Escopo reduzido e explicito nao exige acoes fora do pedido, mas
+        # continua recusando a caida ausente no conjunto de atropelamento.
+        ficha['escopo'] = ['andando', 'voando', 'caida']
+        del ficha['animacoes']['susto']
+        del ficha['animacoes']['desembarcando']
+        p.gravar(path, ficha)
+        p.concluir(path, self.base / 'atlas')
+        ficha['animacoes']['caida']['aprovada'] = False
+        p.gravar(path, ficha)
+        with self.assertRaisesRegex(ValueError, 'caida'):
+            p.concluir(path, self.base / 'atlas')
+        ficha['animacoes']['caida']['aprovada'] = True
+        p.gravar(path, ficha)
         png.write_bytes(b'alteracao posterior a aprovacao')
         with self.assertRaisesRegex(ValueError, 'hash'):
             p.concluir(path, self.base / 'atlas')

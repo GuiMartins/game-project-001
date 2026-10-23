@@ -1,0 +1,341 @@
+{
+  "versao": 1,
+  "id": "catador",
+  "descricao": "Homem brasileiro moreno, cabelo comprido desgrenhado, barba grisalha e bone bege generico. Camisa velha listrada vermelho e preto, sem escudo, texto ou marca, bermuda jeans e chinelos pretos. Postura pouco curvada, corpo solto e expressao de malucao; passos arrastados, movimentos bruscos do braco livre como se desse ou levasse sustos. Outra mao arrasta um enorme sacao preto de reciclaveis, da altura da cintura, que estoura no atropelamento.",
+  "altura_m": 1.68,
+  "geracao": {
+    "projeto_url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5",
+    "modelo_imagem": "Nano Banana 2.1",
+    "modelo_video": "Omni 1.1 Flash",
+    "creditos": {
+      "teto_novo_personagem": 104,
+      "videos_submetidos": 13,
+      "consumidos": null,
+      "imagens_creditos_por_geracao": 0,
+      "videos_concluidos": 12,
+      "custo_nominal_videos_concluidos": 51,
+      "observacao": "Ultima geracao recusada pela UI por limite de uso e creditos insuficientes. Saldo/debito final nao confirmado. Nao houve compra nem upgrade."
+    }
+  },
+  "turnaround": {
+    "arquivo": "originais/turnaround.jpg",
+    "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/d18abdb2-2350-49e4-b624-3f8ad6c49a65",
+    "sha256": "9b71aab9c403d1099ec3d1ba7d1f60828c2479a5b06359017a36ebbd3524a82c"
+  },
+  "animacoes": {
+    "andando": {
+      "aprovada": false,
+      "linhas": [
+        {
+          "vista": "frente",
+          "arquivo": "originais/andando_frente.mp4",
+          "prompt": "prompts/andando_frente.txt",
+          "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/5a1b09f3-3150-42cf-94fe-03d1fa3261a2",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-23",
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "resolucao": "360p",
+            "duracao_s": 4,
+            "seed": "nao exposta",
+            "modo": "Elementos",
+            "credito": 4
+          },
+          "sha256": "c3e33fccb43687674ab7108c10b3dd90bac841395b8a1857fa8b8b464d3c93de",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "tres_quartos_frente",
+          "arquivo": "originais/andando_tres_quartos_frente-tentativa-01.mp4",
+          "prompt": "prompts/andando_tres_quartos_frente-tentativa-01.txt",
+          "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/30bde8fd-3b2e-4cc1-8c61-e5893ad05ac6",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-23",
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "resolucao": "360p",
+            "duracao_s": 4,
+            "seed": "nao exposta",
+            "modo": "Elementos",
+            "credito": 4
+          },
+          "sha256": "26fb5ecd819ac680c368bda9ba439e081f548354d32c5f0d55d664fdcca0e488",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false,
+          "reprovacao": "Angulo errado ou muda para perfil durante o video; refazer com referencia dedicada ao angulo."
+        },
+        {
+          "vista": "lado",
+          "arquivo": "originais/andando_lado.mp4",
+          "prompt": "prompts/andando_lado.txt",
+          "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/4314bed4-dfb7-42fb-8b43-0c094ab929a6",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-23",
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "resolucao": "720p",
+            "duracao_s": 4,
+            "seed": "nao exposta",
+            "modo": "Elementos",
+            "credito": 7
+          },
+          "sha256": "6e0631f545ed55a216b3321a17f3456f4c4f1406f849dc099405c9c7f10e064a",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "tres_quartos_costas",
+          "arquivo": "originais/andando_tres_quartos_costas-tentativa-01.mp4",
+          "prompt": "prompts/andando_tres_quartos_costas-tentativa-01.txt",
+          "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/9d3105d8-5781-4663-ab21-737b4b609620",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-23",
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "resolucao": "360p",
+            "duracao_s": 4,
+            "seed": "nao exposta",
+            "modo": "Elementos",
+            "credito": 4
+          },
+          "sha256": "16352dad6acc501c8251441ad2f177c9b4708b7a92de37d25eb2d9bbbf2e1176",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false,
+          "reprovacao": "Angulo errado ou muda para perfil durante o video; refazer com referencia dedicada ao angulo."
+        },
+        {
+          "vista": "costas",
+          "arquivo": "originais/andando_costas.mp4",
+          "prompt": "prompts/andando_costas.txt",
+          "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/686089fb-39eb-4da8-920a-644641332c16",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-23",
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "resolucao": "360p",
+            "duracao_s": 4,
+            "seed": "nao exposta",
+            "modo": "Elementos",
+            "credito": 4
+          },
+          "sha256": "3c26310b4e329da5f47e229e4d919cb3ba604026047340a947259e7f33d99ff9",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        }
+      ],
+      "largura_celula": 256
+    },
+    "voando": {
+      "aprovada": false,
+      "linhas": [
+        {
+          "vista": "lado",
+          "arquivo": "originais/voando_lado.mp4",
+          "prompt": "prompts/voando_lado.txt",
+          "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/74858c1c-cc5f-4a5e-9c8f-82e35dae4cf9",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-23",
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "resolucao": "360p",
+            "duracao_s": 4,
+            "seed": "nao exposta",
+            "modo": "Elementos",
+            "credito": 4
+          },
+          "sha256": "a7db5073b3d0ad0a9e90adc822907a3dc2facfb8ead9ade3f7252835859f922d",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "tres_quartos_costas",
+          "arquivo": "originais/voando_tres_quartos_costas.mp4",
+          "prompt": "prompts/voando_tres_quartos_costas.txt",
+          "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/055254b9-4afc-4912-873c-04ee827d9471",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-23",
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "resolucao": "360p",
+            "duracao_s": 4,
+            "seed": "nao exposta",
+            "modo": "Elementos",
+            "credito": 4
+          },
+          "sha256": "84e03752bdd46d02107f4e36ac1e62f19dee41ecdbc99feec60b40084bce6c5b",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "costas",
+          "arquivo": "originais/voando_costas.mp4",
+          "prompt": "prompts/voando_costas.txt",
+          "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/8d5430dc-d208-49a9-b4ec-477cf1ac71e4",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-23",
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "resolucao": "360p",
+            "duracao_s": 4,
+            "seed": "nao exposta",
+            "modo": "Elementos",
+            "credito": 4
+          },
+          "sha256": "5ee6bdda023bbc1b870a0dd5f62b9b99cb3e549d98d243d6a4463aaa413179c3",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "tres_quartos_frente",
+          "arquivo": "originais/voando_tres_quartos_frente.mp4",
+          "prompt": "prompts/voando_tres_quartos_frente.txt",
+          "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/859c1003-11c1-4d69-84c1-974d68bf6558",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-23",
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "resolucao": "360p",
+            "duracao_s": 4,
+            "seed": "nao exposta",
+            "modo": "Elementos",
+            "credito": 4
+          },
+          "sha256": "ab3f37bb09961efb7c543dbf007b8aa55796031e74da1024ac4bdd0883916556",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        }
+      ]
+    },
+    "caida": {
+      "aprovada": false,
+      "linhas": [
+        {
+          "vista": "lado",
+          "arquivo": "originais/caida_lado.mp4",
+          "prompt": "prompts/caida_lado.txt",
+          "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/0390800a-17f1-4f6a-b160-089b614def71",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-23",
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "resolucao": "360p",
+            "duracao_s": 4,
+            "seed": "nao exposta",
+            "modo": "Elementos",
+            "credito": 4
+          },
+          "sha256": "f6c5eb5f8f15e68a153163b9179c5b422f91e13a86b3c532680da4974b29742f",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "tres_quartos_costas",
+          "arquivo": "originais/caida_tres_quartos_costas.mp4",
+          "prompt": "prompts/caida_tres_quartos_costas.txt",
+          "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/69d13b6b-1316-450f-9e3b-175239face52",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-23",
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "resolucao": "360p",
+            "duracao_s": 4,
+            "seed": "nao exposta",
+            "modo": "Elementos",
+            "credito": 4
+          },
+          "sha256": "776e7fddb12e36b188ae7582dfde4915a401a5306b91980951823d445b23b522",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "costas",
+          "arquivo": "originais/caida_costas.mp4",
+          "prompt": "prompts/caida_costas.txt",
+          "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/2cf5ed57-ecf5-473f-968b-8dd21c9d3667",
+          "modelo": "Omni 1.1 Flash",
+          "parametros": {
+            "data": "2026-10-23",
+            "proporcao": "16:9",
+            "quantidade": 1,
+            "resolucao": "360p",
+            "duracao_s": 4,
+            "seed": "nao exposta",
+            "modo": "Elementos",
+            "credito": 4
+          },
+          "sha256": "8c2e642bf7e147f45c272689f2906fe2f8aaf88e3048ed23adbfd7a13cc69322",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "tres_quartos_frente",
+          "arquivo": "originais/caida_tres_quartos_frente.mp4",
+          "prompt": "prompts/caida_tres_quartos_frente.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        }
+      ]
+    }
+  },
+  "escopo": [
+    "andando",
+    "voando",
+    "caida"
+  ],
+  "excecoes_design": "Cabelo comprido, saco na mao e gestos caricatos solicitados explicitamente pelo usuario. Saco unico pode trocar de mao no espelho; nao ha mao dominante canonica. Camisa so listrada, sem escudo ou marcas.",
+  "estado_producao": "bloqueado_por_creditos",
+  "pendencias": [
+    "Refazer caminhada 3/4 frontal: saiu perfil.",
+    "Refazer caminhada 3/4 traseira: gira para perfil durante o clipe.",
+    "Gerar caida 3/4 frontal: Flow recusou por limite de uso/creditos insuficientes.",
+    "Conferir demais fontes, selecionar ciclos, montar e aprovar os tres atlas.",
+    "Implementar explosao do saco com dezenas de latas/PET e integrar apenas caminhada/atropelamento.",
+    "Conferir no jogo e rodar os portoes da integracao."
+  ],
+  "referencias_intermediarias": [
+    {
+      "arquivo": "originais/turnaround-revisao-02.jpg",
+      "sha256": "4dea5e90ebaf4ac79b24b90caaeb91e2c5054ad7f6f99f65667af937ed27f379",
+      "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/d18abdb2-2350-49e4-b624-3f8ad6c49a65"
+    },
+    {
+      "arquivo": "originais/turnaround-revisao-03.jpg",
+      "sha256": "540cc44e6b9f7b279c22ab5e464abed51fb8b8c0f0b4853bf71688c83669cefc",
+      "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/d18abdb2-2350-49e4-b624-3f8ad6c49a65"
+    },
+    {
+      "arquivo": "originais/turnaround-tentativa-01.jpg",
+      "sha256": "4366f4fef48454e2754e6da0b95779a604037fd9c0864c6e8789570f4a38065e",
+      "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/d18abdb2-2350-49e4-b624-3f8ad6c49a65"
+    }
+  ]
+}
