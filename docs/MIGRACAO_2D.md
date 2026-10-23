@@ -111,6 +111,17 @@ mesmo PR da tarefa, com uma linha de resultado. A V27 (o veredito) espera a
   calçada que já existem, e os sprites que já existem (CG e as cinco
   pessoas). São umas 80 gerações no Flow pela frente: a pergunta "o
   pseudo-3D está gostoso?" precisa de resposta antes delas.
+  **Prova pronta (23/10/2026), falta o veredito do Guilherme**: `dev.py
+  projetor` abre a pista de verdade (`RoadTrack`, semente 20260831) projetada
+  por segmento (`ProjetorPista`, `TelaProjetor`): asfalto e calçada em
+  perspectiva certa, linha a linha; faixas pintadas por código; fachadas como
+  quadriláteros; poste, copa, palmeira, as pessoas e a CG (a curva escolhe o
+  quadro). Setas pilotam, `--auto` pilota sozinho, `--captura` tira foto.
+  O ganho da curva (`GANHO_CURVA`, 0,35) é o botão que mais muda o feel:
+  contada inteira, a pista de 0,6°/m dobra sobre si mesma. Conhecido e
+  deixado de fora: sem trânsito, colisão, luz de noite, borrão nem som; o
+  asfalto não tem mipmap e cintila de longe. Só vira `[x]` quando ele jogar
+  e disser que sim (ou não).
 
 ### Moto e piloto
 

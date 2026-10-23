@@ -1048,6 +1048,27 @@ def cmd_sprites_ver(args: argparse.Namespace) -> int:
     return _godot(binary, "res://scenes/sprites.tscn", "--", *extra)
 
 
+def cmd_projetor(args: argparse.Namespace) -> int:
+    """Abre a prova do projetor 2D (2D05): a pista de verdade em pseudo-3D.
+
+    Com tela, como o `run`. Setas ou WASD pilotam. `--auto` pilota sozinho e
+    `--captura` salva a tela num PNG e sai, para conferir sem olhar.
+    """
+    binary = require_godot(godot_version())
+    code = _import_antes(binary)
+    if code != 0:
+        return code
+    extra: list[str] = []
+    if args.auto:
+        extra.append("--auto")
+    if args.vel is not None:
+        extra.append(f"--vel={args.vel}")
+    if args.captura:
+        extra.append(f"--captura={pathlib.Path(args.captura).resolve()}")
+        extra.append(f"--espera={args.espera}")
+    return _godot(binary, "res://scenes/projetor.tscn", "--", *extra)
+
+
 def cmd_sprites_relatorio(_: argparse.Namespace) -> int:
     """O relatorio dos sprites, sem janela: `.dev/sprites_relatorio/relatorio.md`.
 
@@ -1183,6 +1204,11 @@ def main() -> int:
     sub.add_parser("sprites", help="recorta as folhas do Google Flow no atlas do ator")
     p_personagem = sub.add_parser("personagem", help="prepara, inspeciona e monta NPCs por video; ver docs/PERSONAGENS.md")
     p_personagem.add_argument("argumentos", nargs=argparse.REMAINDER)
+    p_projetor = sub.add_parser("projetor", help="abre a prova do projetor 2D: a pista em pseudo-3D, jogavel")
+    p_projetor.add_argument("--auto", action="store_true", help="pilota sozinho")
+    p_projetor.add_argument("--vel", type=float, help="teto de velocidade em m/s (padrao: 58)")
+    p_projetor.add_argument("--captura", help="salva a tela neste PNG e sai")
+    p_projetor.add_argument("--espera", type=float, default=3.0, help="segundos antes da captura (padrao: 3)")
     sub.add_parser("sprites-relatorio", help="relatorio dos sprites em texto e imagem, sem janela")
     p_ver = sub.add_parser("sprites-ver", help="abre o testador: todas as folhas, em 2D e em cena")
     p_ver.add_argument("--sprite", help="id da folha para abrir (ex.: vovo_andando, moto)")
@@ -1223,6 +1249,7 @@ def main() -> int:
         "sprites": cmd_sprites,
         "personagem": cmd_personagem,
         "sprites-ver": cmd_sprites_ver,
+        "projetor": cmd_projetor,
         "sprites-relatorio": cmd_sprites_relatorio,
         "versao": cmd_versao,
         "changelog": cmd_changelog,

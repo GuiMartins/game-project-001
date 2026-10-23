@@ -38,6 +38,7 @@ qual binário usar, e no Windows escolhe a variante que não engole a saída.
 | `python tools/dev.py fps` | Tempo de quadro da corrida solta, com tela e sem vsync. Compara a mesma máquina. `--hora 1` mede a noite, que tem uma luz por poste e por farol. |
 | `python tools/dev.py lint` / `format` | gdlint e gdformat. |
 | `python tools/dev.py run` | Abre o jogo. |
+| `python tools/dev.py projetor` | Abre a prova do projetor 2D (pseudo-3D da pista de verdade, jogável). `--auto`, `--vel`, `--captura`. |
 | `python tools/dev.py sprites-ver` | Abre o testador de sprites (`--sprite`, `--cena`, `--jogar`). |
 | `python tools/dev.py export` | Exporta as três plataformas, do jogo e do editor de sprites. `--so jogo` ou `--so editor` escolhe. |
 | `python tools/dev.py versao patch` | Sobe a versão. O merge disso na `master` publica a release. |
@@ -303,6 +304,7 @@ saber onde **não** há rede faz parte do contrato.
 | `scripts/hora.gd` | Os números de cada hora-chave (meio-dia, entardecer, hora azul, noite) e a mistura entre elas. O meio-dia é o mundo de antes, número por número. |
 | `scripts/relogio.gd` | A corrida anoitece: o relógio é o progresso do jogador, e é ele que aplica a hora e acende a cidade (parâmetro global `noite`). Medindo, a hora é fixa no meio-dia. |
 | `scripts/prova.gd` | O quadro congelado da prova visual (`dev.py prova`). |
+| `scripts/projetor_pista.gd`, `tela_projetor.gd` | O projetor por segmento da migração 2D (2D05): `ProjetorPista` só calcula (curva e rampa da pista viram posição de tela); `TelaProjetor` desenha. Provisório até o 2D63. |
 | `tests/unit/` | Testes unitários. |
 | `tests/baseline.json` | Os números esperados. |
 | `tests/baseline_visual.json` | O que a tela tem dentro. |
