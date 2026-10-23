@@ -24,6 +24,7 @@ script: o recorte é o mesmo de `arte/recorte_de_folha.gd`, que o piloto
 | `luzes` | Opcional: `{"nome", "linha", "coluna", "ponto": [x, y]}` em pixels da célula, e opcionais `raio` (px, 6), `cor` ([r, g, b]) e `so_de_noite` (verdadeiro: o farol e a lente de poste; o freio é falso). O `sprite.gdshader` acende o brilho por cima (`SpriteLuzes`). O recorte só confere que o ponto cai na célula e o repassa. |
 
 | `por_manchas` | Opcional. `true` separa as figuras de uma linha pelo verde entre elas (figuras que se sobrepõem na horizontal), e `"folha"` acha todas na folha inteira e as agrupa em linhas (linhas que se encostam na vertical). |
+| `descarta_linhas` | Opcional: `[indice, ...]` de linhas que o Flow acrescentou e que não pertencem à grade (a folha da porta do hatch veio com duas linhas de costas); saem antes da conferência da contagem. |
 | `espelha_quadros` | Opcional: `[[linha, coluna], ...]` de quadros que o Flow desenhou virados para a esquerda; o recorte os vira. A moto de toda folha aponta para a direita. |
 | `placa` | Opcional, só para moto: acha a chapa branca em cada quadro de costas e de 3/4 de costas, deixa-a lisa e grava o quadrilátero no `.json` do atlas (`PlacaSprite`, 2D16). |
 
