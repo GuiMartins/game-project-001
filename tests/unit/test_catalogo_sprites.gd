@@ -33,7 +33,7 @@ func test_a_varredura_acha_a_moto_e_os_cinco_pedestres_em_cinco_animacoes() -> v
 	# A moca de moletom so tem a folha de andar.
 	assert_object(_item("moletom_andando")).is_not_null()
 	assert_object(_item("executivo_andando")).is_not_null()
-	assert_int(_itens.size()).is_equal(33)
+	assert_int(_itens.size()).is_equal(39)
 
 
 func test_todo_pedestre_que_o_jogo_carrega_esta_no_catalogo() -> void:
@@ -85,5 +85,89 @@ func test_o_pe_que_caminha_nao_escorrega_na_ficha() -> void:
 
 func test_ficha_sem_imagem_vira_aviso_e_nao_some() -> void:
 	# O caminho de um id que nao existe: o item nasce com aviso, nao com excecao.
-	var item := CatalogoSprites._pedestre("ninguem_andando")
+	var item := CatalogoSprites._folha(
+		"ninguem_andando", CatalogoSprites.PASTA_PEDESTRES, CatalogoSprites.Tipo.PEDESTRE
+	)
 	assert_bool(item.avisos.is_empty()).is_false()
+
+
+func test_os_props_entram_como_uma_imagem_so_com_o_tamanho_da_ficha() -> void:
+	for id: String in [
+		"poste", "copa", "palmeira", "placa_curva", "placa_curva_dir", "placa_mao_dupla"
+	]:
+		var prop := _item(id)
+		assert_object(prop).is_not_null()
+		assert_int(prop.tipo).is_equal(CatalogoSprites.Tipo.PROP)
+		assert_int(prop.quadros()).is_equal(1)
+		assert_vector(Vector2(prop.tamanho_imagem)).is_equal(Vector2(prop.celula))
+		assert_int(prop.rotulos_linhas.size()).is_equal(1)
+
+
+## Carro e fachada ainda nao tem folha no repositorio: o catalogo tem de medi-los
+## quando chegarem, entao a prova monta uma folha de teste com a mesma ficha que
+## o `dev.py recortar` grava.
+func _folha_de_teste(
+	nome: String, ficha: Dictionary, tipo: int, desenho: Rect2i
+) -> CatalogoSprites.Item:
+	var pasta := "user://catalogo_teste"
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(pasta))
+	var colunas: int = ficha["colunas"]
+	var linhas: int = (ficha["linhas"] as Array).size()
+	var celula := Vector2i(int(ficha["celula"][0]), int(ficha["celula"][1]))
+	var imagem := Image.create_empty(
+		celula.x * colunas, celula.y * linhas, false, Image.FORMAT_RGBA8
+	)
+	for l in linhas:
+		for c in colunas:
+			var onde := Rect2i(
+				desenho.position + Vector2i(c * celula.x, l * celula.y), desenho.size
+			)
+			imagem.fill_rect(onde, Color.WHITE)
+	imagem.save_png("%s/%s.png" % [pasta, nome])
+	var arquivo := FileAccess.open("%s/%s.json" % [pasta, nome], FileAccess.WRITE)
+	arquivo.store_string(JSON.stringify(ficha))
+	arquivo.close()
+	return CatalogoSprites._folha(nome, pasta, tipo)
+
+
+func _ficha_de_carro() -> Dictionary:
+	return {
+		"celula": [100, 60],
+		"colunas": 2,
+		"linhas": ["frente", "lado_porta"],
+		"pe": [50, 56],
+		"pixels_por_metro": 32.0,
+		"altura_m": 1.5,
+	}
+
+
+func test_carro_com_o_pe_e_a_altura_da_ficha_nao_tem_aviso() -> void:
+	# 1,5 m a 32 px/m = 48 px, de y=8 a y=56: o pe da ficha.
+	var item := _folha_de_teste(
+		"hatch_base", _ficha_de_carro(), CatalogoSprites.Tipo.CARRO, Rect2i(10, 8, 80, 48)
+	)
+	assert_int(item.tipo).is_equal(CatalogoSprites.Tipo.CARRO)
+	assert_array(item.avisos).is_empty()
+
+
+func test_carro_mais_alto_que_a_ficha_avisa() -> void:
+	var item := _folha_de_teste(
+		"sedan_base", _ficha_de_carro(), CatalogoSprites.Tipo.CARRO, Rect2i(10, 2, 80, 54)
+	)
+	assert_bool(" ".join(item.avisos).contains("a ficha pede")).is_true()
+
+
+func test_carro_flutuando_acima_do_pe_da_ficha_avisa() -> void:
+	var item := _folha_de_teste(
+		"suv_base", _ficha_de_carro(), CatalogoSprites.Tipo.CARRO, Rect2i(10, 0, 80, 48)
+	)
+	assert_bool(" ".join(item.avisos).contains("a ficha apoia o pe")).is_true()
+
+
+func test_angulo_desconhecido_na_ficha_avisa() -> void:
+	var ficha := _ficha_de_carro()
+	ficha["linhas"] = ["frente", "diagonal"]
+	var item := _folha_de_teste(
+		"van_base", ficha, CatalogoSprites.Tipo.FACHADA, Rect2i(10, 8, 80, 48)
+	)
+	assert_bool(" ".join(item.avisos).contains("angulo desconhecido")).is_true()

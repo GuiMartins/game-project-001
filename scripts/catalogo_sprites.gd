@@ -7,10 +7,24 @@ extends RefCounted
 ## a mao: folha nova aparece sozinha, e folha que perdeu o `.json` aparece com
 ## aviso em vez de sumir.
 
-enum Tipo { MOTO, PEDESTRE }
+enum Tipo { MOTO, PEDESTRE, CARRO, PROP, FACHADA }
 
 const PASTA: String = "res://assets/sprites"
 const PASTA_PEDESTRES: String = "res://assets/sprites/pedestres"
+const PASTA_CARROS: String = "res://assets/sprites/carros"
+const PASTA_PROPS: String = "res://assets/sprites/props"
+const PASTA_FACHADAS: String = "res://assets/sprites/fachadas"
+## As linhas de angulo que o `dev.py boneco` e o recorte conhecem. Carro e
+## fachada rotulam as linhas com elas (a porta ganha sufixo: "lado_porta"), e
+## o prop tem um `angulo` so. Rotulo fora da lista e erro de digitacao na
+## ficha, e o sprite seria escolhido pelo angulo errado.
+const ANGULOS: Array[String] = [
+	"frente", "tres_quartos_frente", "lado", "tres_quartos_costas", "costas"
+]
+## Quanto a altura desenhada pode fugir de `altura_m * pixels_por_metro` antes de
+## virar aviso. Num carro ou prop o desenho e a coisa inteira, e a ficha diz o
+## tamanho real dela: fora disso o sprite troca de escala na mudanca de folha.
+const TOLERANCIA_ALTURA_FICHA: float = 0.1
 
 ## Quantos pixels o pe desenhado pode estar longe do ponto do pe da ficha, e o
 ## quanto o pe e a altura podem variar de quadro em quadro numa folha que anda,
@@ -127,29 +141,42 @@ static func _arquivos(pasta: String) -> PackedStringArray:
 	return nomes
 
 
-## Todas as folhas, a moto primeiro e depois os pedestres por nome.
+## Todas as folhas, a moto primeiro e depois cada pasta por nome: pedestres,
+## carros, props e fachadas. Pasta que ainda nao existe (a arte esta chegando)
+## simplesmente nao contribui.
 static func varrer() -> Array[Item]:
 	var itens: Array[Item] = []
 	itens.append(_moto())
-	var arquivos := _arquivos(PASTA_PEDESTRES)
+	for pasta: Array in [
+		[PASTA_PEDESTRES, Tipo.PEDESTRE],
+		[PASTA_CARROS, Tipo.CARRO],
+		[PASTA_PROPS, Tipo.PROP],
+		[PASTA_FACHADAS, Tipo.FACHADA],
+	]:
+		_varrer_pasta(itens, pasta[0], pasta[1])
+	return itens
+
+
+static func _varrer_pasta(itens: Array[Item], pasta: String, tipo: int) -> void:
+	var arquivos := _arquivos(pasta)
 	var nomes: PackedStringArray = []
 	for arquivo in arquivos:
 		if arquivo.ends_with(".png"):
 			nomes.append(arquivo.get_basename())
 	nomes.sort()
 	for nome in nomes:
-		itens.append(_pedestre(nome))
+		itens.append(_folha(nome, pasta, tipo))
 	# Ficha sem folha: o contrario do aviso de cima.
 	for arquivo in arquivos:
 		if arquivo.ends_with(".json") and not nomes.has(arquivo.get_basename()):
 			var orfao := Item.new()
 			orfao.id = arquivo.get_basename()
+			orfao.tipo = tipo
 			orfao.grupo = orfao.id
 			orfao.animacao = "?"
-			orfao.caminho = "%s/%s" % [PASTA_PEDESTRES, arquivo]
+			orfao.caminho = "%s/%s" % [pasta, arquivo]
 			orfao.avisos.append("ficha sem imagem: falta %s.png" % orfao.id)
 			itens.append(orfao)
-	return itens
 
 
 static func _moto() -> Item:
@@ -169,33 +196,57 @@ static func _moto() -> Item:
 	return item
 
 
-static func _pedestre(nome: String) -> Item:
+## Uma folha de qualquer pasta. Pedestre, carro e fachada vem do recorte e
+## trazem a grade (`celula`, `colunas`, `linhas`); o prop e uma imagem so, e a
+## ficha dele diz `tamanho`. O nome e `grupo_animacao` ("vovo_andando",
+## "hatch_base"); prop sem sublinhado e so o grupo.
+static func _folha(nome: String, pasta: String, tipo: int) -> Item:
 	var item := Item.new()
 	item.id = nome
-	item.tipo = Tipo.PEDESTRE
+	item.tipo = tipo
 	var partes := nome.split("_", false, 1)
 	item.grupo = String(partes[0]).capitalize()
 	item.animacao = partes[1] if partes.size() > 1 else "?"
-	item.caminho = "%s/%s.png" % [PASTA_PEDESTRES, nome]
-	var ficha := _ler_ficha("%s/%s.json" % [PASTA_PEDESTRES, nome])
+	item.caminho = "%s/%s.png" % [pasta, nome]
+	var ficha := _ler_ficha("%s/%s.json" % [pasta, nome])
 	if ficha.is_empty():
 		item.avisos.append("sem ficha (%s.json): nao ha como saber a celula" % nome)
 		return item
-	var celula: Array = ficha.get("celula", [0, 0])
 	var pe: Array = ficha.get("pe", [0, 0])
-	item.celula = Vector2i(int(celula[0]), int(celula[1]))
 	item.pe = Vector2i(int(pe[0]), int(pe[1]))
-	item.colunas = int(ficha.get("colunas", 1))
-	var rotulos: Array = ficha.get("linhas", [])
-	item.linhas = maxi(rotulos.size(), 1)
-	for rotulo: Variant in rotulos:
-		item.rotulos_linhas.append(String(rotulo))
 	item.pixels_por_metro = float(ficha.get("pixels_por_metro", 100.0))
 	item.altura_m = float(ficha.get("altura_m", 0.0))
 	item.altura_px = item.altura_m * item.pixels_por_metro
 	item.espelha_lado_esquerdo = bool(ficha.get("espelha_o_lado_esquerdo", false))
-	_medir(item, item.animacao == "andando", true)
+	if tipo == Tipo.PROP:
+		var tamanho: Array = ficha.get("tamanho", [0, 0])
+		item.celula = Vector2i(int(tamanho[0]), int(tamanho[1]))
+		item.rotulos_linhas = PackedStringArray([String(ficha.get("angulo", ""))])
+	else:
+		var celula: Array = ficha.get("celula", [0, 0])
+		item.celula = Vector2i(int(celula[0]), int(celula[1]))
+		item.colunas = int(ficha.get("colunas", 1))
+		var rotulos: Array = ficha.get("linhas", [])
+		item.linhas = maxi(rotulos.size(), 1)
+		for rotulo: Variant in rotulos:
+			item.rotulos_linhas.append(String(rotulo))
+	if tipo != Tipo.PEDESTRE:
+		_confere_angulos(item)
+	# Quem anda e o pedestre; o resto fica de pe na pista, entao o pe de uma
+	# linha tem de ser o mesmo em todos os quadros dela (porta que abre nao
+	# tira o carro do chao).
+	_medir(item, tipo != Tipo.PEDESTRE or item.animacao == "andando", tipo == Tipo.PEDESTRE)
 	return item
+
+
+## O angulo de cada linha tem de ser um que o jogo sabe escolher.
+static func _confere_angulos(item: Item) -> void:
+	for rotulo in item.rotulos_linhas:
+		var conhecido := false
+		for angulo in ANGULOS:
+			conhecido = conhecido or rotulo == angulo or rotulo.begins_with(angulo + "_")
+		if not conhecido:
+			item.avisos.append('angulo desconhecido na ficha: "%s"' % rotulo)
 
 
 static func _ler_ficha(caminho: String) -> Dictionary:
@@ -254,10 +305,14 @@ static func _medir(item: Item, anda: bool, confere_altura: bool) -> void:
 				colados += 1
 	if vazios > 0:
 		item.avisos.append("%d quadro(s) em branco" % vazios)
-	if colados > 0:
+	# O prop e recortado justo no desenho (a celula e a caixa dele, sem folga), e
+	# encostar na borda e o normal. Cortado de verdade o pe e a altura acusam.
+	if colados > 0 and item.tipo != Tipo.PROP:
 		item.avisos.append("%d quadro(s) encostam na borda da celula (cortados?)" % colados)
 	if anda:
 		_confere_constancia(item, confere_altura)
+	if item.tipo != Tipo.PEDESTRE and item.tipo != Tipo.MOTO:
+		_confere_altura_da_ficha(item)
 
 
 static func _confere_constancia(item: Item, confere_altura: bool) -> void:
@@ -300,6 +355,34 @@ static func _confere_constancia(item: Item, confere_altura: bool) -> void:
 				(
 					"%s: o desenho acaba em y=%d e a ficha apoia o pe em y=%d"
 					% [rotulo, pe_max, item.pe.y]
+				)
+			)
+
+
+## O maior desenho de cada linha contra `altura_m * pixels_por_metro`: carro,
+## prop e fachada se desenham inteiros, entao a ficha e a regua. O pedestre
+## fica de fora porque o voo e a queda mudam a altura de proposito, e a moto
+## deitada tambem (ver `_medir`).
+static func _confere_altura_da_ficha(item: Item) -> void:
+	if item.altura_px <= 0.0:
+		return
+	for linha in item.linhas:
+		var maior := 0
+		for coluna in item.colunas:
+			maior = maxi(maior, item.caixa(coluna, linha).size.y)
+		if maior == 0:
+			continue
+		if absf(float(maior) - item.altura_px) / item.altura_px > TOLERANCIA_ALTURA_FICHA:
+			item.avisos.append(
+				(
+					"%s: desenha %d px de altura e a ficha pede %.0f (%.2f m a %.0f px/m)"
+					% [
+						_rotulo(item, linha),
+						maior,
+						item.altura_px,
+						item.altura_m,
+						item.pixels_por_metro
+					]
 				)
 			)
 
