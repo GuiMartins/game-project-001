@@ -33,7 +33,7 @@ func test_a_varredura_acha_a_moto_e_os_cinco_pedestres_em_cinco_animacoes() -> v
 	# A moca de moletom so tem a folha de andar.
 	assert_object(_item("moletom_andando")).is_not_null()
 	assert_object(_item("executivo_andando")).is_not_null()
-	assert_int(_itens.size()).is_equal(51)
+	assert_int(_itens.size()).is_equal(57)
 
 
 func test_todo_pedestre_que_o_jogo_carrega_esta_no_catalogo() -> void:
@@ -193,6 +193,12 @@ func test_a_cg_por_folha_tem_a_grade_da_tabela_da_migracao() -> void:
 		["xre_golpe", 4, tres],
 		["xre_tombo", 4, ["costas"]],
 		["xre_caida", 1, cinco],
+		["pcx_pilotando", 5, tres],
+		["pcx_parado", 4, tres],
+		["pcx_combate", 6, tres],
+		["pcx_golpe", 4, tres],
+		["pcx_tombo", 4, ["costas"]],
+		["pcx_caida", 1, cinco],
 	]:
 		var moto := _item(esperado[0])
 		assert_object(moto).is_not_null()

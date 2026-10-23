@@ -1,0 +1,15 @@
+{
+	"fonte": "res://arte/flow/pcx_pilotando.jpg",
+	"saida": "res://assets/sprites/moto/pcx_pilotando",
+	"linhas": ["costas", "tres_quartos_costas", "lado"],
+	"colunas": 5,
+	"celula": [270, 240],
+	"pe_y": 220,
+	"altura_m": 1.45,
+	"pixels_por_metro": 100,
+	"escala": "altura",
+	"ancora_x": "centro",
+	"ancora_y": "chao",
+	"vao": 8,
+	"area_minima": 3000
+}

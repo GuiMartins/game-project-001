@@ -184,8 +184,19 @@ moto: `cg`, `xre`, `pcx`.
   linhas. E o download em 2K do tombo veio com o turnaround vazando em fantasma
   por trás: o 1K ("Tamanho original") saiu limpo. A linha 3/4 da caída é a
   mais fraca, como na CG.)
-- [ ] **2D14** — PCX: as três folhas. Na scooter o pé no chão sai do
+- [x] **2D14** — PCX: as três folhas. Na scooter o pé no chão sai do
   assoalho, e não da pedaleira.
+  (23/10/2026: as seis folhas, `pcx_pilotando`, `pcx_parado`, `pcx_combate`,
+  `pcx_golpe`, `pcx_tombo` e `pcx_caida`, em `assets/sprites/moto/`, pelo caminho
+  da XRE: turnaround do entregador de identidade e a scooter descrita no prompt
+  (maxi-scooter estilo PCX 160: assoalho largo, rodas de 14", carenagem lisa,
+  azul-marinho brilhante e preto). A ficha usa 1,45 m (banco de 764 mm, o mais
+  baixo das três) e célula 270 × 240. Nenhuma precisou de remendo: as seis
+  recortaram de primeira, com `por_manchas: true` no tombo e `"folha"` na caída.
+  O tombo saiu em 1K, pelo vazamento do 2K visto na XRE. O pé no chão do
+  parado sai do assoalho no desenho, como pediu o item; no catálogo o parado
+  segue sem a conferência de pé constante. A caída repete a fraqueza da CG e da
+  XRE: a linha 3/4 de frente sai quase de lado.)
 - [ ] **2D15** — **O piloto solto**, igual nas três motos: voando (4 × 8) e
   caído (4 × 3), como as folhas do pedestre.
 - [ ] **2D16** — **Placa por código.** O texto Mercosul de cada moto
