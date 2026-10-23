@@ -326,6 +326,25 @@ func test_pessoa_em_sprite_tem_folha_para_todos_os_estados() -> void:
 			)
 
 
+func test_mendigo_mantem_a_propria_identidade_nas_cinco_acoes() -> void:
+	var avatar := -1
+	for i in PedestreSprite.ANDANDO.size():
+		if PedestreSprite.ANDANDO[i].resource_path.ends_with("mendigo_andando.png"):
+			avatar = i
+	assert_int(avatar).is_greater_equal(0)
+	for folhas: Array[Texture2D] in [
+		PedestreSprite.SUSTO,
+		PedestreSprite.DESEMBARCANDO,
+		PedestreSprite.VOANDO,
+		PedestreSprite.CAIDA,
+	]:
+		assert_bool(avatar < folhas.size()).is_true()
+		(
+			assert_bool(PedestreSprite.da_pose(folhas, avatar).resource_path.contains("/mendigo_"))
+			. is_true()
+		)
+
+
 func test_caminhada_parcial_conserva_identidade_e_recupera_ancora_depois_da_queda() -> void:
 	var desenho: PedestreSprite = auto_free(PedestreSprite.new())
 	add_child(desenho)

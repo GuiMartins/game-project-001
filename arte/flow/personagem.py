@@ -243,17 +243,18 @@ def recortar(quadros: list[pathlib.Path], selecao: list[int], escala: int, cfg: 
                 raise ValueError('Corpo estabilizado nao cabe na celula; nao corte membros.')
             cel = Image.new('RGBA', (w, cfg['celula'][1]))
             cel.alpha_composite(corpo, (x, y))
-            # O shader usa corte duro; o segundo resize nao deve reintroduzir
-            # meio-tom nem verde interpolado na silhueta ja recortada.
-            px = np.asarray(cel).copy()
-            mask = px[..., 3] > 128
-            px[..., 3] = np.where(mask, 255, 0)
-            pad = np.pad(mask, 1)
-            interior = (pad[1:-1, :-2] & pad[1:-1, 2:]
-                        & pad[:-2, 1:-1] & pad[2:, 1:-1])
-            limite = np.maximum(px[..., 0].astype(int), px[..., 2].astype(int)) + 8
-            px[..., 1] = np.where(mask & ~interior, np.minimum(px[..., 1], limite), px[..., 1])
-            cel = Image.fromarray(px, 'RGBA')
+        # O chroma deixa verde em pixels quase opacos e o resize mistura essa
+        # cor na borda, mesmo sem estabilizacao de altura. Limpa toda celula
+        # no formato de corte duro que o shader realmente desenha.
+        px = np.asarray(cel).copy()
+        mask = px[..., 3] > 128
+        px[..., 3] = np.where(mask, 255, 0)
+        pad = np.pad(mask, 1)
+        interior = (pad[1:-1, :-2] & pad[1:-1, 2:]
+                    & pad[:-2, 1:-1] & pad[2:, 1:-1])
+        limite = np.maximum(px[..., 0].astype(int), px[..., 2].astype(int)) + 8
+        px[..., 1] = np.where(mask & ~interior, np.minimum(px[..., 1], limite), px[..., 1])
+        cel = Image.fromarray(px, 'RGBA')
         celulas.append(cel)
     return celulas
 

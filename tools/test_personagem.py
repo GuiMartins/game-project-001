@@ -8,6 +8,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import numpy as np
 from PIL import Image, ImageDraw
 
 RAIZ = pathlib.Path(__file__).resolve().parents[1]
@@ -96,6 +97,23 @@ class PersonagemTest(unittest.TestCase):
         im.save(imgs[2])
         with self.assertRaisesRegex(ValueError, 'cortado'):
             p.recortar(imgs, list(range(8)), 0, cfg, 1.75)
+
+    def test_recorte_remove_franja_verde_sem_exigir_altura_estavel(self):
+        imgs = self.frames()
+        im = Image.open(imgs[0])
+        # Verde abaixo do limiar de remocao fica opaco, mas denuncia o chroma
+        # quando a borda do corpo e ampliada pelo jogo.
+        ImageDraw.Draw(im).rectangle((180, 50, 220, 225), outline=(90, 116, 90))
+        im.save(imgs[0])
+        for cfg in [p.ANIMACOES['andando'], dict(p.ANIMACOES['andando'], altura_estavel_px=175)]:
+            cel = np.asarray(p.recortar(imgs, [0], 0, cfg, 1.75)[0])
+            mask = cel[..., 3] > 128
+            pad = np.pad(mask, 1)
+            interior = pad[1:-1, :-2] & pad[1:-1, 2:] & pad[:-2, 1:-1] & pad[2:, 1:-1]
+            borda = mask & ~interior
+            limite = np.maximum(cel[..., 0].astype(int), cel[..., 2].astype(int)) + 8
+            self.assertTrue(np.all(cel[..., 1][borda] <= limite[borda]))
+            self.assertTrue(set(np.unique(cel[..., 3])).issubset({0, 255}))
 
     def test_voo_centra_corpo_e_caida_cabe_deitada(self):
         imgs = self.frames()
