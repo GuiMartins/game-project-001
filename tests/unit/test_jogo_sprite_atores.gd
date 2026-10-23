@@ -36,12 +36,18 @@ func test_trocar_o_desenho_vale_para_todo_ator() -> void:
 func test_a_moto_jogavel_acelera_pela_pista() -> void:
 	_jogo.ator = JogoSprite.Ator.MOTO
 	_jogo.moto.set_physics_process(false)
+	var z_inicial := _jogo.moto.global_position.z
 	Input.action_press("ride_throttle")
 	for i in 180:
 		_jogo.moto._physics_process(PASSO)
 	Input.action_release("ride_throttle")
 	assert_float(_jogo.moto.speed).is_greater(10.0)
-	assert_float(_jogo.moto.global_position.z).is_less(-5.0)
+	# So o sentido, e nao a distancia: o `move_and_slide` chamado fora de um quadro
+	# de fisica anda com o delta do quadro de *processo*, que no CI (sem tela, quadro
+	# de meio milissegundo) e uns 30 vezes menor que 1/60. A moto andou 1,4 m numa
+	# corrida de 180 passos no Ubuntu e 5 m ou mais no resto; a velocidade acima ja
+	# cobre o "acelera".
+	assert_float(_jogo.moto.global_position.z).is_less(z_inicial - 0.05)
 
 
 func test_so_um_ator_responde_aos_controles() -> void:
