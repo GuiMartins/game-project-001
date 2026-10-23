@@ -146,7 +146,15 @@ moto: `cg`, `xre`, `pcx`.
   uma edição para a moto sair escura como a outra (a primeira veio
   vermelha). Receita e prompts em `arte/flow/referencia/README.md`, *Moto*.
   O catálogo as vê como `MOTO_FOLHA`, sem aviso.)
-- [ ] **2D11** — CG: combate e golpe (uma folha, 3 × 10).
+- [x] **2D11** — CG: combate e golpe (uma folha, 3 × 10).
+  (23/10/2026: de novo duas folhas, `cg_combate` (3 × 6) e `cg_golpe` (3 × 4),
+  em `assets/sprites/moto/`, pelo mesmo motivo da 2D10. A de combate precisou
+  de uma segunda geração: na primeira o Flow copiou as 5 colunas da folha que
+  eu dei de identidade e entregou 3 × 5. Trocando a identidade pelo
+  turnaround, e com "SIX columns (not five)" no prompt, veio 3 × 6. O recorte
+  precisou de `vao` 8 (e não 24), porque as motos de lado se encostam. O golpe
+  recebido é sutil, como na referência 3D: o piloto recua e vira a cabeça, e
+  a diferença entre os quadros de cada lado é pequena. Julgar no jogo.)
 - [ ] **2D12** — CG: tombo e caída (uma folha, 9 quadros).
 - [ ] **2D13** — XRE: as três folhas do 2D10 a 2D12.
 - [ ] **2D14** — PCX: as três folhas. Na scooter o pé no chão sai do

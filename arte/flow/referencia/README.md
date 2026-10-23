@@ -262,3 +262,11 @@ Como a CG pilotando e parado foram feitas (23/10/2026), com Nano Banana 2.1,
   seletor nativo, que o agente não enxerga. Troque `HTMLInputElement.prototype
   .click` por uma função que anexa o `<input type=file>` ao `body` sem abrir o
   seletor, clique no botão, ache o campo e use `file_upload` nele.
+- **Identidade: o turnaround, e não uma folha de grade pronta.** Na 2D11, dar
+  de identidade a folha de 5 colunas da CG pilotando fez o Flow desenhar 5
+  colunas também na de combate (que pedia 6). O turnaround, que não é grade, e
+  o prompt dizendo a cor da moto não têm esse viés. Diga também o número de
+  colunas por extenso e o que é cada grupo ("columns 1, 2 and 3 are the left
+  arm punch").
+- **`vao`:** as motos de lado quase se encostam na folha de 2K, e `vao` 24
+  juntava duas (`[6, 6, 5]` em vez de 3 × 6). `cg_combate` e `cg_golpe` usam 8.
