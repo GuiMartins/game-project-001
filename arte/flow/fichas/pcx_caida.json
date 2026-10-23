@@ -1,0 +1,17 @@
+{
+	"fonte": "res://arte/flow/pcx_caida.jpg",
+	"saida": "res://assets/sprites/moto/pcx_caida",
+	"linhas": ["frente", "tres_quartos_frente", "lado", "tres_quartos_costas", "costas"],
+	"colunas": 1,
+	"celula": [320, 170],
+	"pe_y": 85,
+	"altura_m": 1.9,
+	"pixels_por_metro": 100,
+	"escala": "comprimento",
+	"medir_linhas": [2],
+	"ancora_x": "centro",
+	"ancora_y": "centro",
+	"vao": 8,
+	"area_minima": 3000,
+	"por_manchas": "folha"
+}
