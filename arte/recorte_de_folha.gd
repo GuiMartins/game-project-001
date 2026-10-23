@@ -514,6 +514,14 @@ static func atlas_da_ficha(ficha: Dictionary, imagem: Image) -> Dictionary:
 		colunas if ficha.get("por_manchas", false) else 0,
 		linhas.size() if str(ficha.get("por_manchas", false)) == "folha" else 0
 	)
+	# O Flow as vezes acrescenta uma linha repetida (a folha da porta do hatch veio
+	# com duas de costas): a ficha diz quais descartar, de baixo para cima.
+	var descartar: Array = ficha.get("descarta_linhas", [])
+	descartar.sort()
+	descartar.reverse()
+	for indice: Variant in descartar:
+		if int(indice) < desenhos.size():
+			desenhos.remove_at(int(indice))
 	var achados := contagem(desenhos)
 	if desenhos.size() != linhas.size() or achados.any(func(n: int) -> bool: return n != colunas):
 		return {

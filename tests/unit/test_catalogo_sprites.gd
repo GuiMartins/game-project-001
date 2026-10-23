@@ -33,7 +33,7 @@ func test_a_varredura_acha_a_moto_e_os_cinco_pedestres_em_cinco_animacoes() -> v
 	# A moca de moletom so tem a folha de andar.
 	assert_object(_item("moletom_andando")).is_not_null()
 	assert_object(_item("executivo_andando")).is_not_null()
-	assert_int(_itens.size()).is_equal(59)
+	assert_int(_itens.size()).is_equal(61)
 
 
 func test_todo_pedestre_que_o_jogo_carrega_esta_no_catalogo() -> void:
@@ -209,3 +209,18 @@ func test_a_cg_por_folha_tem_a_grade_da_tabela_da_migracao() -> void:
 		assert_int(moto.colunas).is_equal(esperado[1])
 		assert_array(Array(moto.rotulos_linhas)).is_equal(esperado[2])
 		assert_float(moto.pixels_por_metro).is_equal(100.0)
+
+
+func test_o_hatch_tem_a_base_em_cinco_angulos_e_a_porta_em_tres() -> void:
+	var cinco := ["frente", "tres_quartos_frente", "lado", "tres_quartos_costas", "costas"]
+	var base := _item("hatch_base")
+	assert_object(base).is_not_null()
+	assert_int(base.tipo).is_equal(CatalogoSprites.Tipo.CARRO)
+	assert_int(base.colunas).is_equal(1)
+	assert_array(Array(base.rotulos_linhas)).is_equal(cinco)
+	var porta := _item("hatch_porta_1")
+	assert_object(porta).is_not_null()
+	assert_int(porta.colunas).is_equal(5)
+	assert_array(Array(porta.rotulos_linhas)).is_equal(
+		["lado", "tres_quartos_frente", "tres_quartos_costas"]
+	)

@@ -246,7 +246,20 @@ sempre amarelo.
 | Baú | 1 | 10 | 15 |
 | Van | 1 | 10 | 15 |
 
-- [ ] **2D20** — Hatch: base e portas.
+- [x] **2D20** — Hatch: base e portas.
+  (23/10/2026: `hatch_base` (5 × 1: frente, 3/4 de frente, lado, 3/4 de costas e
+  costas) e `hatch_porta_1` (3 × 5: lado, 3/4 de frente e 3/4 de costas; a porta
+  fechada, entreaberta, meio aberta, aberta com o motorista saindo e amassada),
+  em `assets/sprites/carros/`. O `ppm` é 100 e o carro tem 1,45 m (o
+  `dev.py boneco carro` usa 128; a ficha do recorte é que manda). A pintura
+  sai em vermelho chapado, para o shader recolorir pela cor-chave
+  (`sprite.gdshader`, `recolore`); lanternas e setas em âmbar, e não vermelhas,
+  para não serem recoloridas junto. A base saiu de uma geração e recortou de
+  primeira. A porta saiu errada duas vezes, sempre com quatro linhas (uma de
+  costas repetida, e uma célula faltando): em vez de uma terceira, a ficha
+  ganhou `descarta_linhas: [2]` e o recorte descarta a linha repetida. Falta a
+  base **com passageiro** (2 colunas): o hatch não tem passageiro no modelo, e
+  o 2D01 já avisava. As luzes ficam para o 2D27.)
 - [ ] **2D21** — Sedã.
 - [ ] **2D22** — SUV.
 - [ ] **2D23** — Táxi, com o luminoso aceso por coordenada.

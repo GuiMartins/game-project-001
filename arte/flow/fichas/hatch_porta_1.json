@@ -1,0 +1,16 @@
+{
+	"fonte": "res://arte/flow/carros/hatch_porta_1.jpg",
+	"saida": "res://assets/sprites/carros/hatch_porta_1",
+	"linhas": ["lado", "tres_quartos_frente", "tres_quartos_costas"],
+	"colunas": 5,
+	"celula": [440, 190],
+	"pe_y": 172,
+	"altura_m": 1.45,
+	"pixels_por_metro": 100,
+	"escala": "altura",
+	"ancora_x": "centro",
+	"ancora_y": "pes",
+	"vao": 8,
+	"area_minima": 6000,
+	"descarta_linhas": [2]
+}
