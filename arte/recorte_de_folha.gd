@@ -23,6 +23,9 @@ const FRACAO_TRONCO: float = 0.4
 ## Quanto do pe da silhueta mede a abertura das pernas.
 const FRACAO_PES: float = 0.15
 
+## Lado, em pixels, do bloco em que `por_manchas` junta o que um pixel de JPEG separa.
+const PASSO_DA_MANCHA: int = 4
+
 ## Os campos que uma ficha de folha precisa ter, e o que cada um diz.
 ##
 ## - `fonte`: a imagem do Flow, `res://...jpg`.
@@ -101,11 +104,22 @@ static func tira_verde(imagem: Image, margem: int = MARGEM_VERDE) -> PackedByteA
 ## (cheio, largura, regiao) e devolve o que se mede de cada desenho, sempre com
 ## `area`: quem tem medida propria (o pe do pneu, o tronco) passa a sua.
 static func acha_desenhos(
-	cheio: PackedByteArray, largura: int, altura: int, vao: int, area_minima: int, medidor: Callable
+	cheio: PackedByteArray,
+	largura: int,
+	altura: int,
+	vao: int,
+	area_minima: int,
+	medidor: Callable,
+	manchas_ate: int = 0
 ) -> Array:
 	var desenhos: Array = []
 	for faixa in faixas(soma_linhas(cheio, largura, altura), vao):
 		var linha: Array = []
+		if manchas_ate > 0:
+			linha = por_manchas(cheio, largura, faixa, area_minima, manchas_ate, medidor)
+			if not linha.is_empty():
+				desenhos.append(linha)
+			continue
 		for corte in faixas(soma_colunas(cheio, largura, faixa.x, faixa.y), vao):
 			var caixa: Dictionary = medidor.call(
 				cheio, largura, Rect2i(corte.x, faixa.x, corte.y - corte.x, faixa.y - faixa.x)
@@ -115,6 +129,112 @@ static func acha_desenhos(
 		if not linha.is_empty():
 			desenhos.append(linha)
 	return desenhos
+
+
+## Quando duas figuras se sobrepoem na horizontal (a moto que tomba para um lado
+## invade a coluna do vizinho), nenhum vao de coluna as separa: a projecao as
+## acha como uma so. Aqui o que as separa e o verde entre elas, nao a coluna: acha
+## as manchas ligadas (numa grade `PASSO_DA_MANCHA` vezes mais grossa, que junta o
+## que um pixel de JPEG separa) e fica com as `esperado` maiores, da esquerda para
+## a direita. Cada desenho leva `pertence`, a mascara dele dentro do retangulo,
+## porque o retangulo de um pode ter um pedaco do vizinho (ver `cola`). So entra
+## por pedido da ficha (`por_manchas`).
+static func por_manchas(
+	cheio: PackedByteArray,
+	largura: int,
+	faixa: Vector2i,
+	area_minima: int,
+	esperado: int,
+	medidor: Callable
+) -> Array:
+	var passo := PASSO_DA_MANCHA
+	var gw := (largura + passo - 1) / passo
+	var gh := (faixa.y - faixa.x + passo - 1) / passo
+	var grade := PackedInt32Array()
+	grade.resize(gw * gh)
+	for gy in gh:
+		for gx in gw:
+			var cheia := false
+			for dy in passo:
+				var y := faixa.x + gy * passo + dy
+				if y >= faixa.y:
+					break
+				for dx in passo:
+					var x := gx * passo + dx
+					if x < largura and cheio[y * largura + x] == 1:
+						cheia = true
+						break
+				if cheia:
+					break
+			grade[gy * gw + gx] = -1 if cheia else 0
+	var tamanhos: Dictionary = {}
+	var rotulo := 0
+	for inicio in grade.size():
+		if grade[inicio] != -1:
+			continue
+		rotulo += 1
+		var pilha: Array[int] = [inicio]
+		grade[inicio] = rotulo
+		var n := 0
+		while not pilha.is_empty():
+			var c: int = pilha.pop_back()
+			n += 1
+			var cx := c % gw
+			var cy := c / gw
+			for oy in range(-1, 2):
+				for ox in range(-1, 2):
+					var nx := cx + ox
+					var ny := cy + oy
+					if nx < 0 or ny < 0 or nx >= gw or ny >= gh:
+						continue
+					if grade[ny * gw + nx] == -1:
+						grade[ny * gw + nx] = rotulo
+						pilha.append(ny * gw + nx)
+		tamanhos[rotulo] = n
+	var maiores: Array = tamanhos.keys()
+	maiores.sort_custom(func(a: int, b: int) -> bool: return tamanhos[a] > tamanhos[b])
+	maiores = maiores.slice(0, esperado)
+	var achados: Array = []
+	for r: int in maiores:
+		var pixels := PackedInt32Array()
+		var minimo := Vector2i(largura, faixa.y)
+		var maximo := Vector2i(0, faixa.x)
+		for gy in gh:
+			for gx in gw:
+				if grade[gy * gw + gx] != r:
+					continue
+				for dy in passo:
+					var y := faixa.x + gy * passo + dy
+					if y >= faixa.y:
+						break
+					for dx in passo:
+						var x := gx * passo + dx
+						if x < largura and cheio[y * largura + x] == 1:
+							pixels.append(y * largura + x)
+							minimo = minimo.min(Vector2i(x, y))
+							maximo = maximo.max(Vector2i(x, y))
+		if pixels.is_empty():
+			continue
+		var retangulo := Rect2i(minimo, maximo - minimo + Vector2i.ONE)
+		var so_dele := PackedByteArray()
+		so_dele.resize(cheio.size())
+		var pertence := PackedByteArray()
+		pertence.resize(retangulo.size.x * retangulo.size.y)
+		for p in pixels:
+			so_dele[p] = 1
+			pertence[(p / largura - minimo.y) * retangulo.size.x + (p % largura - minimo.x)] = 1
+		var caixa: Dictionary = medidor.call(so_dele, largura, retangulo)
+		if caixa["area"] >= area_minima:
+			caixa["pertence"] = pertence
+			achados.append(caixa)
+	achados.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			return (
+				(a["retangulo"] as Rect2i).get_center().x
+				< (b["retangulo"] as Rect2i).get_center().x
+			)
+	)
+	return achados
 
 
 ## Quantos desenhos ha em cada linha achada.
@@ -269,6 +389,8 @@ static func cola(
 	var celula := _celula(regra)
 	var caixa: Rect2i = desenho["retangulo"]
 	var recorte := folha.get_region(caixa)
+	if desenho.has("pertence"):
+		_so_o_desenho(recorte, desenho["pertence"])
 	var tamanho := Vector2i((Vector2(caixa.size) * escala).round()).max(Vector2i.ONE)
 	recorte.resize(tamanho.x, tamanho.y, Image.INTERPOLATE_LANCZOS)
 	var origem := quadro * celula
@@ -293,6 +415,17 @@ static func cola(
 	if colado.size != tamanho:
 		print("  ! quadro %d da linha %d passou da celula e foi cortado" % [quadro.x, quadro.y])
 	atlas.blit_rect(recorte, Rect2i(colado.position - destino, colado.size), colado.position)
+
+
+## Apaga do recorte o que nao e do desenho: o retangulo de uma figura pode pegar a
+## ponta do vizinho quando elas se sobrepoem (`por_manchas`).
+static func _so_o_desenho(recorte: Image, pertence: PackedByteArray) -> void:
+	var dados := recorte.get_data()
+	for p in pertence.size():
+		if pertence[p] == 0:
+			for c in 4:
+				dados[p * 4 + c] = 0
+	recorte.set_data(recorte.get_width(), recorte.get_height(), false, Image.FORMAT_RGBA8, dados)
 
 
 ## A borda dura: desfaz o pre-multiplicado e corta o alfa no meio. Meio-tom na
@@ -331,7 +464,8 @@ static func atlas_da_ficha(ficha: Dictionary, imagem: Image) -> Dictionary:
 		imagem.get_height(),
 		int(ficha["vao"]),
 		int(ficha["area_minima"]),
-		caixa_do_desenho
+		caixa_do_desenho,
+		colunas if ficha.get("por_manchas", false) else 0
 	)
 	var achados := contagem(desenhos)
 	if desenhos.size() != linhas.size() or achados.any(func(n: int) -> bool: return n != colunas):

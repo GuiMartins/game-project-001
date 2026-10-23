@@ -270,3 +270,11 @@ Como a CG pilotando e parado foram feitas (23/10/2026), com Nano Banana 2.1,
   arm punch").
 - **`vao`:** as motos de lado quase se encostam na folha de 2K, e `vao` 24
   juntava duas (`[6, 6, 5]` em vez de 3 × 6). `cg_combate` e `cg_golpe` usam 8.
+- **Figuras que se sobrepõem na horizontal (tombo):** o recorte separa por vão
+  de coluna, e a moto que cai para um lado invade a coluna do vizinho. Pedir
+  "figuras pequenas, cada uma no seu quarto da largura" melhora e não resolve.
+  A ficha `por_manchas: true` separa pelo verde entre as figuras e apaga o que
+  é do vizinho (`arte/recorte_de_folha.gd`, `por_manchas`).
+- **Folha alta (moto caída):** 9:16 no seletor de proporção, 5 linhas × 1 coluna;
+  a ficha mede a escala pelo comprimento da linha do lado (`escala:
+  comprimento`, `medir_linhas: [2]`).

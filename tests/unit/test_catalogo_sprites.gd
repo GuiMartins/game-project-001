@@ -33,7 +33,7 @@ func test_a_varredura_acha_a_moto_e_os_cinco_pedestres_em_cinco_animacoes() -> v
 	# A moca de moletom so tem a folha de andar.
 	assert_object(_item("moletom_andando")).is_not_null()
 	assert_object(_item("executivo_andando")).is_not_null()
-	assert_int(_itens.size()).is_equal(43)
+	assert_int(_itens.size()).is_equal(45)
 
 
 func test_todo_pedestre_que_o_jogo_carrega_esta_no_catalogo() -> void:
@@ -175,14 +175,22 @@ func test_angulo_desconhecido_na_ficha_avisa() -> void:
 
 func test_a_cg_por_folha_tem_a_grade_da_tabela_da_migracao() -> void:
 	# `MIGRACAO_2D.md`: tres angulos (costas, 3/4 costas, lado); 5 quadros de
-	# inclinacao em pilotando, 4 em parado, 6 de soco (3 por lado) e 4 de golpe
-	# recebido (2 por lado).
+	# inclinacao em pilotando, 4 em parado, 6 de soco (3 por lado), 4 de golpe
+	# recebido (2 por lado) e 4 de tombo (so de costas); a moto caida e uma
+	# coluna de cinco angulos.
+	var tres := ["costas", "tres_quartos_costas", "lado"]
+	var cinco := ["frente", "tres_quartos_frente", "lado", "tres_quartos_costas", "costas"]
 	for esperado: Array in [
-		["cg_pilotando", 5], ["cg_parado", 4], ["cg_combate", 6], ["cg_golpe", 4]
+		["cg_pilotando", 5, tres],
+		["cg_parado", 4, tres],
+		["cg_combate", 6, tres],
+		["cg_golpe", 4, tres],
+		["cg_tombo", 4, ["costas"]],
+		["cg_caida", 1, cinco],
 	]:
 		var moto := _item(esperado[0])
 		assert_object(moto).is_not_null()
 		assert_int(moto.tipo).is_equal(CatalogoSprites.Tipo.MOTO_FOLHA)
 		assert_int(moto.colunas).is_equal(esperado[1])
-		assert_array(Array(moto.rotulos_linhas)).is_equal(["costas", "tres_quartos_costas", "lado"])
+		assert_array(Array(moto.rotulos_linhas)).is_equal(esperado[2])
 		assert_float(moto.pixels_por_metro).is_equal(100.0)

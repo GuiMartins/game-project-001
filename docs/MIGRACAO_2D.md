@@ -155,7 +155,19 @@ moto: `cg`, `xre`, `pcx`.
   precisou de `vao` 8 (e não 24), porque as motos de lado se encostam. O golpe
   recebido é sutil, como na referência 3D: o piloto recua e vira a cabeça, e
   a diferença entre os quadros de cada lado é pequena. Julgar no jogo.)
-- [ ] **2D12** — CG: tombo e caída (uma folha, 9 quadros).
+- [x] **2D12** — CG: tombo e caída (uma folha, 9 quadros).
+  (23/10/2026: duas folhas, `cg_tombo` (1 × 4, de costas) e `cg_caida` (5 × 1,
+  a moto sem piloto, cinco ângulos), em `assets/sprites/moto/`. O tombo levou
+  três gerações: na primeira e na segunda as figuras se sobrepunham na
+  horizontal (a moto que cai invade a coluna do vizinho) e o recorte, que
+  separa por vãos de coluna, as via como uma só. Em vez de uma quarta, o
+  recorte ganhou `por_manchas` na ficha: separa as figuras pelo verde entre
+  elas, e não pela coluna, e apaga do retângulo de cada uma o que é do vizinho.
+  Escala `coluna_zero`: a moto em pé fixa os 100 px/m, e as caídas saem do
+  tamanho que o Flow as desenhou. Na moto caída o Flow desenhou a linha 2 (3/4
+  de frente) quase de lado e em pé, e não deitada como a referência 3D: julgar
+  no jogo, e refazer só essa linha se não servir. A conferência de altura da
+  ficha não vale para a caída, que guarda o comprimento.)
 - [ ] **2D13** — XRE: as três folhas do 2D10 a 2D12.
 - [ ] **2D14** — PCX: as três folhas. Na scooter o pé no chão sai do
   assoalho, e não da pedaleira.

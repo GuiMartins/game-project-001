@@ -25,6 +25,12 @@ const PASTA_FACHADAS: String = "res://assets/sprites/fachadas"
 const ANGULOS: Array[String] = [
 	"frente", "tres_quartos_frente", "lado", "tres_quartos_costas", "costas"
 ]
+## Folhas que mostram a coisa deitada: a ficha guarda o comprimento em `altura_m`
+## (a escala `comprimento` do recorte), e a altura desenhada nao e a dela.
+const SEM_CONFERENCIA_DE_ALTURA: Array[String] = ["caida"]
+## Folhas em que o corpo sai do chao ou tomba de proposito: o pe nao e constante
+## de um quadro para outro (como no voo e na queda do pedestre).
+const SEM_PE_CONSTANTE: Array[String] = ["caida", "tombo"]
 ## Quanto a altura desenhada pode fugir de `altura_m * pixels_por_metro` antes de
 ## virar aviso. Num carro ou prop o desenho e a coisa inteira, e a ficha diz o
 ## tamanho real dela: fora disso o sprite troca de escala na mudanca de folha.
@@ -240,7 +246,8 @@ static func _folha(nome: String, pasta: String, tipo: int) -> Item:
 	# Quem anda e o pedestre; o resto fica de pe na pista, entao o pe de uma
 	# linha tem de ser o mesmo em todos os quadros dela (porta que abre nao
 	# tira o carro do chao).
-	_medir(item, tipo != Tipo.PEDESTRE or item.animacao == "andando", tipo == Tipo.PEDESTRE)
+	var anda := tipo != Tipo.PEDESTRE or item.animacao == "andando"
+	_medir(item, anda and not SEM_PE_CONSTANTE.has(item.animacao), tipo == Tipo.PEDESTRE)
 	return item
 
 
@@ -369,7 +376,7 @@ static func _confere_constancia(item: Item, confere_altura: bool) -> void:
 ## fica de fora porque o voo e a queda mudam a altura de proposito, e a moto
 ## deitada tambem (ver `_medir`).
 static func _confere_altura_da_ficha(item: Item) -> void:
-	if item.altura_px <= 0.0:
+	if item.altura_px <= 0.0 or SEM_CONFERENCIA_DE_ALTURA.has(item.animacao):
 		return
 	for linha in item.linhas:
 		var maior := 0
