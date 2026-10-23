@@ -45,14 +45,12 @@ const CELULA := Vector2i(192, 160)
 ## Onde o pe do pneu traseiro fica na celula, a partir do canto de cima.
 const PE := Vector2i(96, 156)
 
-## Um pixel e fundo quando o verde passa os outros dois canais por esta margem
-## (0-255). O JPEG suja a borda: abaixo disso sobra uma franja verde no piloto.
-const MARGEM_VERDE: int = 40
 ## Faixa vazia, em pixels da folha, que separa dois desenhos. Menor que isto e
 ## so um vao dentro do mesmo desenho, entre o braco e o corpo.
 const VAO: int = 12
 ## Desenho com menos pixels que isto e sujeira do JPEG, nao quadro.
 const AREA_MINIMA: int = 4000
+const Recorte := preload("res://arte/recorte_de_folha.gd")
 
 ## O quadro que da o tamanho de todos: o piloto reto, indo em frente.
 const MEDIDA: Array = ["pilotando_a", 0, 2]
@@ -147,97 +145,15 @@ func _desenho(folhas: Dictionary, nome: String, linha: int, coluna: int) -> Vari
 
 ## A folha sem o verde e os desenhos achados nela, linha a linha.
 func _folha(caminho: String) -> Variant:
-	var imagem := Image.load_from_file(ProjectSettings.globalize_path(caminho))
-	if imagem == null or imagem.is_empty():
-		push_error("nao li %s - rode `git lfs pull`" % caminho)
+	var imagem := Recorte.carrega(caminho)
+	if imagem == null:
 		return null
-	imagem.convert(Image.FORMAT_RGBA8)
-	var largura := imagem.get_width()
-	var altura := imagem.get_height()
-	var dados := imagem.get_data()
-	var cheio := PackedByteArray()
-	cheio.resize(largura * altura)
-	for p in largura * altura:
-		var r := dados[p * 4]
-		var g := dados[p * 4 + 1]
-		var b := dados[p * 4 + 2]
-		if g - maxi(r, b) > MARGEM_VERDE:
-			# Pre-multiplicado: o fundo vira preto transparente, e a reducao
-			# nao puxa verde para dentro da borda.
-			dados[p * 4] = 0
-			dados[p * 4 + 1] = 0
-			dados[p * 4 + 2] = 0
-			dados[p * 4 + 3] = 0
-		else:
-			# O verde que o fundo rebate na borda do piloto e na lataria: o
-			# canal verde nunca passa o maior dos outros dois.
-			dados[p * 4 + 1] = mini(g, maxi(r, b))
-			cheio[p] = 1
-	imagem.set_data(largura, altura, false, Image.FORMAT_RGBA8, dados)
-
-	var desenhos: Array = []
-	for faixa in _faixas(_soma_linhas(cheio, largura, 0, altura, 0, largura)):
-		var linha: Array = []
-		var colunas := _soma_colunas(cheio, largura, faixa.x, faixa.y)
-		for corte in _faixas(colunas):
-			var caixa := _caixa(
-				cheio, largura, Rect2i(corte.x, faixa.x, corte.y - corte.x, faixa.y - faixa.x)
-			)
-			if caixa["area"] < AREA_MINIMA:
-				continue
-			linha.append(caixa)
-		if not linha.is_empty():
-			desenhos.append(linha)
-	print(
-		(
-			"  %s: %s desenhos por linha"
-			% [caminho.get_file(), desenhos.map(func(l: Array) -> int: return l.size())]
-		)
+	var cheio := Recorte.tira_verde(imagem)
+	var desenhos := Recorte.acha_desenhos(
+		cheio, imagem.get_width(), imagem.get_height(), VAO, AREA_MINIMA, _caixa
 	)
+	print("  %s: %s desenhos por linha" % [caminho.get_file(), Recorte.contagem(desenhos)])
 	return {"imagem": imagem, "desenhos": desenhos}
-
-
-func _soma_linhas(
-	cheio: PackedByteArray, largura: int, y0: int, y1: int, x0: int, x1: int
-) -> PackedInt32Array:
-	var soma := PackedInt32Array()
-	soma.resize(y1 - y0)
-	for y in range(y0, y1):
-		var n := 0
-		for x in range(x0, x1):
-			n += cheio[y * largura + x]
-		soma[y - y0] = n
-	return soma
-
-
-func _soma_colunas(cheio: PackedByteArray, largura: int, y0: int, y1: int) -> PackedInt32Array:
-	var soma := PackedInt32Array()
-	soma.resize(largura)
-	for y in range(y0, y1):
-		for x in largura:
-			soma[x] += cheio[y * largura + x]
-	return soma
-
-
-## Os trechos ocupados de uma projecao, como (inicio, fim), juntando os que um
-## vao menor que `VAO` separa.
-func _faixas(soma: PackedInt32Array) -> Array[Vector2i]:
-	var faixas: Array[Vector2i] = []
-	var inicio := -1
-	var vazio := 0
-	for i in soma.size():
-		if soma[i] > 2:
-			if inicio < 0:
-				inicio = i
-			vazio = 0
-		elif inicio >= 0:
-			vazio += 1
-			if vazio >= VAO:
-				faixas.append(Vector2i(inicio, i - vazio + 1))
-				inicio = -1
-	if inicio >= 0:
-		faixas.append(Vector2i(inicio, soma.size() - vazio))
-	return faixas
 
 
 ## A caixa justa do desenho dentro de `regiao`, a area dele e onde fica o pe
@@ -273,20 +189,7 @@ func _cola(atlas: Image, indice: int, folha: Image, desenho: Dictionary, escala:
 	recorte.resize(tamanho.x, tamanho.y, Image.INTERPOLATE_LANCZOS)
 	var pe: Vector2 = (desenho["pe"] - Vector2(caixa.position)) * escala
 	var destino := Vector2i(indice * CELULA.x, 0) + PE - Vector2i(pe.round())
-	# A borda dura: desfaz o pre-multiplicado e corta o alfa no meio. Meio-tom
-	# na silhueta e o que faz um sprite ler como recortado por tesoura de IA, e
-	# nao como digitalizado.
-	var dados := recorte.get_data()
-	for p in tamanho.x * tamanho.y:
-		var a := dados[p * 4 + 3]
-		if a < 128:
-			for c in 4:
-				dados[p * 4 + c] = 0
-			continue
-		for c in 3:
-			dados[p * 4 + c] = mini(255, int(dados[p * 4 + c] * 255.0 / a))
-		dados[p * 4 + 3] = 255
-	recorte.set_data(tamanho.x, tamanho.y, false, Image.FORMAT_RGBA8, dados)
+	Recorte.borda_dura(recorte)
 	# Cortado na celula: um braco que passasse dela apareceria no quadro vizinho.
 	var celula := Rect2i(indice * CELULA.x, 0, CELULA.x, CELULA.y)
 	var colado := Rect2i(destino, tamanho).intersection(celula)

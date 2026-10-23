@@ -65,10 +65,17 @@ Decisões tomadas com o Guilherme:
   modelo 3D não tem empinada, só o sprite. Hatch, SUV, baú e van não têm
   passageiro no modelo e saem com uma coluna na base; o ônibus ganha as duas
   linhas do lado da porta e, nas folhas, só os quadros de abertura.)
-- [ ] **2D02** — **Um recorte para todas as folhas.** Juntar o
+- [x] **2D02** — **Um recorte para todas as folhas.** Juntar o
   `sprites_flow.gd` e o `sprites_pedestres.gd` num recorte guiado por ficha:
   grade, âncora, `pixels_por_metro`, espelho, cor-chave e coordenadas de luz.
   Folha nova entra com uma ficha, e não com um script.
+  (22/10/2026: `arte/recorte_de_folha.gd` é a única cópia de tirar o verde,
+  achar os desenhos pelos vãos, escalar, ancorar e colar com borda dura;
+  `sprites_flow.gd` e `sprites_pedestres.gd` chamam a biblioteca e saem
+  byte a byte iguais. `dev.py recortar [nome]` recorta pela ficha em
+  `arte/flow/fichas/` (campos no README de lá) e repassa as luzes ao `.json` do
+  atlas. Ficam à parte o corte dos props, que usa outro fundo e uma imagem por
+  prop, e as regras próprias do piloto e do pedestre.)
 - [ ] **2D03** — **Um shader de sprite.** Recolorir pela cor-chave, acender as
   luzes da ficha com a hora (`noite`) e escolher a linha de ângulo pela
   guinada em relação à câmera. Hoje isso está repartido entre
