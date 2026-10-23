@@ -12,5 +12,6 @@
 	"ancora_y": "chao",
 	"vao": 8,
 	"area_minima": 3000,
-	"por_manchas": true
+	"por_manchas": true,
+	"placa": true
 }

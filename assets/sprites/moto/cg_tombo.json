@@ -13,5 +13,6 @@
 		135,
 		220
 	],
-	"pixels_por_metro": 100.0
+	"pixels_por_metro": 100.0,
+	"placa": []
 }
