@@ -1,0 +1,16 @@
+{
+	"fonte": "res://arte/flow/piloto_voando.jpg",
+	"saida": "res://assets/sprites/moto/piloto_voando",
+	"linhas": ["lado", "tres_quartos_costas", "costas", "tres_quartos_frente"],
+	"colunas": 8,
+	"celula": [300, 300],
+	"pe_y": 150,
+	"altura_m": 1.7,
+	"pixels_por_metro": 100,
+	"escala": "coluna_zero",
+	"ancora_x": "centro",
+	"ancora_y": "centro",
+	"vao": 8,
+	"area_minima": 3000,
+	"por_manchas": "folha"
+}

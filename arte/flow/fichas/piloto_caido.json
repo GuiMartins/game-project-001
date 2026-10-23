@@ -1,0 +1,17 @@
+{
+	"fonte": "res://arte/flow/piloto_caido.jpg",
+	"saida": "res://assets/sprites/moto/piloto_caido",
+	"linhas": ["lado", "tres_quartos_costas", "costas", "tres_quartos_frente"],
+	"colunas": 3,
+	"celula": [260, 150],
+	"pe_y": 75,
+	"altura_m": 1.7,
+	"pixels_por_metro": 100,
+	"escala": "comprimento",
+	"medir_linhas": [0],
+	"ancora_x": "centro",
+	"ancora_y": "centro",
+	"vao": 8,
+	"area_minima": 3000,
+	"por_manchas": "folha"
+}
