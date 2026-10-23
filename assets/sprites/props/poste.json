@@ -2,6 +2,30 @@
 	"altura_m": 8.5,
 	"angulo": "frente",
 	"largura_m": 4.38,
+	"luzes": [
+		{
+			"coluna": 0,
+			"linha": 0,
+			"nome": "lente_esquerda",
+			"ponto": [
+				45,
+				136
+			],
+			"raio": 16,
+			"so_de_noite": true
+		},
+		{
+			"coluna": 0,
+			"linha": 0,
+			"nome": "lente_direita",
+			"ponto": [
+				235,
+				136
+			],
+			"raio": 16,
+			"so_de_noite": true
+		}
+	],
 	"pe": [
 		139,
 		543

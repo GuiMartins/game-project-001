@@ -3,7 +3,7 @@ extends MeshInstance3D
 ## O desenho de uma `Pessoa`. A mesma folha e o mesmo shader tambem servem aos
 ## `MultiMesh` da calcada; so o relogio e o quadro mudam de dono.
 
-const SHADER: Shader = preload("res://scripts/pedestre_sprite.gdshader")
+const SHADER: Shader = preload("res://scripts/sprite.gdshader")
 const ANDANDO: Array[Texture2D] = [
 	preload("res://assets/sprites/pedestres/vovo_andando.png"),
 	preload("res://assets/sprites/pedestres/obra_andando.png"),

@@ -93,7 +93,7 @@ func test_entre_dois_quadros_o_quad_gira_o_que_falta() -> void:
 	for graus: float in [0.0, 5.0, 10.0, 20.0, 40.0]:
 		ator.atualizar(PASSO, 20.0, 0.5, 0.0, false, 1.0, deg_to_rad(graus))
 		var desenhado: float = AtorSprite.INCLINACOES[_quadro(ator)]
-		var total := desenhado + rad_to_deg(material.get_shader_parameter("rolagem"))
+		var total := desenhado + rad_to_deg(material.get_shader_parameter("giro"))
 		# A ginga do tronco soma uns graus; a moto manda no resto.
 		assert_float(total).is_equal_approx(graus, 3.0)
 		rolagens.append(total)

@@ -35,7 +35,7 @@ Decisões tomadas com o Guilherme:
   porta é só do lado direito, e espelhado ela trocaria de lado.
 - **Cor por cor-chave.** O prompt pede a parte que muda de cor numa cor
   pura, e o shader recolore, como já faz o vermelho da bag
-  (`ator_sprite.gdshaderinc`). Sem isso seriam nove folhas por carro, uma por
+  (`sprite.gdshaderinc`). Sem isso seriam nove folhas por carro, uma por
   pintura, e o Flow não desenha o mesmo carro nove vezes igual.
 - **Luz não é desenho.** Lanterna, freio, seta, farol, janela, lente de poste
   e painel de mupi são coordenadas no `.json` da folha, e o shader acende o
@@ -76,10 +76,18 @@ Decisões tomadas com o Guilherme:
   `arte/flow/fichas/` (campos no README de lá) e repassa as luzes ao `.json` do
   atlas. Ficam à parte o corte dos props, que usa outro fundo e uma imagem por
   prop, e as regras próprias do piloto e do pedestre.)
-- [ ] **2D03** — **Um shader de sprite.** Recolorir pela cor-chave, acender as
+- [x] **2D03** — **Um shader de sprite.** Recolorir pela cor-chave, acender as
   luzes da ficha com a hora (`noite`) e escolher a linha de ângulo pela
   guinada em relação à câmera. Hoje isso está repartido entre
   `ator_sprite.gdshaderinc` e `pedestre_sprite.gdshader`.
+  (23/10/2026: `scripts/sprite.gdshader` (e `sprite_foco.gdshader`, com o
+  stencil do foco) substitui os quatro; o piloto é `angulos = 4`, uma linha só,
+  com `recolore`, e a pessoa e a multidão seguem como eram. Uma cena de teste
+  com piloto e pessoas de dia e de noite sai byte a byte igual à de antes. As
+  luzes são `SpriteLuzes`: a ficha diz o ponto, o raio e a cor, o shader acende
+  o brilho por cima, e só o freio acende de dia. Provado numa folha de teste,
+  de dia e de noite. A lente do poste (2D50) já está na ficha dele; ligar o
+  poste em sprite no mundo é outro passo.)
 - [ ] **2D04** — **O testador vê tudo.** `CatalogoSprites.Tipo` ganha carro,
   prop e fachada, e a análise mede pé, altura e ângulo deles como já mede os
   da moto e do pedestre.
@@ -207,7 +215,7 @@ prop quebra e voa, quem gira é o sprite inteiro.
 
 - [x] **2D50** — Poste, com a lente acesa por coordenada. (22/10/2026: sprite em
   `assets/sprites/props/poste.png`, lente apagada; a coordenada da lente para o
-  shader ainda falta, entra com o 2D03.)
+  shader entrou com o 2D03, em `poste.json`.)
 - [x] **2D51** — Árvore de copa e palmeira, com uma variação de cada. (22/10/2026:
   uma de cada, em `assets/sprites/props/`; a segunda variação fica para depois.)
 - [ ] **2D52** — Caçamba e mupi, com o painel do mupi aceso por coordenada.

@@ -13,8 +13,8 @@ extends MeshInstance3D
 ## e a sombra de contato e o pilar que faz o ator nao flutuar.
 
 const ATLAS: Texture2D = preload("res://assets/sprites/entregador.png")
-const SHADER: Shader = preload("res://scripts/ator_sprite.gdshader")
-const SHADER_FOCO: Shader = preload("res://scripts/ator_sprite_foco.gdshader")
+const SHADER: Shader = preload("res://scripts/sprite.gdshader")
+const SHADER_FOCO: Shader = preload("res://scripts/sprite_foco.gdshader")
 
 ## As medidas do atlas, as mesmas de `arte/sprites_flow.gd`: quantos quadros,
 ## o tamanho de cada celula, onde fica o pe do pneu traseiro nela e a altura
@@ -73,7 +73,13 @@ func _init() -> void:
 	name = "Sprite"
 	_material.shader = SHADER
 	_material.set_shader_parameter("atlas", ATLAS)
-	_material.set_shader_parameter("quadros", QUADROS)
+	_material.set_shader_parameter("colunas", QUADROS)
+	_material.set_shader_parameter("linhas", 1)
+	_material.set_shader_parameter("quadro", RETO)
+	# Uma linha so, vista de tras, e a bag e a camiseta trocam de cor.
+	_material.set_shader_parameter("angulos", 4)
+	_material.set_shader_parameter("recolore", 1.0)
+	_material.set_shader_parameter("celula_px", CELULA)
 	material_override = _material
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# Nasce escondido: quem liga e o `Entregador`, so com o `sprite` ligado.
@@ -160,7 +166,7 @@ func posar(
 	# O quadro desenha a inclinacao de uns poucos angulos, e o resto o quad
 	# gira na mao, em volta do pneu: entre dois quadros a moto continua
 	# deitando, e passa do ultimo. Sem isto a curva anda aos saltos.
-	_material.set_shader_parameter("rolagem", inclinacao - desenhado + ginga.x)
+	_material.set_shader_parameter("giro", inclinacao - desenhado + ginga.x)
 	_material.set_shader_parameter("desvio", ginga.y)
 	_material.set_shader_parameter("afunda", ginga.z * GINGA)
 

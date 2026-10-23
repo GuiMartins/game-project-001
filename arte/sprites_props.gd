@@ -39,7 +39,32 @@ const SAIDA: String = "res://assets/sprites/props/"
 const PROPS: Dictionary = {
 	"copa": {"altura_m": 8.0, "espelho": ""},
 	"palmeira": {"altura_m": 11.0, "espelho": ""},
-	"poste": {"altura_m": 8.5, "espelho": ""},
+	"poste":
+	{
+		"altura_m": 8.5,
+		"espelho": "",
+		# As duas lanternas, em pixels do sprite: o shader acende o vidro delas
+		# de noite (`SpriteLuzes`), no lugar das lentes da malha 3D.
+		"luzes":
+		[
+			{
+				"nome": "lente_esquerda",
+				"linha": 0,
+				"coluna": 0,
+				"ponto": [45, 136],
+				"raio": 16,
+				"so_de_noite": true
+			},
+			{
+				"nome": "lente_direita",
+				"linha": 0,
+				"coluna": 0,
+				"ponto": [235, 136],
+				"raio": 16,
+				"so_de_noite": true
+			},
+		],
+	},
 	"placa_curva": {"altura_m": 3.2, "espelho": "placa_curva_dir"},
 	"placa_mao_dupla": {"altura_m": 3.2, "espelho": ""},
 }
@@ -187,6 +212,8 @@ func _gravar_ficha(id: String, ficha: Dictionary, tamanho: Vector2i, pe: Vector2
 		"pixels_por_metro": PIXELS_POR_METRO,
 		"angulo": "frente",
 	}
+	if ficha.has("luzes"):
+		dados["luzes"] = ficha["luzes"]
 	var arquivo := FileAccess.open(
 		ProjectSettings.globalize_path(SAIDA + id + ".json"), FileAccess.WRITE
 	)
