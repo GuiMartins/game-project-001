@@ -8,8 +8,9 @@ sacão preto**, maior que o da primeira referência.
 
 Escopo autorizado: caminhada e atropelamento (voo + caída). Não produzir susto
 isolado nem desembarque. O saco deve estourar no impacto e espalhar dezenas de
-latinhas e garrafas PET. O efeito será separado dos atlas do corpo, para os
-objetos poderem voar pelo cenário; **ainda não foi implementado**.
+latinhas e garrafas PET. O efeito é separado dos atlas do corpo, para os objetos poderem voar pelo
+cenário; **já foi implementado em 2D e conferido na bancada**. Ainda falta
+ligá-lo ao impacto do catador, que continua sem atlas aprovado.
 
 ## Estado e bloqueio
 
@@ -61,7 +62,7 @@ antigas continuam preservados como histórico, não como instrução atual.
   da conferência completa e seleção.
 - Caída 3/4 frontal: ausente, geração recusada por créditos.
 - Montar e aprovar os três atlas, integrar apenas os estados autorizados,
-  implementar o estouro e conferir as ações nos dois sentidos no jogo.
+  ligar o efeito de estouro já pronto e conferir as ações nos dois sentidos no jogo.
 
 O montador foi preparado para escopo explícito de caminhada/atropelamento e
 célula de caminhada mais larga (256 px), preservando a escala física de 1,68 m.
@@ -73,3 +74,36 @@ Validação deste checkpoint: 393 testes unitários, selftest e lint passaram;
 13 testes Python do pipeline passaram. Nenhum baseline foi alterado.
 Não foi rodada prova gráfica de integração deste personagem, pois ela ainda
 não existe. Esta branch preserva produção parcial, não uma entrega jogável.
+
+## Efeito de recicláveis — 2D
+
+O botão **Reciclaveis 2D** do testador abre uma bancada de canvas com saco
+fechado, estouro, impacto dos dois lados, repetição e câmera lenta local.
+`SacoReciclaveis` é um `Node2D`; o viewport da bancada desabilita 3D. O SVG
+`assets/sprites/efeitos/reciclaveis.svg` contém latas, PET com gargalo/tampa e
+nervuras, saco fechado, duas metades rasgadas e retalho. Toda a arte é 2D,
+desenhada em código, sem geração no Flow ou gasto de créditos.
+
+São 20 latinhas, 20 garrafas PET e 10 retalhos. O impulso desloca o jato, com
+dispersão radial irregular dos dois lados. Cada peça gira, sobe, quica,
+desliza e para; as garrafas quicam mais que as latas. Sombras são elipses de
+canvas. O efeito apaga entre 5,8 e 7 segundos, libera as peças e emite
+`terminou`; o dono pode liberar ou reutilizar o emissor. Repetir o impacto no
+mesmo saco não cria outro lote. O RNG é local e não interfere no trânsito.
+
+Integração futura: criar `SacoReciclaveis` no canvas, chamar `reiniciar(ancora)`
+e `estourar(impulso_2d, semente)` no impacto. Posição, escala e a projeção da
+pista pertencem ao dono. Não há chamada no personagem por enquanto, nem foi
+atribuído esse saco a outro NPC para simular que o catador está concluído.
+
+`conferencia/efeito-0.35.png` mostra a bancada na resolução do jogo. O GIF
+`efeito-saco-2d.gif` foi gravado pelo próprio Godot, com o render 3D desabilitado,
+a 30 quadros/s, semente 17, impulso (180, -15), escala 1,4. Mostra o saco
+fechado e a dispersão; o PNG do mesmo nome é um quadro durante o voo.
+Os três testes de efeito conferem quantidade/tipos e direções, quique e
+repouso, liberação, impacto único, reinício e reprodução entre passos de tempo.
+
+Validação do efeito: **396 testes unitários**, **14 verificações do selftest**,
+lint e `shots` (**19 quadros**, comparação visual aprovada), todos com saída 0.
+Nenhum baseline alterado. O efeito foi conferido em render nativo 2D e a
+bancada também foi capturada; integração com o catador continua pendente.

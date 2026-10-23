@@ -112,7 +112,7 @@ func _ready() -> void:
 	if args.has("linha"):
 		_escolhe_linha(int(args["linha"]) - 1)
 	_comeca_a_analisar()
-	if args.has("evento") and _jogo != null:
+	if args.has("evento") and (_jogo != null or args["evento"] == "saco"):
 		_dispara_o_evento(String(args["evento"]))
 	if args.has("captura"):
 		_captura_e_sai.call_deferred(String(args["captura"]), float(args.get("espera", 0.0)))
@@ -256,6 +256,7 @@ func _monta_direita() -> Control:
 		["Folha 2D", "Cena 3D", "Jogar"], 0, func(i: int) -> void: _muda_modo(i)
 	)
 	topo.add_child(_modo_botao)
+	topo.add_child(PecasDeUi.botao("Reciclaveis 2D", func() -> void: _abre_reciclaveis()))
 	caixa.add_child(topo)
 
 	var palco := Control.new()
@@ -921,6 +922,9 @@ func _encerra(codigo: int) -> void:
 ## pilotar: `--jogar --evento=atropelar --espera=0.6 --captura=a.png`.
 func _dispara_o_evento(nome: String) -> void:
 	match nome:
+		"saco":
+			var previa := _abre_reciclaveis()
+			previa.estourar.call_deferred()
 		"atropelar":
 			_jogo.atropelar(25.0)
 		"susto":
@@ -931,6 +935,12 @@ func _dispara_o_evento(nome: String) -> void:
 			_jogo.sair_do_carro(-1)
 		"largada":
 			_jogo.largada()
+
+
+func _abre_reciclaveis() -> PreviaReciclaveis:
+	var previa := PreviaReciclaveis.new()
+	add_child(previa)
+	return previa
 
 
 static func _argumentos() -> Dictionary:

@@ -318,7 +318,7 @@
     "Refazer caminhada 3/4 traseira: gira para perfil durante o clipe.",
     "Gerar caida 3/4 frontal: Flow recusou por limite de uso/creditos insuficientes.",
     "Conferir demais fontes, selecionar ciclos, montar e aprovar os tres atlas.",
-    "Implementar explosao do saco com dezenas de latas/PET e integrar apenas caminhada/atropelamento.",
+    "Ligar SacoReciclaveis (efeito 2D ja pronto) ao impacto do catador e integrar apenas caminhada/atropelamento.",
     "Conferir no jogo e rodar os portoes da integracao."
   ],
   "referencias_intermediarias": [
@@ -337,5 +337,18 @@
       "sha256": "4366f4fef48454e2754e6da0b95779a604037fd9c0864c6e8789570f4a38065e",
       "url": "https://flow.google.com/project/34c8ac4e-0e2c-4998-b1fe-58532676c9a5/edit/d18abdb2-2350-49e4-b624-3f8ad6c49a65"
     }
-  ]
+  ],
+  "efeito_saco": {
+    "implementado": true,
+    "somente_2d": true,
+    "classe": "SacoReciclaveis",
+    "arquivo": "scripts/saco_reciclaveis.gd",
+    "arte": "assets/sprites/efeitos/reciclaveis.svg",
+    "latinhas": 20,
+    "garrafas_pet": 20,
+    "retalhos": 10,
+    "integrado_ao_personagem": false,
+    "conferencia": "Testador > Reciclaveis 2D; GIF capturado no Godot em conferencia/efeito-saco-2d.gif",
+    "origem_arte": "SVG desenhado em codigo, sem Flow nem creditos."
+  }
 }
