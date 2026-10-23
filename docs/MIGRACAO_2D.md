@@ -137,7 +137,15 @@ moto: `cg`, `xre`, `pcx`.
 | Tombo: a moto deitando (só de costas) | 4 | 4 |
 | Moto caída no chão, sem piloto, girando (5 linhas × 1) | 1 | 5 |
 
-- [ ] **2D10** — CG: pilotando e parado (uma folha, 3 × 9).
+- [x] **2D10** — CG: pilotando e parado (uma folha, 3 × 9).
+  (23/10/2026: saíram **duas** folhas, `cg_pilotando` (3 × 5) e `cg_parado`
+  (3 × 4), em `assets/sprites/moto/`, porque o recorte lê uma fonte por ficha e
+  o Flow erra mais a conta com 9 colunas do que com 4 ou 5; as duas fichas
+  são irmãs, na mesma celula (270 × 240, 100 px/m, chão em y = 220). Cada uma
+  saiu de uma geração e passou o recorte de primeira; a de parado precisou de
+  uma edição para a moto sair escura como a outra (a primeira veio
+  vermelha). Receita e prompts em `arte/flow/referencia/README.md`, *Moto*.
+  O catálogo as vê como `MOTO_FOLHA`, sem aviso.)
 - [ ] **2D11** — CG: combate e golpe (uma folha, 3 × 10).
 - [ ] **2D12** — CG: tombo e caída (uma folha, 9 quadros).
 - [ ] **2D13** — XRE: as três folhas do 2D10 a 2D12.

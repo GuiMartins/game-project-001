@@ -1,0 +1,15 @@
+{
+	"fonte": "res://arte/flow/cg_pilotando.jpg",
+	"saida": "res://assets/sprites/moto/cg_pilotando",
+	"linhas": ["costas", "tres_quartos_costas", "lado"],
+	"colunas": 5,
+	"celula": [270, 240],
+	"pe_y": 220,
+	"altura_m": 1.5,
+	"pixels_por_metro": 100,
+	"escala": "altura",
+	"ancora_x": "centro",
+	"ancora_y": "chao",
+	"vao": 24,
+	"area_minima": 3000
+}

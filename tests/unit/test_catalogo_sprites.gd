@@ -33,7 +33,7 @@ func test_a_varredura_acha_a_moto_e_os_cinco_pedestres_em_cinco_animacoes() -> v
 	# A moca de moletom so tem a folha de andar.
 	assert_object(_item("moletom_andando")).is_not_null()
 	assert_object(_item("executivo_andando")).is_not_null()
-	assert_int(_itens.size()).is_equal(39)
+	assert_int(_itens.size()).is_equal(41)
 
 
 func test_todo_pedestre_que_o_jogo_carrega_esta_no_catalogo() -> void:
@@ -171,3 +171,15 @@ func test_angulo_desconhecido_na_ficha_avisa() -> void:
 		"van_base", ficha, CatalogoSprites.Tipo.FACHADA, Rect2i(10, 8, 80, 48)
 	)
 	assert_bool(" ".join(item.avisos).contains("angulo desconhecido")).is_true()
+
+
+func test_a_cg_por_folha_tem_a_grade_da_tabela_da_migracao() -> void:
+	# `MIGRACAO_2D.md`: tres angulos (costas, 3/4 costas, lado), 5 quadros de
+	# inclinacao em pilotando e 4 em parado.
+	for esperado: Array in [["cg_pilotando", 5], ["cg_parado", 4]]:
+		var moto := _item(esperado[0])
+		assert_object(moto).is_not_null()
+		assert_int(moto.tipo).is_equal(CatalogoSprites.Tipo.MOTO_FOLHA)
+		assert_int(moto.colunas).is_equal(esperado[1])
+		assert_array(Array(moto.rotulos_linhas)).is_equal(["costas", "tres_quartos_costas", "lado"])
+		assert_float(moto.pixels_por_metro).is_equal(100.0)
