@@ -7,10 +7,14 @@ extends RefCounted
 ## a mao: folha nova aparece sozinha, e folha que perdeu o `.json` aparece com
 ## aviso em vez de sumir.
 
-enum Tipo { MOTO, PEDESTRE, CARRO, PROP, FACHADA }
+## `MOTO` e o atlas do ator (`AtorSprite`), de uma linha so e quadros escolhidos
+## pelo codigo; `MOTO_FOLHA` e a moto desenhada por folha de ficha, como a
+## migracao para 2D a quer (`MIGRACAO_2D.md`, 2D10 em diante).
+enum Tipo { MOTO, PEDESTRE, CARRO, PROP, FACHADA, MOTO_FOLHA }
 
 const PASTA: String = "res://assets/sprites"
 const PASTA_PEDESTRES: String = "res://assets/sprites/pedestres"
+const PASTA_MOTOS: String = "res://assets/sprites/moto"
 const PASTA_CARROS: String = "res://assets/sprites/carros"
 const PASTA_PROPS: String = "res://assets/sprites/props"
 const PASTA_FACHADAS: String = "res://assets/sprites/fachadas"
@@ -149,6 +153,7 @@ static func varrer() -> Array[Item]:
 	itens.append(_moto())
 	for pasta: Array in [
 		[PASTA_PEDESTRES, Tipo.PEDESTRE],
+		[PASTA_MOTOS, Tipo.MOTO_FOLHA],
 		[PASTA_CARROS, Tipo.CARRO],
 		[PASTA_PROPS, Tipo.PROP],
 		[PASTA_FACHADAS, Tipo.FACHADA],

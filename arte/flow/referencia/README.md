@@ -226,3 +226,39 @@ projeto no Flow):
 
 O recorte (`dev.py sprites-pedestres`) confere a grade de todas e lista de uma
 vez as que vieram com a contagem errada: refaça só essas.
+
+## Moto (2D10 em diante)
+
+As folhas da moto (`dev.py boneco moto`, `arte/flow/referencia/moto/`) saem do
+Flow como as da pessoa, com duas diferenças. A **identidade** não é um
+turnaround novo: é o do entregador que já existe no projeto *sprites from
+reference* (`Delivery driver character...`, de frente, de lado e de costas),
+e a moto é a CG. E o **fundo e a grade** são os mesmos, mas a contagem por
+extenso importa mais: 5 colunas passam, 9 não.
+
+Como a CG pilotando e parado foram feitas (23/10/2026), com Nano Banana 2.1,
+16:9, x1, uma imagem por vez, baixadas em 2K:
+
+- **Imagens:** o turnaround do entregador e a folha de pose do `boneco moto`
+  (`cg_pilotando.png` ou `cg_parado.png`). A ordem entre elas não importa se o
+  prompt as descreve pelo conteúdo ("a grid of gray mannequins" e "a turnaround
+  of the delivery rider"), e não por "Image 1" e "Image 2".
+- **Prompt:** o *Prompt genérico* acima, com a contagem por extenso (`exactly 5
+  figures in each row and 15 figures in total`), o ângulo de cada linha
+  (costas, 3/4 de costas, lado direito) e a inclinação ao longo da linha. Em
+  `cg_parado`, a pose de cada coluna: pé no chão nas colunas 1 a 3 e empinada
+  na 4. Diga que o bloco cinza sob o pé é só marcador de chão: sem isso o Flow o
+  desenha.
+- **Cor da moto:** diga a cor ("dark gunmetal gray and black"). Sem dizer, a
+  moto muda de uma folha para outra: a de parado veio vermelha e foi corrigida
+  com uma edição (a instrução de pintar a moto, mantendo grade e poses), que
+  manteve a grade.
+- **Ficha:** `arte/flow/fichas/cg_pilotando.json` e `cg_parado.json`
+  (`dev.py recortar cg_pilotando cg_parado`): celula 270 x 240, `pe_y` 220,
+  `altura_m` 1,5 a 100 px/m, `escala: altura`, `ancora_x: centro`,
+  `ancora_y: chao` (a empinada tem o pneu da frente no ar; o chão é o da
+  linha, e não o ponto mais baixo).
+- **Como subir arquivo no Flow pelo Chrome:** o botão "Enviar mídia" abre o
+  seletor nativo, que o agente não enxerga. Troque `HTMLInputElement.prototype
+  .click` por uma função que anexa o `<input type=file>` ao `body` sem abrir o
+  seletor, clique no botão, ache o campo e use `file_upload` nele.
