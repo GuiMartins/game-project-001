@@ -21,7 +21,7 @@ script: o recorte é o mesmo de `arte/recorte_de_folha.gd`, que o piloto
 | `vao`, `area_minima` | O que separa dois desenhos, em pixels da folha, e o que é sujeira do JPEG. |
 | `margem_verde` | Opcional, 40: quanto o verde passa os outros canais para ser fundo (cor-chave). |
 | `espelho` | Opcional: o lado esquerdo sai por espelho do direito. Vai para o `.json` do atlas. |
-| `luzes` | Opcional: `{"nome", "linha", "coluna", "ponto": [x, y]}` em pixels da célula. O shader acende o brilho por cima. O recorte só confere que o ponto cai na célula e o repassa. |
+| `luzes` | Opcional: `{"nome", "linha", "coluna", "ponto": [x, y]}` em pixels da célula, e opcionais `raio` (px, 6), `cor` ([r, g, b]) e `so_de_noite` (verdadeiro: o farol e a lente de poste; o freio é falso). O `sprite.gdshader` acende o brilho por cima (`SpriteLuzes`). O recorte só confere que o ponto cai na célula e o repassa. |
 
 Luz não é desenho: lanterna, farol, lente e janela são coordenadas aqui, e não
 uma camada pedida ao Flow, que nunca cai no mesmo pixel da folha de base.
