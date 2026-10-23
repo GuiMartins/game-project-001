@@ -27,16 +27,17 @@ func _item(id: String) -> CatalogoSprites.Item:
 
 func test_a_varredura_acha_a_moto_e_os_cinco_pedestres_em_cinco_animacoes() -> void:
 	assert_object(_item("moto")).is_not_null()
-	for pessoa: String in ["vovo", "obra", "praia", "adolescente", "escritorio"]:
+	for pessoa: String in ["vovo", "obra", "praia", "adolescente", "escritorio", "mendigo"]:
 		for animacao: String in ["andando", "caida", "desembarcando", "susto", "voando"]:
 			assert_object(_item("%s_%s" % [pessoa, animacao])).is_not_null()
 	# A moca de moletom so tem a folha de andar.
 	assert_object(_item("moletom_andando")).is_not_null()
 	assert_object(_item("executivo_andando")).is_not_null()
-	assert_int(_itens.size()).is_equal(28)
+	assert_int(_itens.size()).is_equal(33)
 
 
 func test_todo_pedestre_que_o_jogo_carrega_esta_no_catalogo() -> void:
+	assert_int(BarraDoJogo.NOMES_DAS_PESSOAS.size()).is_equal(PedestreSprite.ANDANDO.size())
 	for textura in PedestreSprite.ANDANDO:
 		var id := textura.resource_path.get_file().get_basename()
 		assert_object(_item(id)).is_not_null()

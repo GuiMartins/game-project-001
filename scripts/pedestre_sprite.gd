@@ -12,12 +12,13 @@ const ANDANDO: Array[Texture2D] = [
 	preload("res://assets/sprites/pedestres/escritorio_andando.png"),
 	preload("res://assets/sprites/pedestres/moletom_andando.png"),
 	preload("res://assets/sprites/pedestres/executivo_andando.png"),
+	preload("res://assets/sprites/pedestres/mendigo_andando.png"),
 ]
 const PRAIA: int = 2
 ## Elenco aprovado apenas para andar: outras poses conservam a propria identidade.
 const APENAS_CAMINHADA: Array[int] = [6]
 ## A moca de moletom so tem a folha de andar por enquanto: nas outras poses ela
-## usa a ultima da lista (o escritorio) ate haver o susto, a queda, o voo e o
+## conserva o escritorio na posicao 5 ate haver o susto, a queda, o voo e o
 ## desembarque dela. Ver `da_pose`.
 ## Altura da celula da folha de andar. Quantas linhas a folha tem sai da altura da
 ## imagem: 4 (sem 3/4 costas), 5 (frente, 3/4, lado, 3/4 costas, costas, com o lado esquerdo
@@ -26,33 +27,53 @@ const APENAS_CAMINHADA: Array[int] = [6]
 ## espelho.
 const ALTURA_CELULA_ANDANDO: int = 200
 const LINHAS_DOIS_LADOS: int = 8
+## As cinco listas mantem o indice de cada pessoa. O moletom conserva o
+## escritorio na posicao 5; o executivo conserva sua caminhada na 6.
+const ESCRITORIO_SUSTO: Texture2D = preload("res://assets/sprites/pedestres/escritorio_susto.png")
+const ESCRITORIO_DESEMBARCANDO: Texture2D = preload(
+	"res://assets/sprites/pedestres/escritorio_desembarcando.png"
+)
+const ESCRITORIO_VOANDO: Texture2D = preload("res://assets/sprites/pedestres/escritorio_voando.png")
+const ESCRITORIO_CAIDA: Texture2D = preload("res://assets/sprites/pedestres/escritorio_caida.png")
 const SUSTO: Array[Texture2D] = [
 	preload("res://assets/sprites/pedestres/vovo_susto.png"),
 	preload("res://assets/sprites/pedestres/obra_susto.png"),
 	preload("res://assets/sprites/pedestres/praia_susto.png"),
 	preload("res://assets/sprites/pedestres/adolescente_susto.png"),
-	preload("res://assets/sprites/pedestres/escritorio_susto.png"),
+	ESCRITORIO_SUSTO,
+	ESCRITORIO_SUSTO,
+	ANDANDO[6],
+	preload("res://assets/sprites/pedestres/mendigo_susto.png"),
 ]
 const DESEMBARCANDO: Array[Texture2D] = [
 	preload("res://assets/sprites/pedestres/vovo_desembarcando.png"),
 	preload("res://assets/sprites/pedestres/obra_desembarcando.png"),
 	preload("res://assets/sprites/pedestres/praia_desembarcando.png"),
 	preload("res://assets/sprites/pedestres/adolescente_desembarcando.png"),
-	preload("res://assets/sprites/pedestres/escritorio_desembarcando.png"),
+	ESCRITORIO_DESEMBARCANDO,
+	ESCRITORIO_DESEMBARCANDO,
+	ANDANDO[6],
+	preload("res://assets/sprites/pedestres/mendigo_desembarcando.png"),
 ]
 const VOANDO: Array[Texture2D] = [
 	preload("res://assets/sprites/pedestres/vovo_voando.png"),
 	preload("res://assets/sprites/pedestres/obra_voando.png"),
 	preload("res://assets/sprites/pedestres/praia_voando.png"),
 	preload("res://assets/sprites/pedestres/adolescente_voando.png"),
-	preload("res://assets/sprites/pedestres/escritorio_voando.png"),
+	ESCRITORIO_VOANDO,
+	ESCRITORIO_VOANDO,
+	ANDANDO[6],
+	preload("res://assets/sprites/pedestres/mendigo_voando.png"),
 ]
 const CAIDA: Array[Texture2D] = [
 	preload("res://assets/sprites/pedestres/vovo_caida.png"),
 	preload("res://assets/sprites/pedestres/obra_caida.png"),
 	preload("res://assets/sprites/pedestres/praia_caida.png"),
 	preload("res://assets/sprites/pedestres/adolescente_caida.png"),
-	preload("res://assets/sprites/pedestres/escritorio_caida.png"),
+	ESCRITORIO_CAIDA,
+	ESCRITORIO_CAIDA,
+	ANDANDO[6],
+	preload("res://assets/sprites/pedestres/mendigo_caida.png"),
 ]
 const PPM: float = 100.0
 

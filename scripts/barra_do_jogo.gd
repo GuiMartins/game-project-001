@@ -8,7 +8,7 @@ extends VBoxContainer
 ## As poses por segundo que o jogo oferece (`Main.CADENCIAS`); 0 e liso.
 const CADENCIAS: Array[int] = [0, 24, 15, 12, 8]
 const NOMES_DAS_PESSOAS: Array[String] = [
-	"Vovo", "Obra", "Praia", "Adolescente", "Escritorio", "Moletom", "Executivo"
+	"Vovo", "Obra", "Praia", "Adolescente", "Escritorio", "Moletom", "Executivo", "Mendigo"
 ]
 const AJUDA := (
 	"Pessoa: WASD ou setas andam, Shift corre.   Moto: W acelera, S freia, A e D inclinam, "
