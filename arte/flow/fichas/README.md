@@ -23,6 +23,10 @@ script: o recorte é o mesmo de `arte/recorte_de_folha.gd`, que o piloto
 | `espelho` | Opcional: o lado esquerdo sai por espelho do direito. Vai para o `.json` do atlas. |
 | `luzes` | Opcional: `{"nome", "linha", "coluna", "ponto": [x, y]}` em pixels da célula, e opcionais `raio` (px, 6), `cor` ([r, g, b]) e `so_de_noite` (verdadeiro: o farol e a lente de poste; o freio é falso). O `sprite.gdshader` acende o brilho por cima (`SpriteLuzes`). O recorte só confere que o ponto cai na célula e o repassa. |
 
+| `por_manchas` | Opcional. `true` separa as figuras de uma linha pelo verde entre elas (figuras que se sobrepõem na horizontal), e `"folha"` acha todas na folha inteira e as agrupa em linhas (linhas que se encostam na vertical). |
+| `espelha_quadros` | Opcional: `[[linha, coluna], ...]` de quadros que o Flow desenhou virados para a esquerda; o recorte os vira. A moto de toda folha aponta para a direita. |
+| `placa` | Opcional, só para moto: acha a chapa branca em cada quadro de costas e de 3/4 de costas, deixa-a lisa e grava o quadrilátero no `.json` do atlas (`PlacaSprite`, 2D16). |
+
 Luz não é desenho: lanterna, farol, lente e janela são coordenadas aqui, e não
 uma camada pedida ao Flow, que nunca cai no mesmo pixel da folha de base.
 

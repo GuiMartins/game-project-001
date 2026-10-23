@@ -207,8 +207,22 @@ moto: `cg`, `xre`, `pcx`.
   piloto ainda de pé, 1,7 m), e o caído pelo comprimento da linha do lado. Os
   quadros do voo são julgados pelo giro: confira jogando se o quadro 3 da linha
   de costas (o piloto visto de cima, pequeno) lê como queda, e não como corte.)
-- [ ] **2D16** — **Placa por código.** O texto Mercosul de cada moto
+- [x] **2D16** — **Placa por código.** O texto Mercosul de cada moto
   (`placa.gd`) desenhado sobre um retângulo da ficha, e não na folha.
+  (23/10/2026: `PlacaSprite` (`scripts/placa_sprite.gd`) faz os três passos. O
+  recorte acha a chapa branca que o Flow desenhou em cada quadro de costas e de
+  3/4 de costas, deixa-a lisa no atlas e grava o quadrilátero (`placa`, em
+  pixels da célula) no `.json` do atlas; o jogo chama `PlacaSprite.pinta` com a
+  placa da moto (`Placa.do_no`) e o texto aparece igual em todos os quadros, no
+  ângulo do quadro. A fonte é de pixel 3 × 5, do tamanho em que a placa chega à
+  tela (uns 25 px). Achou a chapa em cerca de 110 dos 190 quadros de costas e de
+  3/4; nos outros a chapa está escondida atrás da bag, ou o Flow não a desenhou, e
+  eles saem da lista (`dev.py recortar` os lista como `sem placa`): ali a placa
+  do Flow, de letra de mentira, continua no atlas. As placas ainda não entram em
+  cena: o jogo em sprite chega com o 2D63. Com o recorte revi também a
+  orientação das folhas, e `pcx_combate` e `pcx_golpe` tinham quadros com a
+  scooter virada para a esquerda: a ficha ganhou `espelha_quadros` e eles foram
+  virados no atlas.)
 
 Fica fora do desenho, por ser deslocamento ou rotação do sprite inteiro ou
 por não aparecer a 640×360: roda girando e roda borrada, mola, garfo e

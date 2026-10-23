@@ -71,11 +71,60 @@ func _recorta(nome: String) -> bool:
 	if erro != OK:
 		push_error("%s: nao gravei o atlas: %s" % [nome, error_string(erro)])
 		return false
+	_espelha_quadros(atlas, ficha)
+	var info := Recorte.ficha_do_atlas(ficha)
+	if ficha.get("placa", false):
+		info["placa"] = _placas(atlas, ficha)
+		# A chapa do Flow foi apagada do atlas: regrava com ela lisa.
+		atlas.save_png(saida + ".png")
 	var arquivo := FileAccess.open(saida + ".json", FileAccess.WRITE)
-	arquivo.store_string(JSON.stringify(Recorte.ficha_do_atlas(ficha), "\t") + "\n")
+	arquivo.store_string(JSON.stringify(info, "\t") + "\n")
 	_confere(nome, atlas, ficha)
 	print("+ %s.png: %s" % [saida, feito["escalas"]])
 	return true
+
+
+## Vira na horizontal, em volta do meio da celula, os quadros que o Flow
+## desenhou de frente para o lado errado: a moto de toda folha aponta para a
+## direita (a esquerda sai por espelho), e o Flow as vezes erra uma linha ou um
+## quadro so. A ficha diz quais, em `espelha_quadros`: pares `[linha, coluna]`.
+func _espelha_quadros(atlas: Image, ficha: Dictionary) -> void:
+	var celula := Vector2i(int(ficha["celula"][0]), int(ficha["celula"][1]))
+	for par: Array in ficha.get("espelha_quadros", []):
+		var origem := Vector2i(int(par[1]), int(par[0])) * celula
+		var quadro := atlas.get_region(Rect2i(origem, celula))
+		quadro.flip_x()
+		atlas.blit_rect(quadro, Rect2i(Vector2i.ZERO, celula), origem)
+
+
+## Onde esta a placa em cada quadro de costas e de tres quartos de costas, em
+## pixels da celula, e a apaga do atlas (`PlacaSprite`): o jogo escreve a placa
+## da moto por cima. Quadro sem placa achada fica de fora da lista, e aparece no
+## log, para o dono da folha ver (a empinada de costas, por exemplo, esconde a
+## chapa atras da bag).
+func _placas(atlas: Image, ficha: Dictionary) -> Array:
+	var celula := Vector2i(int(ficha["celula"][0]), int(ficha["celula"][1]))
+	var achadas: Array = []
+	var linhas: Array = ficha["linhas"]
+	for linha in linhas.size():
+		var nome := str(linhas[linha])
+		if nome != "costas" and nome != "tres_quartos_costas":
+			continue
+		for coluna in int(ficha["colunas"]):
+			var origem := Vector2i(coluna, linha) * celula
+			var quadro := atlas.get_region(Rect2i(origem, celula))
+			var caixa := quadro.get_used_rect()
+			var cantos := PlacaSprite.acha(quadro, caixa, nome != "costas")
+			if cantos.size() != 4:
+				print("  . sem placa: quadro %d da linha %s" % [coluna, nome])
+				continue
+			PlacaSprite.apaga(quadro, cantos)
+			atlas.blit_rect(quadro, Rect2i(Vector2i.ZERO, celula), origem)
+			var pontos: Array = []
+			for c in cantos:
+				pontos.append([c.x, c.y])
+			achadas.append({"coluna": coluna, "linha": linha, "cantos": pontos})
+	return achadas
 
 
 ## O atlas sobre cinza, com a linha do chao de cada linha, para ver a olho se os
