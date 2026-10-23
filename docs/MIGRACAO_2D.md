@@ -168,7 +168,22 @@ moto: `cg`, `xre`, `pcx`.
   de frente) quase de lado e em pé, e não deitada como a referência 3D: julgar
   no jogo, e refazer só essa linha se não servir. A conferência de altura da
   ficha não vale para a caída, que guarda o comprimento.)
-- [ ] **2D13** — XRE: as três folhas do 2D10 a 2D12.
+- [x] **2D13** — XRE: as três folhas do 2D10 a 2D12.
+  (23/10/2026: as seis folhas, `xre_pilotando`, `xre_parado`, `xre_combate`,
+  `xre_golpe`, `xre_tombo` e `xre_caida`, em `assets/sprites/moto/`, pelo mesmo
+  caminho da CG: o turnaround do entregador de identidade e a moto descrita no
+  prompt (XRE 300 estilo trail, verde-oliva fosco e preto, rodas de raio e
+  paralama alto), o que a distingue da CG. A ficha usa 1,68 m e célula 270 × 260,
+  porque a XRE é mais alta que a CG (banco de 860 contra 790 mm, aro 21). Três
+  folhas pediram trabalho. A de combate saiu com 5 figuras na linha de baixo
+  (um homem de pé ao lado da moto); duas edições não trouxeram a sexta, e o
+  quadro faltante é **cópia do quadro vizinho**, feita no código antes do
+  recorte (a folha tem 349 px a mais, e o original está fora do repositório). O
+  golpe e a caída tinham linhas que se encostam na vertical, e o `por_manchas`
+  ganhou o modo `"folha"`, que acha as figuras na folha toda e as agrupa em
+  linhas. E o download em 2K do tombo veio com o turnaround vazando em fantasma
+  por trás: o 1K ("Tamanho original") saiu limpo. A linha 3/4 da caída é a
+  mais fraca, como na CG.)
 - [ ] **2D14** — PCX: as três folhas. Na scooter o pé no chão sai do
   assoalho, e não da pedaleira.
 - [ ] **2D15** — **O piloto solto**, igual nas três motos: voando (4 × 8) e

@@ -29,8 +29,9 @@ const ANGULOS: Array[String] = [
 ## (a escala `comprimento` do recorte), e a altura desenhada nao e a dela.
 const SEM_CONFERENCIA_DE_ALTURA: Array[String] = ["caida"]
 ## Folhas em que o corpo sai do chao ou tomba de proposito: o pe nao e constante
-## de um quadro para outro (como no voo e na queda do pedestre).
-const SEM_PE_CONSTANTE: Array[String] = ["caida", "tombo"]
+## de um quadro para outro (como no voo e na queda do pedestre). O parado tem a
+## empinada, em que a roda de tras apoia uns pixels mais fundo que no pe no chao.
+const SEM_PE_CONSTANTE: Array[String] = ["caida", "tombo", "parado"]
 ## Quanto a altura desenhada pode fugir de `altura_m * pixels_por_metro` antes de
 ## virar aviso. Num carro ou prop o desenho e a coisa inteira, e a ficha diz o
 ## tamanho real dela: fora disso o sprite troca de escala na mudanca de folha.

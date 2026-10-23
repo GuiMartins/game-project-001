@@ -1,0 +1,16 @@
+{
+	"fonte": "res://arte/flow/xre_golpe.jpg",
+	"saida": "res://assets/sprites/moto/xre_golpe",
+	"linhas": ["costas", "tres_quartos_costas", "lado"],
+	"colunas": 4,
+	"celula": [270, 260],
+	"pe_y": 240,
+	"altura_m": 1.68,
+	"pixels_por_metro": 100,
+	"escala": "altura",
+	"ancora_x": "centro",
+	"ancora_y": "chao",
+	"vao": 8,
+	"por_manchas": "folha",
+	"area_minima": 3000
+}
