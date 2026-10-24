@@ -1,0 +1,31 @@
+{
+	"fonte": "res://arte/flow/carros/suv_porta_2.png",
+	"saida": "res://assets/sprites/carros/suv_porta_2",
+	"linhas": [
+		"lado",
+		"tres_quartos_frente",
+		"tres_quartos_costas"
+	],
+	"colunas": 5,
+	"celula": [
+		520,
+		230
+	],
+	"pe_y": 212,
+	"altura_m": 1.66,
+	"pixels_por_metro": 100,
+	"escala": "altura",
+	"ancora_x": "centro",
+	"ancora_y": "pes",
+	"vao": 8,
+	"area_minima": 6000,
+	"geracao": {
+		"ferramenta": "image_gen integrada, modo padrão",
+		"data": "2026-10-24",
+		"referencias": [
+			"res://arte/flow/carros/suv_base.jpg",
+			"res://arte/flow/referencia/carro/suv_porta_2.png"
+		],
+		"prompt": "Use case: sketch-to-render. Production game sprite sheet of the REAR passenger door animation of the red SUV in image 1. Image 1 is ONLY identity and photographic posterized Road Rash 3DO style reference. Image 2 is the exact three-row five-column layout and camera reference; replace its gray blocky vehicles with the detailed red SUV from image 1. Draw exactly FIFTEEN separate complete cars arranged in THREE rows and FIVE columns, landscape sheet with wide pure green #00FF00 gaps and margin. Row 1 right side profile facing right; row 2 front three-quarter facing right; row 3 rear three-quarter facing right showing tailgate. All five vehicles in each row identical angle and size and tire baseline. Columns in each row: 1 rear side passenger door closed, 2 rear door open 20 degrees, 3 rear door open 45 degrees, 4 rear door fully open 80 degrees with passenger stepping out of REAR seat, 5 rear door dented closed. Critical anatomy: rear passenger door is directly in front of the rear wheel and BEHIND central B pillar. The front door near steering wheel stays fully closed and intact in ALL fifteen cells. Driver stays seated in front seat; exiting passenger is behind driver in rear seat. No other damage. Keep realistic compact boxy red SUV proportions, black cladding, silver wheels, roof rails. Blank plates, no logos or text. Red key-color paint, amber rear lamps and indicators, white headlights. Photographic digitized posterized rendering, hard clean silhouettes, neutral flat studio lighting, no ground shadow. No low poly forms or gray mannequins. No duplicate extra rows. Output exactly 3 x 5."
+	}
+}

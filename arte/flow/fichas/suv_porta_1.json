@@ -1,0 +1,25 @@
+{
+	"fonte": "res://arte/flow/carros/suv_porta_1.jpg",
+	"saida": "res://assets/sprites/carros/suv_porta_1",
+	"linhas": [
+		"lado",
+		"tres_quartos_frente",
+		"tres_quartos_costas"
+	],
+	"colunas": 5,
+	"celula": [
+		520,
+		230
+	],
+	"pe_y": 212,
+	"altura_m": 1.66,
+	"pixels_por_metro": 100,
+	"escala": "altura",
+	"ancora_x": "centro",
+	"ancora_y": "pes",
+	"vao": 8,
+	"area_minima": 6000,
+	"descarta_linhas": [
+		2
+	]
+}
