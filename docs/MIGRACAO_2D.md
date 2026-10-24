@@ -271,7 +271,24 @@ sempre amarelo.
   `descarta_linhas: [1, 3, 4]` ficou com as boas. A primeira tentativa da porta
   1 anexando a base vermelha junto fez o Flow copiar a grade 5 × 2 da base: o
   anexo é só a folha cinza da porta, e a cor vai no prompt.)
-- [ ] **2D22** — SUV.
+- [x] **2D22** — SUV: base e duas portas.
+  (24/10/2026: `suv_base` (5 × 2, só motorista e com passageiro)
+  e `suv_porta_1` / `suv_porta_2` (3 × 5 cada), a 100 px/m, altura de 1,66 m,
+  célula 520 × 230,
+  pé em y=212. Nano Banana 2.1, x1, custo indicado de 0 créditos, fontes em
+  2K para base e porta dianteira. [Histórico da geração no Flow](https://flow.google.com/project/33269769-5f14-4b18-b06d-215c0af61d39/edit/4630b774-c03f-4e8f-939c-84843c781cac).
+  A base veio da referência cinza do SUV, em 3:4. As primeiras portas apenas
+  coloriram o manequim; a porta dianteira foi refeita a partir da base
+  fotográfica, em 16:9, pedindo três ângulos e cinco estados. Veio uma quarta
+  linha com ângulos misturados, descartada por `descarta_linhas: [2]`.
+  O Flow repetiu a porta dianteira nas edições da traseira. A fonte final
+  `suv_porta_2.png` veio da ferramenta integrada de geração de imagens,
+  usando a base fotográfica pela identidade e `referencia/carro/suv_porta_2.png`
+  pelas poses: três ângulos, cinco estados da porta traseira, porta dianteira
+  fechada, passageiro saindo do banco de trás e dano só na porta traseira.
+  O prompt completo e as referências estão na ficha de recorte dessa porta.
+  Os três atlas entram no catálogo sem avisos; o jogo de sprites os usará
+  na etapa de integração da migração.)
 - [ ] **2D23** — Táxi, com o luminoso aceso por coordenada.
 - [ ] **2D24** — Ônibus, com o letreiro por coordenada.
 - [ ] **2D25** — Baú.
