@@ -1,0 +1,613 @@
+{
+	"fonte": "res://arte/flow/carros/onibus_base.png",
+	"saida": "res://assets/sprites/carros/onibus_base",
+	"linhas": [
+		"frente",
+		"tres_quartos_frente",
+		"lado",
+		"tres_quartos_costas",
+		"costas",
+		"lado_da_porta",
+		"tres_quartos_da_porta"
+	],
+	"colunas": 2,
+	"celula": [
+		1460,
+		420
+	],
+	"pe_y": 392,
+	"altura_m": 3.3,
+	"pixels_por_metro": 100,
+	"escala": "altura",
+	"ancora_x": "centro",
+	"ancora_y": "pes",
+	"vao": 8,
+	"area_minima": 6000,
+	"espelho": false,
+	"geracao": {
+		"ferramenta": "image_gen integrada, modo padrão",
+		"data": "2026-10-24",
+		"referencias": [
+			"res://arte/flow/referencia/carro/onibus_base.png"
+		],
+		"prompt": "Use case: sketch-to-render. Production game sprite sheet of a full-size Brazilian high-floor single-deck city BUS, 12.2m long, 2.5m wide, 3.3m total height with low rooftop unit. The attached gray bus sheet is the exact SEVEN ROWS TWO COLUMNS pose/layout guide. Redraw EVERY cell with the SAME detailed photorealistic posterized 1990s Road Rash 3DO digitized bus, not low-poly, not pixel art. Bilateral asymmetry is CRITICAL: TWO inward bi-fold passenger entrances ONLY ON VEHICLE RIGHT SIDE, one just behind front corner ahead of front wheel, one near middle ahead of rear wheel. LEFT side has uninterrupted passenger windows and NO doors. Driver at front left. Plain solid bright RED body as recoloring key, neutral light gray roof, black window frames and trim, dark gray lower bumper, silver bus wheels, black tires, clear windows showing blue seats and real humans. No words, brands, logos, fleet numbers or plate text. Black rectangular destination display ABOVE front windshield and ABOVE front door, and small black display above rear window: blank opaque dark amber center, no writing, NO glowing halo, game illuminates by coordinates. EXACTLY SEVEN horizontal rows, TWO vehicles each, FOURTEEN buses total. Row1 FRONT straight on. Row2 front three-quarter LEFT SIDE facing LEFT, no doors visible. Row3 LEFT SIDE profile facing LEFT, NO DOORS. Row4 REAR three-quarter LEFT SIDE facing LEFT, rear end visible, NO DOORS. Row5 straight REAR. Row6 RIGHT SIDE PROFILE facing RIGHT, BOTH closed folding entrances visible. Row7 FRONT three-quarter RIGHT SIDE facing RIGHT, both closed doors visible. Column1 ONLY male driver, all passenger seats empty. Column2 same driver plus ten seated adult passengers in varied simple colors. Same bus identity, size per row, roof and tire baseline per row. All doors closed in base. Flat neutral frontal studio lighting, hard clean complete silhouettes, no ground/cast shadows or blur. Pure solid green #00FF00 background, wide gaps between every bus, generous outer margins. Portrait/square overall sheet to accommodate seven rows; NEVER omit rows or mirror left into right. Exactly 7 rows by 2 columns."
+	},
+	"luzes": [
+		{
+			"nome": "letreiro",
+			"linha": 0,
+			"coluna": 0,
+			"ponto": [
+				689,
+				100
+			],
+			"raio": 29,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 0,
+			"coluna": 0,
+			"ponto": [
+				734,
+				100
+			],
+			"raio": 29,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 0,
+			"coluna": 0,
+			"ponto": [
+				778,
+				100
+			],
+			"raio": 29,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 0,
+			"coluna": 1,
+			"ponto": [
+				689,
+				100
+			],
+			"raio": 29,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 0,
+			"coluna": 1,
+			"ponto": [
+				732,
+				100
+			],
+			"raio": 29,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 0,
+			"coluna": 1,
+			"ponto": [
+				776,
+				100
+			],
+			"raio": 29,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 1,
+			"coluna": 0,
+			"ponto": [
+				307,
+				102
+			],
+			"raio": 19,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 1,
+			"coluna": 0,
+			"ponto": [
+				334,
+				102
+			],
+			"raio": 19,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 1,
+			"coluna": 0,
+			"ponto": [
+				362,
+				102
+			],
+			"raio": 19,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 1,
+			"coluna": 1,
+			"ponto": [
+				307,
+				102
+			],
+			"raio": 18,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 1,
+			"coluna": 1,
+			"ponto": [
+				334,
+				102
+			],
+			"raio": 18,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 1,
+			"coluna": 1,
+			"ponto": [
+				362,
+				102
+			],
+			"raio": 18,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 3,
+			"coluna": 0,
+			"ponto": [
+				1097,
+				101
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 3,
+			"coluna": 0,
+			"ponto": [
+				1119,
+				101
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 3,
+			"coluna": 0,
+			"ponto": [
+				1141,
+				101
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 3,
+			"coluna": 1,
+			"ponto": [
+				1099,
+				100
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 3,
+			"coluna": 1,
+			"ponto": [
+				1122,
+				100
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 3,
+			"coluna": 1,
+			"ponto": [
+				1144,
+				100
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 4,
+			"coluna": 0,
+			"ponto": [
+				709,
+				100
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 4,
+			"coluna": 0,
+			"ponto": [
+				732,
+				100
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 4,
+			"coluna": 0,
+			"ponto": [
+				754,
+				100
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 4,
+			"coluna": 1,
+			"ponto": [
+				709,
+				99
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 4,
+			"coluna": 1,
+			"ponto": [
+				732,
+				99
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 4,
+			"coluna": 1,
+			"ponto": [
+				755,
+				99
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 5,
+			"coluna": 0,
+			"ponto": [
+				1169,
+				110
+			],
+			"raio": 22,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 5,
+			"coluna": 0,
+			"ponto": [
+				1202,
+				110
+			],
+			"raio": 22,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 5,
+			"coluna": 0,
+			"ponto": [
+				1235,
+				110
+			],
+			"raio": 22,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 5,
+			"coluna": 1,
+			"ponto": [
+				1171,
+				110
+			],
+			"raio": 22,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 5,
+			"coluna": 1,
+			"ponto": [
+				1204,
+				110
+			],
+			"raio": 22,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 5,
+			"coluna": 1,
+			"ponto": [
+				1237,
+				110
+			],
+			"raio": 22,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 6,
+			"coluna": 0,
+			"ponto": [
+				1103,
+				106
+			],
+			"raio": 19,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 6,
+			"coluna": 0,
+			"ponto": [
+				1131,
+				106
+			],
+			"raio": 19,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 6,
+			"coluna": 0,
+			"ponto": [
+				1159,
+				106
+			],
+			"raio": 19,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 6,
+			"coluna": 1,
+			"ponto": [
+				1106,
+				106
+			],
+			"raio": 19,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 6,
+			"coluna": 1,
+			"ponto": [
+				1134,
+				106
+			],
+			"raio": 19,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 6,
+			"coluna": 1,
+			"ponto": [
+				1163,
+				106
+			],
+			"raio": 19,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"so_de_noite": false
+		}
+	]
+}

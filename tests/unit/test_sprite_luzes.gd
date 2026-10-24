@@ -93,3 +93,62 @@ func test_o_luminoso_do_taxi_cai_na_placa_do_teto_em_todos_os_quadros() -> void:
 				assert_float(pos.y).is_less(celula.y * 0.35)
 				var apagado := SpriteLuzes.da_celula(ficha, linha, coluna, {"luminoso": 0.0})
 				assert_float((apagado["cor"] as PackedVector4Array)[0].w).is_equal(0.0)
+
+
+func test_os_letreiros_do_onibus_caem_no_painel_ambar_visivel() -> void:
+	# O perfil esquerdo nao mostra painel; o 3/4 traseiro das portas mostra dois.
+	# Acender uma coordenada herdada do espelho iluminaria a carroceria vermelha.
+	for nome: String in ["onibus_base", "onibus_porta_1", "onibus_porta_2"]:
+		var caminho := "res://assets/sprites/carros/%s" % nome
+		var ficha: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(caminho + ".json"))
+		var imagem := CatalogoSprites.imagem_de(caminho + ".png")
+		var celula := Vector2i(int(ficha["celula"][0]), int(ficha["celula"][1]))
+		var linhas: Array = ficha["linhas"]
+		for linha in linhas.size():
+			for coluna in int(ficha["colunas"]):
+				var luzes := SpriteLuzes.da_celula(ficha, linha, coluna)
+				var esperado := 3
+				if nome == "onibus_base" and linha == 2:
+					esperado = 0
+				elif nome != "onibus_base" and linha == 2:
+					esperado = 6
+				assert_int(luzes["n"]).is_equal(esperado)
+				for i in int(luzes["n"]):
+					var pos := (luzes["pos"] as PackedVector4Array)[i]
+					var pixel := imagem.get_pixelv(
+						Vector2i(coluna, linha) * celula + Vector2i(int(pos.x), int(pos.y))
+					)
+					assert_float(pixel.a).is_equal(1.0)
+					assert_float(pixel.g).is_greater(pixel.b)
+					assert_float(pixel.g).is_greater(pixel.r * 0.35)
+					assert_float(pos.w).is_equal(0.0)
+
+
+func test_o_onibus_tem_sete_vistas_sem_espelhar_as_portas_para_a_esquerda() -> void:
+	var base := CatalogoSprites._folha(
+		"onibus_base", CatalogoSprites.PASTA_CARROS, CatalogoSprites.Tipo.CARRO
+	)
+	assert_object(base).is_not_null()
+	assert_int(base.colunas).is_equal(2)
+	assert_bool(base.espelha_lado_esquerdo).is_false()
+	assert_array(Array(base.rotulos_linhas)).is_equal(
+		[
+			"frente",
+			"tres_quartos_frente",
+			"lado",
+			"tres_quartos_costas",
+			"costas",
+			"lado_da_porta",
+			"tres_quartos_da_porta"
+		]
+	)
+	for nome: String in ["onibus_porta_1", "onibus_porta_2"]:
+		var porta := CatalogoSprites._folha(
+			nome, CatalogoSprites.PASTA_CARROS, CatalogoSprites.Tipo.CARRO
+		)
+		assert_object(porta).is_not_null()
+		assert_bool(porta.espelha_lado_esquerdo).is_false()
+		assert_int(porta.colunas).is_equal(5)
+		assert_array(Array(porta.rotulos_linhas)).is_equal(
+			["lado", "tres_quartos_frente", "tres_quartos_costas"]
+		)

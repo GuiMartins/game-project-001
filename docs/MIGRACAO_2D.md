@@ -306,7 +306,26 @@ sempre amarelo.
   confere que toda coordenada cai em pixel branco opaco do teto e que o
   comando de apagar chega ao shader. A ligação do ator de trânsito fica para
   a etapa de integração da migração, como nos carros anteriores.)
-- [ ] **2D24** — Ônibus, com o letreiro por coordenada.
+- [x] **2D24** — Ônibus, com o letreiro por coordenada.
+  (24/10/2026: `onibus_base` em 7 × 2, só motorista e com passageiros,
+  e `onibus_porta_1` / `onibus_porta_2` em 3 × 5 cada, totalizando 44 quadros.
+  As sete vistas seguem o `ANGULOS_ONIBUS` do gerador: cinco pelo lado sem
+  porta e duas próprias do lado direito. Nenhuma folha espelha. Pintura
+  vermelha para cor-chave, teto cinza e bancos azuis. Célula 1460 × 420,
+  pé em y=392, 100 px/m e 3,30 m de altura total, incluindo o equipamento do
+  teto. Fontes PNG e prompts da geração integrada ficam nas pastas de carros
+  e fichas do Flow; a base final é a identidade das duas folhas de portas.
+  Cada entrada tem fechada, 25%, 50%, 75% e 100% aberta, mantendo a outra
+  fechada. São duas portas dobrando para dentro, sem estado amassado, como
+  no mecanismo do ônibus existente. A referência cinza abre ambas juntas em
+  quatro tempos; as duas folhas finais separam as entradas e incluem a
+  fechada para completar os 30 quadros previstos. `vao: 4` na porta 2 separa
+  duas silhuetas que têm menos de 8 px de verde entre elas.
+  Os painéis visíveis levam três pontos âmbar cada, pelo mesmo nome
+  `letreiro`, distribuindo o brilho pela largura do painel. Acendem de dia e de noite, como o LED do modelo, e a força
+  permite desligar. O perfil esquerdo não tem painel e o 3/4 traseiro das
+  portas mostra dois. Coordenadas conferidas sobre os pixels âmbar opacos
+  e renderizadas no shader; a ligação ao trânsito fica para a integração.)
 - [ ] **2D25** — Baú.
 - [ ] **2D26** — Van.
 - [ ] **2D27** — **Luzes do carro na ficha**: lanterna, freio, seta esquerda

@@ -1,0 +1,981 @@
+{
+	"altura_m": 3.3,
+	"celula": [
+		1460,
+		420
+	],
+	"colunas": 5,
+	"espelha_o_lado_esquerdo": false,
+	"linhas": [
+		"lado",
+		"tres_quartos_frente",
+		"tres_quartos_costas"
+	],
+	"luzes": [
+		{
+			"coluna": 0.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 0.0,
+			"nome": "letreiro",
+			"ponto": [
+				1091.0,
+				110.0
+			],
+			"raio": 9.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 0.0,
+			"nome": "letreiro",
+			"ponto": [
+				1106.0,
+				110.0
+			],
+			"raio": 9.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 0.0,
+			"nome": "letreiro",
+			"ponto": [
+				1120.0,
+				110.0
+			],
+			"raio": 9.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 0.0,
+			"nome": "letreiro",
+			"ponto": [
+				1081.0,
+				110.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 0.0,
+			"nome": "letreiro",
+			"ponto": [
+				1097.0,
+				110.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 0.0,
+			"nome": "letreiro",
+			"ponto": [
+				1113.0,
+				110.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 2.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 0.0,
+			"nome": "letreiro",
+			"ponto": [
+				1061.0,
+				110.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 2.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 0.0,
+			"nome": "letreiro",
+			"ponto": [
+				1076.0,
+				110.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 2.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 0.0,
+			"nome": "letreiro",
+			"ponto": [
+				1090.0,
+				110.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 3.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 0.0,
+			"nome": "letreiro",
+			"ponto": [
+				1068.0,
+				110.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 3.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 0.0,
+			"nome": "letreiro",
+			"ponto": [
+				1083.0,
+				110.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 3.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 0.0,
+			"nome": "letreiro",
+			"ponto": [
+				1098.0,
+				110.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 4.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 0.0,
+			"nome": "letreiro",
+			"ponto": [
+				1086.0,
+				110.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 4.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 0.0,
+			"nome": "letreiro",
+			"ponto": [
+				1102.0,
+				110.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 4.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 0.0,
+			"nome": "letreiro",
+			"ponto": [
+				1117.0,
+				110.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 1.0,
+			"nome": "letreiro",
+			"ponto": [
+				996.0,
+				106.0
+			],
+			"raio": 16.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 1.0,
+			"nome": "letreiro",
+			"ponto": [
+				1020.0,
+				106.0
+			],
+			"raio": 16.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 1.0,
+			"nome": "letreiro",
+			"ponto": [
+				1043.0,
+				106.0
+			],
+			"raio": 16.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 1.0,
+			"nome": "letreiro",
+			"ponto": [
+				989.0,
+				106.0
+			],
+			"raio": 16.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 1.0,
+			"nome": "letreiro",
+			"ponto": [
+				1013.0,
+				106.0
+			],
+			"raio": 16.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 1.0,
+			"nome": "letreiro",
+			"ponto": [
+				1037.0,
+				106.0
+			],
+			"raio": 16.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 2.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 1.0,
+			"nome": "letreiro",
+			"ponto": [
+				991.0,
+				106.0
+			],
+			"raio": 15.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 2.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 1.0,
+			"nome": "letreiro",
+			"ponto": [
+				1014.0,
+				106.0
+			],
+			"raio": 15.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 2.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 1.0,
+			"nome": "letreiro",
+			"ponto": [
+				1037.0,
+				106.0
+			],
+			"raio": 15.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 3.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 1.0,
+			"nome": "letreiro",
+			"ponto": [
+				987.0,
+				106.0
+			],
+			"raio": 16.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 3.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 1.0,
+			"nome": "letreiro",
+			"ponto": [
+				1010.0,
+				106.0
+			],
+			"raio": 16.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 3.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 1.0,
+			"nome": "letreiro",
+			"ponto": [
+				1034.0,
+				106.0
+			],
+			"raio": 16.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 4.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 1.0,
+			"nome": "letreiro",
+			"ponto": [
+				993.0,
+				106.0
+			],
+			"raio": 15.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 4.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 1.0,
+			"nome": "letreiro",
+			"ponto": [
+				1016.0,
+				106.0
+			],
+			"raio": 15.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 4.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 1.0,
+			"nome": "letreiro",
+			"ponto": [
+				1039.0,
+				106.0
+			],
+			"raio": 15.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				433.0,
+				112.0
+			],
+			"raio": 13.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				452.0,
+				112.0
+			],
+			"raio": 13.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				472.0,
+				112.0
+			],
+			"raio": 13.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				1056.0,
+				108.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				1072.0,
+				108.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				1087.0,
+				108.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				431.0,
+				112.0
+			],
+			"raio": 13.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				451.0,
+				112.0
+			],
+			"raio": 13.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				471.0,
+				112.0
+			],
+			"raio": 13.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				1060.0,
+				108.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				1075.0,
+				108.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				1090.0,
+				108.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 2.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				445.0,
+				111.0
+			],
+			"raio": 14.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 2.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				466.0,
+				111.0
+			],
+			"raio": 14.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 2.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				486.0,
+				111.0
+			],
+			"raio": 14.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 2.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				1050.0,
+				108.0
+			],
+			"raio": 9.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 2.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				1064.0,
+				108.0
+			],
+			"raio": 9.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 2.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				1078.0,
+				108.0
+			],
+			"raio": 9.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 3.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				442.0,
+				112.0
+			],
+			"raio": 14.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 3.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				462.0,
+				112.0
+			],
+			"raio": 14.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 3.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				482.0,
+				112.0
+			],
+			"raio": 14.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 3.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				1051.0,
+				108.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 3.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				1065.0,
+				108.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 3.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				1079.0,
+				108.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 4.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				435.0,
+				111.0
+			],
+			"raio": 14.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 4.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				455.0,
+				111.0
+			],
+			"raio": 14.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 4.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				475.0,
+				111.0
+			],
+			"raio": 14.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 4.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				1055.0,
+				108.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 4.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				1070.0,
+				108.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 4.0,
+			"cor": [
+				1.0,
+				0.6,
+				0.08
+			],
+			"linha": 2.0,
+			"nome": "letreiro",
+			"ponto": [
+				1086.0,
+				108.0
+			],
+			"raio": 10.0,
+			"so_de_noite": false
+		}
+	],
+	"pe": [
+		730,
+		392
+	],
+	"pixels_por_metro": 100.0
+}

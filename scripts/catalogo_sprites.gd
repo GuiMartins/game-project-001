@@ -23,7 +23,13 @@ const PASTA_FACHADAS: String = "res://assets/sprites/fachadas"
 ## o prop tem um `angulo` so. Rotulo fora da lista e erro de digitacao na
 ## ficha, e o sprite seria escolhido pelo angulo errado.
 const ANGULOS: Array[String] = [
-	"frente", "tres_quartos_frente", "lado", "tres_quartos_costas", "costas"
+	"frente",
+	"tres_quartos_frente",
+	"lado",
+	"tres_quartos_costas",
+	"costas",
+	# O onibus tem portas so a direita: esta vista nao sai por espelho.
+	"tres_quartos_da_porta"
 ]
 ## Folhas que mostram a coisa deitada: a ficha guarda o comprimento em `altura_m`
 ## (a escala `comprimento` do recorte), e a altura desenhada nao e a dela.
