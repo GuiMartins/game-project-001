@@ -1,0 +1,15 @@
+{
+	"fonte": "res://arte/flow/carros/seda_porta_2.jpg",
+	"saida": "res://assets/sprites/carros/seda_porta_2",
+	"linhas": ["lado", "tres_quartos_frente", "tres_quartos_costas"],
+	"colunas": 5,
+	"celula": [520, 200],
+	"pe_y": 182,
+	"altura_m": 1.46,
+	"pixels_por_metro": 100,
+	"escala": "altura",
+	"ancora_x": "centro",
+	"ancora_y": "pes",
+	"vao": 8,
+	"area_minima": 6000
+}

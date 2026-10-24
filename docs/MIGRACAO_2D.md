@@ -260,7 +260,17 @@ sempre amarelo.
   ganhou `descarta_linhas: [2]` e o recorte descarta a linha repetida. Falta a
   base **com passageiro** (2 colunas): o hatch não tem passageiro no modelo, e
   o 2D01 já avisava. As luzes ficam para o 2D27.)
-- [ ] **2D21** — Sedã.
+- [x] **2D21** — Sedã: base e portas.
+  (24/10/2026: `seda_base` (5 × 2: os cinco ângulos, só com o motorista e com
+  motorista e passageiro da frente), `seda_porta_1` (porta da frente) e
+  `seda_porta_2` (porta de trás), cada uma em 3 × 5, em `assets/sprites/carros/`.
+  Mesma receita do hatch: pintura em vermelho chapado, lanternas e setas em
+  âmbar. A célula é 520 × 200, e não 440 × 190, porque o sedã tem 4,40 m e a
+  folha de 440 px não deixava folga. A base e a porta 2 saíram certas de
+  primeira; a porta 1 veio com seis linhas, três repetidas ou sem porta, e
+  `descarta_linhas: [1, 3, 4]` ficou com as boas. A primeira tentativa da porta
+  1 anexando a base vermelha junto fez o Flow copiar a grade 5 × 2 da base: o
+  anexo é só a folha cinza da porta, e a cor vai no prompt.)
 - [ ] **2D22** — SUV.
 - [ ] **2D23** — Táxi, com o luminoso aceso por coordenada.
 - [ ] **2D24** — Ônibus, com o letreiro por coordenada.
