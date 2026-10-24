@@ -106,12 +106,12 @@ mesmo PR da tarefa, com uma linha de resultado. A V27 (o veredito) espera a
   e fachada ficaram provados com folha sintética, já que ainda não há arte. A
   cena do testador mostra os três parados, na escala da ficha, com o pé no
   chão.)
-- [ ] **2D05** 👤 — **Prova do projetor antes da arte.** Um pseudo-3D mínimo
+- [x] **2D05** 👤 — **Prova do projetor antes da arte.** Um pseudo-3D mínimo
   com a pista atual (curva e rampa do `RoadTrack` como dado), o asfalto e a
   calçada que já existem, e os sprites que já existem (CG e as cinco
   pessoas). São umas 80 gerações no Flow pela frente: a pergunta "o
   pseudo-3D está gostoso?" precisa de resposta antes delas.
-  **Prova pronta (23/10/2026), falta o veredito do Guilherme**: `dev.py
+  **Aprovada pelo Guilherme (23/10/2026: "testei, tá ok")**: `dev.py
   projetor` abre a pista de verdade (`RoadTrack`, semente 20260831) projetada
   por segmento (`ProjetorPista`, `TelaProjetor`): asfalto e calçada em
   perspectiva certa, linha a linha; faixas pintadas por código; fachadas como
@@ -120,8 +120,8 @@ mesmo PR da tarefa, com uma linha de resultado. A V27 (o veredito) espera a
   O ganho da curva (`GANHO_CURVA`, 0,35) é o botão que mais muda o feel:
   contada inteira, a pista de 0,6°/m dobra sobre si mesma. Conhecido e
   deixado de fora: sem trânsito, colisão, luz de noite, borrão nem som; o
-  asfalto não tem mipmap e cintila de longe. Só vira `[x]` quando ele jogar
-  e disser que sim (ou não).
+  asfalto não tem mipmap e cintila de longe. Jogou e disse que sim: a
+  arte pode começar.
 
 ### Moto e piloto
 
