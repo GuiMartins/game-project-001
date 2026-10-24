@@ -1,0 +1,274 @@
+{
+	"fonte": "res://arte/flow/carros/taxi_porta_1.png",
+	"saida": "res://assets/sprites/carros/taxi_porta_1",
+	"linhas": [
+		"lado",
+		"tres_quartos_frente",
+		"tres_quartos_costas"
+	],
+	"colunas": 5,
+	"celula": [
+		520,
+		230
+	],
+	"pe_y": 212,
+	"altura_m": 1.65,
+	"pixels_por_metro": 100,
+	"escala": "altura",
+	"ancora_x": "centro",
+	"ancora_y": "pes",
+	"vao": 8,
+	"area_minima": 6000,
+	"espelho": true,
+	"luzes": [
+		{
+			"nome": "luminoso",
+			"linha": 0,
+			"coluna": 0,
+			"ponto": [
+				258,
+				53
+			],
+			"raio": 13,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 0,
+			"coluna": 1,
+			"ponto": [
+				253,
+				53
+			],
+			"raio": 13,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 0,
+			"coluna": 2,
+			"ponto": [
+				254,
+				52
+			],
+			"raio": 13,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 0,
+			"coluna": 3,
+			"ponto": [
+				252,
+				53
+			],
+			"raio": 14,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 0,
+			"coluna": 4,
+			"ponto": [
+				254,
+				52
+			],
+			"raio": 13,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 1,
+			"coluna": 0,
+			"ponto": [
+				254,
+				52
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 1,
+			"coluna": 1,
+			"ponto": [
+				250,
+				52
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 1,
+			"coluna": 2,
+			"ponto": [
+				248,
+				52
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 1,
+			"coluna": 3,
+			"ponto": [
+				250,
+				52
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 1,
+			"coluna": 4,
+			"ponto": [
+				254,
+				52
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 2,
+			"coluna": 0,
+			"ponto": [
+				260,
+				51
+			],
+			"raio": 18,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 2,
+			"coluna": 1,
+			"ponto": [
+				256,
+				52
+			],
+			"raio": 19,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 2,
+			"coluna": 2,
+			"ponto": [
+				256,
+				52
+			],
+			"raio": 19,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 2,
+			"coluna": 3,
+			"ponto": [
+				251,
+				52
+			],
+			"raio": 18,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 2,
+			"coluna": 4,
+			"ponto": [
+				258,
+				52
+			],
+			"raio": 18,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		}
+	],
+	"geracao": {
+		"ferramenta": "image_gen integrada, modo padrão",
+		"data": "2026-10-24",
+		"referencias": [
+			"res://arte/flow/carros/taxi_base.png",
+			"res://arte/flow/referencia/carro/taxi_porta_1.png"
+		],
+		"prompt": "Use case: sketch-to-render. A production game sprite sheet for the FRONT door animation of the EXACT yellow taxi sedan in Image 1: same sedan body, saturated yellow paint, plain narrow dark blue horizontal stripe, silver five spoke wheels, small white roof taxi sign, gray seats, same male driver in gray shirt. Image 1 is identity and photographic rendering reference only, DO NOT copy its 5x2 grid. Image 2 is camera/pose reference only, DO NOT copy its low-poly gray shapes. Render photographic posterized digitized 1990s Road Rash 3DO sprites, hard clean edges. Output EXACTLY THREE ROWS, FIVE COLUMNS, fifteen complete separate taxis. Row 1 right side profile pointing RIGHT; row 2 FRONT three-quarter pointing RIGHT; row 3 REAR three-quarter pointing RIGHT (rear trunk and tail lights visible). Keep same angle and scale across each row. Columns in EACH row: 1 front side door CLOSED; 2 front door open 20 degrees; 3 front door open 45 degrees; 4 front door open 80 degrees, male driver starting to step out through FRONT door; 5 front door closed and visibly dented, rest of body intact. Rear doors stay closed and intact in ALL frames. Same human driver throughout, real human anatomy, no mannequins. Unlit cream-white roof sign in every frame, NO glow or baked lighting halo: game lights it. Blank white plates, no words, no brands, no logos. Pure uniform green #00FF00 background, generous wide green gaps separating all cars and clear outer margins. Neutral frontal diffuse studio lighting, no ground shadow, no blur. Preserve entire vehicle silhouette and door, never crop. Exactly 3x5, no duplicate extra rows. Landscape composition."
+	}
+}

@@ -1,0 +1,261 @@
+{
+	"altura_m": 1.65,
+	"celula": [
+		520,
+		230
+	],
+	"colunas": 5,
+	"espelha_o_lado_esquerdo": true,
+	"linhas": [
+		"lado",
+		"tres_quartos_frente",
+		"tres_quartos_costas"
+	],
+	"luzes": [
+		{
+			"coluna": 0.0,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"linha": 0.0,
+			"nome": "luminoso",
+			"ponto": [
+				286.0,
+				54.0
+			],
+			"raio": 12.0,
+			"so_de_noite": true
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"linha": 0.0,
+			"nome": "luminoso",
+			"ponto": [
+				262.0,
+				52.0
+			],
+			"raio": 12.0,
+			"so_de_noite": true
+		},
+		{
+			"coluna": 2.0,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"linha": 0.0,
+			"nome": "luminoso",
+			"ponto": [
+				275.0,
+				52.0
+			],
+			"raio": 13.0,
+			"so_de_noite": true
+		},
+		{
+			"coluna": 3.0,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"linha": 0.0,
+			"nome": "luminoso",
+			"ponto": [
+				274.0,
+				52.0
+			],
+			"raio": 12.0,
+			"so_de_noite": true
+		},
+		{
+			"coluna": 4.0,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"linha": 0.0,
+			"nome": "luminoso",
+			"ponto": [
+				286.0,
+				53.0
+			],
+			"raio": 12.0,
+			"so_de_noite": true
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"linha": 1.0,
+			"nome": "luminoso",
+			"ponto": [
+				262.0,
+				52.0
+			],
+			"raio": 16.0,
+			"so_de_noite": true
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"linha": 1.0,
+			"nome": "luminoso",
+			"ponto": [
+				262.0,
+				54.0
+			],
+			"raio": 16.0,
+			"so_de_noite": true
+		},
+		{
+			"coluna": 2.0,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"linha": 1.0,
+			"nome": "luminoso",
+			"ponto": [
+				264.0,
+				52.0
+			],
+			"raio": 15.0,
+			"so_de_noite": true
+		},
+		{
+			"coluna": 3.0,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"linha": 1.0,
+			"nome": "luminoso",
+			"ponto": [
+				264.0,
+				52.0
+			],
+			"raio": 15.0,
+			"so_de_noite": true
+		},
+		{
+			"coluna": 4.0,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"linha": 1.0,
+			"nome": "luminoso",
+			"ponto": [
+				262.0,
+				52.0
+			],
+			"raio": 15.0,
+			"so_de_noite": true
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"linha": 2.0,
+			"nome": "luminoso",
+			"ponto": [
+				274.0,
+				52.0
+			],
+			"raio": 15.0,
+			"so_de_noite": true
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"linha": 2.0,
+			"nome": "luminoso",
+			"ponto": [
+				270.0,
+				52.0
+			],
+			"raio": 15.0,
+			"so_de_noite": true
+		},
+		{
+			"coluna": 2.0,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"linha": 2.0,
+			"nome": "luminoso",
+			"ponto": [
+				274.0,
+				51.0
+			],
+			"raio": 15.0,
+			"so_de_noite": true
+		},
+		{
+			"coluna": 3.0,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"linha": 2.0,
+			"nome": "luminoso",
+			"ponto": [
+				272.0,
+				51.0
+			],
+			"raio": 16.0,
+			"so_de_noite": true
+		},
+		{
+			"coluna": 4.0,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"linha": 2.0,
+			"nome": "luminoso",
+			"ponto": [
+				276.0,
+				52.0
+			],
+			"raio": 16.0,
+			"so_de_noite": true
+		}
+	],
+	"pe": [
+		260,
+		212
+	],
+	"pixels_por_metro": 100.0
+}

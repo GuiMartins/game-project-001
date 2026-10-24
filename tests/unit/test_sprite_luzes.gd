@@ -63,3 +63,33 @@ func test_aplica_poe_no_material_as_luzes_e_a_celula() -> void:
 	SpriteLuzes.aplica(material, _ficha(), 0, 0)
 	assert_int(int(material.get_shader_parameter(&"n_luzes"))).is_equal(2)
 	assert_vector(material.get_shader_parameter(&"celula_px")).is_equal(Vector2(64, 48))
+
+
+func test_o_luminoso_do_taxi_cai_na_placa_do_teto_em_todos_os_quadros() -> void:
+	# Coordenada que cai no verde nao acende nada: o shader preserva o alfa.
+	# Conferir o pixel real pega o erro que apenas validar os limites nao pega.
+	for nome: String in ["taxi_base", "taxi_porta_1", "taxi_porta_2"]:
+		var caminho := "res://assets/sprites/carros/%s" % nome
+		var ficha: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(caminho + ".json"))
+		var fonte: Dictionary = JSON.parse_string(
+			FileAccess.get_file_as_string("res://arte/flow/fichas/%s.json" % nome)
+		)
+		assert_array(ficha["luzes"]).is_equal(fonte["luzes"])
+		var colunas := int(ficha["colunas"])
+		var linhas: Array = ficha["linhas"]
+		var celula := Vector2i(int(ficha["celula"][0]), int(ficha["celula"][1]))
+		var imagem := CatalogoSprites.imagem_de(caminho + ".png")
+		assert_int((ficha["luzes"] as Array).size()).is_equal(colunas * linhas.size())
+		for linha in linhas.size():
+			for coluna in colunas:
+				var aceso := SpriteLuzes.da_celula(ficha, linha, coluna)
+				assert_int(aceso["n"]).is_equal(1)
+				var pos := (aceso["pos"] as PackedVector4Array)[0]
+				var pixel := imagem.get_pixelv(
+					Vector2i(coluna, linha) * celula + Vector2i(int(pos.x), int(pos.y))
+				)
+				assert_float(pixel.a).is_equal(1.0)
+				assert_float(minf(pixel.r, minf(pixel.g, pixel.b))).is_greater(0.7)
+				assert_float(pos.y).is_less(celula.y * 0.35)
+				var apagado := SpriteLuzes.da_celula(ficha, linha, coluna, {"luminoso": 0.0})
+				assert_float((apagado["cor"] as PackedVector4Array)[0].w).is_equal(0.0)

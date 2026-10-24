@@ -289,7 +289,23 @@ sempre amarelo.
   O prompt completo e as referências estão na ficha de recorte dessa porta.
   Os três atlas entram no catálogo sem avisos; o jogo de sprites os usará
   na etapa de integração da migração.)
-- [ ] **2D23** — Táxi, com o luminoso aceso por coordenada.
+- [x] **2D23** — Táxi, com o luminoso aceso por coordenada.
+  (24/10/2026: `taxi_base` em 5 × 2, só motorista e com passageira no banco
+  traseiro, e `taxi_porta_1` / `taxi_porta_2` em 3 × 5 cada. Amarelo com faixa
+  azul, sem recoloração da pintura. Os atlas têm célula 520 × 230, pé em
+  y=212 e 100 px/m: a altura é 1,65 m, incluindo o luminoso acima do teto de
+  1,46 m. Os lados saem por espelho. Fontes PNG e prompts completos ficam
+  em `arte/flow/carros/` e `arte/flow/fichas/`, gerados pela ferramenta
+  integrada a partir das referências cinzas; a base final guia a identidade
+  das portas. A traseira teve uma edição para distinguir as aberturas e
+  alinhar o desembarque à base dos pneus.
+  Cada um dos 40 quadros tem a coordenada do `luminoso`, cor quente e raio
+  próprios na ficha, repassados ao atlas. A placa é desenhada sem halo;
+  `SpriteLuzes` acende o brilho à noite e permite desligá-lo pela força com
+  esse nome. Conferido no shader com a mesma célula acesa e apagada. O teste
+  confere que toda coordenada cai em pixel branco opaco do teto e que o
+  comando de apagar chega ao shader. A ligação do ator de trânsito fica para
+  a etapa de integração da migração, como nos carros anteriores.)
 - [ ] **2D24** — Ônibus, com o letreiro por coordenada.
 - [ ] **2D25** — Baú.
 - [ ] **2D26** — Van.

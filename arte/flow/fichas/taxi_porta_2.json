@@ -1,0 +1,275 @@
+{
+	"fonte": "res://arte/flow/carros/taxi_porta_2.png",
+	"saida": "res://assets/sprites/carros/taxi_porta_2",
+	"linhas": [
+		"lado",
+		"tres_quartos_frente",
+		"tres_quartos_costas"
+	],
+	"colunas": 5,
+	"celula": [
+		520,
+		230
+	],
+	"pe_y": 212,
+	"altura_m": 1.65,
+	"pixels_por_metro": 100,
+	"escala": "altura",
+	"ancora_x": "centro",
+	"ancora_y": "pes",
+	"vao": 8,
+	"area_minima": 6000,
+	"espelho": true,
+	"luzes": [
+		{
+			"nome": "luminoso",
+			"linha": 0,
+			"coluna": 0,
+			"ponto": [
+				286,
+				54
+			],
+			"raio": 12,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 0,
+			"coluna": 1,
+			"ponto": [
+				262,
+				52
+			],
+			"raio": 12,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 0,
+			"coluna": 2,
+			"ponto": [
+				275,
+				52
+			],
+			"raio": 13,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 0,
+			"coluna": 3,
+			"ponto": [
+				274,
+				52
+			],
+			"raio": 12,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 0,
+			"coluna": 4,
+			"ponto": [
+				286,
+				53
+			],
+			"raio": 12,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 1,
+			"coluna": 0,
+			"ponto": [
+				262,
+				52
+			],
+			"raio": 16,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 1,
+			"coluna": 1,
+			"ponto": [
+				262,
+				54
+			],
+			"raio": 16,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 1,
+			"coluna": 2,
+			"ponto": [
+				264,
+				52
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 1,
+			"coluna": 3,
+			"ponto": [
+				264,
+				52
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 1,
+			"coluna": 4,
+			"ponto": [
+				262,
+				52
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 2,
+			"coluna": 0,
+			"ponto": [
+				274,
+				52
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 2,
+			"coluna": 1,
+			"ponto": [
+				270,
+				52
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 2,
+			"coluna": 2,
+			"ponto": [
+				274,
+				51
+			],
+			"raio": 15,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 2,
+			"coluna": 3,
+			"ponto": [
+				272,
+				51
+			],
+			"raio": 16,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "luminoso",
+			"linha": 2,
+			"coluna": 4,
+			"ponto": [
+				276,
+				52
+			],
+			"raio": 16,
+			"cor": [
+				1.0,
+				0.9,
+				0.65
+			],
+			"so_de_noite": true
+		}
+	],
+	"geracao": {
+		"ferramenta": "image_gen integrada, modo padrão",
+		"data": "2026-10-24",
+		"referencias": [
+			"res://arte/flow/carros/taxi_base.png",
+			"res://arte/flow/referencia/carro/taxi_porta_2.png"
+		],
+		"prompt": "Use case: sketch-to-render. Production sprite sheet for the REAR PASSENGER door animation of the EXACT yellow Brazilian taxi sedan in Image 1. Image 1 is vehicle identity and photographic posterized Road Rash 3DO rendering reference only; ignore its grid. Image 2 is THREE by FIVE camera and pose layout only; replace all blocky gray vehicles and mannequins with realistic taxi and humans. Same saturated yellow four-door sedan, narrow dark blue horizontal stripe, silver five-spoke wheels, black tires, gray interior and small white unlit roof taxi sign. EXACTLY THREE ROWS and FIVE COLUMNS, fifteen complete cars in landscape sheet. Row 1 SIDE PROFILE pointing RIGHT; row 2 FRONT three-quarter pointing RIGHT; row 3 REAR three-quarter pointing RIGHT showing trunk. Every row has identical angle and same scale across all five columns. Columns: 1 rear passenger door CLOSED with woman seated behind driver; 2 rear passenger door slightly open 20 degrees; 3 rear passenger door half open 45 degrees; 4 rear passenger door fully open 80 degrees with the same brown-haired adult woman in cream top and blue jeans stepping out of REAR seat; 5 rear passenger door closed and dented ONLY. The FRONT door near steering wheel stays CLOSED and INTACT in ALL fifteen vehicles; male gray-shirt driver stays seated in front. The animated rear door is immediately in front of rear wheel, BEHIND the central B pillar. Match source taxi car design, sign and human identity across every view. No other damage. Photorealistic digitized posterized small flat palette, hard clean edges, not pixel art, no low poly or gray mannequins. Pure solid green #00FF00 background, generous wide green gaps between cars and outer margins, no touching or cropped cars. Flat neutral frontal studio light, no ground shadow, no glow from sign, no text, logos, brands, labels or borders. Exactly 3 rows by 5 columns, no duplicate extra rows.",
+		"refinamento": "Use case: precise-object-edit. Edit this exact 3 row x 5 column taxi sprite sheet. Preserve all car design, yellow paint, blue stripe, roof sign, human identities, camera angles, green background, grid and all other pixels as closely as possible. Correct ONLY the rear door opening poses in columns 2 and 3 of EVERY row: column 2 rear side passenger door visibly swung outward 25 degrees, column 3 visibly swung outward 55 degrees, showing a clear dark opening and projecting door panel. These are REAR doors behind the B pillar directly in front of rear wheel. Keep FRONT door fully closed and intact in all frames. Column 1 closed and column 5 dented rear door stay unchanged. In column 4 keep passenger exiting but align car wheels with the same baseline and roof at same height as the other four cars in that row; passenger feet must not extend below tire bottom baseline. All five cars same size per row, no floating wheels. Keep exactly 3 rows x 5 columns, no extra figures, no ground shadows, no text."
+	}
+}

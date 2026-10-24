@@ -33,7 +33,7 @@ func test_a_varredura_acha_a_moto_e_os_cinco_pedestres_em_cinco_animacoes() -> v
 	# A moca de moletom so tem a folha de andar.
 	assert_object(_item("moletom_andando")).is_not_null()
 	assert_object(_item("executivo_andando")).is_not_null()
-	assert_int(_itens.size()).is_equal(67)
+	assert_int(_itens.size()).is_equal(70)
 
 
 func test_todo_pedestre_que_o_jogo_carrega_esta_no_catalogo() -> void:
@@ -266,3 +266,18 @@ func test_o_suv_tem_duas_portas_em_tres_angulos() -> void:
 		assert_array(Array(porta.rotulos_linhas)).is_equal(
 			["lado", "tres_quartos_frente", "tres_quartos_costas"]
 		)
+
+
+func test_o_taxi_tem_base_com_e_sem_passageiro_e_duas_portas() -> void:
+	for nome: String in ["taxi_base", "taxi_porta_1", "taxi_porta_2"]:
+		var item := _item(nome)
+		assert_object(item).is_not_null()
+		assert_int(item.tipo).is_equal(CatalogoSprites.Tipo.CARRO)
+		assert_bool(item.espelha_lado_esquerdo).is_true()
+		assert_int(item.colunas).is_equal(2 if nome == "taxi_base" else 5)
+		var angulos: Array = (
+			["frente", "tres_quartos_frente", "lado", "tres_quartos_costas", "costas"]
+			if nome == "taxi_base"
+			else ["lado", "tres_quartos_frente", "tres_quartos_costas"]
+		)
+		assert_array(Array(item.rotulos_linhas)).is_equal(angulos)
