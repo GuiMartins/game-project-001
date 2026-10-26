@@ -33,7 +33,7 @@ func test_a_varredura_acha_a_moto_e_os_cinco_pedestres_em_cinco_animacoes() -> v
 	# A moca de moletom so tem a folha de andar.
 	assert_object(_item("moletom_andando")).is_not_null()
 	assert_object(_item("executivo_andando")).is_not_null()
-	assert_int(_itens.size()).is_equal(67)
+	assert_int(_itens.size()).is_equal(74)
 
 
 func test_todo_pedestre_que_o_jogo_carrega_esta_no_catalogo() -> void:
@@ -266,3 +266,33 @@ func test_o_suv_tem_duas_portas_em_tres_angulos() -> void:
 		assert_array(Array(porta.rotulos_linhas)).is_equal(
 			["lado", "tres_quartos_frente", "tres_quartos_costas"]
 		)
+
+
+func test_taxi_onibus_e_bau_tem_base_e_portas_na_grade_da_ficha() -> void:
+	var cinco := ["frente", "tres_quartos_frente", "lado", "tres_quartos_costas", "costas"]
+	var tres := ["lado", "tres_quartos_frente", "tres_quartos_costas"]
+	# nome -> [colunas, linhas]
+	var folhas := {
+		"taxi_base": [2, cinco],
+		"taxi_porta_1": [5, tres],
+		"taxi_porta_2": [5, tres],
+		"bau_base": [1, cinco],
+		"bau_porta_1": [5, tres],
+	}
+	for nome: String in folhas:
+		var item := _item(nome)
+		assert_object(item).is_not_null()
+		assert_int(item.tipo).is_equal(CatalogoSprites.Tipo.CARRO)
+		assert_int(item.colunas).is_equal(folhas[nome][0])
+		assert_array(Array(item.rotulos_linhas)).is_equal(folhas[nome][1])
+	# O ônibus tem dois ângulos a mais, do lado da porta, e não espelha.
+	var base := _item("onibus_base")
+	assert_object(base).is_not_null()
+	assert_int(base.colunas).is_equal(2)
+	assert_int(base.rotulos_linhas.size()).is_equal(7)
+	var porta := _item("onibus_porta")
+	assert_object(porta).is_not_null()
+	assert_int(porta.colunas).is_equal(4)
+	assert_array(Array(porta.rotulos_linhas)).is_equal(
+		["lado_porta", "tres_quartos_frente_porta", "tres_quartos_costas_porta"]
+	)

@@ -1,0 +1,194 @@
+{
+	"fonte": "res://arte/flow/carros/taxi_base.jpg",
+	"saida": "res://assets/sprites/carros/taxi_base",
+	"linhas": [
+		"frente",
+		"tres_quartos_frente",
+		"lado",
+		"tres_quartos_costas",
+		"costas"
+	],
+	"colunas": 2,
+	"celula": [
+		520,
+		200
+	],
+	"pe_y": 182,
+	"altura_m": 1.46,
+	"pixels_por_metro": 100,
+	"escala": "altura",
+	"ancora_x": "centro",
+	"ancora_y": "pes",
+	"vao": 8,
+	"area_minima": 6000,
+	"luzes": [
+		{
+			"nome": "luminoso",
+			"linha": 0,
+			"coluna": 0,
+			"ponto": [
+				258,
+				42
+			],
+			"raio": 8,
+			"cor": [
+				255,
+				235,
+				160
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "luminoso",
+			"linha": 1,
+			"coluna": 0,
+			"ponto": [
+				257,
+				42
+			],
+			"raio": 8,
+			"cor": [
+				255,
+				235,
+				160
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "luminoso",
+			"linha": 2,
+			"coluna": 0,
+			"ponto": [
+				262,
+				42
+			],
+			"raio": 8,
+			"cor": [
+				255,
+				235,
+				160
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "luminoso",
+			"linha": 3,
+			"coluna": 0,
+			"ponto": [
+				259,
+				42
+			],
+			"raio": 8,
+			"cor": [
+				255,
+				235,
+				160
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "luminoso",
+			"linha": 4,
+			"coluna": 0,
+			"ponto": [
+				260,
+				42
+			],
+			"raio": 8,
+			"cor": [
+				255,
+				235,
+				160
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "luminoso",
+			"linha": 0,
+			"coluna": 1,
+			"ponto": [
+				258,
+				42
+			],
+			"raio": 8,
+			"cor": [
+				255,
+				235,
+				160
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "luminoso",
+			"linha": 1,
+			"coluna": 1,
+			"ponto": [
+				257,
+				42
+			],
+			"raio": 8,
+			"cor": [
+				255,
+				235,
+				160
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "luminoso",
+			"linha": 2,
+			"coluna": 1,
+			"ponto": [
+				262,
+				42
+			],
+			"raio": 8,
+			"cor": [
+				255,
+				235,
+				160
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "luminoso",
+			"linha": 3,
+			"coluna": 1,
+			"ponto": [
+				259,
+				42
+			],
+			"raio": 8,
+			"cor": [
+				255,
+				235,
+				160
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "luminoso",
+			"linha": 4,
+			"coluna": 1,
+			"ponto": [
+				260,
+				42
+			],
+			"raio": 8,
+			"cor": [
+				255,
+				235,
+				160
+			],
+			"so_de_noite": false
+		}
+	],
+	"geracao": {
+		"ferramenta": "Google Flow, Nano Banana 2.1, 3:4, x1, 0 créditos; referência cinza taxi_base.png; segunda tentativa por edição (vidros opacos, sem verde atrás)",
+		"data": "2026-10-26",
+		"projeto": "https://flow.google.com/project/33269769-5f14-4b18-b06d-215c0af61d39",
+		"referencias": [
+			"res://arte/flow/referencia/carro/taxi_base.png"
+		]
+	}
+}
