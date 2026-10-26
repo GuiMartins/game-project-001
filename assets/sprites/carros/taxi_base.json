@@ -1,0 +1,183 @@
+{
+	"altura_m": 1.46,
+	"celula": [
+		520,
+		200
+	],
+	"colunas": 2,
+	"espelha_o_lado_esquerdo": false,
+	"linhas": [
+		"frente",
+		"tres_quartos_frente",
+		"lado",
+		"tres_quartos_costas",
+		"costas"
+	],
+	"luzes": [
+		{
+			"coluna": 0.0,
+			"cor": [
+				255.0,
+				235.0,
+				160.0
+			],
+			"linha": 0.0,
+			"nome": "luminoso",
+			"ponto": [
+				258.0,
+				42.0
+			],
+			"raio": 8.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				255.0,
+				235.0,
+				160.0
+			],
+			"linha": 1.0,
+			"nome": "luminoso",
+			"ponto": [
+				257.0,
+				42.0
+			],
+			"raio": 8.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				255.0,
+				235.0,
+				160.0
+			],
+			"linha": 2.0,
+			"nome": "luminoso",
+			"ponto": [
+				262.0,
+				42.0
+			],
+			"raio": 8.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				255.0,
+				235.0,
+				160.0
+			],
+			"linha": 3.0,
+			"nome": "luminoso",
+			"ponto": [
+				259.0,
+				42.0
+			],
+			"raio": 8.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 0.0,
+			"cor": [
+				255.0,
+				235.0,
+				160.0
+			],
+			"linha": 4.0,
+			"nome": "luminoso",
+			"ponto": [
+				260.0,
+				42.0
+			],
+			"raio": 8.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				255.0,
+				235.0,
+				160.0
+			],
+			"linha": 0.0,
+			"nome": "luminoso",
+			"ponto": [
+				258.0,
+				42.0
+			],
+			"raio": 8.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				255.0,
+				235.0,
+				160.0
+			],
+			"linha": 1.0,
+			"nome": "luminoso",
+			"ponto": [
+				257.0,
+				42.0
+			],
+			"raio": 8.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				255.0,
+				235.0,
+				160.0
+			],
+			"linha": 2.0,
+			"nome": "luminoso",
+			"ponto": [
+				262.0,
+				42.0
+			],
+			"raio": 8.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				255.0,
+				235.0,
+				160.0
+			],
+			"linha": 3.0,
+			"nome": "luminoso",
+			"ponto": [
+				259.0,
+				42.0
+			],
+			"raio": 8.0,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 1.0,
+			"cor": [
+				255.0,
+				235.0,
+				160.0
+			],
+			"linha": 4.0,
+			"nome": "luminoso",
+			"ponto": [
+				260.0,
+				42.0
+			],
+			"raio": 8.0,
+			"so_de_noite": false
+		}
+	],
+	"pe": [
+		260,
+		182
+	],
+	"pixels_por_metro": 100.0
+}

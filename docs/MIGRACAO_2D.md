@@ -289,9 +289,46 @@ sempre amarelo.
   O prompt completo e as referências estão na ficha de recorte dessa porta.
   Os três atlas entram no catálogo sem avisos; o jogo de sprites os usará
   na etapa de integração da migração.)
-- [ ] **2D23** — Táxi, com o luminoso aceso por coordenada.
-- [ ] **2D24** — Ônibus, com o letreiro por coordenada.
-- [ ] **2D25** — Baú.
+- [x] **2D23** — Táxi, com o luminoso aceso por coordenada.
+  (26/10/2026: `taxi_base` (5 × 2, só motorista e com passageiro de trás),
+  `taxi_porta_1` (porta da frente) e `taxi_porta_2` (porta de trás), cada uma
+  em 3 × 5, em `assets/sprites/carros/`, a 100 px/m, 1,46 m, célula 520 × 200,
+  como o sedã. O táxi é sempre amarelo, então não há cor-chave. O luminoso do
+  teto é desenhado apagado e branco; o `taxi_base.json` leva a coordenada dele
+  em cada um dos cinco ângulos (`luzes`, `luminoso`), e o shader o acende.
+  Nano Banana 2.1, 0 créditos, [projeto no Flow](https://flow.google.com/project/33269769-5f14-4b18-b06d-215c0af61d39).
+  A base saiu com vidro aberto mostrando o verde de fundo em um quadro: uma
+  edição pediu vidro opaco e acertou. O passageiro de trás quase não aparece
+  por trás do vidro escuro. A porta da frente saiu como outro carro (ilustrado,
+  tipo Crown Victoria) até a base ser anexada junto da referência cinza. A de
+  trás, editada a partir da folha da frente, quase não mexeu a porta; a geração
+  nova, com a referência da porta 2 mais a base, acertou, mas veio com uma
+  linha extra (`descarta_linhas: [1]`).)
+- [x] **2D24** — Ônibus, com o letreiro por coordenada.
+  (26/10/2026: `onibus_base` (7 × 2: frente, 3/4 de frente, lado, 3/4 de
+  costas e costas, mais `lado_porta` e `tres_quartos_frente_porta`, o lado
+  direito, que não espelha) e `onibus_porta` (3 × 4: as duas folhas dobráveis
+  fechada, a 30°, a 70° e abertas, em `lado_porta`, `tres_quartos_frente_porta`
+  e `tres_quartos_costas_porta`). Célula 1400 × 420, 100 px/m, 3,1 m. Pintura
+  em vermelho chapado para a cor-chave. O letreiro é uma caixa preta apagada, e
+  o `onibus_base.json` leva a coordenada dele em cinco ângulos (`luzes`,
+  `letreiro`, âmbar). O Flow desenhou o vidro verde na referência, então o
+  prompt pediu azul-acinzentado; sobrou verde só dentro do vão da porta aberta,
+  que vira transparente. A porta veio com cinco linhas (duas duplicadas):
+  `descarta_linhas: [2, 4]`. O rótulo do 3/4 do lado da porta é
+  `tres_quartos_frente_porta`, porque o catálogo só aceita um ângulo conhecido
+  mais sufixo.)
+- [x] **2D25** — Baú.
+  (26/10/2026: `bau_base` (5 × 1, só motorista, célula 960 × 380) e
+  `bau_porta_1` (3 × 5, a porta da cabine; célula 960 × 380), a 100 px/m e
+  3,2 m. Cabine em vermelho chapado, caçamba cinza-clara. Uma célula de 820
+  cortava a cabine no perfil, por isso 960. A porta veio com cinco linhas e a
+  de trás virada para a esquerda: `descarta_linhas: [2, 3]` e
+  `espelha_quadros` na linha de costas. Isso expôs um defeito no
+  `arte/recortar.gd`: o atlas era gravado antes de virar os quadros e só era
+  regravado quando a ficha tinha `placa`, então `espelha_quadros` nunca chegava
+  ao PNG; agora regrava sempre que a ficha o pede. As fichas da PCX já tinham
+  `placa`, e não mudam.)
 - [ ] **2D26** — Van.
 - [ ] **2D27** — **Luzes do carro na ficha**: lanterna, freio, seta esquerda
   e seta direita nos ângulos de costas, e farol nos de frente. O pisca-alerta

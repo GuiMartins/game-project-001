@@ -1,0 +1,196 @@
+{
+	"fonte": "res://arte/flow/carros/onibus_base.jpg",
+	"saida": "res://assets/sprites/carros/onibus_base",
+	"linhas": [
+		"frente",
+		"tres_quartos_frente",
+		"lado",
+		"tres_quartos_costas",
+		"costas",
+		"lado_porta",
+		"tres_quartos_frente_porta"
+	],
+	"colunas": 2,
+	"celula": [
+		1400,
+		420
+	],
+	"pe_y": 380,
+	"altura_m": 3.1,
+	"pixels_por_metro": 100,
+	"escala": "altura",
+	"ancora_x": "centro",
+	"ancora_y": "pes",
+	"vao": 8,
+	"area_minima": 6000,
+	"luzes": [
+		{
+			"nome": "letreiro",
+			"linha": 0,
+			"coluna": 0,
+			"ponto": [
+				700,
+				115
+			],
+			"raio": 14,
+			"cor": [
+				255,
+				190,
+				40
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 1,
+			"coluna": 0,
+			"ponto": [
+				305,
+				113
+			],
+			"raio": 14,
+			"cor": [
+				255,
+				190,
+				40
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 3,
+			"coluna": 0,
+			"ponto": [
+				1116,
+				106
+			],
+			"raio": 14,
+			"cor": [
+				255,
+				190,
+				40
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 4,
+			"coluna": 0,
+			"ponto": [
+				697,
+				108
+			],
+			"raio": 14,
+			"cor": [
+				255,
+				190,
+				40
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 6,
+			"coluna": 0,
+			"ponto": [
+				1103,
+				107
+			],
+			"raio": 14,
+			"cor": [
+				255,
+				190,
+				40
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 0,
+			"coluna": 1,
+			"ponto": [
+				700,
+				115
+			],
+			"raio": 14,
+			"cor": [
+				255,
+				190,
+				40
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 1,
+			"coluna": 1,
+			"ponto": [
+				305,
+				113
+			],
+			"raio": 14,
+			"cor": [
+				255,
+				190,
+				40
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 3,
+			"coluna": 1,
+			"ponto": [
+				1116,
+				106
+			],
+			"raio": 14,
+			"cor": [
+				255,
+				190,
+				40
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 4,
+			"coluna": 1,
+			"ponto": [
+				697,
+				108
+			],
+			"raio": 14,
+			"cor": [
+				255,
+				190,
+				40
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "letreiro",
+			"linha": 6,
+			"coluna": 1,
+			"ponto": [
+				1103,
+				107
+			],
+			"raio": 14,
+			"cor": [
+				255,
+				190,
+				40
+			],
+			"so_de_noite": false
+		}
+	],
+	"geracao": {
+		"ferramenta": "Google Flow, Nano Banana 2.1, 1:1, x1, 0 créditos; referência cinza onibus_base.png",
+		"data": "2026-10-26",
+		"projeto": "https://flow.google.com/project/33269769-5f14-4b18-b06d-215c0af61d39",
+		"referencias": [
+			"res://arte/flow/referencia/carro/onibus_base.png"
+		]
+	}
+}

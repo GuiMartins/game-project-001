@@ -72,6 +72,10 @@ func _recorta(nome: String) -> bool:
 		push_error("%s: nao gravei o atlas: %s" % [nome, error_string(erro)])
 		return false
 	_espelha_quadros(atlas, ficha)
+	if ficha.has("espelha_quadros"):
+		# O PNG saiu antes da virada: sem regravar, so a ficha com `placa` (que
+		# regrava abaixo) levava o espelho para o disco.
+		atlas.save_png(saida + ".png")
 	var info := Recorte.ficha_do_atlas(ficha)
 	if ficha.get("placa", false):
 		info["placa"] = _placas(atlas, ficha)
