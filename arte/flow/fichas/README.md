@@ -15,8 +15,8 @@ script: o recorte é o mesmo de `arte/recorte_de_folha.gd`, que o piloto
 | `celula` | `[largura, altura]` de cada quadro do atlas, em pixels. |
 | `pe_y` | Onde fica o chão na célula, de cima para baixo. O x do pé é o meio. |
 | `altura_m`, `pixels_por_metro` | O tamanho real do que se desenha e a medida comum de todas as folhas. Sem ela o sprite muda de tamanho na troca de folha. |
-| `escala` | A medida que não muda com a pose: `altura` (mediana), `altura_alta` (quartil de cima, para quem se senta), `coluna_zero` (o primeiro quadro) ou `comprimento` (largura do corpo deitado; pede `medir_linhas`). |
-| `ancora_x` | `tronco` (o terço de cima do desenho, que não anda com a perna) ou `centro`. |
+| `escala` | A medida que não muda com a pose: `altura` (mediana), `altura_alta` (quartil de cima, para quem se senta), `coluna_zero` (o primeiro quadro), `comprimento` (largura do corpo deitado; pede `medir_linhas`) ou `fixa` (quem segura algo acima da cabeça: pede `pixels_por_metro_fonte`, uma medida por linha, em pixels da folha por metro). |
+| `ancora_x` | `tronco` (o terço de cima do desenho, que não anda com a perna), `pes` (o meio da faixa de baixo, para quem levanta algo que desloca o resto) ou `centro`. |
 | `ancora_y` | `pes` (o ponto mais baixo no chão), `chao` (a linha do chão da linha da folha; quem pula fica acima) ou `centro`. |
 | `vao`, `area_minima` | O que separa dois desenhos, em pixels da folha, e o que é sujeira do JPEG. |
 | `margem_verde` | Opcional, 40: quanto o verde passa os outros canais para ser fundo (cor-chave). |
@@ -24,6 +24,7 @@ script: o recorte é o mesmo de `arte/recorte_de_folha.gd`, que o piloto
 | `luzes` | Opcional: `{"nome", "linha", "coluna", "ponto": [x, y]}` em pixels da célula, e opcionais `raio` (px, 6), `cor` ([r, g, b]) e `so_de_noite` (verdadeiro: o farol e a lente de poste; o freio é falso). O `sprite.gdshader` acende o brilho por cima (`SpriteLuzes`). O recorte só confere que o ponto cai na célula e o repassa. |
 
 | `por_manchas` | Opcional. `true` separa as figuras de uma linha pelo verde entre elas (figuras que se sobrepõem na horizontal), e `"folha"` acha todas na folha inteira e as agrupa em linhas (linhas que se encostam na vertical). |
+| `passo_da_mancha` | Opcional, com `por_manchas`: o lado, em pixels, da grade que junta o que o JPEG separa (4 por padrão). A bandeira do fiscal pede 40, para o pano grudar na pessoa pela haste. |
 | `descarta_linhas` | Opcional: `[indice, ...]` de linhas que o Flow acrescentou e que não pertencem à grade (a folha da porta do hatch veio com duas linhas de costas); saem antes da conferência da contagem. |
 | `espelha_quadros` | Opcional: `[[linha, coluna], ...]` de quadros que o Flow desenhou virados para a esquerda; o recorte os vira. A moto de toda folha aponta para a direita. |
 | `placa` | Opcional, só para moto: acha a chapa branca em cada quadro de costas e de 3/4 de costas, deixa-a lisa e grava o quadrilátero no `.json` do atlas (`PlacaSprite`, 2D16). |

@@ -8,7 +8,6 @@ const FILEIRAS: int = 14
 
 const BRANCO := Color(0.94, 0.94, 0.9)
 const PRETO := Color(0.035, 0.045, 0.06)
-const TECIDO: Shader = preload("res://scripts/bandeira.gdshader")
 const LARANJA := Color(0.95, 0.28, 0.055)
 
 
@@ -17,10 +16,6 @@ class Torcedor:
 	var fiscal: bool = false
 	var posto := Vector3.ZERO
 	var direcao: float = 0.0
-
-	func _ready() -> void:
-		super._ready()
-		add_to_group(&"torcida_chegada")
 
 	func reiniciar() -> void:
 		estado = Estado.PARADA
@@ -31,11 +26,18 @@ class Torcedor:
 		_caminho.clear()
 		colocar(posto, direcao)
 
-	# A torcida fica parada, e parada o atlas de caminhada ja da (o primeiro
-	# quadro). So o fiscal segue em 3D: o gesto e a haste da bandeira nao estao
-	# em atlas nenhum.
+	func _ready() -> void:
+		super._ready()
+		add_to_group(&"torcida_chegada")
+		# O fiscal acena com a folha propria (`fiscal_bandeira`); a torcida fica
+		# parada, e parada o atlas de caminhada ja da (o primeiro quadro).
+		_sprite.bandeira = fiscal
+
 	func usar_sprite(ligado: bool) -> void:
-		super.usar_sprite(ligado and not fiscal)
+		super.usar_sprite(ligado)
+		var haste := find_child("BandeiraQuadriculada", true, false) as Node3D
+		if haste != null:
+			haste.visible = not ligado
 
 	func _olha_motos(delta: float) -> void:
 		# Ele segura o posto, mas continua sujeito ao mesmo atropelo dos pedestres.
@@ -48,7 +50,7 @@ class Torcedor:
 		if fiscal:
 			# Uma varrida larga e mais lenta; o peso acompanha o ombro em vez de
 			# sacudir apenas a ponta de um braco levantado.
-			var ciclo := _relogio * TAU / 1.65
+			var ciclo := _relogio * TAU / PedestreSprite.CICLO_DA_BANDEIRA
 			_braco[0] = 2.1 + 0.25 * cos(ciclo)
 			_abre[0] = 0.85 + 0.65 * sin(ciclo)
 			_tronco = 0.09 * cos(ciclo)
@@ -116,28 +118,16 @@ func montar(pista: RoadTrack, distancia: float) -> void:
 	fiscal.direcao = PI
 	fiscal.colocar(fiscal.posto, fiscal.direcao)
 	fiscal.vestir(BRANCO)
-	# A haste e filha do braco: a mao e a bandeira nunca se separam no aceno.
+	# A haste so existe para o fiscal em 3D (sem sprite): no desenho dele a haste
+	# e o pano quadriculado ja estao. Filha do braco, a mao e a haste nunca se
+	# separam no aceno.
 	var braco := fiscal.find_child("Braco_E", true, false) as Node3D
 	var haste := Node3D.new()
 	haste.name = "BandeiraQuadriculada"
 	braco.add_child(haste)
 	haste.position = Vector3(0, -0.55, 0)
 	_caixa(haste, Vector3(0.035, 1.8, 0.035), Vector3(0, -0.65, 0), BRANCO)
-	var tecido := MeshInstance3D.new()
-	tecido.name = "Tecido"
-	# Subdivisoes deixam a onda curvar o pano, mantendo a borda presa a haste.
-	var plano := PlaneMesh.new()
-	plano.orientation = PlaneMesh.FACE_Z
-	plano.size = Vector2(1.32, 0.88)
-	plano.subdivide_width = 31
-	plano.subdivide_depth = 19
-	tecido.mesh = plano
-	tecido.position = Vector3(0.66, -0.96, 0)
-	var material := ShaderMaterial.new()
-	material.shader = TECIDO
-	tecido.material_override = material
-	tecido.custom_aabb = AABB(Vector3(-0.8, -0.6, -0.6), Vector3(1.6, 1.2, 1.2))
-	haste.add_child(tecido)
+	haste.visible = not fiscal._em_sprite
 	# A corrida chega de noite: ilumina a faixa, o fiscal e o publico.
 	for lado: float in [-1.0, 1.0]:
 		var luz := OmniLight3D.new()

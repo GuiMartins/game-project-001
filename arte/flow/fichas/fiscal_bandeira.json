@@ -1,0 +1,38 @@
+{
+	"fonte": "res://arte/flow/pedestres/fiscal_bandeira.jpg",
+	"saida": "res://assets/sprites/pedestres/fiscal_bandeira",
+	"linhas": [
+		"frente",
+		"tres_quartos_frente",
+		"lado"
+	],
+	"colunas": 8,
+	"celula": [
+		340,
+		370
+	],
+	"pe_y": 360,
+	"altura_m": 1.75,
+	"pixels_por_metro": 100,
+	"escala": "fixa",
+	"pixels_por_metro_fonte": [
+		169.1,
+		176.0,
+		198.3
+	],
+	"ancora_x": "pes",
+	"ancora_y": "pes",
+	"vao": 8,
+	"area_minima": 4000,
+	"geracao": {
+		"ferramenta": "Google Flow, Nano Banana 2.1, 16:9, x1, 0 créditos; referência cinza bandeira.png e identidade de praia_andando.jpg; terceira linha refeita em perfil por edição; haste engrossada por uma segunda edição (a fina sumia no recorte)",
+		"data": "2026-10-27",
+		"projeto": "https://flow.google.com/project/33269769-5f14-4b18-b06d-215c0af61d39",
+		"referencias": [
+			"res://arte/flow/referencia/bandeira.png",
+			"res://arte/flow/pedestres/praia_andando.jpg"
+		]
+	},
+	"por_manchas": true,
+	"passo_da_mancha": 40
+}

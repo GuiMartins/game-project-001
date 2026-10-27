@@ -22,11 +22,31 @@ func test_fiscal_segura_bandeira_e_acena_com_o_braco() -> void:
 	var antes := braco.rotation
 	fiscal._physics_process(0.3)
 	assert_bool(braco.rotation.is_equal_approx(antes)).is_false()
-	# A haste segue a mao, em vez de flutuar ao lado de uma pessoa parada.
+	# A haste do 3D segue a mao, em vez de flutuar ao lado de uma pessoa parada.
 	assert_object(braco.get_node("BandeiraQuadriculada")).is_not_null()
-	var tecido := braco.get_node("BandeiraQuadriculada/Tecido") as MeshInstance3D
-	assert_object(tecido.material_override).is_instanceof(ShaderMaterial)
-	assert_int((tecido.mesh as PlaneMesh).subdivide_width).is_greater(20)
+
+
+func test_fiscal_acena_com_a_folha_dele_em_sprite() -> void:
+	var fiscal: Chegada.Torcedor = auto_free(Chegada.Torcedor.new())
+	fiscal.fiscal = true
+	fiscal.cadencia = 0.0
+	add_child(fiscal)
+	fiscal.set_physics_process(false)
+	fiscal.usar_sprite(true)
+	var material := fiscal._sprite._material as ShaderMaterial
+	fiscal._relogio = 0.0
+	fiscal._aplica()
+	assert_object(material.get_shader_parameter(&"atlas")).is_same(PedestreSprite.FISCAL_BANDEIRA)
+	assert_int(material.get_shader_parameter(&"quadro")).is_equal(0)
+	fiscal._relogio = PedestreSprite.CICLO_DA_BANDEIRA * 0.5
+	fiscal._aplica()
+	assert_int(material.get_shader_parameter(&"quadro")).is_equal(4)
+	# A torcida fica no desenho do avatar, e so o fiscal tem a bandeira.
+	var torcedor: Chegada.Torcedor = auto_free(Chegada.Torcedor.new())
+	add_child(torcedor)
+	torcedor.set_physics_process(false)
+	torcedor.usar_sprite(true)
+	assert_bool(torcedor._sprite.bandeira).is_false()
 
 
 func test_chegada_retira_zebra_e_retencao_sem_apagar_cruzamento() -> void:

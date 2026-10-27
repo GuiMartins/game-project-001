@@ -31,6 +31,12 @@ const PASTA: String = "res://arte/flow/referencia/"
 ## poses, uma a cada 45 graus da fase. E o que o Flow aguenta numa tira sem
 ## perder a pessoa de vista.
 const QUADROS_ANDANDO: int = 8
+## O aceno do fiscal da bandeira: um ciclo da varrida em oito fases.
+const QUADROS_BANDEIRA: int = 8
+## A haste e o pano, em metros: os do `Chegada` (haste de 1,8 m na mao, pano de
+## 1,32 x 0,88 m preso a ela).
+const HASTE: Vector2 = Vector2(0.035, 1.8)
+const PANO: Vector2 = Vector2(1.32, 0.88)
 
 ## O giro e em volta de Y: 0 olha para -Z (de costas para a camera) e 180 para
 ## +Z (de frente). O lado olha para a direita, como nas folhas de personagem; o
@@ -112,6 +118,15 @@ const FOLHAS: Array[Dictionary] = [
 		"celula": Vector2(2.0, 2.08),
 		"centro": 0.92,
 	},
+	# O fiscal da chegada, com a bandeira erguida: a haste sobe acima da cabeca
+	# e a varrida abre para o lado, entao a celula e mais alta e mais larga.
+	{
+		"nome": "bandeira",
+		"colunas": QUADROS_BANDEIRA,
+		"angulos": ANGULOS_FRENTE,
+		"celula": Vector2(3.4, 3.7),
+		"centro": 1.75,
+	},
 ]
 ## Instantes do `Pessoa._assusta` que viram quadros: arma, sobe, topo, desce,
 ## cai e olha. O pulo dura 0,5 s e depois ele fica olhando.
@@ -129,6 +144,8 @@ const Cena := preload("res://arte/boneco_cena.gd")
 var _cena := Cena.new()
 var _pessoa: Pessoa
 var _banco: Node3D
+var _haste: Node3D
+var _pano: Node3D
 
 
 func _initialize() -> void:
@@ -156,6 +173,7 @@ func _roda() -> void:
 	_pessoa.set_physics_process(false)
 	_pinta_de_cinza()
 	_poe_nariz()
+	_monta_haste()
 	for folha in FOLHAS:
 		await _faz_folha(folha)
 	quit()
@@ -187,6 +205,7 @@ func _zera() -> void:
 	_pessoa._corpo = Basis.IDENTITY
 	_pessoa._pose_de_pe()
 	_banco.visible = false
+	_haste.visible = false
 
 
 ## A pose do quadro `coluna`, no angulo `angulo` ([nome, giro em graus]). Cada
@@ -215,6 +234,26 @@ func _posa(folha: String, coluna: int, colunas: int, angulo: Array) -> void:
 			_cai(giro, coluna)
 		"desembarcando":
 			_desembarca(giro, TEMPOS_DESEMBARQUE[coluna])
+		"bandeira":
+			_acena(giro, coluna, colunas)
+
+
+## A varrida do fiscal, como `Chegada.Torcedor._fica`, mas com o braco mais
+## alto e a abertura menor: a do 3D deixa a haste na horizontal, com 2,5 m para o
+## lado, e a celula nao a guarda sem virar um tapete. O tronco acompanha o ombro.
+## A fase do quadro substitui o relogio, e o pano vira em volta da haste para a
+## folha mostrar a bandeira ondulando.
+func _acena(rumo: float, coluna: int, colunas: int) -> void:
+	var p := _pessoa
+	var ciclo := TAU * float(coluna) / float(colunas)
+	p._rumo = rumo
+	p._braco[0] = 2.4 + 0.2 * cos(ciclo)
+	p._abre[0] = 0.55 + 0.4 * sin(ciclo)
+	p._tronco = 0.09 * cos(ciclo)
+	p._coxa[0] = 0.07 * sin(ciclo)
+	p._coxa[1] = -p._coxa[0]
+	_haste.visible = true
+	_pano.rotation.y = 0.5 * sin(ciclo + 1.0)
 
 
 ## O corpo no ar, como `Pessoa._voa`: cambalhota para a frente (o eixo e o
@@ -290,6 +329,36 @@ func _desembarca(carro: float, t: float) -> void:
 func _banco_do_carro(carro: float) -> void:
 	_banco.rotation = Vector3(0.0, carro, 0.0)
 	_banco.visible = true
+
+
+## A haste na mao esquerda, como o `Chegada` a monta, e o pano cinza preso nela.
+## So aparece na folha da bandeira (`_zera` a esconde): o jogo nao tem haste
+## fora da chegada. O pano e liso: o xadrez e o Flow que desenha.
+func _monta_haste() -> void:
+	_haste = Node3D.new()
+	_haste.position = Vector3(0.0, -0.55, 0.0)
+	_pessoa._nos_braco[0].add_child(_haste)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = _tom("roupa")
+	mat.roughness = 1.0
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var pau := MeshInstance3D.new()
+	var caixa := BoxMesh.new()
+	caixa.size = Vector3(HASTE.x, HASTE.y, HASTE.x)
+	pau.mesh = caixa
+	pau.material_override = mat
+	pau.position = Vector3(0.0, -0.65, 0.0)
+	_haste.add_child(pau)
+	_pano = Node3D.new()
+	_pano.position = Vector3(0.0, -0.96, 0.0)
+	_haste.add_child(_pano)
+	var tecido := MeshInstance3D.new()
+	var plano := QuadMesh.new()
+	plano.size = PANO
+	tecido.mesh = plano
+	tecido.material_override = mat
+	tecido.position = Vector3(PANO.x * 0.5, 0.0, 0.0)
+	_pano.add_child(tecido)
 
 
 func _monta_banco() -> Node3D:

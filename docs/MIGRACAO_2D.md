@@ -366,8 +366,20 @@ caída) ficam.
   frente e lado × 6 quadros) fica adiado: **2D30b** *(opcional)*.)
 - [ ] **2D30b** *(opcional)* — Torcida acenando: cinco pessoas × frente, 3/4
   frente e lado × 6 quadros.
-- [ ] **2D31** — **Fiscal da bandeira**, com a quadriculada no desenho:
+- [x] **2D31** — **Fiscal da bandeira**, com a quadriculada no desenho:
   3 × 8. A bandeira que ondula no shader (`bandeira.gdshader`) sai.
+  (27/10/2026: `fiscal_bandeira` (frente, 3/4 frente e lado × 8 quadros, célula
+  340 × 370, a 100 px/m): homem de polo branca e calça preta com a quadriculada
+  na mão, o pano e a haste no desenho. Referência nova em `dev.py boneco`
+  (`bandeira`), com a varrida mais alta e menos aberta que a do 3D, que deixava
+  a haste na horizontal. Saiu de primeira, mas a haste fina sumia no recorte e a
+  bandeira ficava solta; uma segunda edição pediu a haste grossa. O
+  `Chegada.Torcedor` do fiscal usa a folha parada (`PedestreSprite.bandeira`);
+  no atropelo ele cai no desenho do avatar, e o 3D só mantém a haste, sem pano.
+  O shader saiu. Para o recorte, três campos novos na ficha: `escala: fixa`
+  (a altura medida inclui a haste), `ancora_x: pes` e `passo_da_mancha` (40,
+  para o pano grudar na pessoa). A linha de lado é de perfil para a direita; no
+  espelho a bandeira trocaria de mão. Não vi o fiscal no jogo rodando.)
 - [ ] **2D32** — **Fiscal da largada**, pessoa nova de colete laranja
   (`fiscal.glb`): o gesto de largada, andando, susto, voando e caída. Hoje
   ela é 3D durante o gesto e vira a pessoa da praia depois.

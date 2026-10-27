@@ -75,7 +75,18 @@ const CAIDA: Array[Texture2D] = [
 	ANDANDO[6],
 	preload("res://assets/sprites/pedestres/mendigo_caida.png"),
 ]
+## O fiscal da bandeira da chegada: 3 linhas (frente, 3/4 frente, lado) por 8
+## quadros do aceno, o mesmo arranjo do susto. A haste e o pano quadriculado
+## estao no desenho, e o ciclo e o da varrida que o `Chegada` ja tinha.
+const FISCAL_BANDEIRA: Texture2D = preload("res://assets/sprites/pedestres/fiscal_bandeira.png")
+const FISCAL_CELULA := Vector2i(340, 370)
+const FISCAL_PE := Vector2i(170, 360)
+const CICLO_DA_BANDEIRA: float = 1.65
 const PPM: float = 100.0
+
+## Liga o desenho do fiscal da bandeira para quem esta parado; no atropelo ele
+## cai no desenho do avatar, como qualquer pessoa.
+var bandeira: bool = false
 
 var _material := ShaderMaterial.new()
 var _quadro := QuadMesh.new()
@@ -124,6 +135,14 @@ func posar(
 	estado: Pessoa.Estado, fase: float, relogio: float, giro: float, rapidez: float, avatar: int
 ) -> void:
 	if not visible:
+		return
+	if bandeira and estado == Pessoa.Estado.PARADA:
+		position.y = 0.0
+		_configurar(FISCAL_BANDEIRA, FISCAL_CELULA, FISCAL_PE, 8, 3, 1)
+		_material.set_shader_parameter(
+			&"quadro", posmod(floori(relogio / CICLO_DA_BANDEIRA * 8.0), 8)
+		)
+		_material.set_shader_parameter(&"giro", 0.0)
 		return
 	var atlas: Texture2D = ANDANDO[avatar]
 	var celula := Vector2i(160, ALTURA_CELULA_ANDANDO)

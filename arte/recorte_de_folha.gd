@@ -37,8 +37,16 @@ const PASSO_DA_MANCHA: int = 4
 ## - `pe_y`: onde fica o chao na celula, de cima para baixo.
 ## - `altura_m` e `pixels_por_metro`: o tamanho real do que se desenha, e a
 ##   medida comum de todas as folhas (sem ela o sprite muda de tamanho na troca).
-## - `escala`: `altura`, `altura_alta`, `coluna_zero` ou `comprimento`.
-## - `ancora_x`: `tronco` ou `centro`. `ancora_y`: `pes`, `chao` ou `centro`.
+## - `escala`: `altura`, `altura_alta`, `coluna_zero`, `comprimento` ou `fixa`.
+##   `fixa` e para quem segura algo que passa da cabeca (a haste da bandeira): a
+##   altura do desenho deixa de medir a pessoa, e a ficha diz, em
+##   `pixels_por_metro_fonte`, quantos pixels da folha tem um metro, uma medida
+##   por linha.
+## - `ancora_x`: `tronco`, `pes` ou `centro`. `ancora_y`: `pes`, `chao` ou `centro`.
+##   `pes` e o meio da faixa de baixo do desenho: o que se segura com o braco
+##   levantado empurra o centro e o tronco, mas nao os pes.
+## - `passo_da_mancha`: so com `por_manchas`; o lado, em pixels, da grade que junta o
+##   que o JPEG separa. Maior junta mais: a bandeira presa a haste fina do fiscal.
 ## - `vao` e `area_minima`: o que separa dois desenhos e o que e sujeira.
 ## - `espelho`: o lado esquerdo sai por espelho do direito (ver o `.json`).
 ## - `luzes`: pontos que o shader acende (lanterna, farol, lente, vidro), cada um
@@ -111,17 +119,18 @@ static func acha_desenhos(
 	area_minima: int,
 	medidor: Callable,
 	manchas_ate: int = 0,
-	linhas_n: int = 0
+	linhas_n: int = 0,
+	passo: int = PASSO_DA_MANCHA
 ) -> Array:
 	var desenhos: Array = []
 	if manchas_ate > 0 and linhas_n > 0:
 		return _por_manchas_na_folha(
-			cheio, largura, altura, area_minima, manchas_ate, linhas_n, medidor
+			cheio, largura, altura, area_minima, manchas_ate, linhas_n, medidor, passo
 		)
 	for faixa in faixas(soma_linhas(cheio, largura, altura), vao):
 		var linha: Array = []
 		if manchas_ate > 0:
-			linha = por_manchas(cheio, largura, faixa, area_minima, manchas_ate, medidor)
+			linha = por_manchas(cheio, largura, faixa, area_minima, manchas_ate, medidor, passo)
 			if not linha.is_empty():
 				desenhos.append(linha)
 			continue
@@ -150,9 +159,9 @@ static func por_manchas(
 	faixa: Vector2i,
 	area_minima: int,
 	esperado: int,
-	medidor: Callable
+	medidor: Callable,
+	passo: int = PASSO_DA_MANCHA
 ) -> Array:
-	var passo := PASSO_DA_MANCHA
 	var gw := (largura + passo - 1) / passo
 	var gh := (faixa.y - faixa.x + passo - 1) / passo
 	var grade := PackedInt32Array()
@@ -255,10 +264,11 @@ static func _por_manchas_na_folha(
 	area_minima: int,
 	colunas: int,
 	linhas_n: int,
-	medidor: Callable
+	medidor: Callable,
+	passo: int = PASSO_DA_MANCHA
 ) -> Array:
 	var todas := por_manchas(
-		cheio, largura, Vector2i(0, altura), area_minima, colunas * linhas_n, medidor
+		cheio, largura, Vector2i(0, altura), area_minima, colunas * linhas_n, medidor, passo
 	)
 	if todas.size() != colunas * linhas_n:
 		return [todas]
@@ -367,10 +377,16 @@ static func caixa_do_desenho(cheio: PackedByteArray, largura: int, regiao: Rect2
 		"retangulo": Rect2i(minimo, maximo - minimo + Vector2i.ONE),
 		"area": area,
 		"tronco_x": float(soma_x) / maxf(n, 1.0),
+		"pes_x": float(pe_min + pe_max) * 0.5,
 		"centro": soma / maxf(area, 1.0),
 		"fundo": float(maximo.y + 1),
 		"abertura": float(maxi(pe_max - pe_min, 0)) / float(maximo.y - minimo.y + 1),
 	}
+
+
+## Se a ficha fixa a escala (`escala: fixa`) em vez de medi-la no desenho.
+static func regra_fixa(regra: Dictionary) -> bool:
+	return regra["escala"] == "fixa"
 
 
 ## A escala unica da folha, para as medidas que a pedem; 0 quando cada linha tem
@@ -443,6 +459,8 @@ static func cola(
 	var x: float
 	if regra["ancora_x"] == "tronco":
 		x = celula.x * 0.5 - (float(desenho["tronco_x"]) - caixa.position.x) * escala
+	elif regra["ancora_x"] == "pes":
+		x = celula.x * 0.5 - (float(desenho["pes_x"]) - caixa.position.x) * escala
 	else:
 		x = celula.x * 0.5 - ((desenho["centro"] as Vector2).x - caixa.position.x) * escala
 	var y: float
@@ -512,7 +530,8 @@ static func atlas_da_ficha(ficha: Dictionary, imagem: Image) -> Dictionary:
 		int(ficha["area_minima"]),
 		caixa_do_desenho,
 		colunas if ficha.get("por_manchas", false) else 0,
-		linhas.size() if str(ficha.get("por_manchas", false)) == "folha" else 0
+		linhas.size() if str(ficha.get("por_manchas", false)) == "folha" else 0,
+		int(ficha.get("passo_da_mancha", PASSO_DA_MANCHA))
 	)
 	# O Flow as vezes acrescenta uma linha repetida (a folha da porta do hatch veio
 	# com duas de costas): a ficha diz quais descartar, de baixo para cima.
@@ -538,11 +557,13 @@ static func atlas_da_ficha(ficha: Dictionary, imagem: Image) -> Dictionary:
 	var escala_unica := escala_da_folha(ficha, desenhos, altura_px)
 	var escalas: Array[float] = []
 	for linha in linhas.size():
-		var escala := (
-			escala_unica
-			if escala_unica > 0.0
-			else escala_da_linha(ficha, desenhos[linha], altura_px)
-		)
+		var escala := escala_unica
+		if regra_fixa(ficha):
+			escala = (
+				float(ficha["pixels_por_metro"]) / float(ficha["pixels_por_metro_fonte"][linha])
+			)
+		elif escala_unica <= 0.0:
+			escala = escala_da_linha(ficha, desenhos[linha], altura_px)
 		escalas.append(escala)
 		var chao := chao_da_linha(desenhos[linha])
 		for coluna in colunas:
@@ -561,6 +582,10 @@ static func confere_ficha(ficha: Dictionary) -> String:
 	var celula := _celula(ficha)
 	var linhas: Array = ficha["linhas"]
 	var colunas: int = ficha["colunas"]
+	if regra_fixa(ficha):
+		var fonte: Array = ficha.get("pixels_por_metro_fonte", [])
+		if fonte.size() != linhas.size():
+			return "`escala: fixa` pede `pixels_por_metro_fonte` com uma medida por linha"
 	for luz: Dictionary in ficha.get("luzes", []):
 		var ponto := Vector2(luz["ponto"][0], luz["ponto"][1])
 		if (
