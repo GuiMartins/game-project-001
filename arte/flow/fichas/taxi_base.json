@@ -181,6 +181,518 @@
 				160
 			],
 			"so_de_noite": false
+		},
+		{
+			"nome": "farol",
+			"linha": 0,
+			"coluna": 0,
+			"ponto": [
+				208,
+				126
+			],
+			"raio": 7,
+			"cor": [
+				255,
+				240,
+				200
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "farol",
+			"linha": 0,
+			"coluna": 0,
+			"ponto": [
+				311,
+				126
+			],
+			"raio": 7,
+			"cor": [
+				255,
+				240,
+				200
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "farol",
+			"linha": 1,
+			"coluna": 0,
+			"ponto": [
+				351,
+				124
+			],
+			"raio": 7,
+			"cor": [
+				255,
+				240,
+				200
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "farol",
+			"linha": 1,
+			"coluna": 0,
+			"ponto": [
+				424,
+				122
+			],
+			"raio": 7,
+			"cor": [
+				255,
+				240,
+				200
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "lanterna_e",
+			"linha": 3,
+			"coluna": 0,
+			"ponto": [
+				111,
+				108
+			],
+			"raio": 5,
+			"cor": [
+				255,
+				40,
+				30
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "freio",
+			"linha": 3,
+			"coluna": 0,
+			"ponto": [
+				111,
+				108
+			],
+			"raio": 7,
+			"cor": [
+				255,
+				40,
+				30
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "seta_e",
+			"linha": 3,
+			"coluna": 0,
+			"ponto": [
+				105,
+				108
+			],
+			"raio": 5,
+			"cor": [
+				255,
+				160,
+				20
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "lanterna_d",
+			"linha": 3,
+			"coluna": 0,
+			"ponto": [
+				192,
+				109
+			],
+			"raio": 5,
+			"cor": [
+				255,
+				40,
+				30
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "freio",
+			"linha": 3,
+			"coluna": 0,
+			"ponto": [
+				192,
+				109
+			],
+			"raio": 7,
+			"cor": [
+				255,
+				40,
+				30
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "seta_d",
+			"linha": 3,
+			"coluna": 0,
+			"ponto": [
+				198,
+				109
+			],
+			"raio": 5,
+			"cor": [
+				255,
+				160,
+				20
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "lanterna_e",
+			"linha": 4,
+			"coluna": 0,
+			"ponto": [
+				209,
+				110
+			],
+			"raio": 5,
+			"cor": [
+				255,
+				40,
+				30
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "freio",
+			"linha": 4,
+			"coluna": 0,
+			"ponto": [
+				209,
+				110
+			],
+			"raio": 7,
+			"cor": [
+				255,
+				40,
+				30
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "seta_e",
+			"linha": 4,
+			"coluna": 0,
+			"ponto": [
+				203,
+				110
+			],
+			"raio": 5,
+			"cor": [
+				255,
+				160,
+				20
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "lanterna_d",
+			"linha": 4,
+			"coluna": 0,
+			"ponto": [
+				312,
+				110
+			],
+			"raio": 5,
+			"cor": [
+				255,
+				40,
+				30
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "freio",
+			"linha": 4,
+			"coluna": 0,
+			"ponto": [
+				312,
+				110
+			],
+			"raio": 7,
+			"cor": [
+				255,
+				40,
+				30
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "seta_d",
+			"linha": 4,
+			"coluna": 0,
+			"ponto": [
+				318,
+				110
+			],
+			"raio": 5,
+			"cor": [
+				255,
+				160,
+				20
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "farol",
+			"linha": 0,
+			"coluna": 1,
+			"ponto": [
+				208,
+				126
+			],
+			"raio": 7,
+			"cor": [
+				255,
+				240,
+				200
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "farol",
+			"linha": 0,
+			"coluna": 1,
+			"ponto": [
+				311,
+				126
+			],
+			"raio": 7,
+			"cor": [
+				255,
+				240,
+				200
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "farol",
+			"linha": 1,
+			"coluna": 1,
+			"ponto": [
+				351,
+				124
+			],
+			"raio": 7,
+			"cor": [
+				255,
+				240,
+				200
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "farol",
+			"linha": 1,
+			"coluna": 1,
+			"ponto": [
+				424,
+				122
+			],
+			"raio": 7,
+			"cor": [
+				255,
+				240,
+				200
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "lanterna_e",
+			"linha": 3,
+			"coluna": 1,
+			"ponto": [
+				111,
+				108
+			],
+			"raio": 5,
+			"cor": [
+				255,
+				40,
+				30
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "freio",
+			"linha": 3,
+			"coluna": 1,
+			"ponto": [
+				111,
+				108
+			],
+			"raio": 7,
+			"cor": [
+				255,
+				40,
+				30
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "seta_e",
+			"linha": 3,
+			"coluna": 1,
+			"ponto": [
+				105,
+				108
+			],
+			"raio": 5,
+			"cor": [
+				255,
+				160,
+				20
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "lanterna_d",
+			"linha": 3,
+			"coluna": 1,
+			"ponto": [
+				192,
+				109
+			],
+			"raio": 5,
+			"cor": [
+				255,
+				40,
+				30
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "freio",
+			"linha": 3,
+			"coluna": 1,
+			"ponto": [
+				192,
+				109
+			],
+			"raio": 7,
+			"cor": [
+				255,
+				40,
+				30
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "seta_d",
+			"linha": 3,
+			"coluna": 1,
+			"ponto": [
+				198,
+				109
+			],
+			"raio": 5,
+			"cor": [
+				255,
+				160,
+				20
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "lanterna_e",
+			"linha": 4,
+			"coluna": 1,
+			"ponto": [
+				209,
+				110
+			],
+			"raio": 5,
+			"cor": [
+				255,
+				40,
+				30
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "freio",
+			"linha": 4,
+			"coluna": 1,
+			"ponto": [
+				209,
+				110
+			],
+			"raio": 7,
+			"cor": [
+				255,
+				40,
+				30
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "seta_e",
+			"linha": 4,
+			"coluna": 1,
+			"ponto": [
+				203,
+				110
+			],
+			"raio": 5,
+			"cor": [
+				255,
+				160,
+				20
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "lanterna_d",
+			"linha": 4,
+			"coluna": 1,
+			"ponto": [
+				312,
+				110
+			],
+			"raio": 5,
+			"cor": [
+				255,
+				40,
+				30
+			],
+			"so_de_noite": true
+		},
+		{
+			"nome": "freio",
+			"linha": 4,
+			"coluna": 1,
+			"ponto": [
+				312,
+				110
+			],
+			"raio": 7,
+			"cor": [
+				255,
+				40,
+				30
+			],
+			"so_de_noite": false
+		},
+		{
+			"nome": "seta_d",
+			"linha": 4,
+			"coluna": 1,
+			"ponto": [
+				318,
+				110
+			],
+			"raio": 5,
+			"cor": [
+				255,
+				160,
+				20
+			],
+			"so_de_noite": false
 		}
 	],
 	"geracao": {
