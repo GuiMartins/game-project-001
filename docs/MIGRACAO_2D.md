@@ -351,9 +351,13 @@ Total: cerca de 240 quadros em 10 a 14 folhas.
 As 25 folhas de hoje (cinco pessoas × andando, susto, desembarcando, voando e
 caída) ficam.
 
-- [ ] **2D30** — **Torcida da chegada acenando**: cinco pessoas × frente,
-  3/4 frente e lado × 6 quadros. Hoje a `Chegada` força o 3D
-  (`usar_sprite` é `false`).
+- [x] **2D30** — **Torcida da chegada**, parada por ora.
+  (27/10/2026: a torcida deixou de acenar e usa o sprite da pessoa parada (o
+  primeiro quadro do andar), em vez de forçar o 3D; só o fiscal da bandeira
+  segue em 3D, até o 2D31. O aceno em sprite (cinco pessoas × frente, 3/4
+  frente e lado × 6 quadros) fica adiado: **2D30b** *(opcional)*.)
+- [ ] **2D30b** *(opcional)* — Torcida acenando: cinco pessoas × frente, 3/4
+  frente e lado × 6 quadros.
 - [ ] **2D31** — **Fiscal da bandeira**, com a quadriculada no desenho:
   3 × 8. A bandeira que ondula no shader (`bandeira.gdshader`) sai.
 - [ ] **2D32** — **Fiscal da largada**, pessoa nova de colete laranja
