@@ -336,9 +336,17 @@ sempre amarelo.
   referência cinza; a porta, de referência cinza mais a base como identidade,
   também de primeira, mas com a linha de costas virada para a esquerda:
   `espelha_quadros` nela. A porta lateral de correr não abre: só a da cabine.)
-- [ ] **2D27** — **Luzes do carro na ficha**: lanterna, freio, seta esquerda
+- [x] **2D27** — **Luzes do carro na ficha**: lanterna, freio, seta esquerda
   e seta direita nos ângulos de costas, e farol nos de frente. O pisca-alerta
   são as duas setas.
+  (27/10/2026: as sete `*_base` ganharam `luzes` na ficha e no atlas: `farol`
+  (de noite) nas linhas de frente e 3/4 frente; `lanterna_e/d` (de noite),
+  `freio` (também de dia) e `seta_e/d` (de dia, para piscar) nas de costas e
+  3/4 costas, nas duas colunas. Os pontos saíram das lanternas pintadas, e a
+  conferência foi por marcação sobre o atlas. Onde o desenho não separa a
+  seta (sedã, hatch, SUV, táxi, baú), ela fica 6 px para fora da lanterna;
+  na van e no ônibus ela é a luz âmbar de cima. Ligar `carro.gd` às luzes
+  da ficha é o passo do sprite no mundo, não deste.)
 
 Fica fora do desenho: a carroceria mergulhando e rolando (rotação e
 deslocamento do sprite), a guinada de até 8° (fica no ângulo mais perto), o
