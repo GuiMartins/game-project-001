@@ -1,0 +1,17 @@
+{
+	"altura_m": 31.4,
+	"celula": [
+		920,
+		780
+	],
+	"colunas": 1,
+	"espelha_o_lado_esquerdo": false,
+	"linhas": [
+		"lado"
+	],
+	"pe": [
+		460,
+		770
+	],
+	"pixels_por_metro": 22.0
+}
