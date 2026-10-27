@@ -329,7 +329,13 @@ sempre amarelo.
   regravado quando a ficha tinha `placa`, então `espelha_quadros` nunca chegava
   ao PNG; agora regrava sempre que a ficha o pede. As fichas da PCX já tinham
   `placa`, e não mudam.)
-- [ ] **2D26** — Van.
+- [x] **2D26** — Van.
+  (26/10/2026: `van_base` (5 × 1, só motorista, célula 640 × 290) e
+  `van_porta_1` (3 × 5, a porta da cabine), a 100 px/m e 2,42 m. Pintura em
+  vermelho chapado, vidro azul-acinzentado. A base saiu de primeira da
+  referência cinza; a porta, de referência cinza mais a base como identidade,
+  também de primeira, mas com a linha de costas virada para a esquerda:
+  `espelha_quadros` nela. A porta lateral de correr não abre: só a da cabine.)
 - [ ] **2D27** — **Luzes do carro na ficha**: lanterna, freio, seta esquerda
   e seta direita nos ângulos de costas, e farol nos de frente. O pisca-alerta
   são as duas setas.
@@ -345,9 +351,13 @@ Total: cerca de 240 quadros em 10 a 14 folhas.
 As 25 folhas de hoje (cinco pessoas × andando, susto, desembarcando, voando e
 caída) ficam.
 
-- [ ] **2D30** — **Torcida da chegada acenando**: cinco pessoas × frente,
-  3/4 frente e lado × 6 quadros. Hoje a `Chegada` força o 3D
-  (`usar_sprite` é `false`).
+- [x] **2D30** — **Torcida da chegada**, parada por ora.
+  (27/10/2026: a torcida deixou de acenar e usa o sprite da pessoa parada (o
+  primeiro quadro do andar), em vez de forçar o 3D; só o fiscal da bandeira
+  segue em 3D, até o 2D31. O aceno em sprite (cinco pessoas × frente, 3/4
+  frente e lado × 6 quadros) fica adiado: **2D30b** *(opcional)*.)
+- [ ] **2D30b** *(opcional)* — Torcida acenando: cinco pessoas × frente, 3/4
+  frente e lado × 6 quadros.
 - [ ] **2D31** — **Fiscal da bandeira**, com a quadriculada no desenho:
   3 × 8. A bandeira que ondula no shader (`bandeira.gdshader`) sai.
 - [ ] **2D32** — **Fiscal da largada**, pessoa nova de colete laranja

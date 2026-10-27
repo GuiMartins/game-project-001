@@ -15,7 +15,6 @@ const LARANJA := Color(0.95, 0.28, 0.055)
 class Torcedor:
 	extends Pessoa
 	var fiscal: bool = false
-	var fase: float = 0.0
 	var posto := Vector3.ZERO
 	var direcao: float = 0.0
 
@@ -32,10 +31,11 @@ class Torcedor:
 		_caminho.clear()
 		colocar(posto, direcao)
 
-	# As poses de torcida precisam dos bracos articulados; os atlas de caminhada
-	# nao contem o gesto nem a mao que segura a haste.
-	func usar_sprite(_ligado: bool) -> void:
-		super.usar_sprite(false)
+	# A torcida fica parada, e parada o atlas de caminhada ja da (o primeiro
+	# quadro). So o fiscal segue em 3D: o gesto e a haste da bandeira nao estao
+	# em atlas nenhum.
+	func usar_sprite(ligado: bool) -> void:
+		super.usar_sprite(ligado and not fiscal)
 
 	func _olha_motos(delta: float) -> void:
 		# Ele segura o posto, mas continua sujeito ao mesmo atropelo dos pedestres.
@@ -54,12 +54,6 @@ class Torcedor:
 			_tronco = 0.09 * cos(ciclo)
 			_coxa[0] = 0.07 * sin(ciclo)
 			_coxa[1] = -_coxa[0]
-		else:
-			var aceno := sin(_relogio * 6.0 + fase)
-			_braco[0] = 2.5 + aceno * 0.35
-			_abre[0] = 0.3 + aceno * 0.25
-			_braco[1] = 2.4 - aceno * 0.3
-			_abre[1] = 0.3
 
 
 func montar(pista: RoadTrack, distancia: float) -> void:
@@ -101,7 +95,6 @@ func montar(pista: RoadTrack, distancia: float) -> void:
 			pessoa.posto = to_local(p)
 			pessoa.direcao = lado * PI * 0.5
 			pessoa.colocar(pessoa.posto, pessoa.direcao)
-			pessoa.fase = float(i) * 1.73 + lado
 			pessoa.vestir(Color.from_hsv(fposmod(float(i) * 0.137 + lado * 0.12, 1.0), 0.7, 0.9))
 		# A grade deixa o corredor visualmente livre, sem mudar a fisica da prova.
 		for i in 10:
