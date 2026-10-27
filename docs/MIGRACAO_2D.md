@@ -329,7 +329,13 @@ sempre amarelo.
   regravado quando a ficha tinha `placa`, então `espelha_quadros` nunca chegava
   ao PNG; agora regrava sempre que a ficha o pede. As fichas da PCX já tinham
   `placa`, e não mudam.)
-- [ ] **2D26** — Van.
+- [x] **2D26** — Van.
+  (26/10/2026: `van_base` (5 × 1, só motorista, célula 640 × 290) e
+  `van_porta_1` (3 × 5, a porta da cabine), a 100 px/m e 2,42 m. Pintura em
+  vermelho chapado, vidro azul-acinzentado. A base saiu de primeira da
+  referência cinza; a porta, de referência cinza mais a base como identidade,
+  também de primeira, mas com a linha de costas virada para a esquerda:
+  `espelha_quadros` nela. A porta lateral de correr não abre: só a da cabine.)
 - [ ] **2D27** — **Luzes do carro na ficha**: lanterna, freio, seta esquerda
   e seta direita nos ângulos de costas, e farol nos de frente. O pisca-alerta
   são as duas setas.
