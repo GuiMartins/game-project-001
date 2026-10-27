@@ -1,0 +1,28 @@
+{
+	"fonte": "res://arte/flow/fachadas/predio_deco.jpg",
+	"saida": "res://assets/sprites/fachadas/predio_deco",
+	"linhas": [
+		"frente"
+	],
+	"colunas": 2,
+	"celula": [
+		700,
+		780
+	],
+	"pe_y": 770,
+	"altura_m": 30.2,
+	"pixels_por_metro": 25,
+	"escala": "altura",
+	"ancora_x": "centro",
+	"ancora_y": "pes",
+	"vao": 40,
+	"area_minima": 4000,
+	"geracao": {
+		"ferramenta": "Google Flow, Nano Banana 2.1, 16:9, x1; referência cinza do dev.py boneco fachada",
+		"data": "2026-10-27",
+		"projeto": "https://flow.google.com/project/33269769-5f14-4b18-b06d-215c0af61d39",
+		"referencias": [
+			"res://arte/flow/referencia/fachada/deco.png"
+		]
+	}
+}

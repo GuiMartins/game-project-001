@@ -396,13 +396,35 @@ Total obrigatório: cerca de 245 quadros em 11 folhas.
 Prédio vira parede: um quad por segmento, com a fachada repetida na
 horizontal, e não um sprite que gira.
 
-- [ ] **2D40** — **Fachadas**: sobrado, comércio, deco, escritório e torre
+- [x] **2D40** — **Fachadas**: sobrado, comércio, deco, escritório e torre
   (`Predio.Tipo`), cada uma de frente e com a empena lateral, que é o que
   aparece na esquina. São 10 imagens, com o vidro em ciano para a janela
   acender de noite e parede, loja e tela em cor-chave.
-- [ ] **2D41** — **Obra** (`Predio.Obra`): esqueleto e fachada, laranja e
+  (27/10/2026: cinco folhas, `predio_sobrado`, `predio_comercio`, `predio_deco`,
+  `predio_escritorio` e `predio_torre` (o prefixo evita bater com a pessoa
+  `escritorio` no catálogo), cada uma com duas colunas, frente e empena (a linha é `frente`, o ângulo que o catálogo conhece), na ficha `arte/flow/fichas/`; saem em
+  `assets/sprites/fachadas/`. Vidro ciano, parede vermelha chapada e loja ou
+  painel magenta, para o shader. O Flow saiu em 1376 × 768 e o prédio alto
+  ocupa a altura toda: a torre tem só ~13 px por metro, e o sobrado ~56. Isso
+  está no `pixels_por_metro` de cada ficha, que deixa de ser a medida comum de
+  100 das outras folhas; a parede vai esticada na altura do 3D, mas a torre
+  vai aparecer macia. Três folhas vieram com desenhos a mais (a torre e a obra
+  de fachada azul, com a frente repetida) e tiveram o excesso pintado de verde
+  antes do recorte; o escritório saiu uma torre de vidro com janelas ciano
+  espalhadas, e não a grade regular da referência. Não liguei a fachada no
+  jogo: o quad por segmento é o 2D63.)
+- [x] **2D41** — **Obra** (`Predio.Obra`): esqueleto e fachada, laranja e
   azul, de frente e de lado. São 8 imagens.
-- [ ] **2D42** — **Guindaste**, uma ou duas alturas.
+  (27/10/2026: quatro folhas, `predio_obra_{esqueleto,fachada}_{laranja,azul}`, cada
+  uma com frente e lado. A tela da obra é laranja ou azul chapado para o shader
+  recolorir; o prompt pediu o esqueleto de concreto cinza sob andaime.)
+- [x] **2D42** — **Guindaste**, uma ou duas alturas.
+  (27/10/2026: uma altura só, o mastro de 24 m (`Guindaste.altura_total`, 31,4 m
+  com a torre em A), de lado, amarelo, com a lança para a direita e a
+  contra-lança com os blocos. Sem referência cinza: só texto no prompt. Os
+  estais e o cabo do gancho saíram: são linhas finas que o recorte confunde com
+  o verde, e ficavam como cacos soltos; sobra o carrinho da lança. A segunda
+  altura, se a obra pedir, é o mastro emendado, como o 3D já fazia.)
 - [ ] **2D43** — **Fundo urbano**: duas faixas de skyline emendáveis, para o
   parallax que substitui a segunda fileira de prédios.
 - [ ] **2D44** — **Marcos** (`marcos.gd`): igreja no morro, museu, torre de
