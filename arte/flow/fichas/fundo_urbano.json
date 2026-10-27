@@ -1,0 +1,33 @@
+{
+	"fonte": "res://arte/flow/fachadas/fundo_urbano.jpg",
+	"saida": "res://assets/sprites/fachadas/fundo_urbano",
+	"linhas": [
+		"frente_longe",
+		"frente_perto"
+	],
+	"colunas": 1,
+	"celula": [
+		1400,
+		350
+	],
+	"pe_y": 340,
+	"altura_m": 34,
+	"pixels_por_metro": 10,
+	"escala": "fixa",
+	"pixels_por_metro_fonte": [
+		10,
+		10
+	],
+	"ancora_x": "centro",
+	"ancora_y": "pes",
+	"vao": 40,
+	"area_minima": 2000,
+	"geracao": {
+		"ferramenta": "Google Flow, Nano Banana 2.1, 16:9, x1; sem referência cinza (só texto)",
+		"data": "2026-10-27",
+		"projeto": "https://flow.google.com/project/33269769-5f14-4b18-b06d-215c0af61d39",
+		"referencias": []
+	},
+	"por_manchas": true,
+	"passo_da_mancha": 4
+}
