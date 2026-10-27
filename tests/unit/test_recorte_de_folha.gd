@@ -83,6 +83,34 @@ func test_luz_fora_da_celula_e_reprovada() -> void:
 	assert_str(Recorte.confere_ficha(ficha)).is_empty()
 
 
+func test_escala_fixa_pede_uma_medida_por_linha() -> void:
+	var ficha := _ficha()
+	ficha["escala"] = "fixa"
+	assert_str(Recorte.confere_ficha(ficha)).contains("pixels_por_metro_fonte")
+	var medidas: Array = []
+	medidas.resize((ficha["linhas"] as Array).size())
+	medidas.fill(170.0)
+	ficha["pixels_por_metro_fonte"] = medidas
+	assert_str(Recorte.confere_ficha(ficha)).is_empty()
+
+
+func test_a_ancora_dos_pes_ignora_o_que_empurra_o_centro() -> void:
+	# Um adulto de pe com um objeto alto de um lado: o centro anda para o lado
+	# do objeto, e o meio dos pes continua sob o corpo.
+	var largura := 40
+	var cheio := PackedByteArray()
+	cheio.resize(largura * 40)
+	for y in range(10, 40):
+		for x in range(5, 9):
+			cheio[y * largura + x] = 1
+	for y in range(0, 10):
+		for x in range(20, 38):
+			cheio[y * largura + x] = 1
+	var caixa := Recorte.caixa_do_desenho(cheio, largura, Rect2i(0, 0, largura, 40))
+	assert_float(caixa["pes_x"]).is_equal_approx(6.5, 0.6)
+	assert_float((caixa["centro"] as Vector2).x).is_greater(12.0)
+
+
 func test_a_ficha_do_atlas_leva_as_luzes_e_o_espelho() -> void:
 	var ficha := _ficha()
 	ficha["espelho"] = true
