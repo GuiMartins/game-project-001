@@ -1,0 +1,32 @@
+{
+	"fonte": "res://arte/flow/fachadas/rua_transversal.jpg",
+	"saida": "res://assets/sprites/fachadas/rua_transversal",
+	"linhas": [
+		"frente"
+	],
+	"colunas": 2,
+	"celula": [
+		600,
+		640
+	],
+	"pe_y": 636,
+	"altura_m": 20,
+	"pixels_por_metro": 31,
+	"escala": "fixa",
+	"pixels_por_metro_fonte": [
+		31
+	],
+	"ancora_x": "centro",
+	"ancora_y": "pes",
+	"vao": 40,
+	"area_minima": 2000,
+	"geracao": {
+		"ferramenta": "Google Flow, Nano Banana 2.1, 16:9, x1; sem referência cinza (só texto)",
+		"data": "2026-10-28",
+		"projeto": "https://flow.google.com/project/33269769-5f14-4b18-b06d-215c0af61d39",
+		"referencias": []
+	},
+	"por_manchas": true,
+	"passo_da_mancha": 4,
+	"margem_verde": 100
+}
