@@ -383,6 +383,12 @@ caída) ficam.
 - [ ] **2D32** — **Fiscal da largada**, pessoa nova de colete laranja
   (`fiscal.glb`): o gesto de largada, andando, susto, voando e caída. Hoje
   ela é 3D durante o gesto e vira a pessoa da praia depois.
+  (Em andamento, 28/10/2026: personagem `fiscal` em
+  `arte/flow/personagens/fiscal/`, com turnaround e as cinco caminhadas
+  aprovadas. Pararam por falta de crédito no Flow (4 sobrando, 7 por vídeo de
+  4 s): faltam os 15 vídeos de susto, desembarque, voo e caída, os atlas, a
+  integração em `pedestre_sprite.gd` e os metadados de geração na ficha. O
+  gesto da largada é animação extra, fora das cinco padrão.)
 - [ ] **2D33** *(opcional)* — Parada, o balanço de quem espera: 5 × 4 por
   pessoa. A referência já existe (`arte/flow/referencia/parada.png`); hoje
   quem espera usa o primeiro quadro do andar.
