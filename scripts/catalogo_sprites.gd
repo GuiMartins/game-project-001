@@ -26,8 +26,9 @@ const ANGULOS: Array[String] = [
 	"frente", "tres_quartos_frente", "lado", "tres_quartos_costas", "costas"
 ]
 ## Folhas que mostram a coisa deitada: a ficha guarda o comprimento em `altura_m`
-## (a escala `comprimento` do recorte), e a altura desenhada nao e a dela.
-const SEM_CONFERENCIA_DE_ALTURA: Array[String] = ["caida", "caido", "voando"]
+## (a escala `comprimento` do recorte), e a altura desenhada nao e a dela. O
+## fundo urbano tem duas faixas de alturas diferentes na mesma ficha.
+const SEM_CONFERENCIA_DE_ALTURA: Array[String] = ["caida", "caido", "voando", "urbano"]
 ## Folhas em que o corpo sai do chao ou tomba de proposito: o pe nao e constante
 ## de um quadro para outro (como no voo e na queda do pedestre). O parado tem a
 ## empinada, em que a roda de tras apoia uns pixels mais fundo que no pe no chao.

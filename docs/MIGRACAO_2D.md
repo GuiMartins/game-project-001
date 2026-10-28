@@ -425,10 +425,24 @@ horizontal, e não um sprite que gira.
   estais e o cabo do gancho saíram: são linhas finas que o recorte confunde com
   o verde, e ficavam como cacos soltos; sobra o carrinho da lança. A segunda
   altura, se a obra pedir, é o mastro emendado, como o 3D já fazia.)
-- [ ] **2D43** — **Fundo urbano**: duas faixas de skyline emendáveis, para o
+- [x] **2D43** — **Fundo urbano**: duas faixas de skyline emendáveis, para o
   parallax que substitui a segunda fileira de prédios.
-- [ ] **2D44** — **Marcos** (`marcos.gd`): igreja no morro, museu, torre de
+  (27/10/2026: `fundo_urbano`, linhas `longe` (azul pálido, na névoa) e `perto`
+  (mais escuro, com janela, antena e caixa-d'água), célula 1376 × 340, sem
+  reescala (`escala: fixa`). Só texto no prompt, sem referência cinza. As pontas
+  das faixas não batem exatamente: a emenda é do 2D63, que deve sobrepor ou
+  espelhar alguns pixels. As linhas se chamam `frente_longe` e `frente_perto` (ângulo que o
+  catálogo conhece) e `urbano` saiu da conferência de altura, porque as duas
+  faixas têm alturas diferentes na mesma ficha. Não vi no jogo.)
+- [x] **2D44** — **Marcos** (`marcos.gd`): igreja no morro, museu, torre de
   igreja e roda-gigante, com a roda à parte para girar. São 5 imagens.
+  (27/10/2026: uma folha só, `marcos`, 5 colunas: igreja no morro, pernas da
+  roda-gigante, roda (aro), museu e torre de igreja, célula 400 × 340, sem
+  reescala. As figuras saíram na escala relativa do Flow, e não a dos metros
+  de `Marcos` (115, 100, 55 e 100 m): o 2D63 ajusta cada uma à `altura` do
+  marco. Os raios da roda sumiram no recorte (linha fina confundida com o
+  verde); sobrou o aro com as gôndolas. `margem_verde: 60` na ficha: com 40 o
+  aro virava pixels soltos e a análise de borda reprovava. Não vi no jogo.)
 - [ ] **2D45** — **O fundo da rua transversal**: a rua recuando entre
   fachadas, para o vão da esquina. Duas variações.
 - [ ] **2D46** — **Via expressa**: o pilar do viaduto. Muro, mureta e
