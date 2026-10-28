@@ -1,0 +1,283 @@
+{
+  "versao": 1,
+  "id": "fiscal",
+  "descricao": "Mulher adulta brasileira, cabelo curto preto, camiseta branca lisa, colete laranja de segurança liso e fechado, calça preta e tênis pretos iguais. Sem boné, sem bandeira, sem acessórios.",
+  "altura_m": 1.7,
+  "geracao": {
+    "projeto_url": "",
+    "modelo_imagem": "",
+    "modelo_video": ""
+  },
+  "turnaround": {
+    "arquivo": "originais/turnaround.jpg",
+    "url": "",
+    "sha256": ""
+  },
+  "animacoes": {
+    "andando": {
+      "aprovada": false,
+      "linhas": [
+        {
+          "vista": "frente",
+          "arquivo": "originais/andando_frente.mp4",
+          "prompt": "prompts/andando_frente.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "tres_quartos_frente",
+          "arquivo": "originais/andando_tres_quartos_frente.mp4",
+          "prompt": "prompts/andando_tres_quartos_frente.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "lado",
+          "arquivo": "originais/andando_lado.mp4",
+          "prompt": "prompts/andando_lado.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "tres_quartos_costas",
+          "arquivo": "originais/andando_tres_quartos_costas.mp4",
+          "prompt": "prompts/andando_tres_quartos_costas.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "costas",
+          "arquivo": "originais/andando_costas.mp4",
+          "prompt": "prompts/andando_costas.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        }
+      ]
+    },
+    "susto": {
+      "aprovada": false,
+      "linhas": [
+        {
+          "vista": "frente",
+          "arquivo": "originais/susto_frente.mp4",
+          "prompt": "prompts/susto_frente.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "tres_quartos_frente",
+          "arquivo": "originais/susto_tres_quartos_frente.mp4",
+          "prompt": "prompts/susto_tres_quartos_frente.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "lado",
+          "arquivo": "originais/susto_lado.mp4",
+          "prompt": "prompts/susto_lado.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        }
+      ]
+    },
+    "desembarcando": {
+      "aprovada": false,
+      "linhas": [
+        {
+          "vista": "carro_de_lado",
+          "arquivo": "originais/desembarcando_carro_de_lado.mp4",
+          "prompt": "prompts/desembarcando_carro_de_lado.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "carro_tres_quartos_frente",
+          "arquivo": "originais/desembarcando_carro_tres_quartos_frente.mp4",
+          "prompt": "prompts/desembarcando_carro_tres_quartos_frente.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "carro_tres_quartos_costas",
+          "arquivo": "originais/desembarcando_carro_tres_quartos_costas.mp4",
+          "prompt": "prompts/desembarcando_carro_tres_quartos_costas.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "carro_de_frente",
+          "arquivo": "originais/desembarcando_carro_de_frente.mp4",
+          "prompt": "prompts/desembarcando_carro_de_frente.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        }
+      ]
+    },
+    "voando": {
+      "aprovada": false,
+      "linhas": [
+        {
+          "vista": "lado",
+          "arquivo": "originais/voando_lado.mp4",
+          "prompt": "prompts/voando_lado.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "tres_quartos_costas",
+          "arquivo": "originais/voando_tres_quartos_costas.mp4",
+          "prompt": "prompts/voando_tres_quartos_costas.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "costas",
+          "arquivo": "originais/voando_costas.mp4",
+          "prompt": "prompts/voando_costas.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "tres_quartos_frente",
+          "arquivo": "originais/voando_tres_quartos_frente.mp4",
+          "prompt": "prompts/voando_tres_quartos_frente.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        }
+      ]
+    },
+    "caida": {
+      "aprovada": false,
+      "linhas": [
+        {
+          "vista": "lado",
+          "arquivo": "originais/caida_lado.mp4",
+          "prompt": "prompts/caida_lado.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "tres_quartos_costas",
+          "arquivo": "originais/caida_tres_quartos_costas.mp4",
+          "prompt": "prompts/caida_tres_quartos_costas.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "costas",
+          "arquivo": "originais/caida_costas.mp4",
+          "prompt": "prompts/caida_costas.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        },
+        {
+          "vista": "tres_quartos_frente",
+          "arquivo": "originais/caida_tres_quartos_frente.mp4",
+          "prompt": "prompts/caida_tres_quartos_frente.txt",
+          "url": "",
+          "modelo": "",
+          "parametros": {},
+          "sha256": "",
+          "quadros": [],
+          "quadro_escala": null,
+          "aprovado": false
+        }
+      ]
+    }
+  }
+}
