@@ -383,6 +383,12 @@ caída) ficam.
 - [ ] **2D32** — **Fiscal da largada**, pessoa nova de colete laranja
   (`fiscal.glb`): o gesto de largada, andando, susto, voando e caída. Hoje
   ela é 3D durante o gesto e vira a pessoa da praia depois.
+  (Em andamento, 28/10/2026: personagem `fiscal` em
+  `arte/flow/personagens/fiscal/`, com turnaround e as cinco caminhadas
+  aprovadas. Pararam por falta de crédito no Flow (4 sobrando, 7 por vídeo de
+  4 s): faltam os 15 vídeos de susto, desembarque, voo e caída, os atlas, a
+  integração em `pedestre_sprite.gd` e os metadados de geração na ficha. O
+  gesto da largada é animação extra, fora das cinco padrão.)
 - [ ] **2D33** *(opcional)* — Parada, o balanço de quem espera: 5 × 4 por
   pessoa. A referência já existe (`arte/flow/referencia/parada.png`); hoje
   quem espera usa o primeiro quadro do andar.
@@ -443,10 +449,19 @@ horizontal, e não um sprite que gira.
   marco. Os raios da roda sumiram no recorte (linha fina confundida com o
   verde); sobrou o aro com as gôndolas. `margem_verde: 60` na ficha: com 40 o
   aro virava pixels soltos e a análise de borda reprovava. Não vi no jogo.)
-- [ ] **2D45** — **O fundo da rua transversal**: a rua recuando entre
+- [x] **2D45** — **O fundo da rua transversal**: a rua recuando entre
   fachadas, para o vão da esquina. Duas variações.
-- [ ] **2D46** — **Via expressa**: o pilar do viaduto. Muro, mureta e
+  (28/10/2026: `rua_transversal`, duas colunas (`frente`): a quente, de tarde,
+  e a fria, com bruma, célula 600 × 640, sem reescala (`escala: fixa`, 31 px/m
+  para 20 m, medida chutada: o 2D63 ajusta ao vão). Só texto no prompt. O céu
+  da primeira saiu verde-claro e o recorte o levou junto (`margem_verde: 100`),
+  o que serve: ali aparece o céu do mundo. Não vi no jogo.)
+- [x] **2D46** — **Via expressa**: o pilar do viaduto. Muro, mureta e
   alambrado já têm textura (`assets/via_expressa/`) e viram parede.
+  (28/10/2026: `pilar_viaduto`, uma imagem, pilar com a viga no topo e a
+  faixa amarela na base, célula 920 × 670 a 93 px/m, para os 7 m de
+  `VIADUTO_ALTURA`. Só texto no prompt. O pilar saiu mais largo que o do 3D
+  (1,2 m): o 2D63 escala a largura. Não vi no jogo.)
 - [ ] **2D47** — **Canteiro da praça.**
 
 Pista, calçada e asfalto já existem (`assets/visual/`). Pintura, zebra,
