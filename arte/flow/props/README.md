@@ -37,6 +37,22 @@ O recorte só entende verde puro: nada de verde-chroma na arte (folha de árvore
 | `placa_curva.jpg` | losango amarelo, curva à esquerda; a da direita sai do espelho | 3,2 m |
 | `placa_mao_dupla.jpg` | losango amarelo, duas setas opostas | 3,2 m |
 
+| `cacamba.jpg` | caçamba de entulho, 3/4 | 1,8 m |
+| `mupi.jpg` | mupi com o painel apagado (acende por coordenada) | 2,4 m |
+| `semaforo.jpg` | semáforo de esquina, lâmpadas apagadas | 4 m |
+| `portico_semaforo.jpg` | braço de semáforo suspenso | 7 m |
+| `portico_placa.jpg` | pórtico da placa verde, sem texto; **fundo magenta** | 8 m |
+| `chegada_arco.jpg` | arco da chegada, faixa branca em branco | 7 m |
+| `chegada_barreira.jpg` | barreira de plástico vermelha e branca | 1 m |
+| `canteiro.jpg` | canteiro da praça; **fundo magenta** | 2 m |
+
+Objeto que é verde (a placa) ou cheio de planta (o canteiro) sai em magenta
+`#FF00FF`: a ficha leva `"fundo": "magenta"` e o recorte troca de chave.
+
 Upload de referência pela automação do Chrome: o botão "Enviar mídia" abre o
 seletor nativo; intercepte `HTMLInputElement.prototype.click` para capturar o
 `<input type=file>` e use `file_upload` nele.
+
+No Flow o `+` do prompt abre a biblioteca: digitar `01_centro` na busca e clicar
+no resultado anexa a referência, sem seletor nativo. O botão de baixar de cada
+imagem grava em `~/Downloads`. O prompt é enviado com Enter.
