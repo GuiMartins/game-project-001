@@ -1,0 +1,48 @@
+{
+	"altura_m": 4.0,
+	"angulo": "frente",
+	"largura_m": 1.02,
+	"luzes": [
+		{
+			"coluna": 0,
+			"cor": [
+				1.0,
+				0.12,
+				0.06
+			],
+			"linha": 0,
+			"nome": "vermelho",
+			"ponto": [
+				46,
+				48
+			],
+			"raio": 8,
+			"so_de_noite": false
+		},
+		{
+			"coluna": 0,
+			"cor": [
+				0.1,
+				1.0,
+				0.35
+			],
+			"linha": 0,
+			"nome": "verde",
+			"ponto": [
+				46,
+				102
+			],
+			"raio": 8,
+			"so_de_noite": false
+		}
+	],
+	"pe": [
+		18,
+		255
+	],
+	"pixels_por_metro": 64.0,
+	"tamanho": [
+		65,
+		256
+	]
+}

@@ -1,0 +1,48 @@
+{
+	"altura_m": 2.4,
+	"angulo": "frente",
+	"largura_m": 1.22,
+	"luzes": [
+		{
+			"coluna": 0,
+			"cor": [
+				1.0,
+				0.95,
+				0.85
+			],
+			"linha": 0,
+			"nome": "painel_alto",
+			"ponto": [
+				41,
+				50
+			],
+			"raio": 22,
+			"so_de_noite": true
+		},
+		{
+			"coluna": 0,
+			"cor": [
+				1.0,
+				0.95,
+				0.85
+			],
+			"linha": 0,
+			"nome": "painel_baixo",
+			"ponto": [
+				41,
+				92
+			],
+			"raio": 22,
+			"so_de_noite": true
+		}
+	],
+	"pe": [
+		36,
+		153
+	],
+	"pixels_por_metro": 64.0,
+	"tamanho": [
+		78,
+		154
+	]
+}

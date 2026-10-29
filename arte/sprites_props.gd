@@ -67,6 +67,96 @@ const PROPS: Dictionary = {
 	},
 	"placa_curva": {"altura_m": 3.2, "espelho": "placa_curva_dir"},
 	"placa_mao_dupla": {"altura_m": 3.2, "espelho": ""},
+	# 2D52 a 2D56. Pe de cada um e a base do desenho; a altura e a do 3D que ele
+	# substitui (`mobiliario.py`, `portal.gd`, `chegada.gd`, `cidade.gd`).
+	"cacamba": {"altura_m": 1.8, "espelho": ""},
+	# O painel aceso de noite, em dois pontos porque o vidro e um retangulo alto.
+	"mupi":
+	{
+		"altura_m": 2.4,
+		"espelho": "",
+		"luzes":
+		[
+			{
+				"nome": "painel_alto",
+				"linha": 0,
+				"coluna": 0,
+				"ponto": [41, 50],
+				"raio": 22,
+				"cor": [1.0, 0.95, 0.85],
+				"so_de_noite": true
+			},
+			{
+				"nome": "painel_baixo",
+				"linha": 0,
+				"coluna": 0,
+				"ponto": [41, 92],
+				"raio": 22,
+				"cor": [1.0, 0.95, 0.85],
+				"so_de_noite": true
+			},
+		],
+	},
+	# O vermelho e o verde por coordenada: o `Semaforo` troca a forca de cada um
+	# pelo nome, de dia e de noite.
+	"semaforo":
+	{
+		"altura_m": 4.0,
+		"espelho": "",
+		"luzes":
+		[
+			{
+				"nome": "vermelho",
+				"linha": 0,
+				"coluna": 0,
+				"ponto": [46, 48],
+				"raio": 8,
+				"cor": [1.0, 0.12, 0.06],
+				"so_de_noite": false
+			},
+			{
+				"nome": "verde",
+				"linha": 0,
+				"coluna": 0,
+				"ponto": [46, 102],
+				"raio": 8,
+				"cor": [0.1, 1.0, 0.35],
+				"so_de_noite": false
+			},
+		],
+	},
+	# A placa verde enche o desenho de verde: o fundo e magenta, nao verde.
+	"portico_placa": {"altura_m": 8.0, "espelho": "", "fundo": "magenta"},
+	"portico_semaforo":
+	{
+		"altura_m": 7.0,
+		"espelho": "",
+		"luzes":
+		[
+			{
+				"nome": "vermelho",
+				"linha": 0,
+				"coluna": 0,
+				"ponto": [282, 138],
+				"raio": 14,
+				"cor": [1.0, 0.12, 0.06],
+				"so_de_noite": false
+			},
+			{
+				"nome": "verde",
+				"linha": 0,
+				"coluna": 0,
+				"ponto": [282, 232],
+				"raio": 14,
+				"cor": [0.1, 1.0, 0.35],
+				"so_de_noite": false
+			},
+		],
+	},
+	"chegada_arco": {"altura_m": 7.0, "espelho": ""},
+	"chegada_barreira": {"altura_m": 1.0, "espelho": ""},
+	# Planta verde no desenho todo: tambem em magenta.
+	"canteiro": {"altura_m": 2.0, "espelho": "", "fundo": "magenta"},
 }
 
 
@@ -85,7 +175,7 @@ func _recortar(id: String, ficha: Dictionary) -> bool:
 		push_error("props: sem %s%s.jpg" % [ORIGEM, id])
 		return false
 	imagem.convert(Image.FORMAT_RGBA8)
-	_tirar_fundo(imagem)
+	_tirar_fundo(imagem, ficha.get("fundo", "verde") == "magenta")
 	var caixa := _caixa(imagem)
 	if caixa.size.y < 50:
 		push_error("props: %s sem silhueta (fundo nao era verde?)" % id)
@@ -95,7 +185,7 @@ func _recortar(id: String, ficha: Dictionary) -> bool:
 	var largura := int(round(float(recorte.get_width()) * altura / recorte.get_height()))
 	recorte.resize(largura, altura, Image.INTERPOLATE_LANCZOS)
 	_endurecer_alpha(recorte)
-	_limpar_borda(recorte)
+	_limpar_borda(recorte, ficha.get("fundo", "verde") == "magenta")
 	var pe := _pe(recorte)
 	recorte.save_png(ProjectSettings.globalize_path(SAIDA + id + ".png"))
 	_gravar_ficha(id, ficha, recorte.get_size(), pe)
@@ -110,6 +200,16 @@ func _recortar(id: String, ficha: Dictionary) -> bool:
 	return true
 
 
+## Magenta puro: vermelho e azul altos e verde baixo, pela mesma margem do verde.
+func _eh_magenta(cor: Color) -> bool:
+	var outros := minf(cor.r, cor.b)
+	return (
+		outros >= FUNDO_VERDE_MIN
+		and cor.g <= FUNDO_OUTROS_MAX
+		and outros - cor.g >= FUNDO_DIFERENCA_MIN
+	)
+
+
 func _eh_fundo(cor: Color) -> bool:
 	var outros := maxf(cor.r, cor.b)
 	return (
@@ -119,10 +219,11 @@ func _eh_fundo(cor: Color) -> bool:
 	)
 
 
-func _tirar_fundo(imagem: Image) -> void:
+func _tirar_fundo(imagem: Image, magenta: bool) -> void:
 	for y in imagem.get_height():
 		for x in imagem.get_width():
-			if _eh_fundo(imagem.get_pixel(x, y)):
+			var cor := imagem.get_pixel(x, y)
+			if _eh_magenta(cor) if magenta else _eh_fundo(cor):
 				imagem.set_pixel(x, y, Color(0, 0, 0, 0))
 
 
@@ -166,13 +267,21 @@ func _endurecer_alpha(imagem: Image) -> void:
 ## Quem encosta no fundo herda um verde do JPEG e da reducao. Puxa o verde
 ## desses pixels para o maior dos outros dois canais, so um pouco acima: a folha
 ## continua folha e some a franja neon.
-func _limpar_borda(imagem: Image) -> void:
+func _limpar_borda(imagem: Image, magenta: bool) -> void:
 	var w := imagem.get_width()
 	var h := imagem.get_height()
 	for y in h:
 		for x in w:
 			var cor := imagem.get_pixel(x, y)
 			if cor.a == 0.0 or not _na_borda(imagem, x, y, w, h):
+				continue
+			if magenta:
+				# Franja magenta: vermelho e azul descem para perto do verde.
+				var piso := cor.g + 0.08
+				if cor.r > piso and cor.b > piso:
+					cor.r = minf(cor.r, maxf(piso, cor.b * 0.6))
+					cor.b = minf(cor.b, maxf(piso, cor.r * 0.6))
+					imagem.set_pixel(x, y, cor)
 				continue
 			var teto := maxf(cor.r, cor.b) + 0.08
 			if cor.g > teto:

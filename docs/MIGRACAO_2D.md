@@ -462,7 +462,9 @@ horizontal, e não um sprite que gira.
   faixa amarela na base, célula 920 × 670 a 93 px/m, para os 7 m de
   `VIADUTO_ALTURA`. Só texto no prompt. O pilar saiu mais largo que o do 3D
   (1,2 m): o 2D63 escala a largura. Não vi no jogo.)
-- [ ] **2D47** — **Canteiro da praça.**
+- [x] **2D47** — **Canteiro da praça.**
+  (29/10/2026: `canteiro`, fundo magenta, 2 m, pedra, arbustos e palmeira
+  jovem. Não vi no jogo: o 2D63 ajusta ao `CANTEIRO` de `cidade.gd`.)
 
 Pista, calçada e asfalto já existem (`assets/visual/`). Pintura, zebra,
 meio-fio, faixa de serviço e o tabuleiro do viaduto são polígono desenhado
@@ -478,13 +480,22 @@ prop quebra e voa, quem gira é o sprite inteiro.
   shader entrou com o 2D03, em `poste.json`.)
 - [x] **2D51** — Árvore de copa e palmeira, com uma variação de cada. (22/10/2026:
   uma de cada, em `assets/sprites/props/`; a segunda variação fica para depois.)
-- [ ] **2D52** — Caçamba e mupi, com o painel do mupi aceso por coordenada.
+- [x] **2D52** — Caçamba e mupi, com o painel do mupi aceso por coordenada.
+  (29/10/2026: `cacamba` e `mupi` em `assets/sprites/props/`; o painel acende
+  em dois pontos, `painel_alto` e `painel_baixo`, só de noite.)
 - [x] **2D53** — Placas: curva à esquerda, curva à direita (espelho), mão dupla.
   (22/10/2026, receita em `arte/flow/props/README.md`.)
-- [ ] **2D54** — Semáforo de esquina, vermelho e verde por coordenada.
-- [ ] **2D55** — Pórticos: semáforo suspenso, placa de destino (sem texto,
+- [x] **2D54** — Semáforo de esquina, vermelho e verde por coordenada.
+  (29/10/2026: `semaforo`, lâmpadas apagadas, luzes `vermelho` e `verde` na
+  ficha; o amarelo fica de fora, como no 3D. Coordenadas medidas no recorte,
+  não vistas no jogo.)
+- [x] **2D55** — Pórticos: semáforo suspenso, placa de destino (sem texto,
   que sai por código) e mão dupla.
-- [ ] **2D56** — Chegada: o arco "CHEGADA" e a barreira.
+- [x] **2D56** — Chegada: o arco "CHEGADA" e a barreira.
+  (29/10/2026: `chegada_arco`, com a faixa em branco para o texto sair por
+  código, e `chegada_barreira`. O pórtico do semáforo e o da placa são
+  `portico_semaforo` e `portico_placa` (2D55); o da placa, em magenta. O
+  "mão dupla" do 2D55 já é a `placa_mao_dupla` do 2D53. Nenhum visto no jogo.)
 
 Total de cenário e props: cerca de 46 imagens soltas.
 
